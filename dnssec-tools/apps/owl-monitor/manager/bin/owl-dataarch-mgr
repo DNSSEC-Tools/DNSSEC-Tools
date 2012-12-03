@@ -1,0 +1,600 @@
+#!/usr/bin/perl
+#
+# Copyright 2012 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details.
+#
+# owl-dataarch-mgr					Owl Monitoring System
+#
+#       This script archives old sensor data.
+#	It is a modified version of the owl-dataarch command for Owl sensors.
+#
+# Revision History
+#	1.0	121201     Initial version.
+#
+
+use strict;
+
+use Cwd;
+use Getopt::Long qw(:config no_ignore_case_always);
+use Time::Local;
+
+#######################################################################
+#
+# Version information.
+#
+my $NAME   = "owl-dataarch-mgr";
+my $VERS   = "$NAME version: 1.14.0";
+my $DTVERS = "DNSSEC-Tools version: 1.14";
+
+###################################################
+
+#
+# Data required for command line options.
+#
+my %options = ();			# Filled option array.
+my @opts =
+(
+	"verbose",			# Verbose output.
+	"Version",			# Version output.
+	"help",				# Give a usage message and exit.
+);
+
+#
+# Flag values for the various options.  Variable/option connection should
+# be obvious.
+#
+my $verbose	= 0;				# Display verbose output.
+
+###################################################
+
+my $MV = "/bin/mv";
+
+my $archdir;					# Archive directory.
+my $curdir;					# Current directory.
+my $datadir;					# Data directory.
+
+my $sensor;					# Name of sensor being archived.
+
+my $errs = 0;					# Error count.
+
+#######################################################################
+
+main();
+exit(0);
+
+#--------------------------------------------------------------------------
+# Routine:	main()
+#
+sub main
+{
+	my @keepdate;				# Earliest date we'll keep.
+
+	$| = 0;
+
+	#
+	# Save our current directory.
+	#
+	$curdir = getcwd();
+
+	#
+	# Check our options.
+	#
+	doopts();
+
+	if($verbose)
+	{
+		print "configuration parameters:\n";
+		print "\tcurrent directory      \"$curdir\"\n";
+		print "\tdata directory         \"$datadir\"\n";
+		print "\tarchive directory      \"$archdir\"\n";
+		print "\tsensor name            \"$sensor\"\n";
+		print "\n";
+	}
+
+	#
+	# Don't proceed on errors.
+	#
+	if($errs)
+	{
+		my $sfx = ($errs != 1) ? 's' : '';	# Pluralization suffix.
+
+		print "$NAME:  $errs error$sfx found during initialization; halting...\n";
+		exit(1);
+	}
+
+	#
+	# Get the earliest date for files to keep.
+	#
+	@keepdate = getkeepdate();
+
+	#
+	# Archive the specified data files.
+	#
+	archer(@keepdate);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	doopts()
+#
+# Purpose:	This routine shakes and bakes our command line options.
+#
+sub doopts
+{
+	#
+	# Parse the options.
+	#
+	GetOptions(\%options,@opts) || usage();
+
+	#
+	# Handle a few immediate flags.
+	#
+	version() if(defined($options{'Version'}));
+	usage(1)  if(defined($options{'help'}));
+
+	#
+	# Set our option variables based on the parsed options.
+	#
+	$verbose  = $options{'verbose'};
+
+	#
+	# Get our sensor name, data directory, and archive directory.
+	#
+	usage(2)  if(@ARGV != 3);
+	$sensor	 = $ARGV[0];
+	$datadir = $ARGV[1];
+	$archdir = $ARGV[2];
+
+	#
+	# Ensure these directories are absolute paths.
+	#
+	$datadir = "$curdir/$datadir" if($datadir !~ /^\//);
+	$archdir = "$curdir/$archdir" if($archdir !~ /^\//);
+
+	#
+	# Check our data directory.
+	#
+	checkdir($archdir,'archive',1);
+	checkdir($datadir,'data',0);
+
+}
+
+#--------------------------------------------------------------------------
+# Routine:	checkdir()
+#
+# Purpose:	This routine validates the given directory with the
+#		following checks:
+#			- directory exists
+#			- directory is a directory
+#			- directory is executable
+#			- directory is readable
+#
+sub checkdir
+{
+	my $dir	    = shift;			# Directory to glob-n-check.
+	my $dirstr  = shift;			# Directory explanation.
+	my $mkflag  = shift;			# Make-directory flag.
+
+	if(! -e $dir)
+	{
+		#
+		# Make the directory and run the checks again.
+		#
+		if($mkflag)
+		{
+			vprint("creating $dirstr directory $dir\n");
+			mkdir($dir);
+			return(checkdir($dir,$dirstr,0));
+		}
+
+		print STDERR "$dirstr directory \"$dir\" does not exist\n";
+		$errs++;
+		return(0);
+	}
+
+	if(! -d $dir)
+	{
+		print STDERR "$dirstr directory $dir is not a directory\n";
+		$errs++;
+		return(0);
+	}
+
+	if(! -x $dir)
+	{
+		print STDERR "$dirstr directory $dir is not searchable\n";
+		$errs++;
+		return(0);
+	}
+
+	if(! -r $dir)
+	{
+		print STDERR "$dirstr directory $dir is not readable\n";
+		$errs++;
+		return(0);
+	}
+
+	#
+	# Return success.
+	#
+	return(1);
+}
+
+#--------------------------------------------------------------------------
+# Routine:	getkeepdate()
+#
+# Purpose:	This routine returns data indicating midnight of the day
+#		before today.  These data are returned in an array having
+#		this structure:
+#
+#			0	two-digit year (YY)
+#			1	month number (MM)
+#			2	day number in month (DD)
+#			3	YYMMDD.hhmm string  (hhmm are always "0000")
+#			4	seconds since the epoch
+#
+sub getkeepdate
+{
+	my $now;				# Current time.
+	my $midnight;				# Today's midnight.
+	my $yesterday;				# Yesterday's midnight.
+	my @tempus;				# Time fields.
+	my @kdate;				# Date to keep.
+
+	#
+	# Get the time fields for right now.
+	#
+	$now = time;
+	@tempus = localtime($now);
+
+	#
+	# Set the clock back to midnight.
+	#
+	$midnight = timelocal(0, 0, 0, $tempus[3], $tempus[4], $tempus[5]);
+
+	#
+	# Set the clock to yesterday's midnight.
+	#
+	$yesterday = $midnight - (24 * 60 * 60);
+	@tempus = localtime($yesterday);
+
+	#
+	# Build the date structure we're looking for.
+	#
+	$kdate[0] = $tempus[5] - 100;
+	$kdate[1] = $tempus[4] + 1;
+	$kdate[2] = $tempus[3];
+	$kdate[3] = sprintf("%02d%02d%02d.0000",$kdate[0],$kdate[1],$kdate[2]);
+	$kdate[4] = $yesterday;
+
+	#
+	# Return the date fields we're looking for.
+	#
+	return(@kdate);
+}
+
+#--------------------------------------------------------------------------
+# Routine:	archer()
+#
+# Purpose:	Archives the files from before the time given in the
+#		specified time array.
+#
+sub archer
+{
+	my @keepdate = @_;			# Earliest date info.
+	my @files = ();				# Data files to check.
+	my $lastind;				# Index of last old file.
+
+	#
+	# Move into this sensor's data directory.
+	#
+	if(chdir($datadir) == 0)
+	{
+		print STDERR "unable to move to directory \"$datadir\"\n";
+		next;
+	}
+
+	#
+	# Get a list of the Owl DNS response-data files in the directory.
+	#
+	@files = glob("*.dns");
+	@files = sort(@files);
+
+	#
+	# Get the array index of the first file we won't archive.
+	#
+	$lastind = firstfile(\@files,$keepdate[3]);
+
+	if($lastind > 0)
+	{
+		#
+		# Must archive some files.
+		#
+		splice @files, $lastind;
+	}
+	elsif($lastind == 0)
+	{
+		#
+		# No need to archive any files.
+		#
+		@files = ();
+	}
+	elsif($lastind == -1)
+	{
+		#
+		# Must archive all files.
+		#
+	}
+
+	#
+	# Archive the files.
+	#
+	print "archiving $datadir/*.dns\n" if($verbose);
+	filesaver(\@files,$datadir);
+
+}
+
+#--------------------------------------------------------------------------
+# Routine:	firstfile()
+#
+# Purpose:	When given a sorted array of filenames and a timestamp, it
+#		returns the index of the first file that is older than the
+#		timestamp.  The file's age is taken from the filename.
+#
+# Return Values:
+#		 -1	All files are older than the timestamp.
+#		  0	No archive is needed.
+#		>-1	The index of the first file older than the timestamp.
+#
+sub firstfile
+{
+	my $fileref = shift;			# Reference to matching files.
+	my $keepdate = shift;			# First date to keep.
+	my @files;				# List of matching files.
+
+	@files = @$fileref;
+
+	for(my $ind=0; $ind < @files; $ind++)
+	{
+		if(($files[$ind] cmp $keepdate) >= 0)
+		{
+			return($ind);
+		}
+	}
+
+	return(-1);
+}
+
+#--------------------------------------------------------------------------
+# Routine:	filesaver()
+#
+# Purpose:	This routine moves a list of files from their original data
+#		directory into an archive directory.  The archive directory
+#		is specific to the sensor, and the files are moved into sub-
+#		directories named by the files' YYMM.
+#
+sub filesaver
+{
+	my $fileref = shift;			# Reference to file list.
+	my $destdir = shift;			# Destination directory.
+	my @files;				# List of files to archive.
+	my $first;				# First file's timestamp.
+	my $last;				# Last file's timestamp.
+	my $archtop;				# Top dir of sensor's archive.
+
+	my %yymms = ();				# List of YYMM prefixes.
+
+	#
+	# Get the list of files to archive, and return if the list is empty.
+	#
+	@files = @$fileref;
+	return if(@files == 0);
+
+	#
+	# Get the YYMM timestamps for the first and last files.
+	#
+	$files[0] =~ /^(....)/;
+	$first = $1;
+	$files[-1] =~ /^(....)/;
+	$last = $1;
+
+	#
+	# Get the set of YYMM prefixes.
+	#
+	for(my $ind=$first; $ind <= $last; $ind++)
+	{
+		my @fns = glob("$datadir/$ind*");
+		if(@fns > 0)
+		{
+			$yymms{$ind}++;
+		}
+	}
+
+	#
+	# Make sure our directories (sensor's directory and monthly
+	# directories)  exist, and create them if they don't.
+	#
+	$archtop = "$archdir/$sensor";
+	foreach my $ind (sort(keys(%yymms)))
+	{
+		vprint("checking data archive $archtop\n");
+		checkdir($archtop,"data archive",1);
+
+		vprint("checking data archive $archtop/data-$ind\n");
+		checkdir("$archtop/data-$ind","data archive destination",1);
+	}
+
+	#
+	# Move the files in the old-files list into their YYMM archive
+	# directories.  Create the archive directories if they don't exist.
+	#
+	for(my $ind=0; $ind < @files; $ind++)
+	{
+		my $cmd;			# File-mover command.
+		my $fn;				# File to archive.
+		my $yymm;			# Timestamp prefix.
+		my $ddir;			# Destination directory.
+		my $ret;			# Return code.
+
+		#
+		# Get the filename and its timestamp prefix.
+		#
+		$fn = $files[$ind];
+		$fn =~ /^(....)/;
+		$yymm = $1;
+
+		#
+		# Build the destination directory.
+		#
+		$ddir = "$archtop/data-$yymm/";
+
+		$cmd = "$MV $fn $ddir";
+
+		print "saving $fn to $ddir\n" if($verbose);
+		system($cmd);
+		$ret = $?;
+
+		vprint("$cmd\n");
+		if(($ret >> 8) != 0)
+		{
+			print "mv failed\n";
+			exit(1);
+		}
+	}
+
+}
+
+#--------------------------------------------------------------------------
+# Routine:	vprint()
+#
+sub vprint
+{
+	my $str = shift;
+
+	print "$str" if($verbose);
+}
+
+#--------------------------------------------------------------------------
+# Routine:	version()
+#
+sub version
+{
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+	exit(0);
+}
+
+#--------------------------------------------------------------------------
+# Routine:	usage()
+#
+sub usage
+{
+	print "owl-dataarch-mgr [options] <sensor-name> <data-directory> <archive-directory>\n";
+	print "\toptions:\n";
+	print "\t\t-verbose\n";
+	print "\t\t-Version\n";
+	print "\t\t-help\n";
+	exit(0);
+}
+
+###########################################################################
+
+=pod
+
+=head1 NAME
+
+owl-dataarch-mgr - Archives Owl sensor data on an Owl manager
+
+=head1 SYNOPSIS
+
+  owl-dataarch-mgr [options] <sensor-name> <data-directory> <archive-directory>
+
+=head1 DESCRIPTION
+
+B<owl-dataarch-mgr> archives data from a single Owl sensor that are stored
+on an Owl manager host.  The Owl sensors generate a very large number of
+data files and transfer them to the manager.  Owl system response time
+can be negatively impacted if these files are not periodically archived.
+
+B<owl-dataarch-mgr> may be run standalone, but it is intended to be run
+by B<owl-archdata>.
+
+The data files for I<sensor-name> are moved from I<data-directory> to
+I<archive-directory>.  If these directories are not absolute paths, then
+(internally) they will be converted to absolute paths from the execution
+directory.
+
+B<owl-dataarch-mgr> does not archive every file in the data directory.
+Rather, it archives those files that are two days or older than the time
+of execution.  The file's age is determined by the timestamp in the file's
+name; it is B<not> determined by the timestamp of the file itself.  If a
+data file contains records from two months, such as at the turn of the
+month, all that file's records will be stored with the first month's data.
+In other words, files are maintained as is, and no data-splitting will occur.
+(The "two-days or older" limit on archived files is due to the lack of
+data-splitting of files that cross day boundaries.)
+
+The data files are not put straight into the archive directory; they are
+put into year/month-specific subdirectories within a directory specific
+to the named sensor.  The subdirectory's name is based on the year and
+month in which the data files were created.  The format of the names of
+these subdirectories is
+
+    <archivedir>/<sensor>/data-<YYMM>
+
+For example, data for sensor I<kvothe> for September, 2012, to be stored
+in B</owl/backups> will be stored in this directory:
+
+    /owl/backups/kvothe/data-1209
+
+These directories are created as required for the data to be archived.
+
+The data files are archived one file at a time, which increases the execution
+time of B<owl-dataarch-mgr>.  The reason for this involves several factors:
+the long length of Owl data filenames, the maximum command-line length in
+most operating systems, and the number of distinct queries being performed
+by a sensor.  With long data filenames, relatively few files could be
+archived before the O/S maximum command-line length would be exceeded.
+If an Owl sensor is running very many queries, then the length of one move
+command (e.g., I<mv 1210-* /owl/backups/bonn-sensor/data-1210>) could very
+easily exceed what the operating system allows.
+
+=head1 OPTIONS
+
+=over 4
+
+=item B<-Version>
+
+This option provides the version of B<owl-dataarch-mgr>.
+
+=item B<-help>
+
+This option displays a help message and exits.
+
+=item B<-verbose>
+
+This option provides verbose output.
+
+=back
+
+=head1 CAVEATS
+
+B<owl-dataarch-mgr> is not a general-purpose archiver.  While there are
+somewhat generalized aspects to it, B<owl-dataarch-mgr> is strongly biased
+to the hierarchical structure laid out for the Owl sensor data.
+
+=head1 COPYRIGHT
+
+Copyright 2012 SPARTA, Inc.  All rights reserved.
+
+=head1 AUTHOR
+
+Wayne Morrison, Wayne.Morrison@tislabs.com
+
+=head1 SEE ALSO
+
+B<owl-archdata(1)>,
+B<owl-dataarch(1)>
+
+bzip2(1), tar(1)
+
+=cut
+
