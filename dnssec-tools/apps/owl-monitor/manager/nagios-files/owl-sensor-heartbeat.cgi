@@ -26,12 +26,14 @@ my $DTVERS = "DNSSEC-Tools version: 1.14";
 #------------------------------------------------------------------------
 # Defaults and some constants.
 #
+#	$DIR must be adjusted for each site.
+#
 
 my $sensor = '<whoami?>';			# Sensor's name.
 
 my $hbfile = '';				# Constructed heartbeat file.
 
-my $DIR = '/uem/caida/data';			# Heartbeat directory.
+my $DIR = '/owl/data';				# Heartbeat directory.
 my $HBFILE = 'heartbeat';			# Heartbeat file.
 
 #------------------------------------------------------------------------
