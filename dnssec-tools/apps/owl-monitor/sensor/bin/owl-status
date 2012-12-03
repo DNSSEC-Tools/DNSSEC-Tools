@@ -1,0 +1,447 @@
+#!/usr/bin/perl
+#
+# Copyright 2012 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details.
+#
+# owl-status						Owl Monitoring System
+#
+#       This script reports the execution status of the Owl sensor scripts.
+#	The following conditions are reported:
+#		- running status of Owl daemons
+#		- queries being performed
+#		- last instance performed of each query
+#
+#
+# Revision History:
+#	1.0	121201	Initial version.
+#
+
+use strict;
+
+use FindBin;
+
+use lib "$FindBin::Bin/../perllib";
+use owlutils;
+
+use Getopt::Long qw(:config no_ignore_case_always);
+
+#
+# Version information.
+#
+my $NAME   = "owl-status";
+my $VERS   = "$NAME version: 1.0";
+my $DTVERS = "DNSSEC-Tools version: 1.14";
+
+#------------------------------------------------------------------------
+# Defaults and some constants.
+
+my $DEF_CONFDIR	= $owlutils::DEF_CONFDIR;	# Default config directory.
+my $DEF_CONFIG	= $owlutils::DEF_CONFIG;	# Default config file nodename.
+
+#------------------------------------------------------------------------
+
+#
+# Data required for command line options.
+#
+my %options = ();                       # Filled option array.
+my @opts =
+(
+	"confdir|cd=s",				# Specify config directory.
+	"config|cf=s",				# Specify config file.
+	"datadir=s",				# Specify data directory.
+
+	"all",					# Run all checks.
+	"queries",				# Run defined-query checks.
+	"last",					# Run last-query checks.
+
+	"help",					# Give help message.
+	"Version",				# Give version info.
+	"verbose",				# Give verbose output.
+);
+
+my $lflag = 0;					# Last-query flag.
+my $qflag = 0;					# Defined-queries flag.
+
+my $confdir = '';				# Config directory.
+my $config  = '';				# Config file.
+my $datadir = '';				# Data directory.
+
+my $verbose = 0;				# Verbose flag.
+
+#------------------------------------------------------------------------
+# Data and log message data.
+#
+
+#
+# Owl daemons that should be running.
+#
+my %owldaemons =
+(
+	'owl-dnstimer'	=> 0,
+	'owl-sensord'	=> 0,
+	'owl-transfer'	=> 0,
+);
+
+my @nservers = ();				# Nameservers we check.
+my @targets = ();				# Query targets.
+my @qtypes = ();				# Query types.
+
+my @intervals;					# Query intervals.
+my @timeouts;					# Query timeouts.
+my @rollints;					# Datafile rollover intervals.
+my @states;					# State of targets.
+
+#------------------------------------------------------------------------
+
+main();
+exit(0);
+
+#------------------------------------------------------------------------
+# Routine:	main()
+#
+sub main
+{
+	#
+	# Check our options and read the configuration file.
+	#
+	doopts();
+	owl_setup($NAME,$confdir,$datadir,undef);
+	if(owl_readconfig($config,$datadir,'') != 0)
+	{
+		exit(2);
+	}
+
+	#
+	# Print configuration data if verbose flag was given.
+	#
+	if($verbose)
+	{
+		print "confdir - $confdir\n";
+		print "config  - $config\n";
+		print "datadir - $datadir\n";
+		print "\n";
+	}
+
+	#
+	# Perform initialization steps.
+	#
+	startup();
+
+	#
+	# Check which daemons are running.
+	#
+	updaemons();
+
+	#
+	# Print the queries we're performing.
+	#
+	printqueries();
+
+	#
+	# Find the last query for each nameserver.
+	#
+	lastqueries();
+
+}
+
+#------------------------------------------------------------------------
+# Routine:	doopts()
+#
+sub doopts
+{
+	#
+	# Parse the options.
+	#
+	GetOptions(\%options,@opts) || usage();
+
+	#
+	# Handle a few immediate flags.
+	#
+	version()	if(defined($options{'Version'}));
+	usage(1)	if(defined($options{'help'}));
+	owl_printdefs()	if(defined($options{'defaults'}));
+
+	#
+	# Set our option variables based on the parsed options.
+	#
+	$confdir  = $options{'confdir'}    || $DEF_CONFDIR;
+	$config	  = $options{'config'}     || $DEF_CONFIG;
+	$datadir  = $options{'datadir'};
+	$verbose  = $options{'verbose'};
+
+	#
+	# Set the flags for our extended checks.
+	#
+	$qflag = $options{'queries'};
+	$lflag = $options{'last'};
+	if(defined($options{'all'}))
+	{
+		$qflag = 1;
+		$lflag = 1;
+	}
+
+	#
+	# Moosh together a few variables to build the config file.
+	#
+	$config = "$confdir/$config" if($config !~ /\//);
+
+}
+
+#------------------------------------------------------------------------
+# Routine:	startup()
+#
+# Purpose:	Get some configuration data set in our utilities.
+#
+sub startup
+{
+
+	#
+	# Pick up the configuration data.
+	#
+	@nservers = @owlutils::cf_servers;
+	@targets  = @owlutils::cf_targets;
+	@qtypes	  = @owlutils::cf_qtypes;
+
+	$datadir = $owlutils::datadir		if($datadir eq '');
+
+	@intervals = @owlutils::cf_intervals;
+	@timeouts  = @owlutils::cf_timeouts;
+	@rollints  = @owlutils::cf_rollints;
+	@states	   = @owlutils::cf_states;
+
+	$datadir =  "$FindBin::Bin/../data" if(! -e $datadir);
+
+}
+
+#------------------------------------------------------------------------
+# Routine:	updaemons()
+#
+# Purpose:	Check the execution status of the Owl daemons.
+#
+sub updaemons
+{
+	foreach my $ud (sort(keys(%owldaemons)))
+	{
+		my $state;			# Running state of daemon.
+
+		$state = owl_running($ud);
+
+		$owldaemons{$ud} = $state;
+
+		print "$ud:\t" . ($state ? 'running' : 'not running') . "\n";
+
+	}
+
+}
+
+#------------------------------------------------------------------------
+# Routine:	printqueries()
+#
+# Purpose:	Print config info for each defined query.
+#
+sub printqueries
+{
+	return if(! $qflag);
+
+	print "\nqueries:\n";
+	for(my $ind=0; $ind < @nservers; $ind++)
+	{
+		my $ns = $nservers[$ind];
+
+		printf "    $ns:  $targets[$ind]/$qtypes[$ind]\tinterval %d, timeout %d, %s, rollint %d\n",
+				$intervals[$ind],
+				$timeouts[$ind],
+				$rollints[$ind] ? 'active' : 'inactive',
+				$states[$ind];
+	}
+}
+
+#------------------------------------------------------------------------
+# Routine:	lastqueries()
+#
+# Purpose:	Print config info for each defined nameserver.
+#
+#		This is what data filenames look like:
+#			121113.1647,sensor-dc,.,h.root-servers.net,ANYCAST.dns
+#			121113.1647,sensor-sf,.,m.root-servers.net,A.dns
+#
+sub lastqueries
+{
+	return if(! $lflag);
+
+	print "\nlast queries:\n";
+	foreach my $ns (@nservers)
+	{
+		my @files;				# Server's data files.
+		my $lastfn;				# Last data file.
+		my $msg = "no data files for $ns";	# Msg about last query.
+
+		#
+		# Get the last data file for this nameserver.
+		#
+		@files = sort(glob("$datadir/*,$ns,*.dns"));
+		$lastfn = pop(@files);
+
+
+		#
+		# If we found a data file, get its last entry.
+		#
+		if($lastfn)
+		{
+			my $line;			# Last line in file.
+			my @atoms = ();			# Pieces of data.
+
+			#
+			# Get the last entry of the data file and split
+			# it into its pieces.
+			#
+			$line = `tail -1 $lastfn`;
+			@atoms = split / /, $line;
+
+			#
+			# Build a message with the time of the last query.
+			#
+			$msg = localtime($atoms[0]);
+			chomp $msg;
+		}
+
+		printf "\t$ns:  $msg\n";
+
+	}
+
+	print "\n";
+}
+
+#----------------------------------------------------------------------
+# Routine:      version()
+#
+# Purpose:      Print the version number(s) and exit.
+#
+sub version
+{
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+	exit(0);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:      usage()
+#
+sub usage
+{
+	print STDERR "usage:  $0 [options]\n";
+
+	print STDERR "\t\where options are:\n";
+	print STDERR "\t\t-all\n";
+	print STDERR "\t\t-last\n";
+	print STDERR "\t\t-queries\n";
+	print STDERR "\t\t-confdir config-directory\n";
+	print STDERR "\t\t-cd config-directory\n";
+	print STDERR "\t\t-config config-file\n";
+	print STDERR "\t\t-cf config-file\n";
+	print STDERR "\t\t-datadir data-directory\n";
+	print STDERR "\t\t-help\n";
+	print STDERR "\t\t-verbose\n";
+	print STDERR "\t\t-Version\n";
+
+
+	exit(0);
+}
+
+#--------------------------------------------------------------------------
+
+=pod
+
+=head1 NAME
+
+owl-status - times DNS queries
+
+=head1 SYNOPSIS
+
+  owl-status [options]
+
+=head1 DESCRIPTION
+
+B<owl-status> reports the status of the Owl sensor.  The following things
+can be printed:
+
+    - running/not running status of the Owl sensor daemons (always given)
+    - parameters for the defined queries
+    - time of last query for the nameservers
+
+If neither the I<-all>, I<-last>, or I<-queries> options are given, then
+only the "running/not running" status will be given.
+
+=head1 OPTIONS
+
+=over 4
+
+=item B<-all>
+
+Specifies that all checks will be run.  If this is not given, then only the
+running/not running checks will be made.
+
+=item B<-confdir config-directory>
+
+=item B<-cd config-directory>
+
+Specifies the directory that holds the B<owl-dnstimer> configuration file.  If
+this is not given, then the default B<conf> name will be used.  If this is a
+relative path, it will be relative from the point of execution.
+
+The B<owl-dnstimer.pid> file is stored in this directory.
+
+=item B<-config config-file>
+
+=item B<-cf config-file>
+
+Specifies the Owl sensor configuration file.
+given, then the default B<owl.conf> name will be used.
+
+=item B<-datadir data-directory>
+
+Specifies the directory that will hold the Owl sensor data files.  If this is
+not given, then the default B<data> name will be used.  If this is a relative
+path, it will be relative from the point of execution.  If this directory
+doesn't exist, it will be created.
+
+=item B<-last>
+
+Specifies that the last-query checks will be run.
+
+=item B<-queries>
+
+Specifies that the defined-query checks will be run.
+
+=item B<-help>
+
+Prints a help message.
+
+=item B<-verbose>
+
+Prints verbose output.
+
+=item B<-Version>
+
+Prints B<owl-status>' version and exit.
+
+=back
+
+=head1 SEE ALSO
+
+owl-dnstimer(1),
+owl-sensord(1)
+
+owl-config(5),
+owl-data(5)
+
+=head1 COPYRIGHT
+
+Copyright 2012 SPARTA, Inc.  All rights reserved.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@tislabs.com
+
+=cut
+

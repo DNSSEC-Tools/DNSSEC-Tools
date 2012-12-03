@@ -1,0 +1,893 @@
+#!/usr/bin/perl
+#
+# Copyright 2012 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details.
+#
+# owl-sensord						Owl Monitoring System
+#
+#       This script is the driver for running timing tests for DNS lookups.
+#
+# Revision History:
+#	1.0	121201	Initial version.
+#
+
+use strict;
+
+use FindBin;
+use POSIX qw(setsid SIGHUP);
+
+use lib "$FindBin::Bin/../perllib";
+use owlutils;
+
+use Log::Dispatch;
+use Log::Dispatch::FileRotate;
+
+use Date::Format;
+use Getopt::Long qw(:config no_ignore_case_always);
+
+#
+# Version information.
+#
+my $NAME   = "owl-sensord";
+my $VERS   = "$NAME version: 1.0";
+my $DTVERS = "DNSSEC-Tools version: 1.14";
+
+#------------------------------------------------------------------------
+# Defaults and some constants.
+
+my $NSBASE = 'root-servers.net';		# Base name for root servers.
+
+my $DEF_CONFIG	= $owlutils::DEF_CONFIG;	# Default config file nodename.
+my $DEF_CONFDIR	= $owlutils::DEF_CONFDIR;	# Default config directory.
+my $DEF_DATADIR	= $owlutils::DEF_DATADIR;	# Default data directory.
+my $DEF_LOGDIR	= $owlutils::DEF_LOGDIR;	# Default log directory.
+
+my $PIDFILE	= "$NAME.pid";			# Filename of process-id file.
+
+my $DEF_HEARTBEAT = 1;				# Default heartbeat in minutes.
+
+#------------------------------------------------------------------------
+
+#
+# Data required for command line options.
+#
+my %options = ();                       # Filled option array.
+my @opts =
+(
+	'confdir=s',		# Specify config directory.
+	'config=s',		# Specify config file.
+	'logdir=s',		# Specify log directory.
+	'heartbeat=i',		# Specify heartbeat something.
+
+	'hesitation=i',		# Sleep time between executions.
+	'hibernation=i',	# Sleep time for minion execution problems.
+	'quickcount=i',		# Consecutive quick executions before pausing.
+	'quickseconds=i',	# Seconds that make a quick execution.
+
+	'foreground|fg',	# Run in foreground.
+	'restart',		# Restart daemons.
+	'stop',			# Stop execution.
+
+	'help',			# Give help message.
+	'Version',		# Give version info.
+	'verbose',		# Give verbose output.
+);
+
+my $verbose = 0;		# Verbose flag.
+my $confdir;			# Config directory.
+my $config;			# Config file.
+my $foreground;			# Foreground-execution flag.
+my $logdir;			# Log directory.
+my $stopper;			# Stop-execution flag.
+
+my $ahes;			# Sleep time between executions.
+my $ahib;			# Sleep time for minion execution problems.
+my $aqc;			# Consecutive quick executions before pausing.
+my $aqs;			# Seconds that make a quick execution.
+
+#------------------------------------------------------------------------
+#
+# Defaults and values for preventing runaway executions.
+#
+
+my $DEF_HESITATION = 2;		# Sleep time between executions.
+
+my $DEF_HIBERNATION = 5 * 60;	# Sleep time for minion execution problems.
+
+my $DEF_QUICKCOUNT = 5;		# Number of consecutive quick executions
+				# before we hibernate for a bit.
+
+my $DEF_QUICKSECONDS = 20;	# Number of seconds that make a quick execution.
+
+my $hesitation;			# Sleep time between executions.
+my $hibernation;		# Sleep time for minion execution problems.
+my $quickcount;			# Consecutive quick executions before pausing.
+my $quickseconds;		# Seconds that make a quick execution.
+
+#------------------------------------------------------------------------
+
+my $slog;			# Sensor's log object.
+my %loginfo = ();		# Logging information.
+
+my $pidfile;			# Name of process-id file.
+
+my %chronos = ();		# Start times of children.
+my %children = ();		# Commands run for children.
+my %quickies = ();		# Commands running to quickly.
+
+#------------------------------------------------------------------------
+
+main();
+exit(0);
+
+#------------------------------------------------------------------------
+# Routine:	main()
+#
+sub main
+{
+
+	#
+	# Check our options.
+	#
+	doopts();
+
+	#
+	# Perform initialization steps.
+	#
+	startup();
+
+	#
+	# Write a starting-up log message.
+	#
+	logger("starting owl-sensord",0);
+
+	#
+	# And now we'll run our subdaemons.
+	#
+	runner();
+
+}
+
+#------------------------------------------------------------------------
+# Routine:	doopts()
+#
+sub doopts
+{
+	#
+	# Parse the options.
+	#
+	GetOptions(\%options,@opts) || usage();
+
+	#
+	# Handle a few immediate flags.
+	#
+	version()   if(defined($options{'Version'}));
+	usage(1)    if(defined($options{'help'}));
+
+	#
+	# Set our option variables based on the parsed options.
+	#
+	$confdir    = $options{'confdir'}    || $DEF_CONFDIR;
+	$config	    = $options{'config'}     || $DEF_CONFIG;
+	$logdir	    = $options{'logdir'}     || $DEF_LOGDIR;
+	$foreground = $options{'foreground'} || 0;
+	$stopper    = $options{'stop'}       || 0;
+	$verbose    = $options{'verbose'};
+
+	#
+	# Get values for fast-execution throttling.
+	#
+	$ahes = $options{'hesitation'};
+	$ahib = $options{'hibernation'};
+	$aqc  = $options{'quickcount'};
+	$aqs  = $options{'quickseconds'};
+
+	#
+	# Moosh together a few variables to build the config file name.
+	#
+	$config = "$confdir/$config" if($config !~ /\//);
+}
+
+#------------------------------------------------------------------------
+# Routine:	startup()
+#
+sub startup
+{
+	my $hostname = `hostname`;			# Sensor's hostname.
+
+	#
+	# Set up the Owl environment.
+	#
+	if(owl_readconfig($config,(),$logdir) != 0)
+	{
+		exit(2);
+	}
+	owl_setup($NAME,$confdir,(),$logdir);
+	$confdir = setparam('confdir',$confdir,$owlutils::confdir,$DEF_CONFDIR);
+	$logdir  = setparam('logdir',$logdir,$owlutils::logdir,$DEF_LOGDIR);
+	exit(1) if(owl_chkdir('data', $owlutils::datadir) == 1);
+	exit(1) if(owl_chkdir('log', $owlutils::logdir) == 1);
+
+	#
+	# Set up our signal handlers.
+	#
+	sigurd();
+
+	#
+	# Set up our log file.
+	#
+	$slog = owl_setlog('owl-sensord',$logdir);
+
+	#
+	# Clean up if the -stop flag was given.
+	#
+	halter() if($stopper);
+
+	#
+	# Make sure we're the only owl-sensord running.  We'll also allow a
+	# user to signal the other owl-sensord to shut down.
+	#
+	if((my $pid = running()) != 0)
+	{
+		#
+		# If the user wants to shutdown the other owl-sensord, we'll
+		# send it SIGHUP.  If not, we'll complain and exit.
+		#
+		if($stopper)
+		{
+			print "halting $NAME (pid $pid)\n";
+			if(kill(SIGHUP,$pid) == 0)
+			{
+				print "unable to send interrupt to shutdown $NAME (pid $pid)\n";
+				exit(3);
+			}
+			print "$NAME halted\n";
+
+			exit(0);
+		}
+		else
+		{
+			logger("$NAME already running",1);
+			exit(2);
+		}
+	}
+	else
+	{
+		#
+		# Complain if the user wanted to halt a non-running owl-sensord.
+		#
+		if($stopper)
+		{
+			print STDERR "no other $NAME process is running\n";
+			exit(3);
+		}
+
+		logger("-" x 36,0);
+		logger("$NAME starting",0);
+	}
+
+	#
+	# Daemonize ourself.
+	#
+	exit(0) if((! $foreground) && fork());
+	POSIX::setsid();
+	owl_writepid();
+	
+	#
+	# Set the fast-execution parameters, mixing in the defaults, the
+	# config file values, and the command line arguments.
+	#
+	$hesitation   = setparam('hesitation',$ahes,$owlutils::hesitation,$DEF_HESITATION);
+	$hibernation  = setparam('hibernation',$ahib,$owlutils::hibernation,$DEF_HIBERNATION);
+	$quickcount   = setparam('quickcount',$aqc,$owlutils::quickcount,$DEF_QUICKCOUNT);
+	$quickseconds = setparam('quickseconds',$aqs,$owlutils::quickseconds,$DEF_QUICKSECONDS);
+
+}
+
+#------------------------------------------------------------------------
+# Routine:	setparam()
+#
+# Purpose:	Figure out the value of a particular parameter, depending on
+#		whether it was given as a command-line option or a config file
+#		value.  It may be a default if none of the others was given.
+#		The precedence (greatest to least) is:
+#			command-line argument
+#			configuration-file value
+#			default
+#
+sub setparam
+{
+	my $str  = shift;			# Descriptive string.
+	my $arg  = shift;			# Command line argument.
+	my $cval = shift;			# Configuration file value.
+	my $dval = shift;			# Default value.
+	my $val;				# Value to use.
+
+	$val = $dval;
+	$val = $cval if(defined($cval));
+	$val = $arg  if(defined($arg));
+
+	#
+	# Ensure positive values for our numeric throttlers.
+	#
+	if(($val =~ /^[0-9\-]+$/) && ($val < 1))
+	{
+		print STDERR "$str value ($val) must be positive\n";
+		exit(1);
+	}
+
+	return($val);
+}
+
+#------------------------------------------------------------------------
+# Routine:	running()
+#
+# Purpose:	Check if another instance of owl-sensord is running.  If so,
+#		we'll return the pid of that instance.  If not, return zero.
+#		We check the running status by sending it signal 0.
+#
+sub running
+{
+	my $opid;			# Process id in file.
+
+	#
+	# Set the name of the pidfile we'll be using.
+	#
+	$pidfile = "$confdir/$PIDFILE";
+
+	#
+	# If the pidfile doesn't exist, we'll assume we aren't running already.
+	#
+	return(0) if(! -e $pidfile);
+
+	#
+	# Ensure the pidfile is readable.
+	#
+	if(! -r $pidfile)
+	{
+		print STDERR "$NAME:  pidfile $pidfile is not readable; exiting\n";
+		exit(4);
+	}
+
+	#
+	# Get the pid from the pidfile.
+	#
+	$opid = `cat $pidfile`;
+	chomp $opid;
+
+	#
+	# If the pidfile exists, we'll check try to send it a signal to
+	# see if it's still alive.  If the pid is an active process, we'll
+	# return the process' id.  Otherwise, we'll return 0.
+	#
+	return($opid) if(kill(0,$opid) == 1);
+	return(0);
+}
+
+#------------------------------------------------------------------------
+# Routine:	runner()
+#
+# Purpose:	Start the owl-dnstimer and owl-transfer daemons running.
+#
+sub runner
+{
+	my $dnstimerargs;			# Arguments for sensor.
+	my $xferargs;				# Arguments for transfer.
+	my $devnull = '> /dev/null 2>&1';	# /dev/null redirect.
+
+	#
+	# Get the commands to execute for the sensor and transfer daemons.
+	#
+	$dnstimerargs = $owlutils::dnstimerargs;
+	$xferargs     = $owlutils::transferargs;
+
+	if($verbose)
+	{
+		logger("sensor command:    owl-dnstimer $dnstimerargs",1);
+		logger("transfer command:  owl-transfer $xferargs",1);
+
+		$devnull = '';
+	}
+
+	#
+	# Make sure the sensor and transfer daemons aren't running.
+	#
+	vprint("$NAME:  stopping sensor and transfer daemon (if they're running)\n");
+	system("owl-dnstimer $dnstimerargs -stop $devnull");
+	system("owl-transfer $xferargs -stop $devnull");
+
+	#
+	# Make sure the sensor and transfer daemons are running.
+	#
+	vprint("$NAME:  starting sensor daemon\n");
+	runcmd("owl-dnstimer -confdir $confdir -logdir $logdir $dnstimerargs -foreground $devnull");
+	vprint("$NAME:  starting transfer daemon\n");
+	runcmd("owl-transfer $xferargs -foreground $devnull");
+
+	#
+	# Wait forever while children run.  If one dies, we'll restart
+	# it -- if it hasn't been started too quickly too many times.
+	# In that case, we'll wait a bit in hopes it's a transient problem.
+	#
+	while((my $pid = wait()))
+	{
+		my $cmd;			# Command's name.
+		my $endtime = time;		# Time execution stopped.
+		my $elapsed;			# Elapsed execution time.
+
+		#
+		# If owl-sensord has no children, then something odd has
+		# happened.  We'll complain and go away.
+		#
+		if($pid == -1)
+		{
+			logger("$NAME:  no child processes exist???",1);
+			logger("$NAME:  exiting...",1);
+
+			cleanup();
+			exit(3);
+		}
+
+		#
+		# Complain if we're informed of a child that we don't know
+		# about.
+		# (Soap opera plot #2.)
+		#
+		if(!defined($children{$pid}))
+		{
+			logger("unknown child died - $pid",1);
+			next;
+		}
+
+		#
+		# Figure out which child has died.
+		#
+		$children{$pid} =~ /^(\S+)\s/;
+		$cmd = ($1 =~ /owl-dnstimer/) ? 'owl-dnstimer' : 'owl-transfer';
+
+		#
+		# Calculate how long this process was running.  If it's
+		# been running too short a time, we'll make sure it isn't
+		# flailing around.  If it isn't flailing, we'll restart it.
+		#
+		$elapsed = $endtime - $chronos{$pid};
+		if($elapsed < $quickseconds)
+		{
+			#
+			# Bump the quick-execution count for this server.
+			#
+			$quickies{$cmd}++;
+
+			#
+			# We've had too many consecutive quick executions for
+			# this daemon, so we'll whine and then sleep for a bit.
+			#
+			if($quickies{$cmd} >= $quickcount)
+			{
+				senderr($cmd);
+				hibernate($cmd);
+			}
+		}
+
+		#
+		# Make sure the sensor and transfer daemons are running.
+		#
+		if($cmd eq 'owl-dnstimer')
+		{
+			logger("restarting sensor daemon",1);
+			runcmd("owl-dnstimer -confdir $confdir -logdir $logdir $dnstimerargs -foreground $devnull");
+			logger("sensor daemon restarted",0);
+		}
+		else
+		{
+			logger("restarting transfer daemon",1);
+			runcmd("owl-transfer $xferargs -foreground $devnull");
+			logger("transfer daemon restarted",0);
+		}
+
+		#
+		# Get rid of this child's entries from the lists.
+		#
+		delete $chronos{$pid};
+		delete $children{$pid};
+		delete $quickies{$pid};
+
+		vprint("$NAME:  waiting for children...\n");
+	}
+
+	#
+	# Shouldn't get here...
+	#
+	print STDERR "$NAME:  no children running; exiting\n";
+	exit(4);
+}
+
+#------------------------------------------------------------------------
+# Routine:	runcmd()
+#
+sub runcmd
+{
+	my $cmd = shift;			# Command to execute.
+
+	my $pid;				# Process id of command.
+	my $start;				# Command's start time.
+
+	#
+	# Save the execution time and run the command.
+	#
+	$start = time + $hesitation;
+
+	#
+	# Run the command in a child process.  We'll wait a few seconds
+	# before starting to give owl-sensord time to set up things.
+	#
+	if(($pid = fork()) == 0)
+	{
+		sleep($hesitation);
+		close(STDOUT);
+		close(STDERR);
+
+# logger("child running \"$cmd\"",0);
+		exec $cmd;
+
+		logger("\"$cmd\" failed:  ret - $?",1);
+		exit(1);
+	}
+
+	$chronos{$pid} = $start;
+	$children{$pid} = $cmd;
+}
+
+#------------------------------------------------------------------------
+# Routine:	senderr()
+#
+sub senderr
+{
+	my $cmd = shift;		# Command that's causing problems.
+	my $admins;
+
+	#
+	# Get the administrative contact.
+	#
+	$admins = $owlutils::admins;
+
+	#
+	# Collapse multiple consecutive blanks into a single blank.
+	# Also, we'll ensure an admin was given.
+	#
+	$admins =~ s/\s+/ /g;
+	$admins = 'root' if(($admins eq '') || ($admins eq ' '));
+
+	#
+	# Send the warning message to the admin.
+	#
+	open(ERRMAIL, "|mail -s \"Owl: runaway $cmd\" $admins");
+	print ERRMAIL "\n$NAME:  $cmd is exec\'ing too quickly\n";
+	close(ERRMAIL);
+
+# print "\n\n$NAME:  $cmd running too quickly!!!\n\n\n";
+# print "$NAME:  sending warning to <$admins>\n\n";
+# print "msg - <echo $NAME:  $cmd is exec\'ing too quickly>\n\n";
+# print "cmd - <|mail -s \"Owl: runaway $cmd\" $admins>\n\n";
+
+}
+
+#------------------------------------------------------------------------
+# Routine:	hibernate()
+#
+sub hibernate
+{
+	my $cmd = shift;		# Command that's causing problems.
+
+	logger("hibernate:  $NAME hibernating for $hibernation seconds",0);
+	sleep($hibernation);
+	$quickies{$cmd} = 0;
+}
+
+#------------------------------------------------------------------------
+# Routine:	writepid()
+#
+# Purpose:	Write the pidfile.  Complain and exit if we can't write it.
+#
+sub writepid
+{
+	my $pid = $$;				# Process id.
+
+	if(open(PIDFILE,"> $pidfile") == 0)
+	{
+		print STDERR "$NAME:  unable to create $pidfile - $!; exiting\n";
+		exit(4);
+	}
+
+	print PIDFILE "$pid\n";
+	close(PIDFILE);
+
+	return(0);
+}
+
+#------------------------------------------------------------------------
+# Routine:	sigurd()
+#
+# Purpose:	Set up signal handlers.
+#
+sub sigurd
+{
+	$SIG{HUP}  = \&cleanup;
+	$SIG{INT}  = \&cleanup;
+	$SIG{QUIT} = \&cleanup;
+	$SIG{TERM} = \&cleanup;
+
+	$SIG{USR1} = 'IGNORE';
+	$SIG{USR2} = 'IGNORE';
+}
+
+#------------------------------------------------------------------------
+# Routine:	halter()
+#
+# Purpose:	Tell the actual owl-sensord to close up shop.
+#
+sub halter
+{
+	my $pid;				# owl-sensord's pid.
+	my $tries;				# Friendly signal attempts.
+
+	#
+	# Get the process id of the running owl-sensord.
+	#
+	$pid = owl_getpid();
+	exit(0) if($pid < 0);
+
+	#
+	# We'll give five tries to cleanly shutdown owl-sensord.
+	# We'll sleep four seconds between attempts, as that's roughly
+	# how long it takes owl-sensord to shut down its minions.
+	#
+	for($tries=0; $tries < 5; $tries++)
+	{
+		last if(kill(1,$pid) == 0);
+
+		sleep(4);
+	}
+
+	#
+	# If we can't shutdown owl-sensord in five attempts, we'll be
+	# more forceful about it.
+	#
+	if($tries == 5)
+	{
+		kill(9,$pid);
+		kill(9,$pid);
+		kill(9,$pid);
+	}
+
+	#
+	# We'll also ensure the owl-sensord pidfile is gone.
+	#
+	unlink($pidfile) if($pidfile ne '');
+
+	exit(0);
+}
+
+#------------------------------------------------------------------------
+# Routine:	cleanup()
+#
+# Purpose:	Close down our daemons and zap our pidfile.
+#
+sub cleanup
+{
+	my $pid;				# Various process ids.
+
+	logger("shutting down...",1);
+
+	#
+	# We're closing down, so we'll ignore death-of-child signals.
+	#
+ 	$SIG{HUP}  = 'IGNORE';
+ 	$SIG{CHLD} = 'IGNORE';
+
+	logger("    stopping owl_dnstimer",1);
+	owl_halt('owl-dnstimer');
+
+	logger("    stopping owl_transfer",1);
+	owl_halt('owl-transfer');
+
+	#
+	# Tell our children to shut down.
+	#
+	foreach $pid (keys(%children))
+	{
+		kill(SIGHUP,$pid);
+	}
+
+	#
+	# Remove the process-id file.
+	#
+	if($pidfile ne '')
+	{
+		vprint("$NAME:  unlinking pidfile \"$pidfile\"\n");
+		unlink($pidfile);
+	}
+
+	#
+	# Wait a moment for the final log messages to be written.
+	#
+	print "$NAME halted\n" if($stopper);
+	exit(0);
+}
+
+#--------------------------------------------------------------------------
+# Routine:	logger()
+#
+sub logger
+{
+	my $str = shift;
+	my $outflag = shift;
+
+	$slog->warning($str);
+	vprint("$NAME:  $str") if($outflag);
+}
+
+#--------------------------------------------------------------------------
+# Routine:	vprint()
+#
+sub vprint
+{
+	my $str = shift;
+
+	print "$str" if($verbose);
+}
+
+#----------------------------------------------------------------------
+# Routine:      version()
+#
+# Purpose:      Print the version number(s) and exit.
+#
+sub version
+{
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+	exit(0);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:      usage()
+#
+sub usage
+{
+	print STDERR "usage:  $0 [options]\n";
+
+	print "options:\n";
+	print "\t-confdir <z>             Specify config directory.\n";
+	print "\t-config <z>              Specify config file.\n";
+	print "\t-foreground              Run in foreground.\n";
+	print "\t-heartbeat <z>           Specify heartbeat something.\n";
+	print "\t-hesitation <time>       Sleep time between executions.\n";
+	print "\t-hibernation <time>      Sleep time for minion execution problems.\n";
+	print "\t-logdir <z>              Specify log directory.\n";
+	print "\t-quickcount <count>      Consecutive quick executions before pausing.\n";
+	print "\t-quickseconds <count>    Seconds that make a quick execution.\n";
+	print "\t-restart                 Restart daemons.\n";
+	print "\t-stop                    Stop execution.\n";
+	print "\n";
+
+	print "\t-help                    Give help message.\n";
+	print "\t-Version                 Give version info.\n";
+	print "\t-verbose                 Give verbose output.\n";
+
+	exit(0);
+}
+
+#--------------------------------------------------------------------------
+
+=pod
+
+=head1 NAME
+
+owl-sensord - Oversees the Owl Monitoring System's daemons 
+
+=head1 SYNOPSIS
+
+  owl-sensord [options] <config file>
+
+=head1 DESCRIPTION
+
+B<owl-sensord> oversees Owl Monitoring Systems' daemons, B<owl-dnstimer> and
+B<owl-transfer>.  If one stops executing, then B<owl-sensord> will restart it. 
+
+In an effort to keep the sensor running, B<owl-sensord> will restart
+B<owl-dnstimer> and B<owl-transfer> if it finds they aren't executing.  
+If a particular daemon stops and restarts too quickly too many times, then
+B<owl-sensord> will assume that it's having a problem and temporarily stops
+restarting it.  The administrator will be informed of the problem.
+
+There are four values that control B<owl-sensord>'s behavior when it comes
+to restarting its children.  These are:
+
+    hesitation      sleep time in seconds between executions of owl-dnstimer
+		    or owl-transfer
+    hibernation     sleep time if owl-dnstimer or owl-transfer is executing
+		    too frequently
+    quickcount      number of consecutive fast executions of owl-dnstimer
+		    or owl-transfer before a hibernation occurs
+    quickseconds    number of seconds that define a fast execution
+
+These can be specified in the Owl configuration file or as command line
+options.
+
+=head1 OPTIONS
+
+=over 4
+
+=item B<-foreground>
+
+=item B<-fg>
+
+B<owl-sensord> will run as a foreground process if either of these options is
+given.  Otherwise, it will run as a daemon.
+
+=item B<-hesitation>
+
+The number of seconds between executions of B<owl-dnstimer> or B<owl-transfer>,
+when restarted by B<owl-sensord>.
+The default value is two seconds.
+
+=item B<-hibernation>
+
+The number of seconds to wait before restarting B<owl-dnstimer> or
+B<owl-transfer> when one of them has been restarting too quickly.
+The default value is 300 seconds (five minutes.)
+
+=item B<-logdir log-directory>
+
+Specifies the directory that will hold the B<owl-sensord> log files.  If
+this is not given, then the default B<log> name will be used.  If this is
+a relative path, it will be relative from the point of execution.  If this
+directory doesn't exist, it will be created.
+
+=item B<-quickcount>
+
+The number of consecutive fast executions of B<owl-dnstimer> or B<owl-transfer>
+that may occur before B<owl-sensord> decides to suspend restarts.
+The default value is 5.
+
+=item B<-quickseconds>
+
+The number of seconds (from start to exit) that defines a fast execution of
+B<owl-dnstimer> or B<owl-transfer>.
+The default value is 20 seconds.
+
+=item B<-stop>
+
+Stops the execution of an existing B<owl-sensord> process.
+
+=item B<-help>
+
+Prints a help message.
+
+=item B<-verbose>
+
+Prints verbose output.
+
+=item B<-Version>
+
+Prints B<owl-sensord>'s version and exit.
+
+=back
+
+=head1 SEE ALSO
+
+B<owl-dnstimer(1)>,
+B<owl-transfer(1)>
+
+B<owl-config(5)>
+
+=head1 COPYRIGHT
+
+Copyright 2012 SPARTA, Inc.  All rights reserved.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@tislabs.com
+
+=cut
+

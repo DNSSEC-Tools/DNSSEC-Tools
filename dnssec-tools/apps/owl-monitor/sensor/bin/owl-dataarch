@@ -1,0 +1,619 @@
+#!/usr/bin/perl
+#
+# Copyright 2012 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details.
+#
+# owl-dataarch						Owl Monitoring System
+#
+#       This script archives old sensor data.
+#	It is a modified version of the dataarch command.
+#
+# Revision History
+#	1.0	121201	Initial version.
+#			This was adapted from the dataarch script from
+#			the original UEM system.
+#
+
+use strict;
+
+use FindBin;
+
+use lib "$FindBin::Bin/../perllib";
+use owlutils;
+
+use Cwd;
+use Getopt::Long qw(:config no_ignore_case_always);
+use Time::Local;
+
+#######################################################################
+#
+# Version information.
+#
+my $NAME   = "owl-dataarch";
+my $VERS   = "$NAME version: 1.0";
+my $DTVERS = "DNSSEC-Tools version: 1.14";
+
+###################################################
+
+#
+# Data required for command line options.
+#
+my %options = ();			# Filled option array.
+my @opts =
+(
+	"archdir=s",			# Top-level archive directory.
+	"config=s",			# Configuration file.
+	"datadir=s",			# Top-level data directory.
+
+	"verbose",			# Verbose output.
+	"Version",			# Version output.
+	"help",				# Give a usage message and exit.
+);
+
+#
+# Flag values for the various options.  Variable/option connection should
+# be obvious.
+#
+my $verbose	= 0;				# Display verbose output.
+
+###################################################
+
+#
+# Constants and variables for various directories and files.
+#
+my $DEF_ARCHDIR	 = $owlutils::DEF_ARCHDIR;	# Default archive config dir.
+my $DEF_CONFIG	 = $owlutils::DEF_CONFIG;	# Default config file nodename.
+my $DEF_CONFDIR	 = $owlutils::DEF_CONFDIR;	# Default config directory.
+my $DEF_DATADIR	 = $owlutils::DEF_DATADIR;	# Default data directory.
+my $DEF_LOGDIR	 = $owlutils::DEF_LOGDIR;	# Default log directory.
+
+
+my $MV = "/bin/mv";
+
+my $curdir;					# Current directory.
+my $archdir  = $DEF_ARCHDIR;			# Archive directory.
+my $basedir  = ".";				# Base directory we'll look in.
+my $confdir  = $DEF_CONFDIR;			# Configuration directory.
+my $conffile = "$DEF_CONFDIR/$DEF_CONFIG";	# Default config file path.
+my $datadir  = '';				# Top-level data directory.
+
+###################################################
+
+my @actions = ();				# Archive actions to take.
+
+my $errs = 0;					# Error count.
+
+#######################################################################
+
+main();
+exit(0);
+
+#--------------------------------------------------------------------------
+# Routine:	main()
+#
+sub main
+{
+	my @keepdate;				# Earliest date we'll keep.
+
+	$| = 0;
+
+	#
+	# A little directory wiggling.
+	#
+	$curdir = getcwd();
+	$basedir = $curdir if($basedir eq ".");
+
+	#
+	# Check our options and read the configuration file.
+	#
+	doopts();
+	owl_setup($NAME,$confdir,$datadir,undef);
+	if(owl_readconfig($conffile,$datadir,'') != 0)
+	{
+		exit(2);
+	}
+
+	#
+	# And we'll do a bit more setup().
+	#
+	setup();
+
+	if($verbose)
+	{
+		print "configuration parameters:\n";
+		print "\tcurrent directory      \"$curdir\"\n";
+		print "\tconfiguration file     \"$conffile\"\n";
+		print "\tarchive directory      \"$archdir\"\n";
+		print "\tdata directory         \"$datadir\"\n";
+		print "\n";
+	}
+
+	#
+	# Get the earliest date for files to keep.
+	#
+	@keepdate = getkeepdate();
+
+	#
+	# Archive the specified data files.
+	#
+	archer(@keepdate);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	doopts()
+#
+# Purpose:	This routine shakes and bakes our command line options.
+#
+sub doopts
+{
+	#
+	# Parse the options.
+	#
+	GetOptions(\%options,@opts) || usage();
+
+	#
+	# Handle a few immediate flags.
+	#
+	version() if(defined($options{'Version'}));
+	usage(1)  if(defined($options{'help'}));
+
+	#
+	# Set our option variables based on the parsed options.
+	#
+	$verbose  = $options{'verbose'};
+	$conffile = $options{'config'} if(defined($options{'config'}));
+	$archdir  = $options{'archdir'};
+	$datadir  = $options{'datadir'};
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	setup()
+#
+# Purpose:	This routine completes our initialization.
+#
+sub setup
+{
+	#
+	# Get the directory names.
+	#
+	$archdir = $owlutils::archdir;
+	$archdir = $DEF_ARCHDIR	 if($archdir eq '');
+
+	$datadir = $owlutils::datadir;
+	$datadir = $DEF_DATADIR	 if($datadir eq '');
+
+	#
+	# Ensure the directories exist.
+	#
+	$archdir = dodir('archive',$archdir,1);
+	$datadir = dodir('data',$datadir,0);
+
+	#
+	# Don't proceed on errors.
+	#
+	if($errs)
+	{
+		my $sfx = ($errs != 1) ? 's' : '';	# Pluralization suffix.
+
+		print "$NAME:  $errs error$sfx found during initialization; halting...\n";
+		exit(1);
+	}
+
+	#
+	# Ensure several directories are absolute paths.
+	#
+	$archdir = "$curdir/$archdir" if($archdir !~ /^\//);
+	$datadir = "$curdir/$datadir" if($datadir !~ /^\//);
+}
+
+#--------------------------------------------------------------------------
+# Routine:	dodir()
+#
+# Purpose:	This routine ensures that the given directory exists.
+#
+sub dodir
+{
+	my $dirstr  = shift;			# Directory explanation.
+	my $dir	    = shift;			# Directory to glob-n-check.
+	my $mkflag  = shift;			# Make-directory flag.
+
+	if($dir eq '')
+	{
+		print STDERR "no name given for $dirstr directory\n";
+		$errs++;
+		return;
+	}
+
+	#
+	# Add the base directory if this isn't an absolute path.
+	# We'll also handle a special case so we don't add the base
+	# directory multiple times.
+	#
+	if($dir !~ /^\//)
+	{
+		if($dir =~ /^\.\//)
+		{
+			$dir =~ s/^../$curdir/;
+		}
+
+		if(($basedir ne ".") || ($dir !~ /^\.\//))
+		{
+			$dir = glob("$basedir/$dir");
+		}
+	}
+
+	#
+	# Ensure that the directory exists.  If the make-flag is set, we'll
+	# create the directory and try again.
+	#
+	if(! -e $dir)
+	{
+		#
+		# Make the directory and run the checks again.
+		#
+		if($mkflag)
+		{
+			vprint("creating $dirstr directory $dir\n");
+			mkdir($dir);
+			dodir($dirstr,$dir,0);
+			return($dir);
+		}
+
+
+		print STDERR "$dirstr directory \"$dir\" does not exist\n";
+		$errs++;
+		return($dir);
+	}
+
+	#
+	# Ensure the directory is a directory.
+	#
+	if(! -d $dir)
+	{
+		print STDERR "$dirstr directory $dir is not a directory\n";
+		$errs++;
+		return($dir);
+	}
+
+	#
+	# Return the massaged directory name.
+	#
+	return($dir);
+}
+
+#--------------------------------------------------------------------------
+# Routine:	getkeepdate()
+#
+# Purpose:	This routine returns data indicating midnight of the day
+#		before today.  These data are returned in an array having
+#		this structure:
+#
+#			0	two-digit year (YY)
+#			1	month number (MM)
+#			2	day number in month (DD)
+#			3	YYMMDD.hhmm string  (hhmm are always "0000")
+#			4	seconds since the epoch
+#
+sub getkeepdate
+{
+	my $now;				# Current time.
+	my $midnight;				# Today's midnight.
+	my $yesterday;				# Yesterday's midnight.
+	my @tempus;				# Time fields.
+	my @kdate;				# Date to keep.
+
+	#
+	# Get the time fields for right now.
+	#
+	$now = time;
+	@tempus = localtime($now);
+
+	#
+	# Set the clock back to midnight.
+	#
+	$midnight = timelocal(0, 0, 0, $tempus[3], $tempus[4], $tempus[5]);
+
+	#
+	# Set the clock to yesterday's midnight.
+	#
+	$yesterday = $midnight - (24 * 60 * 60);
+	@tempus = localtime($yesterday);
+
+	#
+	# Build the date structure we're looking for.
+	#
+	$kdate[0] = $tempus[5] - 100;
+	$kdate[1] = $tempus[4] + 1;
+	$kdate[2] = $tempus[3];
+	$kdate[3] = sprintf("%02d%02d%02d.0000",$kdate[0],$kdate[1],$kdate[2]);
+	$kdate[4] = $yesterday;
+
+	#
+	# Return the date fields we're looking for.
+	#
+	return(@kdate);
+}
+
+#--------------------------------------------------------------------------
+# Routine:	archer()
+#
+sub archer
+{
+	my @keepdate = @_;			# Earliest date info.
+	my @files = ();				# Files in data directory.
+	my $lastind;				# Last file in @files to save.
+
+	#
+	# Move into the data directory.
+	#
+	if(chdir($datadir) == 0)
+	{
+		print STDERR "unable to move to directory \"$datadir\"\n";
+		return;
+	}
+
+	#
+	# Get a list of the files in the data directory.
+	#
+	@files = glob("*");
+	@files = sort(@files);
+
+	#
+	# Get the array index of the first file we won't archive.
+	#
+	$lastind = firstfile(\@files,$keepdate[3]);
+
+	if($lastind > 0)
+	{
+		#
+		# Must archive some files.
+		#
+		splice @files, $lastind;
+	}
+	elsif($lastind == 0)
+	{
+		#
+		# No need to archive any files.
+		#
+		@files = ();
+	}
+	elsif($lastind == -1)
+	{
+		#
+		# Must archive all files.
+		#
+	}
+
+	#
+	# Archive the files.
+	#
+	print "archiving $datadir\n";
+	filesaver(\@files);
+
+	#
+	# Return to the starting directory.
+	#
+	chdir($curdir);
+
+}
+
+#--------------------------------------------------------------------------
+# Routine:	firstfile()
+#
+# Purpose:	When given a sorted array of filenames and a timestamp, it
+#		returns the index of the first file that is older than the
+#		timestamp.  The file's age is taken from the filename.
+#
+# Return Values:
+#		 -1	All files are older than the timestamp.
+#		  0	No archive is needed.
+#		>-1	The index of the first file older than the timestamp.
+#
+sub firstfile
+{
+	my $fileref = shift;			# Reference to matching files.
+	my $keepdate = shift;			# First date to keep.
+	my @files;				# List of matching files.
+
+	@files = @$fileref;
+
+	for(my $ind=0; $ind < @files; $ind++)
+	{
+		if(($files[$ind] cmp $keepdate) >= 0)
+		{
+			return($ind);
+		}
+	}
+
+	return(-1);
+}
+
+#--------------------------------------------------------------------------
+# Routine:	filesaver()
+#
+sub filesaver
+{
+	my $fileref = shift;			# Reference to file list.
+	my @files;				# List of files to archive.
+	my $first;				# First file's timestamp.
+	my $last;				# Last file's timestamp.
+
+	#
+	# Get the list of files to archive, and return if the list is empty.
+	#
+	@files = @$fileref;
+	return if(@files == 0);
+
+	#
+	# Get the YYMM timestamps for the first and last files.
+	#
+	$files[0] =~ /^(....)/;
+	$first = $1;
+	$files[-1] =~ /^(....)/;
+	$last = $1;
+
+	#
+	# Make sure all our archive directories exist.
+	#
+	for(my $ind=$first; $ind <= $last; $ind++)
+	{
+		my $datatop = "$archdir/data-$ind";
+
+		vprint("checking data archive $datatop\n");
+		dodir("data archive",$datatop,1);
+	}
+
+	for(my $ind=0; $ind < @files; $ind++)
+	{
+		my $cmd;			# File-mover command.
+		my $fn;				# File to archive.
+		my $yymm;			# Timestamp prefix.
+		my $ddir;			# Destination directory.
+		my $ret;			# Return code.
+
+		#
+		# Get the filename and its timestamp prefix.
+		#
+		$fn = $files[$ind];
+		$fn =~ /^(....)/;
+		$yymm = $1;
+
+		#
+		# Build the destination directory.
+		#
+		$ddir = "$archdir/data-$yymm/";
+		dodir("data archive destination",$ddir,1);
+
+		$cmd = "$MV $fn $ddir";
+		system($cmd);
+		$ret = $?;
+
+		vprint("$cmd\n");
+		if(($ret >> 8) != 0)
+		{
+			print "mv failed\n";
+			exit(1);
+		}
+
+	}
+
+}
+
+#--------------------------------------------------------------------------
+# Routine:	vprint()
+#
+sub vprint
+{
+	my $str = shift;
+
+	print "$str" if($verbose);
+}
+
+#--------------------------------------------------------------------------
+# Routine:	version()
+#
+sub version
+{
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+	exit(0);
+}
+
+#--------------------------------------------------------------------------
+# Routine:	usage()
+#
+sub usage
+{
+	print "owl-dataarch [options[\n";
+	print "\toptions:\n";
+	print "\t\t-archdir directory\n";
+	print "\t\t-datadir directory\n";
+	print "\t\t-config file\n";
+
+	print "\n";
+	print "\t\t-verbose\n";
+	print "\t\t-Version\n";
+	print "\t\t-help\n";
+	exit(0);
+}
+
+###########################################################################
+
+=pod
+
+=head1 NAME
+
+owl-dataarch - Archives Owl sensor data
+
+=head1 SYNOPSIS
+
+  owl-dataarch [options]
+
+=head1 DESCRIPTION
+
+B<owl-dataarch> archives Owl sensor data on an Owl sensor host.  The Owl
+sensor program B<owl-dnswatch> generates a very large number of data files.
+Owl system response time can be negatively impacted if these files are not
+periodically archived.
+
+The Owl sensor configuration file defines the data directory (where data
+files live) and the archive directory (where they will be archived to.)
+The default configuration file is in B<conf/archive.conf>.
+
+The data directory is defined in the I<data dir> configuration entry.
+The archive directory is defined in the I<data archive> configuration entry.
+
+The archived files are moved to a monthly archive directory.  The directory's
+name is based on the year and month in which the data files were created.
+If a data file contains records from two months, such as at the turn of the
+month, all that file's records will be stored with the first month's data.
+In other words, files are maintained as is, and no data-splitting will occur.
+
+=head1 OPTIONS
+
+=over 4
+
+=item B<-archdir>
+
+This option specifies the directory to which sensor data will be archived.
+
+=item B<-config>
+
+This option specifies the configuration file to use.
+
+=item B<-datadir>
+
+This option specifies the directory from which sensor data will be archived.
+
+=item B<-verbose>
+
+This option provides verbose output.
+
+=item B<-Version>
+
+This option provides the version of B<owl-dataarch>.
+
+=item B<-help>
+
+This option displays a help message and exits.
+
+=back
+
+=head1 SEE ALSO
+
+B<owl-archold(1)>,
+B<owl-dnstimer(1)>
+
+B<owl-config(5)>
+
+=head1 COPYRIGHT
+
+Copyright 2012 SPARTA, Inc.  All rights reserved.
+
+=head1 AUTHOR
+
+Wayne Morrison, Wayne.Morrison@sparta.com
+
+=cut
+
