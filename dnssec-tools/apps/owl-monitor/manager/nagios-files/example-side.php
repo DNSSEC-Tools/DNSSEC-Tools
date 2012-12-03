@@ -2,7 +2,7 @@
 <!---------------------------------------------------------------------------->
 
 <div class="navsection">
-<div class="navsectiontitle">UEM Graphs</div>
+<div class="navsectiontitle">OWL Graphs</div>
 <div class="navsectionlinks">
 
 <p>
