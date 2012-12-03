@@ -1,0 +1,283 @@
+#!/usr/bin/perl
+#
+# Copyright 2012 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details.
+#
+# owl-perfdata
+#
+#	This script handles the Nagios perfdata commands for the Owl
+#	Monitoring System.
+#
+# Revision History
+#	1.0	Initial version					10/18/2012
+#		This was adapted from the uem-perfdata plugin
+#		from the original UEM system.
+#
+
+use strict;
+
+use Getopt::Long qw(:config no_ignore_case_always);
+use Fcntl ':flock';
+
+#######################################################################
+#
+# Version information.
+#
+my $NAME   = "owl-perfdata";
+my $VERS   = "$NAME version: 1.14.0";
+my $DTVERS = "DNSSEC-Tools version: 1.14";
+
+#######################################################################
+#
+# Paths and commands.
+#
+
+my $GRAPHINSERT = "/uem/caida/nagiosgraph/bin/insert.pl";
+
+
+######################################################################r
+#
+# Data required for command line options.
+#
+my %options = ();			# Filled option array.
+my @opts =
+(
+	"Version",			# Display the version number.
+	"help",				# Give a usage message and exit.
+);
+
+#######################################################################
+
+my $rc	   = 0;				# Command's return code.
+my $argstr;				# Non-option argument string.
+
+#
+# Run shtuff.
+#
+main();
+exit($rc);
+
+#-----------------------------------------------------------------------------
+# Routine:	main()
+#
+# Purpose:	Main controller routine for owl-perfdata.
+#
+sub main
+{
+	#
+	# Check our options.
+	#
+	doopts();
+
+	#
+	# Write a line of data to Nagios.
+	#
+	svcperf();
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	doopts()
+#
+# Purpose:	This routine shakes and bakes our command line options.
+#
+sub doopts
+{
+	#
+	# Parse the command line.
+	#
+	GetOptions(\%options,@opts) || usage();
+
+	#
+	# Show the version number or usage if requested.
+	#
+	version() if(defined($options{'Version'}));
+	usage()   if(defined($options{'help'}));
+
+	#
+	# Build the argument string from the remaining arguments.
+	#
+	$argstr = join ' ', @ARGV;
+	if(length($argstr) == 0)
+	{
+		print "owl-perfdata:  no data given\n";
+		exit(0);
+	}
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	svcperf()
+#
+# Purpose:	Deal with service-related performance data.
+#		Anycast lines may have multiple pieces of data, each of which
+#		will be inserted separately.
+#		Non-anycast lines will contain a single datum, and will be
+#		inserted as is.
+#
+sub svcperf
+{
+	my $cmd		= '';			# Command to execute.
+	my @perfstr	= ();			# Atomized performance string.
+	my @perflines	= ();			# Data to insert.
+
+	#
+	# If this is an anycast service, then we'll divide the string into
+	# pieces insert them one at a time.
+	# If this is not an anycast service, we'll submit it as is.
+	#
+	if(($argstr =~ /owl-anycaster/) ||
+	   ($argstr =~ /owl-dnswatch/))
+	{
+		my $prefix;				# Data prefix.
+
+		#
+		# Divide the argument into its components, then build
+		# the unvarying prefix string.
+		#
+		@perfstr = split /\|\|/, $argstr;
+		$prefix = "$perfstr[0]||$perfstr[1]||$perfstr[2]||$perfstr[3]";
+
+		#
+		# Divide the performance data into pieces, along lines
+		# of the trailing semi.
+		#
+		@perflines = split /;/, $perfstr[4];
+
+		#
+		# Insert each performance datum separately.
+		#
+		foreach my $pdata (@perflines)
+		{
+			my $perfstr;
+
+			#
+			# Remove any leading blanks.
+			#
+			$pdata =~ s/^[ ]*//;
+
+			#
+			# Build the command with this performance datum.
+			#
+			$perfstr = "$prefix||$pdata";
+			$cmd = "$GRAPHINSERT \'$perfstr\'";
+
+			#
+			# Execute the command string.
+			#
+			system($cmd);
+			$rc = $? >> 8;
+		}
+	}
+	else
+	{
+		#
+		# Build the command string.
+		#
+		$cmd = "$GRAPHINSERT \'$argstr\'";
+
+		#
+		# Execute the command string.
+		#
+		system($cmd);
+		$rc = $? >> 8;
+
+	}
+
+}
+
+# /owl/nagiosgraph/insert.pl "$LASTSERVICECHECK$||$HOSTNAME$||$SERVICEDESC$||$SERVICEOUTPUT$||$SERVICEPERFDATA$"
+
+#----------------------------------------------------------------------
+# Routine:	version()
+#
+sub version
+{
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+	exit(1);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	usage()
+#
+sub usage
+{
+        print STDERR "$VERS
+$DTVERS
+Copyright 2012 SPARTA, Inc.  All rights reserved.
+
+This script handles the Nagios perfdata commands.
+
+usage:  owl-perfdata [options] <performance data>
+	options:
+		-Version	display program version
+		-help		display this message
+
+";
+
+	exit(1);
+}
+
+1;
+
+###############################################################################
+
+=pod
+
+=head1 NAME
+
+owl-perfdata - Front-end to handling Nagios performance data for the Owl Monitor
+
+=head1 SYNOPSIS
+
+  owl-perfdata [options] <performance data>
+
+=head1 DESCRIPTION
+
+B<owl-perfdata> is a front-end for handling Owl performance data by Nagios.
+Performance data are inserted in the Nagiosgraph system to be used for
+graphing results from Owl DNS query data.
+
+=head1 NAGIOS USE
+
+This is run from a Nagios I<command> object.  These are examples of how the
+objects should be defined:
+
+    define command {
+      command_name    perfdata
+      command_line    $USER1$/owl-perfdata "$LASTSERVICECHECK$||$HOSTNAME$||$SERVICEDESC$||$SERVICEOUTPUT$||$SERVICEPERFDATA$"
+
+    }
+
+=head1 OPTIONS
+
+The following options are recognized by B<owl-perfdata>:
+
+=over 4
+
+=item I<-Version>
+
+Display the program version and exit.
+
+=item I<-help>
+
+Display a usage message and exit.
+
+=back
+
+=head1 COPYRIGHT
+
+Copyright 2012 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@users.sourceforge.net
+
+=head1 SEE ALSO
+
+Nagios
+
+=cut
+
