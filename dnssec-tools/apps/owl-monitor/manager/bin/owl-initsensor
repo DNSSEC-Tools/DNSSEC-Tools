@@ -1,0 +1,351 @@
+#!/usr/bin/perl
+#
+# Copyright 2012 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details.
+#
+# owl-initsensor					Owl Monitoring System
+#
+#	This script initializes files and directories for new Owl sensors.
+#	It runs on the Owl manager.
+#
+# Revision History
+#	1.0	121201	Initial version.
+#
+
+use strict;
+
+use Getopt::Long qw(:config no_ignore_case_always);
+use Fcntl ':flock';
+use File::Path;
+
+#######################################################################
+#
+# Version information.
+#
+my $NAME   = "owl-initsensor";
+my $VERS   = "$NAME version: 1.14.0";
+my $DTVERS = "DNSSEC-Tools version: 1.14";
+
+#######################################################################
+
+#
+# Data required for command line options.
+#
+my %options = ();			# Filled option array.
+my @opts =
+(
+	'verbose',			# Display verbose information.
+	'Version',			# Display the version number.
+	'help',				# Give a usage message and exit.
+);
+
+my $verbose = 0;			# Verbose output flag.
+
+#######################################################################
+
+my $archdir = '';			# Directory for archived archives.
+my $datadir = '';			# Directory for archived archives.
+
+main();
+exit(0);
+
+#------------------------------------------------------------------------
+# Routine:	main()
+#
+sub main
+{
+	#
+	# Get our arguments.
+	#
+	argulator();
+
+	#
+	# Build a set of directories and files for each named sensor.
+	#
+	foreach my $sensor (@ARGV)
+	{
+		print "creating sensor $sensor\n";
+		buildsensor($sensor);
+	}
+}
+
+#------------------------------------------------------------------------
+# Routine:	argulator()
+#
+# Purpose:	Get our options and arguments from the command line.
+#		We'll also ensure that the specified data directory
+#		and archive directory already exist.
+#
+sub argulator
+{
+	my $errs = 0;					# Error count.
+
+	#
+	# Parse the command line.
+	#
+	GetOptions(\%options,@opts) || usage();
+
+	#
+	# Show the version number or usage if requested.
+	#
+	version()    if(defined($options{'Version'}));
+	usage()	     if(defined($options{'help'}));
+
+	$verbose = $options{'verbose'};
+
+	#
+	# Ensure we have the necessary command-line arguments.
+	#
+	usage() if(@ARGV < 3);
+
+	#
+	# Pick up the required directories.
+	#
+	$datadir = shift @ARGV;
+	$archdir = shift @ARGV;
+
+	#
+	# Ensure the data directory actually exists.
+	#
+	if(! -e $datadir)
+	{
+		print STDERR "data directory $datadir does not exist\n";
+		$errs++;
+	}
+
+	#
+	# Ensure the archive directory actually exists.
+	#
+	if(! -e $archdir)
+	{
+		print STDERR "archive directory $archdir does not exist\n";
+		$errs++;
+	}
+
+	#
+	# Stop here if either of the directories doesn't exist.
+	#
+	exit(1) if($errs);
+
+}
+
+#------------------------------------------------------------------------
+# Routine:	buildsensor()
+#
+# Purpose:	Create the needed directories and files for a sensor.
+#		These are (and are structured like this):
+#			- sensor directory
+#				- data directory
+#				- heartbeat file
+#				- history directory
+#			- archive directory
+#
+sub buildsensor
+{
+	my $sensor = shift;			# Sensor to build.
+	my $datapath;				# Path to data directory.
+	my $node;				# Node to create.
+
+	#
+	# Get the path to the sensor's data directory and ensure it
+	# doesn't yet exist.
+	#
+	$datapath = "$datadir/$sensor";
+	return if(checksensor($sensor,$datapath) == 0);
+
+	#
+	# Create the sensor directory.
+	#
+	if(mkdir($datapath) == 0)
+	{
+		print STDERR "unable to create data directory $datapath\n";
+		return;
+	}
+	vprint("\t$datapath");
+
+	#
+	# Create the sensor's real data directory.
+	#
+	$node = "$datapath/data";
+	if(mkdir($node) == 0)
+	{
+		print STDERR "unable to create $node\n";
+		return;
+	}
+	chmod(0775,$node);
+	vprint("\t$node");
+
+	#
+	# Create the sensor's history directory.
+	#
+	$node = "$datapath/history";
+	if(mkdir($node) == 0)
+	{
+		print STDERR "unable to create $node\n";
+		return;
+	}
+	chmod(0775,$node);
+	vprint("\t$node");
+
+	#
+	# Create the sensor's heartbeat file.
+	#
+	$node = "$datapath/heartbeat";
+	if(open(ND,"> $node") == 0)
+	{
+		print STDERR "unable to create $node\n";
+		return;
+	}
+	close(ND);
+	chmod(0664,$node);
+	vprint("\t$node");
+
+	#
+	# Create the sensor's archive directory.
+	#
+	$node = "$archdir/$sensor";
+	if(mkdir($node) == 0)
+	{
+		print STDERR "unable to create $node\n";
+		return;
+	}
+	chmod(0775,$node);
+	vprint("\t$node\n");
+
+}
+
+#------------------------------------------------------------------------
+# Routine:	checksensor()
+#
+# Purpose:	Ensures the named sensor's directory is doesn't exist.
+#
+sub checksensor
+{
+	my $sensor = shift;				# Sensor name.
+	my $dir = shift;				# Directory name.
+
+	if(-e $dir)
+	{
+		print STDERR "sensor $sensor already exists\n";
+		return(0);
+	}
+
+	return(1);
+}
+
+#------------------------------------------------------------------------
+# Routine:	vprint()
+#
+sub vprint
+{
+	my $str = shift;				# String to print.
+
+	print "$str\n" if($verbose);
+}
+
+#------------------------------------------------------------------------
+# Routine:	version()
+#
+sub version
+{
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+	exit(0);
+}
+
+#------------------------------------------------------------------------
+# Routine:	usage()
+#
+sub usage
+{
+	print "usage: owl-initsensor [options] <datadir> <archivedir> <sensors>\n";
+	exit(0);
+}
+
+
+###############################################################################
+
+=pod
+
+=head1 NAME
+
+owl-initsensor - Initialize files and directories for new Owl sensors
+
+=head1 SYNOPSIS
+
+  owl-initsensor [options] <datadir> <archivedir> <new-sensors>
+
+=head1 DESCRIPTION
+
+When adding a new Owl sensor to the set of sensors handled by an Owl manager,
+several directories and a file must be created.  These are:
+
+    - sensor directory
+        - data directory
+        - heartbeat file
+        - history directory
+    - archive directory
+
+The data, heartbeat, and history files B<must> have those names.
+They are also organized as given above.
+
+These may be created manually or they may be created by B<owl-initsensor>.
+The sensor directory should be in the Owl data directory and the archive
+directory should be outside of the data directory.
+
+For example, the sensors B<dresden> and B<kvothe> might have the following
+sets of files:
+
+    /owl/data/dresden/
+    /owl/data/dresden/data/
+    /owl/data/dresden/heartbeat
+    /owl/data/dresden/history/
+    /owl/archive/dresden/
+
+    /owl/data/kvothe/
+    /owl/data/kvothe/data/
+    /owl/data/kvothe/heartbeat
+    /owl/data/kvothe/history/
+    /owl/archive/kvothe/
+
+The files and directories in the data directory must be writable by the
+manager's Owl user and the manager's web server.  The archive directory
+must be writable by the Owl user.
+
+=head1 OPTIONS
+
+The following options are recognized by B<owl-initsensor>:
+
+=over 4
+
+=item I<-verbose>
+
+Display verbose information.
+
+=item I<-Version>
+
+Display the program version and exit.
+
+=item I<-help>
+
+Display a usage message and exit.
+
+=back
+
+=head1 COPYRIGHT
+
+Copyright 2012 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@tislabs.com
+
+=head1 SEE ALSO
+
+owl-archdata(1),
+owl-archold(1),
+owl-dataarch-mgr(1),
+owl-monthly(1)
+
+=cut
