@@ -405,22 +405,11 @@ sub makeresolvers
 		#
 		# Build the resolver object.
 		#
-if(1)
-{
 		$res = Net::DNS::Resolver->new(
 						  nameservers => [$nsname],
 						  recurse     => 0,
 						  retry       => 1,
 					      );
-}
-else
-{
-		$res = Net::DNS::Resolver->new(
-						nameservers => ['d.root-servers.net'],
-						recurse     => 1,
-						retry       => 1,
-					      );
-}
 
 		#
 		# Set some resolver fields.
