@@ -17,6 +17,13 @@
 
 use strict;
 
+#
+# Version information.
+#
+my $NAME   = "owl-dnstimer";
+my $VERS   = "$NAME version: 1.14.0";
+my $DTVERS = "DNSSEC-Tools version: 1.14";
+
 use FindBin;
 
 use lib "$FindBin::Bin/../perllib";
@@ -28,7 +35,28 @@ use Net::DNS;
 use Net::DNS::Packet;
 use Net::DNS::Resolver;
 
-use threads;
+#
+# Before including the threads module, we'll make sure we're able to.
+# If we can, we'll be happy campers.
+# If we can't, we'll complain and exit.
+#
+my $runthreaded = 0;				# Flag for running threaded.
+if(eval { require threads } == 1)
+{
+	require threads;
+	$runthreaded = 1;
+}
+else
+{
+	print
+"$NAME:  current version requires threaded Perl.
+               Your version of Perl either doesn't have threads or doesn't
+               have threads.pm installed.
+";
+
+	exit(1);
+
+}
 use threads::shared;
 use Thread::Queue;
 
@@ -38,13 +66,6 @@ use Log::Dispatch::FileRotate;
 use Date::Format;
 use POSIX qw(setsid);
 use Time::HiRes qw(time);
-
-#
-# Version information.
-#
-my $NAME   = "owl-dnstimer";
-my $VERS   = "$NAME version: 1.14.0";
-my $DTVERS = "DNSSEC-Tools version: 1.14";
 
 #------------------------------------------------------------------------
 # Defaults and some constants.
@@ -878,6 +899,9 @@ contacted, as well as how often they are contacted.  B<owl-dnstimer> maintains a
 log file that tracks the status of requests and query status.  B<owl-dnstimer>'s
 configuration and data files, as well as the layout for the environment, are
 described in their own man pages.
+
+This version of B<owl-dnstimer> requires a threaded version of Perl.  It is
+hoped that this restriction will shortly be lifted.
 
 =head2 FILE ORGANIZATION
 
