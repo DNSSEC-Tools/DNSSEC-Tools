@@ -82,6 +82,9 @@ these are detailed in <a href="install-4-adding-sensor.html#4.">section 4</a>.
 
 Both the Owl sensors and the Owl manager <b>require</b> Perl.
 You must install it on your system if it isn't already available.
+If the sensor host's Perl or operating system does not support threading,
+then each query will run in its own process, rather than all queries
+running in their own threads within a single process
 
 <p>
 
