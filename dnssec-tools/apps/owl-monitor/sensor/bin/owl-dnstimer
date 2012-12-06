@@ -5,11 +5,12 @@
 #
 # owl-dnstimer						Owl Monitoring System
 #
-#       This script runs timing tests for DNS lookups.  It starts a thread
-#	for each of a set of queries defined in the Owl configuration file.
-#	Each thread periodically sends a DNS request for a specified host to
-#	a particular nameserver.  The time taken to fulfill the request is
-#	recorded for later transfer to the Owl manager.
+#	This script runs timing tests for DNS lookups.  It starts a query
+#	entity (thread or subprocess) for each of a set of queries defined in
+#	the Owl configuration file.  Each thread periodically sends a DNS
+#	request for a specified host to a particular nameserver.  The time
+#	taken to fulfill the request is recorded for later transfer to the Owl
+#	manager.
 #
 # Revision History:
 #	1.0	121201	Initial version.
@@ -38,9 +39,9 @@ use Net::DNS::Resolver;
 #
 # Before including the threads module, we'll make sure we're able to.
 # If we can, we'll be happy campers.
-# If we can't, we'll complain and exit.
+# If we can't, we'll continue and be forky instead of thready.
 #
-my $runthreaded = 0;				# Flag for running threaded.
+my $runthreaded;				# Flag for running threaded.
 if(eval { require threads } == 1)
 {
 	require threads;
@@ -48,15 +49,9 @@ if(eval { require threads } == 1)
 }
 else
 {
-	print
-"$NAME:  current version requires threaded Perl.
-               Your version of Perl either doesn't have threads or doesn't
-               have threads.pm installed.
-";
-
-	exit(1);
-
+	$runthreaded = 0;
 }
+
 use threads::shared;
 use Thread::Queue;
 
@@ -64,7 +59,7 @@ use Log::Dispatch;
 use Log::Dispatch::FileRotate;
 
 use Date::Format;
-use POSIX qw(setsid);
+use POSIX qw(setsid SIGUSR1 SIGUSR2);
 use Time::HiRes qw(time);
 
 #------------------------------------------------------------------------
@@ -176,7 +171,7 @@ our @cf_timeouts  = ();				# List of query timeouts.
 our @cf_rollints  = ();				# Datafile rollover interval.
 our @cf_states	  = ();				# State of targets.
 
-my @seekers = ();				# Query thread objects.
+my @seekers = ();				# Query entity objects.
 my @resolvers = ();				# Resolver objects.
 my @datafiles = ();				# Datafiles for queries.
 my @datafds = ();				# Descriptors for datafiles.
@@ -193,7 +188,7 @@ exit(0);
 #
 sub main
 {
-	my $nscount = 0;		# Number of query threads started.
+	my $nscount = 0;		# Number of query entities started.
 
 	#
 	# Check our options and read the configuration file.
@@ -230,48 +225,50 @@ sub main
 	makeresolvers();
 
 	#
-	# Create a new log-message queue for our threads to use.
+	# Create a new log-message queue for our query entities to use.
 	#
 	$sensorlog->warning("creating logmsg queue") if($verbose);
 	$logmsgs = Thread::Queue->new();
 
 	#
-	# Print the root resolvers we're using.
+	# Print the resolvers we're using.
 	#
 	printroots();
 
 	#
-	# Start a query thread for each root nameserver that has a valid entry.
+	# Start a query entity for each nameserver that has a valid entry.
 	#
-	$sensorlog->warning("creating query-threads for each target/nameserver pair");
+	$sensorlog->warning("creating query-entities for each target/nameserver pair");
+	print STDERR "master starting query-entities\n" if($verbose);
 	for(my $ind=0; $ind < @cf_targets; $ind++)
 	{
 		$datafds[$ind] = -1;
 
 		next if($cf_states[$ind] == 0);
 
-		push @seekers, threads->create(\&querythread,$ind);
+		push @seekers, forge($ind);
+
 		$nscount++;
 	}
 
 	#
-	# Complain and exit if we didn't start any query threads.
+	# Complain and exit if we didn't start any query entities.
 	#
 	if($nscount == 0)
 	{
-		$sensorlog->warning("no root nameserver query threads started");
-		print STDERR "no root nameserver query threads started\n";
+		$sensorlog->warning("no nameserver query entities started");
+		print STDERR "no nameserver query entities started\n";
 		exit(4);
 	}
 
 	#
-	# Start a thread to handle log messages from the query threads.
+	# Start an entity to handle log messages from the query entities.
 	#
-	$sensorlog->warning("creating log thread") if($verbose);
-	$bunyan = threads->create(\&bunyan);
+	$sensorlog->warning("creating log entity") if($verbose);
+	$bunyan = forge(-1);
 
 	#
-	# Master thread will just sit here twiddling its thumbs.
+	# Master will just sit here twiddling its thumbs.
 	#
 	while(42)
 	{
@@ -427,12 +424,93 @@ sub makeresolvers
 }
 
 #------------------------------------------------------------------------
-# Routine:	querythread()
+# Routine:	forge()
+#
+# Purpose:	This routine creates a new query entity.  If the system and
+#		Perl support threads, we'll create a new thread.  If threads
+#		aren't supported, we'll create a new child process.
+#
+#		Most calls will be to start a DNS-query entity, and the
+#		argument is the array index for query information.  If
+#		the argument is -1, then a special entity will be created
+#		to handle logging.
+#
+sub forge
+{
+	my $qind = shift;				# Query's array index.
+	my $ret;					# Return value.
+
+	if($runthreaded)
+	{
+		#
+		# We're running threaded, so we'll create a thread  for
+		# queries or logging.
+		#
+		if($qind == -1)
+		{
+			$sensorlog->warning("starting logging thread") if($verbose);
+			print STDERR "starting logging thread\n" if($verbose);
+			$ret = threads->create(\&bunyan);
+		}
+		else
+		{
+			$ret = threads->create(\&questor,$qind);
+		}
+	}
+	else
+	{
+		#
+		# We're not running threaded, so we'll create a process
+		# for queries or logging.
+		#
+		if(($ret=fork()) == 0)
+		{
+			#
+			# We'll set up for clean exits at shutdown.
+			#
+			$SIG{USR1} = \&sigend;
+
+			#
+			# Do the Right Thing depending on the index --
+			# logging for negative values, query thread for
+			# other values.
+			#
+			if($qind < 0)
+			{
+				$sensorlog->warning("starting logging process ($$)") if($verbose);
+				print STDERR "starting logging process ($$)\n" if($verbose);
+				bunyan();
+			}
+			else
+			{
+				$sensorlog->warning("starting query-proc ($$) for $cf_targets[$qind]/$cf_servers[$qind]/$cf_qtypes[$qind]") if($verbose);
+				print STDERR "starting query-proc (pid $$) for $cf_targets[$qind]/$cf_servers[$qind]/$cf_qtypes[$qind]\n" if($verbose);
+
+				questor($qind);
+			}
+
+			#
+			# We should never get here, but just in case...
+			#
+			exit(0);
+		}
+	}
+
+	#
+	# The master entity will return either the thread object or the
+	# process id.
+	#
+	return($ret);
+}
+
+#------------------------------------------------------------------------
+# Routine:	questor()
 #
 # Purpose:	This routine runs the nameserver timing queries.  It is run
-#		in a separate thread for each taret/nameserver pair.
+#		in a separate entity (thread or process) for each target/
+#		nameserver/query-type triplet.
 #
-sub querythread
+sub questor
 {
 	my $qind = shift;				# Query's array index.
 	my $target;					# Query's target host.
@@ -616,7 +694,7 @@ sub nstimer
 	}
 
 	#
-	# Send the query to the root server, and time the query.
+	# Send the query to the nameserver, and time the query.
 	#
 	$time0 = time();
 
@@ -654,12 +732,7 @@ sub nstimer
 #------------------------------------------------------------------------
 # Routine:	logger()
 #
-# Purpose:	Log a response from nstimer().  If a valid reply was sent
-#		from a root nameserver, we'll pull the anycast host from
-#		the reply data.  We're expecting the anycast response to
-#		look like this:
-#
-#			hostname.bind. 0       CH      TXT     "anycaster-name"
+# Purpose:	Log a response from nstimer().
 #
 sub logger
 {
@@ -697,7 +770,17 @@ sub logger
 
 	$msg = sprintf("%10.5f $cf_targets[$qind] $cf_servers[$qind] $qtype %10.15f $succstr $anycast",$cronos,$td);
 
+
+if(0)
+{
 	$logmsgs->enqueue($msg);
+}
+else
+{
+# $sensorlog->warning($msg);
+$sensorlog->log(level => 'info', message => $msg);
+# $sensorlog->log(message => $msg);
+}
 
 	$dfd = $datafds[$qind];
 	$dfd = $$dfd;
@@ -710,7 +793,7 @@ sub logger
 # Routine:	bunyan()
 #
 # Purpose:	Handle log manipulation and log messages for the query
-#		threads.
+#		entities.
 #
 #		Log messages will have this format:
 #			1398421888.14615 d 0.020882844924927 NOERROR d-mimsy-3
@@ -722,7 +805,7 @@ sub bunyan
 	#
 	while(42)
 	{
-		my $msg;			# Message from query thread.
+		my $msg;			# Message from query entity.
 
 		$msg = $logmsgs->dequeue();
 		chomp $msg;
@@ -758,29 +841,65 @@ sub sigmund
 }
 
 #------------------------------------------------------------------------
+# Routine:	sigend()
+#
+# Purpose:	Signal handler for SIGUSR2 for query subprocs.  This is
+#		only used if we're unthreaded.
+#
+sub sigend
+{
+	exit(0);
+}
+
+#------------------------------------------------------------------------
 # Routine:	cleanup()
 #
-# Purpose:	Close down query threads.
+# Purpose:	Close down query entities.
 #
 sub cleanup
 {
-	#
-	# Shut down the query threads.
-	#
-	$sensorlog->warning("shutting down query-threads");
-	for(my $qind=0; $qind < @seekers; $qind++)
-	{
-		my $qt = $seekers[$qind];
-		my $tid = $qt->tid(); 
 
-		$sensorlog->warning("shutting down query-thread for $cf_targets[$qind]/$cf_servers[$qind]") if($verbose);
-		$qt->kill('SIGUSR2')->detach();
+	if($runthreaded)
+	{
+		#
+		# Shut down the query threads.
+		#
+		$sensorlog->warning("shutting down query-threads");
+		for(my $qind=0; $qind < @seekers; $qind++)
+		{
+			my $qt = $seekers[$qind];
+			my $tid = $qt->tid(); 
+
+			$sensorlog->warning("shutting down query-entity for $cf_targets[$qind]/$cf_servers[$qind]") if($verbose);
+			$qt->kill('SIGUSR2')->detach();
+		}
+
+		#
+		# And now zap the logging thread.
+		#
+		$bunyan->kill('SIGUSR2')->detach();
+	}
+	else
+	{
+		#
+		# Shut down the query subprocesses.
+		#
+		$sensorlog->warning("shutting down query-procs");
+		for(my $qind=0; $qind < @seekers; $qind++)
+		{
+			my $qp = $seekers[$qind];
+
+			$sensorlog->warning("shutting down query-proc for $cf_targets[$qind]/$cf_servers[$qind]") if($verbose);
+			kill(SIGUSR1, $qp);
+		}
+
+		#
+		# And now zap the logging process.
+		#
+		sleep(1);
+		kill(SIGUSR1, $bunyan) if($bunyan > 0);
 	}
 
-	#
-	# And now zap the logging thread.
-	#
-	$bunyan->kill('SIGUSR2')->detach();
 
 	#
 	# Remove the process-id file.
