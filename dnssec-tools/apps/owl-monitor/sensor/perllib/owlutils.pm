@@ -188,9 +188,9 @@ sub owl_setup
 	#
 	# Set the directories as requested.
 	#
-	$confdir = $cdir if(defined($cdir));
-	$datadir = $ddir if(defined($ddir));
-	$logdir	 = $ldir if(defined($ldir));
+	$confdir = $cdir if(defined($cdir) || ($cdir ne ''));
+	$datadir = $ddir if(defined($ddir) || ($ddir ne ''));
+	$logdir	 = $ldir if(defined($ldir) || ($ldir ne ''));
 
 	#
 	# Set the name of the pidfile we'll be using.
@@ -542,7 +542,7 @@ sub owl_setlog
 	$sensorlog = new Log::Dispatch(
 		callbacks => sub
 		     {
-				my %h=@_;
+				my %h = @_;
 				my $msg;
 
 				$msg = Date::Format::time2str('%B %e %T', time);
