@@ -1,0 +1,213 @@
+<html>
+
+<head>
+<title>Owl Monitoring System -- Installation Manual -- Setting Up the Owl Monitoring System</title>
+</head>
+
+<body>
+
+<p>
+
+<center><h2>Owl Monitoring System</h2></center>
+<center><h2>Installation Manual</h2></center>
+
+<p>
+
+<!*****************************************************************************>
+
+<a name="0."></a>
+<h3>Setting Up the Owl Monitoring System</h3>
+
+<!--------------------------------------------------------------------------->
+
+The Owl Monitoring System monitors basic network functionality, using timed
+Domain Name System (DNS) queries.  The system consists of a manager host and
+a set of sensor hosts.  The sensors perform periodic DNS queries and report
+to the Owl manager the time taken for each query.  Over time, this shows the
+responsiveness of the DNS infrastructure.
+
+<p>
+
+The Owl Monitoring System was designed such that the Owl sensor hosts need
+not be under the same administrative control as the Owl manager host.  In
+fact, each sensor in a set of Owl sensors may be under administrative control
+of different entities and still report to a single Owl manager.  Also, an Owl
+sensor may provide its data to more than one Owl manager.  All contact between
+sensors and manager is initiated and performed by the sensor; the Owl manager
+does not attempt to pull data from any of its sensors.
+
+<p>
+
+This document provides an operational overview of the Owl systems,
+installation instructions for the Owl and supporting third-party software,
+and configuration instructions for the Owl software.
+
+<p>
+
+<!----------------------------------------------------------------->
+
+<table>
+
+<tr>
+
+<!-------------------------------------------------->
+
+<td valign=top width="50%">
+
+<h3>Organization of Installation Manual</h3>
+
+<a href="install-full-toc.html">Full Table of Contents</a>
+
+<p>
+
+Sections:
+
+<table>
+
+<tr>
+<td>&nbsp;
+<td><a href="install-0-intro.html">0.</a>
+<td>&nbsp;
+<td>Setting Up the Owl Monitoring System</tr>
+
+<tr>
+<td>&nbsp;
+<td><a href="install-1-overview.html">1.</a>
+<td>&nbsp;
+<td>Operational Overview</tr>
+
+<tr>
+<td>&nbsp;
+<td><a href="install-2-installation.html">2.</a>
+<td>&nbsp;
+<td>Installation</tr>
+
+<tr>
+<td>&nbsp;
+<td><a href="install-3-about-queries.html">3.</a>
+<td>&nbsp;
+<td>An Interlude on Sensor Queries</tr>
+
+<tr>
+<td>&nbsp;
+<td><a href="install-4-adding-sensor.html">4.</a>
+<td>&nbsp;
+<td>Adding Sensors</tr>
+
+<tr>
+<td>&nbsp;
+<td><a href="install-5-define-graphs.html">5.</a>
+<td>&nbsp;
+<td>Defining Graphs</tr>
+
+<tr>
+<td>&nbsp;
+<td><a href="install-6-adding-queries.html">6.</a>
+<td>&nbsp;
+<td>Adding New Queries to Existing Owl Sensors</tr>
+
+<tr>
+<td>&nbsp;
+<td><a href="install-7-commands.html">7.</a>
+<td>&nbsp;
+<td>Owl Commands</tr>
+
+<tr>
+<td width=20>&nbsp;
+<td width=20>&nbsp;
+<td>&nbsp;
+<td>&nbsp;</tr>
+
+</table>
+
+<!-------------------------------------------------->
+
+<td valign=top width="50%">
+
+<h3>How To Use This Manual</h3>
+
+The readers of this manual fit into one of three roles:  administrator of
+the Owl manager and Owl sensors, administrator of the sensors only, and
+administrator of the manager only.  This brief guide will show the manual
+sections that must be read by each role.  The top-level sections should
+be read by all roles -- with the exception of section 5, which need not be
+read the sensor-only administrators.
+
+<p>
+
+<b>Administrators of Manager and Sensors</b><br>
+Administrators in this role must read the entire installation manual.
+
+<p>
+
+<b>Administrators of Sensors</b><br>
+Administrators in this role must read this group of manual sections.
+The listed section and <u>all</u> its subsections must be read.
+
+<table>
+<tr><td>&nbsp;<td><a href="install-1-overview.html#1.1.">1.1.</a><td>&nbsp;<td>Owl Sensor Overview</tr>
+<tr><td>&nbsp;<td><a href="install-2-installation.html#2.1.">2.1.</a><td>&nbsp;<td>Sensor Installation</tr>
+<tr><td>&nbsp;<td><a href="install-4-adding-sensor.html#4.1.">4.1.</a><td>&nbsp;
+<td>Actions on Sensor When Adding New Sensor</tr>
+<tr><td>&nbsp;<td><a href="install-6-adding-queries.html#6.1">6.1</a><td>&nbsp;<td>Owl Sensor Actions When Adding New Queries</tr>
+<tr><td>&nbsp;<td><a href="install-7-commands.html#7.1">7.1</a><td>&nbsp;<td>Owl Sensor Commands</tr>
+<tr><td width=40>&nbsp;<td>&nbsp;<td>&nbsp;<td>&nbsp;
+</table>
+
+<p>
+
+<b>Administrators of Managers</b><br>
+Administrators in this role must read this group of manual sections.
+The listed section and <u>all</u> its subsections must be read.
+
+<table>
+<tr><td>&nbsp;<td><a href="install-1-overview.html#1.2.">1.2.</a><td>&nbsp;<td>Owl Manager Overview</tr>
+<tr><td>&nbsp;<td><a href="install-2-installation.html#2.2.">2.2.</a><td>&nbsp;<td>Manager Installation</tr>
+<tr><td>&nbsp;<td><a href="install-2-installation.html#2.3.">2.3.</a><td>&nbsp;<td>Modifying Configuration Files on Manager</tr>
+<tr><td>&nbsp;<td><a href="install-4-adding-sensor.html#4.2.">4.2.</a><td>&nbsp;<td>Actions on Manager When Adding New Sensor</tr>
+<tr><td>&nbsp;<td><a href="install-5-define-graphs.html#5.">5.</a><td>&nbsp;<td>Defining Graphs</tr>
+<tr><td>&nbsp;<td><a href="install-6-adding-queries.html#6.2">6.2</a><td>&nbsp;<td>Owl Manager Actions When Adding New Queries</tr>
+<tr><td>&nbsp;<td><a href="install-7-commands.html#7.2">7.2</a><td>&nbsp;<td>Owl Manager Commands</tr>
+<tr><td width=40>&nbsp;<td>&nbsp;<td>&nbsp;<td>&nbsp;
+</table>
+
+<p>
+
+
+</tr>
+</table>
+
+<p>
+
+<!*****************************************************************************>
+
+<br><br>
+
+<center>
+
+<hr width="70%">
+
+<p>
+
+<!-------------------------------------->
+<table width="100%">
+<tr>
+<td width="33%" align=left>
+&nbsp;
+<td width="33%" align=center>
+<a href="install-0-intro.html">Owl Monitoring System -- Installation Guide</a>
+<td width="33%" align=right>
+<a href="install-1-overview.html">Section 1.<br>Operational Overview</a>
+</tr>
+</table>
+<p>
+<!-------------------------------------->
+
+<a href="http:www.dnssec-tools.org">DNSSEC Tools</a>
+
+</center>
+
+<p>
+
+</body>
+</html>
