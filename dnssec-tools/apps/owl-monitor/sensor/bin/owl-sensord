@@ -28,14 +28,12 @@ use Getopt::Long qw(:config no_ignore_case_always);
 #
 # Version information.
 #
-my $NAME   = "owl-sensord";
+my $NAME   = 'owl-sensord';
 my $VERS   = "$NAME version: 1.14.0";
-my $DTVERS = "DNSSEC-Tools version: 1.14";
+my $DTVERS = 'DNSSEC-Tools version: 1.14';
 
 #------------------------------------------------------------------------
 # Defaults and some constants.
-
-my $NSBASE = 'root-servers.net';		# Base name for root servers.
 
 my $DEF_CONFIG	= $owlutils::DEF_CONFIG;	# Default config file nodename.
 my $DEF_CONFDIR	= $owlutils::DEF_CONFDIR;	# Default config directory.
@@ -43,8 +41,6 @@ my $DEF_DATADIR	= $owlutils::DEF_DATADIR;	# Default data directory.
 my $DEF_LOGDIR	= $owlutils::DEF_LOGDIR;	# Default log directory.
 
 my $PIDFILE	= "$NAME.pid";			# Filename of process-id file.
-
-my $DEF_HEARTBEAT = 1;				# Default heartbeat in minutes.
 
 #------------------------------------------------------------------------
 
@@ -139,7 +135,7 @@ sub main
 	#
 	# Write a starting-up log message.
 	#
-	logger("starting owl-sensord",0);
+	logger("starting $NAME",0);
 
 	#
 	# And now we'll run our subdaemons.
@@ -202,7 +198,7 @@ sub startup
 	{
 		exit(2);
 	}
-	owl_setup($NAME,$confdir,(),$logdir);
+	owl_setup($NAME,$confdir,'',$logdir);
 	$confdir = setparam('confdir',$confdir,$owlutils::confdir,$DEF_CONFDIR);
 	$logdir  = setparam('logdir',$logdir,$owlutils::logdir,$DEF_LOGDIR);
 	exit(1) if(owl_chkdir('data', $owlutils::datadir) == 1);
@@ -216,7 +212,7 @@ sub startup
 	#
 	# Set up our log file.
 	#
-	$slog = owl_setlog('owl-sensord',$logdir);
+	$slog = owl_setlog($NAME,$logdir);
 
 	#
 	# Clean up if the -stop flag was given.
@@ -399,9 +395,9 @@ sub runner
 	#
 	# Make sure the sensor and transfer daemons are running.
 	#
-	vprint("$NAME:  starting sensor daemon\n");
+	logger("$NAME:  starting sensor daemon owl-dnstimer",1);
 	runcmd("owl-dnstimer -confdir $confdir -logdir $logdir $dnstimerargs -foreground $devnull");
-	vprint("$NAME:  starting transfer daemon\n");
+	logger("$NAME:  starting transfer daemon owl-transfer",1);
 	runcmd("owl-transfer $xferargs -foreground $devnull");
 
 	#
@@ -565,11 +561,6 @@ sub senderr
 	print ERRMAIL "\n$NAME:  $cmd is exec\'ing too quickly\n";
 	close(ERRMAIL);
 
-# print "\n\n$NAME:  $cmd running too quickly!!!\n\n\n";
-# print "$NAME:  sending warning to <$admins>\n\n";
-# print "msg - <echo $NAME:  $cmd is exec\'ing too quickly>\n\n";
-# print "cmd - <|mail -s \"Owl: runaway $cmd\" $admins>\n\n";
-
 }
 
 #------------------------------------------------------------------------
@@ -723,8 +714,8 @@ sub logger
 	my $str = shift;
 	my $outflag = shift;
 
-	$slog->warning($str);
-	vprint("$NAME:  $str") if($outflag);
+	$slog->log(level => 'info', message => $str);
+	vprint("$NAME:  $str\n") if($outflag);
 }
 
 #--------------------------------------------------------------------------
