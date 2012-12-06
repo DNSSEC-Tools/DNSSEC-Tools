@@ -19,6 +19,7 @@ use Cwd;
 use Getopt::Long qw(:config no_ignore_case_always);
 use POSIX qw(setsid);
 use Time::Local;
+use Date::Format;
 
 use FindBin;
 
@@ -29,9 +30,9 @@ use owlutils;
 #
 # Version information.
 #
-my $NAME   = "owl-transfer";
+my $NAME   = 'owl-transfer';
 my $VERS   = "$NAME version: 1.14.0";
-my $DTVERS = "DNSSEC-Tools version: 1.14";
+my $DTVERS = 'DNSSEC-Tools version: 1.14';
 
 ###################################################
 
@@ -41,16 +42,17 @@ my $DTVERS = "DNSSEC-Tools version: 1.14";
 my %options = ();			# Filled option array.
 my @opts =
 (
-	"config=s",			# Configuration file.
-	"datadir=s",			# Top-level data directory.
-	"logdir=s",			# Top-level logging directory.
+	'confdir=s',			# Configuration directory.
+	'config=s',			# Configuration file.
+	'datadir=s',			# Top-level data directory.
+	'logdir=s',			# Top-level logging directory.
 
-	"foreground|fg",		# Run in foreground.
-	"stop",				# Stop execution.
+	'foreground|fg',		# Run in foreground.
+	'stop',				# Stop execution.
 
-	"verbose",			# Verbose output.
-	"Version",			# Version output.
-	"help",				# Give a usage message and exit.
+	'verbose',			# Verbose output.
+	'Version',			# Version output.
+	'help',				# Give a usage message and exit.
 );
 
 
@@ -80,14 +82,26 @@ my $CONF_DATADIR  = "datadir";			# Data directory record.
 ###################################################
 
 my $curdir;					# Current directory.
+my $confdir  = $DEF_CONFDIR;			# Configuration directory.
 my $conffile = $DEF_CONFFILE;			# Configuration file.
 my $datadir  = $DEF_DATADIR;			# Top-level data directory.
-my $logdir   = '';				# Logging directory.
+my $logdir;					# Logging directory.
+
+#
+# Every LOGCNT transfer cycles, owl-transfer will write a log message saying
+# how many log attempts have been made.  If any failed, then the failure
+# count will be reported.  A transfer cycle is one pass attempting to transfer
+# to all ssh-users.  If owl-transfer attempts to transfer files once per
+# minute, then a LOGCNT of 60 will result in a log message once per hour.
+#
+my $LOGCNT   = 60;
 
 
 my $pidfile;					# Name of process-id file.
 my @sshusers;					# user@host for rsyncing.
+my $xfercnt = 0;				# Count of transfers.
 my $xferint;					# Data-transfer interval.
+my $xlog;					# Logging handle.
 
 my $errs = 0;					# Error count.
 
@@ -118,6 +132,8 @@ sub main
 	# Perform initialization steps.
 	#
 	startup();
+
+	logger("$NAME starting");
 
 	#
 	# Grab some globals from the config file.
@@ -205,8 +221,9 @@ sub doopts
 	}
 
 	#
-	# Check our data directory.
+	# Check our config and data directories.
 	#
+	$confdir = $options{'confdir'} if(defined($options{'confdir'}));   
 	$datadir = $options{'datadir'} if(defined($options{'datadir'}));
 
 }
@@ -222,11 +239,10 @@ sub doopts
 #
 sub startup
 {
-
 	#
 	# Read the sensor configuration file.
 	#
-	owl_setup($NAME);
+	owl_setup($NAME,$confdir,$datadir,$logdir);
 	if(owl_readconfig($conffile,$datadir,$logdir) != 0)
 	{
 		exit(2);
@@ -235,10 +251,17 @@ sub startup
 	#
 	# Get the proper data directory name.
 	#
+	$confdir = setparam('confdir',$confdir,$owlutils::confdir,$DEF_CONFDIR);
 	$datadir = setparam('datadir',$datadir,$owlutils::datadir,$DEF_DATADIR);
+	$logdir  = setparam('logdir',$logdir,$owlutils::logdir,$DEF_LOGDIR);
 
 	exit(1) if(owl_chkdir('data', $datadir) == 1);
-#	exit(1) if(owl_chkdir('log', $logdir) == 1);
+	exit(1) if(owl_chkdir('log', $logdir) == 1);
+
+	#
+	# Set up our log file.
+	#
+	$xlog = owl_setlog($NAME,$logdir);
 
 	#
 	# Add the base directory if this isn't an absolute path.
@@ -274,7 +297,7 @@ sub startup
 	#
 	if($stopper)
 	{
-		owl_halt('owl-transfer');
+		owl_halt($NAME);
 		exit(0);
 	}
 
@@ -318,15 +341,6 @@ sub setparam
 	$val = $cval if(defined($cval));
 	$val = $arg  if(defined($arg));
 
-	#
-	# Ensure positive values for our numeric throttlers.
-	#
-	if(($val =~ /^[0-9\-]+$/) && ($val < 1))
-	{
-		print STDERR "$str value ($val) must be positive\n";
-		exit(1);
-	}
-
 	return($val);
 }
 
@@ -338,7 +352,8 @@ sub setparam
 #
 sub teleporter
 {
-	my $args;					# Arguments for rsync.
+	my $args;		# Arguments for rsync.
+	my %errxfers = ();	# Count of each ssh-user's failed transfers.
 
 	#
 	# Set up our immutable command-line arguments.
@@ -363,6 +378,7 @@ sub teleporter
 			my $rshargs;			# rsh-arguments portion.
 			my $cmd;			# Command for rsync.
 			my $out;			# Output from rsync.
+			my $err;			# rsync return code.
 
 			#
 			# Set up our command line and arguments.  The sshuser
@@ -380,6 +396,7 @@ sub teleporter
 			# Do the transfer for this user.
 			#
 			$out = `$cmd $user:`;
+			$err = $? >> 8;
 
 			#
 			# Give info on this transfer, if it is desired.
@@ -388,19 +405,71 @@ sub teleporter
 			{
 				my $chronos;		# Timestamp.
 				my $numstr;		# Files transferred.
+				my $msg;		# Message string.
 
+				#
+				# Get timestamp for message.
+				#
 				$chronos = gmtime;
 				chomp $chronos;
 
+				#
+				# Build the message.
+				#
 				$out =~ /(Number of files transferred:\s+\d+)\n/g;
 				$numstr = $1;
-				print "$chronos:  $1\t$user\n" if($numstr ne '');
+				$msg = "$numstr \t$user";
+
+				print "$chronos:  $msg\n" if($numstr ne '');
+				logger($msg);
+			}
+
+			#
+			# If the transfer failed, report an error and bump
+			# the error-transfer count.
+			#
+			if($err)
+			{
+				my $msg = "problem transferring files, error return $err";
+				print STDERR "$msg\n";
+				logger($msg);
+				$errxfers{$sshuser}++;
+			}
+
+			#
+			# Write a periodic log message with the count of
+			# transfers that have taken place.  This will show
+			# the same number of transfers each time, so it's
+			# more of an "I'm alive" message to the log file.
+			#
+			if($xfercnt == $LOGCNT)
+			{
+				my $msg;			# Message text.
+				my $errs = $errxfers{$sshuser};	# Error count.
+
+				#
+				# Build the message.
+				#
+				$msg  = "$xfercnt transfer attempts to $user";
+				$msg .= "; $errs failed" if($errs > 0);
+
+				#
+				# Write the message.
+				#
+				logger($msg);
+
+				#
+				# Reset for next round.
+				#
+				$xfercnt = 0;
+				$errxfers{$sshuser} = 0;
 			}
 		}
 
 		#
-		# Wait for a bit.
+		# Bump our transfer count and wait for a bit.
 		#
+		$xfercnt++;
 		sleep($xferint);
 	}
 }
@@ -423,7 +492,6 @@ sub cleanup
 	exit(0);
 }
 
-
 #--------------------------------------------------------------------------
 # Routine:	vprint()
 #
@@ -432,6 +500,18 @@ sub vprint
 	my $str = shift;
 
 	print "$str" if($verbose);
+}
+
+#--------------------------------------------------------------------------
+# Routine:	logger()
+#
+sub logger
+{
+	my $str = shift;
+	my $outflag = shift;
+
+	$xlog->log(level => 'info', message => $str);
+#	vprint("$NAME:  $str\n") if($outflag);
 }
 
 #--------------------------------------------------------------------------
@@ -451,8 +531,10 @@ sub usage
 {
 	print "owl-transfer [options]\n";
 	print "\toptions:\n";
-	print "\t\t-config file\n";
+	print "\t\t-confdir directory\n";
+	print "\t\t-config  file\n";
 	print "\t\t-datadir directory\n";
+	print "\t\t-logdir  directory\n";
 
 	print "\n";
 	print "\t\t-foreground\n";
@@ -516,6 +598,11 @@ B<owl-transfer> takes the following options:
 
 =over 4
 
+=item B<-confdir>
+
+This option specifies the directory from which sensor configuration data
+will be read.  The process-id file will also be stored here.
+
 =item B<-config>
 
 This option specifies the configuration file to use.
@@ -534,8 +621,7 @@ as a daemon.
 
 =item B<-logdir>
 
-This option specifies the directory for logging.  It is not currently used by
-B<owl-transfer>, but is included for symmetry with the other Owl daemons.
+This option specifies the directory for logging.
 
 =item B<-stop>
 
@@ -560,6 +646,7 @@ This option displays a help message and exits.
 B<owl-archold(1)>,
 B<owl-dataarch(1)>,
 B<owl-dnstimer(1)>,
+B<owl-sensord(1)>,
 B<rsync(1)>,
 B<ssh(1)>
 
