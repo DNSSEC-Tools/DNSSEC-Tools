@@ -457,11 +457,11 @@ sub forge
 			$ret = threads->create(\&questor,$qind);
 		}
 	}
-	else
+	elsif($qind >= 0)
 	{
 		#
 		# We're not running threaded, so we'll create a process
-		# for queries or logging.
+		# for queries.
 		#
 		if(($ret=fork()) == 0)
 		{
@@ -475,25 +475,25 @@ sub forge
 			# logging for negative values, query thread for
 			# other values.
 			#
-			if($qind < 0)
-			{
-				$sensorlog->warning("starting logging process ($$)") if($verbose);
-				print STDERR "starting logging process ($$)\n" if($verbose);
-				bunyan();
-			}
-			else
-			{
-				$sensorlog->warning("starting query-proc ($$) for $cf_targets[$qind]/$cf_servers[$qind]/$cf_qtypes[$qind]") if($verbose);
-				print STDERR "starting query-proc (pid $$) for $cf_targets[$qind]/$cf_servers[$qind]/$cf_qtypes[$qind]\n" if($verbose);
+			$sensorlog->warning("starting query-proc ($$) for $cf_targets[$qind]/$cf_servers[$qind]/$cf_qtypes[$qind]") if($verbose);
+			print STDERR "starting query-proc (pid $$) for $cf_targets[$qind]/$cf_servers[$qind]/$cf_qtypes[$qind]\n" if($verbose);
 
-				questor($qind);
-			}
+			questor($qind);
 
 			#
 			# We should never get here, but just in case...
 			#
 			exit(0);
 		}
+	}
+	else
+	{
+		#
+		# We come here if we're not running threaded and a
+		# log process was requested.  We aren't doing this
+		# now, so we'll just quietly do nothing.
+		#
+		$ret = 0;
 	}
 
 	#
@@ -893,11 +893,6 @@ sub cleanup
 			kill(SIGUSR1, $qp);
 		}
 
-		#
-		# And now zap the logging process.
-		#
-		sleep(1);
-		kill(SIGUSR1, $bunyan) if($bunyan > 0);
 	}
 
 
