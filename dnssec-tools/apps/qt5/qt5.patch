@@ -1,0 +1,245 @@
+diff --git a/config.tests/unix/dnssec/dnssec.cpp b/config.tests/unix/dnssec/dnssec.cpp
+new file mode 100644
+index 0000000..22e38d3
+--- /dev/null
++++ b/config.tests/unix/dnssec/dnssec.cpp
+@@ -0,0 +1,54 @@
++/****************************************************************************
++**
++** Copyright (C) 2012 Digia Plc and/or its subsidiary(-ies).
++** Contact: http://www.qt-project.org/legal
++**
++** This file is part of the config.tests of the Qt Toolkit.
++**
++** $QT_BEGIN_LICENSE:LGPL$
++** Commercial License Usage
++** Licensees holding valid commercial Qt licenses may use this file in
++** accordance with the commercial license agreement provided with the
++** Software or, alternatively, in accordance with the terms contained in
++** a written agreement between you and Digia.  For licensing terms and
++** conditions see http://qt.digia.com/licensing.  For further information
++** use the contact form at http://qt.digia.com/contact-us.
++**
++** GNU Lesser General Public License Usage
++** Alternatively, this file may be used under the terms of the GNU Lesser
++** General Public License version 2.1 as published by the Free Software
++** Foundation and appearing in the file LICENSE.LGPL included in the
++** packaging of this file.  Please review the following information to
++** ensure the GNU Lesser General Public License version 2.1 requirements
++** will be met: http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
++**
++** In addition, as a special exception, Digia gives you certain additional
++** rights.  These rights are described in the Digia Qt LGPL Exception
++** version 1.1, included in the file LGPL_EXCEPTION.txt in this package.
++**
++** GNU General Public License Usage
++** Alternatively, this file may be used under the terms of the GNU
++** General Public License version 3.0 as published by the Free Software
++** Foundation and appearing in the file LICENSE.GPL included in the
++** packaging of this file.  Please review the following information to
++** ensure the GNU General Public License version 3.0 requirements will be
++** met: http://www.gnu.org/copyleft/gpl.html.
++**
++**
++** $QT_END_LICENSE$
++**
++****************************************************************************/
++
++#include <validator/validator-config.h>
++#include <validator/validator.h>
++
++int main(int, char **)
++{
++    val_status_t val_status;
++    struct addrinfo *ainfo;
++    
++    /* we don't actually care if it succeeds or not; just compiling is ok */
++    val_getaddrinfo(NULL, "www.example.com", NULL, NULL, &ainfo, &val_status);
++
++    return 0;
++}
+diff --git a/config.tests/unix/dnssec/dnssec.pro b/config.tests/unix/dnssec/dnssec.pro
+new file mode 100644
+index 0000000..a255d3b
+--- /dev/null
++++ b/config.tests/unix/dnssec/dnssec.pro
+@@ -0,0 +1,4 @@
++SOURCES = dnssec.cpp
++CONFIG -= qt dylib
++mac:CONFIG -= app_bundle
++LIBS += -lval-threads -lsres -lcrypto -lpthread
+diff --git a/configure b/configure
+index cb9497e..3e35487 100755
+--- a/configure
++++ b/configure
+@@ -839,6 +839,7 @@ CFG_CLOCK_GETTIME=auto
+ CFG_CLOCK_MONOTONIC=auto
+ CFG_MREMAP=auto
+ CFG_GETADDRINFO=auto
++CFG_DNSSEC=auto
+ CFG_IPV6IFNAME=auto
+ CFG_GETIFADDRS=auto
+ CFG_INOTIFY=auto
+@@ -5092,6 +5093,24 @@ if [ "$CFG_GETADDRINFO" != "no" ]; then
+     fi
+ fi
+ 
++# find if the platform provides libval with val_getaddrinfo (dnssec lookups)
++if [ "$CFG_DNSSEC" != "no" ]; then
++    if "$unixtests/compile.test" "$XQMAKESPEC" "$QMAKE_CONFIG" $OPT_VERBOSE "$relpath" "$outpath" config.tests/unix/dnssec "dnssec" $L_FLAGS $I_FLAGS $l_FLAGS; then
++        CFG_DNSSEC=yes
++    else
++	if [ "$CFG_DNSSEC" = "yes" ] && [ "$CFG_CONFIGURE_EXIT_ON_ERROR" = "yes" ]; then
++            echo "dnssec support cannot be enabled due to functionality tests!"
++            echo " Turn on verbose messaging (-v) to $0 to see the final report."
++            echo " If you believe this message is in error you may use the continue"
++            echo " switch (-continue) to $0 to continue."
++	    echo " Note: dnssec support requires the DNSSEC-Tools libval library"
++            exit 101
++	else
++	    CFG_DNSSEC=no
++	fi
++    fi
++fi
++
+ # find if the platform provides inotify
+ if [ "$CFG_INOTIFY" != "no" ]; then
+     if compileTest unix/inotify "inotify"; then
+@@ -5388,6 +5407,9 @@ fi
+ if [ "$CFG_GETADDRINFO" = "yes" ]; then
+     QT_CONFIG="$QT_CONFIG getaddrinfo"
+ fi
++if [ "$CFG_DNSSEC" = "yes" ]; then
++    QT_CONFIG="$QT_CONFIG dnssec"
++fi
+ if [ "$CFG_IPV6IFNAME" = "yes" ]; then
+     QT_CONFIG="$QT_CONFIG ipv6ifname"
+ fi
+@@ -5869,6 +5891,7 @@ QMakeVar set sql-plugins "$SQL_PLUGINS"
+ [ "$CFG_CLOCK_MONOTONIC" = "no" ] && QCONFIG_FLAGS="$QCONFIG_FLAGS QT_NO_CLOCK_MONOTONIC"
+ [ "$CFG_MREMAP" = "no" ]     && QCONFIG_FLAGS="$QCONFIG_FLAGS QT_NO_MREMAP"
+ [ "$CFG_GETADDRINFO" = "no" ]&& QCONFIG_FLAGS="$QCONFIG_FLAGS QT_NO_GETADDRINFO"
++[ "$CFG_DNSSEC" = "no" ]     && QCONFIG_FLAGS="$QCONFIG_FLAGS QT_NO_DNSSEC"
+ [ "$CFG_IPV6IFNAME" = "no" ] && QCONFIG_FLAGS="$QCONFIG_FLAGS QT_NO_IPV6IFNAME"
+ [ "$CFG_GETIFADDRS" = "no" ] && QCONFIG_FLAGS="$QCONFIG_FLAGS QT_NO_GETIFADDRS"
+ [ "$CFG_INOTIFY" = "no" ]    && QCONFIG_FLAGS="$QCONFIG_FLAGS QT_NO_INOTIFY"
+@@ -6108,6 +6131,11 @@ elif [ "$CFG_OPENSSL" = "linked" ]; then
+     echo "OPENSSL_LIBS = -lssl -lcrypto" >> "$QTMODULE.tmp"
+ fi
+ 
++#dump in the DNSSEC info
++if [ '!' -z "$CFG_DNSSEC" ]; then
++    echo "DNSSEC_LIBS = -lval-threads -lsres -lcrypto" >> "$CACHEFILE.tmp"
++fi
++
+ # cmdline args
+ cat "$QMAKE_VARS_FILE" >> "$QTMODULE.tmp"
+ rm -f "$QMAKE_VARS_FILE" 2>/dev/null
+@@ -6215,6 +6243,7 @@ if [ "$CFG_ARCH" = "mips" ]; then
+ fi
+ echo "IPv6 ifname support .... $CFG_IPV6IFNAME"
+ echo "getaddrinfo support .... $CFG_GETADDRINFO"
++echo "dnssec support ......... $CFG_DNSSEC"
+ echo "getifaddrs support ..... $CFG_GETIFADDRS"
+ echo "Accessibility .......... $CFG_ACCESSIBILITY"
+ echo "NIS support ............ $CFG_NIS"
+diff --git a/src/network/kernel/kernel.pri b/src/network/kernel/kernel.pri
+index 57df8c8..5ed88b0 100644
+--- a/src/network/kernel/kernel.pri
++++ b/src/network/kernel/kernel.pri
+@@ -46,3 +46,8 @@ else:blackberry:SOURCES += kernel/qnetworkproxy_blackberry.cpp
+ else:SOURCES += kernel/qnetworkproxy_generic.cpp
+ 
+ blackberry: LIBS_PRIVATE += -lbps
++
++# DNSSEC support requires libval/libsres/libcrypto
++contains(QT_CONFIG, dnssec) {
++    LIBS += -lval-threads -lsres -lcrypto
++}
+diff --git a/src/network/kernel/qhostinfo.h b/src/network/kernel/qhostinfo.h
+index eb50557..e0683b3 100644
+--- a/src/network/kernel/qhostinfo.h
++++ b/src/network/kernel/qhostinfo.h
+@@ -60,7 +60,8 @@ public:
+     enum HostInfoError {
+         NoError,
+         HostNotFound,
+-        UnknownError
++        UnknownError,
++        DNSNotTrusted
+     };
+ 
+     explicit QHostInfo(int lookupId = -1);
+diff --git a/src/network/kernel/qhostinfo_unix.cpp b/src/network/kernel/qhostinfo_unix.cpp
+index 61d4218..de24f7e 100644
+--- a/src/network/kernel/qhostinfo_unix.cpp
++++ b/src/network/kernel/qhostinfo_unix.cpp
+@@ -63,6 +63,11 @@
+ #  include <resolv.h>
+ #endif
+ 
++#if ! defined(QT_NO_DNSSEC)
++#undef QT_NO_GETADDRINFO
++#include <validator/validator.h>
++#endif
++
+ #if defined (QT_NO_GETADDRINFO)
+ static QBasicMutex getHostByNameMutex;
+ #endif
+@@ -202,19 +207,42 @@ QHostInfo QHostInfoAgent::fromName(const QString &hostName)
+ #ifdef Q_ADDRCONFIG
+     hints.ai_flags = Q_ADDRCONFIG;
+ #endif
++#if ! defined(QT_NO_DNSSEC)
++    val_status_t val_status;
++#endif
+ 
++#if ! defined(QT_NO_DNSSEC)
++    int result = val_getaddrinfo(NULL, aceHostname.constData(), 0, &hints, &res,
++                                 &val_status);
++#else
+     int result = getaddrinfo(aceHostname.constData(), 0, &hints, &res);
++#endif
+ # ifdef Q_ADDRCONFIG
+     if (result == EAI_BADFLAGS) {
+         // if the lookup failed with AI_ADDRCONFIG set, try again without it
+         hints.ai_flags = 0;
++#if ! defined(QT_NO_DNSSEC)
++        /* technically, this shouldn't actually happen with libval with
++           its current code base, but to be safe we'll mimic !dnssec */
++        result = val_getaddrinfo(NULL, aceHostname.constData(), 0, &hints, &res,
++                                 &val_status);
++#else
+         result = getaddrinfo(aceHostname.constData(), 0, &hints, &res);
++#endif
+     }
+ # endif
+ 
+     if (result == 0) {
+         addrinfo *node = res;
+         QList<QHostAddress> addresses;
++
++#if ! defined(QT_NO_DNSSEC)
++        if (!val_istrusted(val_status)) {
++            results.setError(QHostInfo::DNSNotTrusted);
++            results.setErrorString(tr("DNS Answer Not Trusted"));
++        } else {
++#endif
++
+         while (node) {
+ #ifdef QHOSTINFO_DEBUG
+                 qDebug() << "getaddrinfo node: flags:" << node->ai_flags << "family:" << node->ai_family << "ai_socktype:" << node->ai_socktype << "ai_protocol:" << node->ai_protocol << "ai_addrlen:" << node->ai_addrlen;
+@@ -244,7 +272,13 @@ QHostInfo QHostInfoAgent::fromName(const QString &hostName)
+         }
+ 
+         results.setAddresses(addresses);
++
++#if ! defined(QT_NO_DNSSEC)
++        }
++#endif
++
+         freeaddrinfo(res);
++
+     } else if (result == EAI_NONAME
+                || result ==  EAI_FAIL
+ #ifdef EAI_NODATA
