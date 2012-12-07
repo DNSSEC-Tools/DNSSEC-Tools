@@ -1,0 +1,13 @@
+This .qml file can be run to show the loading of the DNSSEC-Deployment
+website, which has an icon on the top of the page indicating if DNSSEC
+is enabled or disabled.  With Qt patched to enable validation, the
+logo should appear as a green check-box.
+
+To run it:
+
+  # qmlviewer test.qml
+
+The advantage of this test is that it shows that the patch succeeds in
+modifying many aspects of Qt, as the qml infrastructure is a layer
+fairly high above the rest of the Qt code but even it gets protected
+by the base patch.
