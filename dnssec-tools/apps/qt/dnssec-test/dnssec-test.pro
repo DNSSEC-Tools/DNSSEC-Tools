@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += network widgets
+QT       += core gui network
 
 TARGET = dnssec-test
 TEMPLATE = app
@@ -16,4 +16,7 @@ SOURCES += main.cpp\
 
 HEADERS  += MainWindow.h \
     DNSSECStatus.h
+
+FORMS    += MainWindow.ui
+
 
