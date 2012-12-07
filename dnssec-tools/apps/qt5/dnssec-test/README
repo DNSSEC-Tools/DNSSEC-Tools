@@ -1,0 +1,25 @@
+This simple application (dnssec-test) simply creates a table full of
+host names and then iteratively looks them all up to see if it can get
+a valid answer and color codes the results into 2 tables.
+
+Building
+========
+
+  # qmake-qt5            (or maybe just 'qmake' depending on your platform)
+  # make
+
+Running It
+==========
+  # ./dnssec-test
+
+Internal Details
+================
+
+  If it can and the host shouldn't be accessible because of DNSSEC
+  failures, it is marked as red.  If a domain name can be resolved and
+  either it's a valid lookup or it's invalid and the lookup
+  infrastructure correctly denied the results, it's flagged as green.
+
+  There is also a "try tcp" button to ensure that if you attempt a TCP
+  connection to the host's machine (on port 80) it'll fail as well.
+
