@@ -1,0 +1,29 @@
+The patch included in the qt5.patch file modifies the base Qt code to:
+
+  - make all DNS lookups (done using the Qt Classes) perform DNSSEC validation
+    - This extends the returned error codes by 1, providing a new
+      DNSNotTrusted enum returned by the QHostInfo class.
+  - adds configure tests to add the needed libval and libsres
+    libraries to the compilation line
+
+Applying and Using The Patch
+============================
+  # cd QTSRCDIR/qtbase/
+  # patch -p1 < /path/to/qt4.patch
+  # cd ..
+  # ./configure [with any options you want, such as "-prefix /opt/qt5-dnssec" ]
+  # make
+  # make install
+
+  To create an application linked against the new qt-compiled
+  libraries that were installed in a different directory, simply run
+  qmake from that installation path:
+
+  # cd dnssec-test
+  # /opt/qt5-dnssec/bin/qmake
+  # make
+
+  See the following page for more complete instructions on building qt5:
+
+  http://qt-project.org/wiki/Building_Qt_5_from_Git
+
