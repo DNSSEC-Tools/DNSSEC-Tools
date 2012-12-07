@@ -240,8 +240,10 @@ AC_ARG_ENABLE(ssl,,
         AC_MSG_ERROR([ Invalid option. Use --with-openssl/--without-openssl instead ]) )
 
 AC_SEARCH_LIBS(EVP_md5, [crypto eay32 libeay32 crypt32],,
-        AC_MSG_ERROR("OpenSSL not found. get it from http://www.openssl.org."))
+        AC_MSG_ERROR("OpenSSL crypto library not found. get it from http://www.openssl.org."))
 
+AC_SEARCH_LIBS(SSL_get_SSL_CTX, [ssl],,
+        AC_MSG_ERROR("OpenSSL ssl library not found. get it from http://www.openssl.org."))
 
 AH_TEMPLATE([HAVE_SHA_2],
             [Define if libcrypto implements the SHA-2 suite of algorithms.])
