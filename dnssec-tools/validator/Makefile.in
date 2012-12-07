@@ -15,10 +15,10 @@ help:
 	@echo "make (all|libs|test|leakchecks|install|clean)"
 
 test: subdirmake
-	apps/validate -o $(TEST_VERBOSITY):stderr -r /dev/null -v etc/dnsval.conf -i etc/root.hints -F apps/selftests.dist -S :
+	apps/$(VALIDATOR) -o $(TEST_VERBOSITY):stderr -r /dev/null -v etc/dnsval.conf -i etc/root.hints -F apps/selftests.dist -S :
 
 leakchecks: subdirmake
-	valgrind --tool=memcheck --leak-check=full --show-reachable=yes apps/validate -o 6:stderr -r /dev/null -i etc/root.hints -s
+	valgrind --tool=memcheck --leak-check=full --show-reachable=yes apps/$(VALIDATOR) -o 6:stderr -r /dev/null -i etc/root.hints -s
 
 makeit: subdirmake
 
