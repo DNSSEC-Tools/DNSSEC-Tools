@@ -1,13 +1,13 @@
 #ifndef DNSSECSTATUS_H
 #define DNSSECSTATUS_H
 
-#include <QtWidgets/QLabel>
+#include <QLabel>
 #include <QtCore/QString>
 #include <QtNetwork/QHostInfo>
-#include <QtWidgets/QTableWidget>
+#include <QtGui/QTableWidget>
 #include <QtNetwork/QTcpSocket>
 
-#include <QtWidgets/QTableWidgetItem>
+#include <QtGui/QTableWidgetItem>
 
 typedef struct HostData_s {
     QString hostName;

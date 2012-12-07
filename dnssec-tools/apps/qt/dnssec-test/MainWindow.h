@@ -1,9 +1,13 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include <QtWidgets/QMainWindow>
-#include <QtWidgets/QTableWidget>
+#include <QtGui/QMainWindow>
+#include <QtGui/QTableWidget>
 #include "DNSSECStatus.h"
+
+namespace Ui {
+    class MainWindow;
+}
 
 class MainWindow : public QMainWindow
 {
@@ -20,6 +24,7 @@ public slots:
     void resizeToData();
 
 private:
+    Ui::MainWindow *ui;
     QTableWidget *m_table;
     QTableWidget *m_problemTable;
 };

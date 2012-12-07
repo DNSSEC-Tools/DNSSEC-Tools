@@ -1,14 +1,15 @@
 #include "MainWindow.h"
+#include "ui_MainWindow.h"
 #include "DNSSECStatus.h"
 
-#include <QtWidgets/QLabel>
-#include <QtWidgets/QLineEdit>
-#include <QtWidgets/QGridLayout>
+#include <QtGui/QLabel>
+#include <QtGui/QLineEdit>
+#include <QtGui/QGridLayout>
 #include <QtCore/QStringList>
 #include <QtCore/QTimer>
 #include <QtCore/QFile>
-#include <QtWidgets/QMessageBox>
-#include <QtWidgets/QPushButton>
+#include <QtGui/QMessageBox>
+#include <QtGui/QPushButton>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent)
@@ -63,9 +64,9 @@ void MainWindow::loadHosts(QList<HostData> hosts) {
         QPushButton *button = new QPushButton("->");
 
         m_table->setCellWidget(row, 0, edit = new QLineEdit(hostData.hostName, this));
-//        m_table->setItem(row, 1, count);
-//        m_table->setItem(row, 2, errorNum);
-//        m_table->setItem(row, 3, errorDescription);
+        m_table->setItem(row, 1, count);
+        m_table->setItem(row, 2, errorNum);
+        m_table->setItem(row, 3, errorDescription);
         m_table->setCellWidget(row, 4, button);
 
         connect(button, SIGNAL(clicked()), status, SLOT(initConnection()));
