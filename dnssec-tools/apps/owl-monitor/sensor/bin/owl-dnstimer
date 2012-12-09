@@ -225,15 +225,18 @@ sub main
 	makeresolvers();
 
 	#
-	# Create a new log-message queue for our query entities to use.
+	# Create a new log-message queue for our query threads to use.
 	#
-	$sensorlog->warning("creating logmsg queue") if($verbose);
-	$logmsgs = Thread::Queue->new();
+	if($runthreaded)
+	{
+		$sensorlog->warning("creating logmsg queue") if($verbose);
+		$logmsgs = Thread::Queue->new()
+	}
 
 	#
-	# Print the resolvers we're using.
+	# Print the nameservers we're using.
 	#
-	printroots();
+	printnss();
 
 	#
 	# Start a query entity for each nameserver that has a valid entry.
@@ -385,8 +388,8 @@ sub startup
 #------------------------------------------------------------------------
 # Routine:	makeresolvers()
 #
-# Purpose:	Build a resolver object for each defined root nameserver.
-#		These objects will be saved in the %roots hash.
+# Purpose:	Build a resolver object for each defined nameserver.
+#		These objects will be saved in the @resolvers array.
 #
 sub makeresolvers
 {
@@ -416,7 +419,7 @@ sub makeresolvers
 		$res->udp_timeout($timeout);
 
 		#
-		# Save this root's resolver object.
+		# Save this nameserver's resolver object.
 		#
 		push @resolvers, $res;
 	}
@@ -605,8 +608,9 @@ sub getdatafile
 	$datafn = "$datadir/$datafiles[$qind]";
 	if(($datafd=new IO::File "> $datafn") == 0)
 	{
-		$logmsgs->enqueue("$tg:$ns:  unable to open $datafn : $!");
-		$seekers[$qind]->join();
+		logmsg("$tg:$ns:  unable to open $datafn : $!");
+
+		$seekers[$qind]->join() if($runthreaded);
 	}
 
 	#
@@ -627,7 +631,7 @@ sub getdatafile
 	#
 	autoflush $datafd, 1;
 	$datafds[$qind] = \$datafd;
-	$logmsgs->enqueue("$tg:$ns:  changing to new datafile $datafn");
+	logmsg("$tg:$ns:  changing to new datafile $datafn");
 
 	#
 	# Calculate the time for the next datafile rollover.
@@ -639,14 +643,10 @@ sub getdatafile
 #------------------------------------------------------------------------
 # Routine:	nstimer()
 #
-# Purpose:	Send a message to a root nameserver and time how long it
-#		takes for a response to arrive.  We'll then log the message
-#		and response time for use by a monitor.
-#
-#		This is timing how long it takes a root server to respond to
-#		a request.  The root servers are currently being sent the
-#		hostname.bind query that will result in an anycast response.
-#		Things must change if an actual look-up is required.
+# Purpose:	Send a message to a nameserver and time how long it takes
+#		for a response to arrive.  We'll then log the message and
+#		response time for use by a monitor.  This is timing how
+#		long it takes a nameserver to respond to a request.
 #
 sub nstimer
 {
@@ -726,15 +726,15 @@ sub nstimer
 	#
 	# Send the answer off to be logged.
 	#
-	logger($qind,$reply,$rcode,$time0,$timediff);
+	savedatum($qind,$reply,$rcode,$time0,$timediff);
 }
 
 #------------------------------------------------------------------------
-# Routine:	logger()
+# Routine:	savedatum()
 #
-# Purpose:	Log a response from nstimer().
+# Purpose:	Save a data point -- found in nstimer() -- to our data file.
 #
-sub logger
+sub savedatum
 {
 	my $qind = shift;			# Query index.
 	my $reply = shift;			# Nameserver's reply.
@@ -771,22 +771,36 @@ sub logger
 	$msg = sprintf("%10.5f $cf_targets[$qind] $cf_servers[$qind] $qtype %10.15f $succstr $anycast",$cronos,$td);
 
 
-if(0)
-{
-	$logmsgs->enqueue($msg);
-}
-else
-{
-# $sensorlog->warning($msg);
-$sensorlog->log(level => 'info', message => $msg);
-# $sensorlog->log(message => $msg);
-}
+	#
+	# Send the message to our log file.
+	#
+	logmsg($msg);
 
 	$dfd = $datafds[$qind];
 	$dfd = $$dfd;
 
 	print $dfd "$msg\n";
 
+}
+
+#------------------------------------------------------------------------
+# Routine:	logmsg()
+#
+# Purpose:	Send the message to our log file -- via the log thread if
+#		we're threaded, directly if not.
+#
+sub logmsg
+{
+	my $msg = shift;				# Message to log.
+
+	if($runthreaded)
+	{
+		$logmsgs->enqueue($msg);
+	}
+	else
+	{
+		$sensorlog->log(level => 'info', message => $msg);
+	}
 }
 
 #------------------------------------------------------------------------
@@ -913,11 +927,11 @@ sub cleanup
 }
 
 #------------------------------------------------------------------------
-# Routine:	printroots()
+# Routine:	printnss()
 #
 # Purpose:	Print config info for each defined target/nameserver pair.
 #
-sub printroots
+sub printnss
 {
 	return if(!$verbose);
 
@@ -995,16 +1009,18 @@ particular nameserver.  The DNS query type, target, and nameserver are defined
 in the Owl configuration file.  The time taken from query to response is saved
 in a file specifically for that nameserver, target, and query type.  The data
 so collected are intended to be used in the Owl system to track the
-responsiveness of DNS root nameservers.
+responsiveness of DNS nameservers.
 
-The B<owl-dnstimer> configuration file defines which root nameservers are
-contacted, as well as how often they are contacted.  B<owl-dnstimer> maintains a
-log file that tracks the status of requests and query status.  B<owl-dnstimer>'s
+The B<owl-dnstimer> configuration file defines which nameservers are contacted,
+as well as how often they are contacted.  B<owl-dnstimer> maintains a log file
+that tracks the status of requests and query status.  B<owl-dnstimer>'s
 configuration and data files, as well as the layout for the environment, are
 described in their own man pages.
 
-This version of B<owl-dnstimer> requires a threaded version of Perl.  It is
-hoped that this restriction will shortly be lifted.
+B<owl-dnstimer> will run threaded if the operating system or the installed
+version of Perl allow.  In this case, each query will be handled by its own
+thread.  If threaded execution is not allowed, then each query will be
+handled by its own process.
 
 =head2 FILE ORGANIZATION
 
