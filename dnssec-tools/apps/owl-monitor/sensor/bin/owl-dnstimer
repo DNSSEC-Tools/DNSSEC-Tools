@@ -12,9 +12,6 @@
 #	taken to fulfill the request is recorded for later transfer to the Owl
 #	manager.
 #
-# Revision History:
-#	1.0	121201	Initial version.
-#
 
 use strict;
 
@@ -22,7 +19,7 @@ use strict;
 # Version information.
 #
 my $NAME   = "owl-dnstimer";
-my $VERS   = "$NAME version: 1.14.0";
+my $VERS   = "$NAME version: 1.14.1";
 my $DTVERS = "DNSSEC-Tools version: 1.14";
 
 use FindBin;
@@ -53,7 +50,6 @@ else
 }
 
 use threads::shared;
-use Thread::Queue;
 
 use Log::Dispatch;
 use Log::Dispatch::FileRotate;
@@ -149,8 +145,6 @@ my $idletime = 1 * 60;			# Main thread wait time.
 # Data and log message data.
 #
 
-my $logmsgs :shared = ();
-
 my $sensorlog;				# Sensor's log object.
 my %loginfo = ();			# Logging information.
 
@@ -175,8 +169,6 @@ my @seekers = ();				# Query entity objects.
 my @resolvers = ();				# Resolver objects.
 my @datafiles = ();				# Datafiles for queries.
 my @datafds = ();				# Descriptors for datafiles.
-
-my $bunyan;					# Thread to handle logs.
 
 #------------------------------------------------------------------------
 
@@ -230,7 +222,6 @@ sub main
 	if($runthreaded)
 	{
 		$sensorlog->warning("creating logmsg queue") if($verbose);
-		$logmsgs = Thread::Queue->new()
 	}
 
 	#
@@ -241,7 +232,7 @@ sub main
 	#
 	# Start a query entity for each nameserver that has a valid entry.
 	#
-	$sensorlog->warning("creating query-entities for each target/nameserver pair");
+	$sensorlog->warning("creating queries for each target/nameserver pair");
 	print STDERR "master starting query-entities\n" if($verbose);
 	for(my $ind=0; $ind < @cf_targets; $ind++)
 	{
@@ -263,12 +254,6 @@ sub main
 		print STDERR "no nameserver query entities started\n";
 		exit(4);
 	}
-
-	#
-	# Start an entity to handle log messages from the query entities.
-	#
-	$sensorlog->warning("creating log entity") if($verbose);
-	$bunyan = forge(-1);
 
 	#
 	# Master will just sit here twiddling its thumbs.
@@ -446,21 +431,12 @@ sub forge
 	if($runthreaded)
 	{
 		#
-		# We're running threaded, so we'll create a thread  for
+		# We're running threaded, so we'll create a thread for
 		# queries or logging.
 		#
-		if($qind == -1)
-		{
-			$sensorlog->warning("starting logging thread") if($verbose);
-			print STDERR "starting logging thread\n" if($verbose);
-			$ret = threads->create(\&bunyan);
-		}
-		else
-		{
-			$ret = threads->create(\&questor,$qind);
-		}
+		$ret = threads->create(\&questor,$qind);
 	}
-	elsif($qind >= 0)
+	else
 	{
 		#
 		# We're not running threaded, so we'll create a process
@@ -488,15 +464,6 @@ sub forge
 			#
 			exit(0);
 		}
-	}
-	else
-	{
-		#
-		# We come here if we're not running threaded and a
-		# log process was requested.  We aren't doing this
-		# now, so we'll just quietly do nothing.
-		#
-		$ret = 0;
 	}
 
 	#
@@ -793,39 +760,7 @@ sub logmsg
 {
 	my $msg = shift;				# Message to log.
 
-	if($runthreaded)
-	{
-		$logmsgs->enqueue($msg);
-	}
-	else
-	{
-		$sensorlog->log(level => 'info', message => $msg);
-	}
-}
-
-#------------------------------------------------------------------------
-# Routine:	bunyan()
-#
-# Purpose:	Handle log manipulation and log messages for the query
-#		entities.
-#
-#		Log messages will have this format:
-#			1398421888.14615 d 0.020882844924927 NOERROR d-mimsy-3
-#
-sub bunyan
-{
-	#
-	# If the request was successful, we'll get the anycast server's name.
-	#
-	while(42)
-	{
-		my $msg;			# Message from query entity.
-
-		$msg = $logmsgs->dequeue();
-		chomp $msg;
-		$sensorlog->warning($msg);
-	}
-
+	$sensorlog->log(level => 'info', message => $msg);
 }
 
 #------------------------------------------------------------------------
@@ -887,11 +822,6 @@ sub cleanup
 			$sensorlog->warning("shutting down query-entity for $cf_targets[$qind]/$cf_servers[$qind]") if($verbose);
 			$qt->kill('SIGUSR2')->detach();
 		}
-
-		#
-		# And now zap the logging thread.
-		#
-		$bunyan->kill('SIGUSR2')->detach();
 	}
 	else
 	{
