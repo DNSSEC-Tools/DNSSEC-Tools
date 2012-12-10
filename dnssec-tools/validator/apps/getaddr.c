@@ -278,7 +278,9 @@ main(int argc, char *argv[])
     }
 
     memset(&hints, 0, sizeof(struct addrinfo));
+#ifdef AI_ADDRCONFIG
     hints.ai_flags = AI_ADDRCONFIG;
+#endif
     if (getcanonname) {
         hints.ai_flags |= AI_CANONNAME;
     }
