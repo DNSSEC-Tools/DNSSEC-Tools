@@ -79,6 +79,12 @@ dnssec_checks: dnssec_checks.lo  $(LOCALLIBS)
 $(DANECHK): dane_check.lo $(LOCALLIBS)
 	$(LIBTOOLLD) -o $@ dane_check.lo $(LDFLAGS) $(LIBS)
 
+test: $(VALIDATOR)
+	./$(VALIDATOR) -o $(TEST_VERBOSITY):stderr -r /dev/null -v ../etc/dnsval.conf -i ../etc/root.hints -F selftests.dist -S :
+
+leakchecks: $(VALIDATOR)
+	valgrind --tool=memcheck --leak-check=full --show-reachable=yes ./$(VALIDATOR) -o 6:stderr -r /dev/null -i ../etc/root.hints -s
+
 install:
 	$(MKPATH) $(DESTDIR)$(bindir)
 	$(LIBTOOLIN) $(VALIDATOR) $(DESTDIR)$(bindir)
