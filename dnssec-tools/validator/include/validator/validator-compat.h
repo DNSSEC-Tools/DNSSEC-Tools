@@ -688,7 +688,8 @@ typedef enum __ns_rcode {
 #endif /* HAVE_NS_R_BADSIG */
 
 /* eabi = android */
-#if !defined(HAVE_ARPA_NAMESER_H) || defined(eabi) || defined(ANDROID)
+/* OpenBSD has arpa/nameser.h, but it doesn't define ns_msg */
+#if !defined(HAVE_ARPA_NAMESER_H) || defined(eabi) || defined(ANDROID) ||defined(__OpenBSD__)
 /*
  * Define constants based on RFC 883, RFC 1034, RFC 1035
  */
