@@ -217,14 +217,6 @@ sub main
 	makeresolvers();
 
 	#
-	# Create a new log-message queue for our query threads to use.
-	#
-	if($runthreaded)
-	{
-		$sensorlog->warning("creating logmsg queue") if($verbose);
-	}
-
-	#
 	# Print the nameservers we're using.
 	#
 	printnss();
