@@ -2274,6 +2274,14 @@ read_res_config_file(val_context_t * ctx)
 
     val_log(ctx, LOG_DEBUG, 
             "read_res_config_file(): Done reading resolver configuration");
+
+    if (fd != -1) {
+#ifdef HAVE_FLOCK
+        fl.l_type = F_UNLCK;
+        fcntl(fd, F_SETLK, &fl);
+#endif
+        close(fd);
+    }
     return VAL_NO_ERROR;
 
   err:
