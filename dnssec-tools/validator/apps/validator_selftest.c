@@ -481,12 +481,24 @@ run_suite(val_context_t *context, testcase *curr_test, int tcs, int tce,
 {
     int i, rc, run = 0;
     struct val_response resp;
+#ifdef VAL_FD_LEAK_TEST
+    int startfd;
+#endif
 
     for (i = tcs;
          curr_test != NULL && curr_test->desc != NULL && i <= tce;
          curr_test = curr_test->next) {
 
         memset(&resp, 0, sizeof(resp));
+
+#ifdef VAL_FD_LEAK_TEST
+        startfd = socket(AF_INET,SOCK_DGRAM,0);
+        if (-1 == startfd) {
+            fprintf(stderr,"\n\nsocket failed\n");
+            break;
+        }
+        close(startfd);
+#endif
 
         ++run;
         fprintf(stderr, "%d: ", ++i);
@@ -504,6 +516,17 @@ run_suite(val_context_t *context, testcase *curr_test, int tcs, int tce,
         if (rc)
             ++(*failed);
         fprintf(stderr, "\n");
+
+#ifdef VAL_FD_LEAK_TEST
+        rc = socket(AF_INET,SOCK_DGRAM,0);
+        if (rc > 0) {
+            if (rc != startfd)
+                fprintf(stderr,"\n**** end fd %d != start %d\n", rc, startfd);
+            else
+                fprintf(stderr,"\n**** end fd %d == start %d\n", rc, startfd);
+            close(rc);
+        }
+#endif
     }
 
     return run;
