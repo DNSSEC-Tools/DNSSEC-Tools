@@ -251,42 +251,74 @@ res_ea_init(u_char * signed_query, size_t signed_length,
     return temp;
 }
 
+/*
+ * give up on current response for this address.
+ * set up next try to try address again.
+ */
 void
-res_io_cancel_remaining_attempts(struct expected_arrival *ea)
+res_io_retry_source(struct expected_arrival *ea)
 {
-    if (ea->ea_socket != INVALID_SOCKET) {
-        CLOSESOCK(ea->ea_socket);
-        ea->ea_socket = INVALID_SOCKET;
-    }
-    ea->ea_remaining_attempts = -1;
-}
+    res_log(NULL, LOG_DEBUG, "libsres: ""retry source ea %p", ea);
+    res_print_ea(ea);
 
-void
-res_io_cancel_source(struct expected_arrival *ea)
-{
     /* close socket */
     if (ea->ea_socket != INVALID_SOCKET) {
         CLOSESOCK(ea->ea_socket);
         ea->ea_socket = INVALID_SOCKET;
     }
 
-    /* no more retries */
-    ea->ea_remaining_attempts = -1;
+    /* bump retry time to current time */
+    gettimeofday(&ea->ea_next_try, NULL);
+}
+
+/*
+ * give up on current address for this nameserver.
+ * set cancel time, which will trigger move to next address.
+ */
+void
+res_io_reset_source(struct expected_arrival *ea)
+{
+    res_log(NULL, LOG_DEBUG, "libsres: ""reset source ea %p", ea);
+    res_print_ea(ea);
+
+    /* close socket */
+    if (ea->ea_socket != INVALID_SOCKET) {
+        CLOSESOCK(ea->ea_socket);
+        ea->ea_socket = INVALID_SOCKET;
+    }
 
     /* bump cancel time to current time */
     gettimeofday(&ea->ea_cancel_time, NULL);
 }
 
+/*
+ * give up on all addresses for this nameserver
+ * set remaining retries to -1; no more addresses will be tried
+ */
+void
+res_io_cancel_source(struct expected_arrival *ea)
+{
+    res_log(NULL, LOG_DEBUG, "libsres: ""canceling source ea %p", ea);
+    res_print_ea(ea);
+
+    /* close socket */
+    if (ea->ea_socket != INVALID_SOCKET) {
+        CLOSESOCK(ea->ea_socket);
+        ea->ea_socket = INVALID_SOCKET;
+    }
+
+    /* bump cancel time to current time */
+    gettimeofday(&ea->ea_cancel_time, NULL);
+
+    /* no more retries */
+    ea->ea_remaining_attempts = -1;
+}
+
 void
 res_io_cancel_all_remaining_attempts(struct expected_arrival *ea)
 {
-    for ( ; ea; ea = ea->ea_next) {
-        if (ea->ea_socket != INVALID_SOCKET) {
-            CLOSESOCK(ea->ea_socket);
-            ea->ea_socket = INVALID_SOCKET;
-        }
-        ea->ea_remaining_attempts = -1;
-    }
+    for ( ; ea; ea = ea->ea_next)
+        res_io_cancel_source(ea);
 }
 
 int
@@ -345,7 +377,7 @@ res_io_send(struct expected_arrival *shipit)
         /* Set the source port */
         if (0 != bind_to_random_source(af, shipit->ea_socket)) {
             /* error */
-            CLOSESOCK(shipit->ea_socket);
+            res_io_retry_source(shipit);
             return SR_IO_SOCKET_ERROR;
         }
 
@@ -370,8 +402,7 @@ res_io_send(struct expected_arrival *shipit)
             res_log(NULL, LOG_ERR,
                     "libsres: ""Closing socket %d, connect errno = %d",
                     shipit->ea_socket, errno);
-            CLOSESOCK(shipit->ea_socket);
-            shipit->ea_socket = INVALID_SOCKET;
+            res_io_reset_source(shipit);
             return SR_IO_SOCKET_ERROR;
         }
     }
@@ -390,15 +421,13 @@ res_io_send(struct expected_arrival *shipit)
         if ((bytes_sent =
              send(shipit->ea_socket, (const char *)&length_n, sizeof(length_n), 0))
             == SOCKET_ERROR) {
-            CLOSESOCK(shipit->ea_socket);
-            shipit->ea_socket = INVALID_SOCKET;
+            res_io_reset_source(shipit);
             return SR_IO_SOCKET_ERROR;
         }
 
 
         if (bytes_sent != sizeof(length_n)) {
-            CLOSESOCK(shipit->ea_socket);
-            shipit->ea_socket = INVALID_SOCKET;
+            res_io_reset_source(shipit);
             return SR_IO_SOCKET_ERROR;
         }
     }
@@ -409,8 +438,7 @@ res_io_send(struct expected_arrival *shipit)
         res_log(NULL, LOG_ERR, "libsres: "
                 "Closing socket %d, sending %d bytes failed (rc %d)",
                 shipit->ea_socket, shipit->ea_signed_length, bytes_sent);
-        CLOSESOCK(shipit->ea_socket);
-        shipit->ea_socket = INVALID_SOCKET;
+        res_io_reset_source(shipit);
         return SR_IO_SOCKET_ERROR;
     }
 
@@ -553,7 +581,7 @@ res_nsfallback_ea(struct expected_arrival *ea, struct timeval *closest_event,
     if (temp->ea_remaining_attempts == 0) {
         res_log(NULL, LOG_DEBUG, "libsres: "
                 "fallback already exhausted edns retries");
-        res_io_cancel_source(temp);
+        res_io_reset_source(temp);
         if (res_io_are_all_finished(ea))
             return -1;
         return 0;
@@ -618,9 +646,9 @@ res_io_next_address(struct expected_arrival *ea,
         struct expected_arrival *next_server = ea->ea_next;
 
         /*
-         * cancel this source 
+         * tried all addresses, cancel this source 
          */
-        res_io_cancel_remaining_attempts(ea);
+        res_io_cancel_source(ea);
         res_log(NULL, LOG_INFO, "libsres: ""%s", no_more_str);
 
         if (next_server && next_server->ea_remaining_attempts &&
@@ -1267,8 +1295,10 @@ res_io_read_tcp(struct expected_arrival *arrival)
      */
     if (complete_read(arrival->ea_socket, (u_char *)&len_n, sizeof(len_n))
         != sizeof(len_n)) {
-        CLOSESOCK(arrival->ea_socket);
-        arrival->ea_socket = INVALID_SOCKET;
+        /*
+         * reset this source
+         */
+        res_io_reset_source(arrival);
         return SR_IO_SOCKET_ERROR;
     }
 
@@ -1279,8 +1309,10 @@ res_io_read_tcp(struct expected_arrival *arrival)
      */
     arrival->ea_response = (u_char *) MALLOC(len_h * sizeof(u_char));
     if (arrival->ea_response == NULL) {
-        CLOSESOCK(arrival->ea_socket);
-        arrival->ea_socket = INVALID_SOCKET;
+        /*
+         * retry this source 
+         */
+        res_io_retry_source(arrival);
         return SR_IO_MEMORY_ERROR;
     }
 
@@ -1292,9 +1324,9 @@ res_io_read_tcp(struct expected_arrival *arrival)
         arrival->ea_response = NULL;
         arrival->ea_response_length = 0;
         /*
-         * Cancel this source 
+         * reset this source 
          */
-        res_io_cancel_remaining_attempts(arrival);
+        res_io_reset_source(arrival);
         return SR_IO_SOCKET_ERROR;
     }
     return SR_IO_UNSET;
@@ -1377,12 +1409,9 @@ res_io_read_udp(struct expected_arrival *arrival)
 
   error:
     /*
-     * Cancel this source 
+     * reset this source 
      */
-    res_io_cancel_source(arrival);
-    res_log(NULL, LOG_INFO, "libsres: ""Closing socket %d, %s",
-            arrival->ea_socket, (ret_val == 0) ?
-            "socket shutdown" : "read_udp failed");
+    res_io_reset_source(arrival);
 
   allow_retry:
     FREE(arrival->ea_response);
