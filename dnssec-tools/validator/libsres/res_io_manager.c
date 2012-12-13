@@ -1462,7 +1462,7 @@ res_switch_all_to_tcp_tid(int tid)
 int
 res_io_read(fd_set * read_descriptors, struct expected_arrival *ea_list)
 {
-    int             handled = 0;
+    int             handled = 0, rc;
     struct expected_arrival *arrival;
 
     res_log(NULL,LOG_DEBUG,"libsres: "" res_io_read ea %p", ea_list);
@@ -1488,16 +1488,16 @@ res_io_read(fd_set * read_descriptors, struct expected_arrival *ea_list)
 
             if (arrival->ea_using_stream) {
                 /** Use TCP */
-                if (res_io_read_tcp(arrival) == SR_IO_SOCKET_ERROR)
-                    continue;
+                rc = res_io_read_tcp(arrival);
             } else {
                 /** Use UDP */
-                if (res_io_read_udp(arrival) == SR_IO_SOCKET_ERROR)
-                    continue;
+                rc = res_io_read_udp(arrival);
             }
-            res_log(NULL, LOG_DEBUG, "libsres: ""Read %zd byptes via %s",
+            res_log(NULL, LOG_DEBUG, "libsres: ""Read %zd bytes via %s",
                     arrival->ea_response_length,
                        arrival->ea_using_stream ? "TCP" : "UDP");
+            if (SR_IO_UNSET != rc)
+                continue;
 
             /*
              * Make sure this is the query we want (buffer id's match).
