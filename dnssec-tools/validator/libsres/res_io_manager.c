@@ -1223,16 +1223,35 @@ complete_read(SOCKET sock, u_char *field, size_t length)
 {
     size_t             bytes;
     size_t             bytes_read = 0;
+#ifdef MSG_DONTWAIT
+    int                flags = MSG_DONTWAIT;
+#else
+    int                flags =0;
+#endif
     memset(field, '\0', length);
 
     do {
-        bytes = recv(sock, field + bytes_read, length - bytes_read, 0);
+        bytes = recv(sock, field + bytes_read, length - bytes_read, flags);
         if (bytes == SOCKET_ERROR) {
-            bytes_read = -1;
-            return -1;
+            if (EAGAIN == errno)
+                continue;
+            break;
         }
         bytes_read += bytes;
     } while (bytes_read < length && bytes != 0);
+
+    if (0 == bytes)
+        res_log(NULL, LOG_INFO, "libsres: ""socket shutdown.", socket);
+    if (bytes_read != length) {
+        res_log(NULL, LOG_INFO,
+                "libsres: ""incomplete read on socket %d; read %d of %d\n",
+                sock, bytes_read, length);
+        if (bytes == SOCKET_ERROR) {
+            res_log(NULL, LOG_INFO, "libsres: ""  errno %d %s.", errno,
+                    strerror(errno));
+            return -1;
+        }
+    }
 
     return bytes_read;
 }
