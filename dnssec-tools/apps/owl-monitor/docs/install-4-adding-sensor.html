@@ -48,7 +48,8 @@
 <tr valign=top><td>&nbsp;<td><a href="install-4-adding-sensor.html#4.2.8.">4.2.8.</a><td>&nbsp;<td>Nagios Modifications</tr>
 <tr valign=top><td>&nbsp;<td><a href="install-4-adding-sensor.html#4.2.8.1.">4.2.8.1.</a><td>&nbsp;<td><b>nagios.cfg</tr>
 <tr valign=top><td>&nbsp;<td><a href="install-4-adding-sensor.html#4.2.8.2.">4.2.8.2.</a><td>&nbsp;<td><b>owl-hostgroups.cfg</b> (Nagios)</b></tr>
-<tr valign=top><td>&nbsp;<td><a href="install-4-adding-sensor.html#4.2.9.">4.2.9.</a><td>&nbsp;<td>Restart Nagios</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-4-adding-sensor.html#4.2.9.">4.2.9.</a><td>&nbsp;<td>Graphing Modifications</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-4-adding-sensor.html#4.2.10.">4.2.10.</a><td>&nbsp;<td>Restart Nagios</tr>
 <tr valign=top><td width=20>&nbsp;<td width=20>&nbsp;<td>&nbsp;<td>&nbsp;</tr>
 
 </table>
@@ -678,7 +679,7 @@ added to the Nagios environment in
 <b>owl-newsensor</b> can be used like this to create the Nagios objects:
 
 <pre>
-    $ owl-newsensor -out sensor8.cfg /owl/data/sensor8
+    $ owl-newsensor -out sensor8.cfg /owl/data/sensor8/data
 </pre>
 
 <p>
@@ -778,9 +779,9 @@ Examples for the <i>cfg_file</i> modifications may be found in
 
 <p>
 
-This file contains the Nagios <i>hostgroup</i> object that lists the Owl
-sensor hosts.  All your Owl sensors should be listed in the "<i>DNS Response
-Time Sensors</i>" object.
+This file contains the "<i>DNS Response Time Sensors</i>" Nagios
+<i>hostgroup</i> object that lists the Owl sensor hosts.  All your Owl
+sensors should be listed in the "<i>DNS Response Time Sensors</i>" object.
 
 <p>
 
@@ -805,7 +806,22 @@ purposes.
 <!----------------------------------->
 
 <a name="4.2.9."></a>
-<h3>4.2.9. Restart Nagios</h3>
+<h3>4.2.9. Graphing Modifications</h3>
+
+<p>
+
+The new sensor's data must be made available to the <b>drraw.cgi</b> script.
+To do this, the new sensor's data sources must be added to the <i>%datadirs</i>
+hash in the <b>drraw.conf</b> file.
+See <a href="install-2-installation.html#2.2.2.4.">2.2.2.4.</a><td>&nbsp;<td><b>drraw.cgi</b>
+for more details.
+
+<p>
+
+<!----------------------------------->
+
+<a name="4.2.10."></a>
+<h3>4.2.10. Restart Nagios</h3>
 
 <p>
 
