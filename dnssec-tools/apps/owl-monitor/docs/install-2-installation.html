@@ -561,9 +561,9 @@ slash.  The second is a name by which those databases will be identified when
 defining new graphs.
 
 <pre>
-    '/owl/nagiosgraph/var/rrd/sensor1 h-root foo.com A'  => '[Kyoto H foo A]',
-    '/owl/nagiosgraph/var/rrd/sensor1 h-root foo.com NS' => '[Kyoto H foo NS]',
-    '/owl/nagiosgraph/var/rrd/sensor5 h-root foo.com A'  => '[Cairo H foo A]',
+    '/owl/nagiosgraph/var/rrd/sensor1%20h-root%20foo.com%20A'  => '[Kyoto H foo A]',
+    '/owl/nagiosgraph/var/rrd/sensor1%20h-root%20foo.com%20NS' => '[Kyoto H foo NS]',
+    '/owl/nagiosgraph/var/rrd/sensor5%20h-root%20foo.com%20A'  => '[Cairo H foo A]',
 </pre>
 
 The identifier should be unique for each database directory.
@@ -998,7 +998,7 @@ information that you would find useful.)
 </ul>
 
 To allow for graphing of monitoring results, several performance-processing
-fields must be set in <b>nagios.cfg</b>.  Unless otherwise state, do not
+fields must be set in <b>nagios.cfg</b>.  Unless otherwise stated, do not
 include the double quotes when setting these fields.
 
 <ul>
