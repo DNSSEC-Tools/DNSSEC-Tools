@@ -1249,7 +1249,7 @@ res_io_get_a_response(struct expected_arrival *ea_list, u_char ** answer,
 size_t
 complete_read(SOCKET sock, u_char *field, size_t length)
 {
-    size_t             bytes;
+    ssize_t             bytes;
     size_t             bytes_read = 0;
 #ifdef MSG_DONTWAIT
     int                flags = MSG_DONTWAIT;
@@ -1266,7 +1266,7 @@ complete_read(SOCKET sock, u_char *field, size_t length)
             break;
         }
         bytes_read += bytes;
-    } while (bytes_read < length && bytes != 0);
+    } while (bytes_read < length && bytes > 0);
 
     if (0 == bytes)
         res_log(NULL, LOG_INFO, "libsres: ""socket shutdown.", socket);
