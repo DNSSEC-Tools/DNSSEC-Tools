@@ -245,6 +245,14 @@ typedef unsigned short     u_int16_t;
 #define u_long unsigned long 
 #endif
 
+#ifndef HAVE_SIZE_T
+#define size_t unsigned int
+#endif
+
+#ifndef HAVE_SSIZE_T
+#define ssize_t int
+#endif
+
 #ifndef HAVE_SNPRINTF 
 #define snprintf _snprintf
 #endif
