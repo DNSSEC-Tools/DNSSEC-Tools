@@ -1261,8 +1261,6 @@ complete_read(SOCKET sock, u_char *field, size_t length)
     do {
         bytes = recv(sock, field + bytes_read, length - bytes_read, flags);
         if (bytes == SOCKET_ERROR) {
-            if (EAGAIN == errno)
-                continue;
             break;
         }
         bytes_read += bytes;
