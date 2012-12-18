@@ -1,0 +1,256 @@
+#!/usr/bin/perl
+#
+# Copyright 2012 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details.
+#
+# owl-needs
+#
+#       This script reports the presence of Perl modules required by Owl.
+#
+# Revision History:
+#	1.0	121218	Initial version.
+#
+
+use strict;
+
+use Getopt::Long qw(:config no_ignore_case_always);
+
+#
+# Version information.
+#
+my $NAME   = "owl-needs";
+my $VERS   = "$NAME version: 1.14.1";
+my $DTVERS = "DNSSEC-Tools version: 1.14";
+
+#------------------------------------------------------------------------
+
+#
+# Data required for command line options.
+#
+my %options = ();                       # Filled option array.
+my @opts =
+(
+	"list",					# List modules to be checked.
+	"help",					# Give help message.
+	"Version",				# Give version info.
+	"verbose",				# Give verbose output.
+);
+
+my $listonly = 0;				# Only show module list flag.
+my $verbose  = 0;				# Verbose flag.
+
+#------------------------------------------------------------------------
+
+#
+# Modules whose presence will be verified.
+#
+my @needed_modules =
+(
+	'Cwd',
+	'Date::Format',
+	'Exporter',
+	'FindBin',
+	'Getopt::Long',
+	'LWP::Simple',
+	'Log::Dispatch::FileRotate',
+	'Log::Dispatch',
+	'Net::DNS::Packet',
+	'Net::DNS::Resolver',
+	'Net::DNS',
+	'POSIX',
+	'Time::HiRes',
+	'Time::Local',
+	'threads',
+	'threads::shared',
+	'Thread::Queue',
+);
+
+my $errs = 0;					# Count of unfound modules.
+
+#------------------------------------------------------------------------
+
+main();
+exit($errs);
+
+#------------------------------------------------------------------------
+# Routine:	main()
+#
+sub main
+{
+
+	#
+	# Check our options and read the configuration file.
+	#
+	doopts();
+
+	#
+	# Go through the module list and do The Right Thing.
+	#
+	foreach my $nm (@needed_modules)
+	{
+		#
+		# If we're just listing the modules, print the name
+		# and continue onwards.
+		#
+		if($listonly)
+		{
+			print "$nm\n";
+			next;
+		}
+
+		#
+		# Check the module's presence and respond appropriately.
+		#
+		if( eval " require $nm " == 0)
+		{
+			if($verbose)
+			{
+				print "$nm not found - $@\n";
+			}
+			else
+			{
+				print "$nm:  $@\n";
+			}
+			$errs++;
+		}
+		else
+		{
+			print "$nm found\n" if($verbose);
+		}
+	}
+
+	#
+	# Print a success message -- if we had complete success and we
+	# aren't just listing the modules.
+	#
+	if(($errs == 0) && ($listonly == 0))
+	{
+		print "\n" if($verbose);
+		print "all Perl modules found\n";
+	}
+}
+
+#------------------------------------------------------------------------
+# Routine:	doopts()
+#
+sub doopts
+{
+	#
+	# Parse the options.
+	#
+	GetOptions(\%options,@opts) || usage();
+
+	#
+	# Handle a few immediate flags.
+	#
+	version()	if(defined($options{'Version'}));
+	usage(1)	if(defined($options{'help'}));
+
+	#
+	# Set our option variables based on the parsed options.
+	#
+	$verbose  = $options{'verbose'};
+	$listonly = $options{'list'};
+
+	if($verbose && $listonly)
+	{
+		print STDERR "-verbose and -list are mutually exclusive\n";
+		exit(1);
+	}
+}
+
+#----------------------------------------------------------------------
+# Routine:      version()
+#
+# Purpose:      Print the version number(s) and exit.
+#
+sub version
+{
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+	exit(0);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:      usage()
+#
+sub usage
+{
+	print STDERR "usage:  $0 [options]\n";
+
+	print STDERR "\t\where options are:\n";
+	print STDERR "\t\t-list\n";
+	print STDERR "\t\t-verbose\n";
+	print STDERR "\t\t-help\n";
+	print STDERR "\t\t-Version\n";
+
+	exit(0);
+}
+
+#--------------------------------------------------------------------------
+
+=pod
+
+=head1 NAME
+
+owl-needs - reports presence of Perl modules required by Owl
+
+=head1 SYNOPSIS
+
+  owl-needs [options]
+
+=head1 DESCRIPTION
+
+B<owl-needs> reports the presence or absence of Perl modules required by
+Owl scripts.
+
+If no options are given, then those modules that aren't found will be reported.
+The result of the module's failed B<require> will be reported.
+
+The count of unfound modules will be the command's exit code.
+
+=head1 OPTIONS
+
+=over 4
+
+=item B<-list>
+
+Lists the modules that will be checked, but does not perform any checks.
+This option may not be used with the B<-verbose> option.
+
+=item B<-verbose>
+
+Prints the found/not-found status of each module to be checked.
+This option may not be used with the B<-list> option.
+
+=item B<-help>
+
+Prints a help message.
+
+=item B<-Version>
+
+Prints B<owl-needs>' version and exit.
+
+=back
+
+=head1 SEE ALSO
+
+owl-archold(8),
+owl-dnstimer(8),
+owl-heartbeat(8),
+owl-sensor-heartbeat.cgi(8),
+owl-sensord(8)
+owl-status(8)
+
+owlutils.pm(5)
+
+=head1 COPYRIGHT
+
+Copyright 2012 SPARTA, Inc.  All rights reserved.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@tislabs.com
+
+=cut
+
