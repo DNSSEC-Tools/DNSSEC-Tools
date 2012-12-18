@@ -1447,13 +1447,13 @@ Return Values:
 
 =head1 SEE ALSO
 
-owl-dnstimer(1),
-owl-sensord(1)
+B<owl-dnstimer(1)>,
+B<owl-sensord(1)>
 
-FindBin(3pm)
+B<FindBin(3pm)>
 
-owl-config(5),
-owl-data(5)
+B<owl-config(5)>,
+B<owl-data(5)>
 
 =head1 COPYRIGHT
 
