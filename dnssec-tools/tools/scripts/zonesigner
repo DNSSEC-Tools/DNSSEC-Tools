@@ -2840,7 +2840,7 @@ sub serialincr
 		# a mutant zone file that breaks this.
 		#
 		$lncp =~ s/;.*$//;
-		next if($lncp !~ /\s+IN\s+SOA\s+/i);
+		next if($lncp !~ /^.*?\s+IN\s+SOA\s+/i);
 
 		#
 		# If this line has a left paren, we'll treat this as a multi-
