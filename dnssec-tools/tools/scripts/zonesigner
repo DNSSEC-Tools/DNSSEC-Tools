@@ -2820,7 +2820,8 @@ sub serialincr
 	for(my $ind = 0; $ind < @lines; $ind++)
 	{
 		my $line = $lines[$ind];	# Line under consideration.
-		my $lncp = $line;		# Copy of the line.
+		my $lncp = $line;		# Copy of the line.  *Only*
+						# used in finding an SOA line.
 
 		#
 		# Skip comments and empty lines.
@@ -2832,20 +2833,19 @@ sub serialincr
 
 		#
 		# Skip this line if it isn't an SOA line.
-		# We'll dump any comments and parens from the copy for
-		# the sake of checking.
+		# We'll dump any comments from the copy for the sake of
+		# checking for the SOA.
 		# This is a bit of a crude check and it's possible it
 		# could be fooled.  We'll use it until someone gives us
 		# a mutant zone file that breaks this.
 		#
 		$lncp =~ s/;.*$//;
-		$lncp =~ s/\(//g;
-		next if($line !~ /\s+IN\s+SOA\s+/i);
+		next if($lncp !~ /\s+IN\s+SOA\s+/i);
 
 		#
-		# If this line has a left paren, we'll treat this as a multiline
-		# SOA.  If the serial number isn't here, then we'll look on
-		# subsequent lines.
+		# If this line has a left paren, we'll treat this as a multi-
+		# line SOA.  If the serial number isn't here, then we'll look
+		# on subsequent lines.
 		#
 		if($line =~ /\(/)
 		{
