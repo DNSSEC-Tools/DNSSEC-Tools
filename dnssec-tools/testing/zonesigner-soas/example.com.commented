@@ -1,0 +1,13 @@
+$TTL 30
+
+@ IN SOA dns.example.com. admin.example.com. ( ; comment here
+1 ; and here
+ 30
+    30 ; sometimes we have one
+      30
+	 30) ; sometimes not
+
+                NS      dns.example.com.
+
+www IN A 127.0.0.1
+dns IN A 127.0.0.1
