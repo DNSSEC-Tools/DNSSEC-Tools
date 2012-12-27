@@ -7,6 +7,7 @@ use File::Copy;
 use File::Path;
 use Cwd;
 use IO::Dir;
+use Net::DNS::ZoneFile::Fast;
 
 my $testZonesDirectory = "zonesigner-soas";
 
@@ -27,7 +28,7 @@ while (my $dirent = $dirh->read()) {
 }
 
 
-my $testsPerFile = 2;
+my $testsPerFile = 19;
 # TEST object
 my $test = Test::Builder->new;
 $test->diag("Testing Zonesigner");
@@ -42,20 +43,83 @@ my $origdir = getcwd;
 rmtree($testdir);
 
 # test each file
+my $inputfile = "example.com";
 foreach my $testfile (@testfiles) {
     mkpath($testdir) || die "unable to make(dir) $testdir";
 
-    copy("$testZonesDirectory/$testfile","$testdir/example.com");
+    copy("$testZonesDirectory/$testfile","$testdir/$inputfile");
     chdir($testdir);
 
-    $test->ok(-f "example.com", "$testfile was copied into place properly");
+    $test->ok(-f "$inputfile", "$testfile was copied into place properly");
 
-    system("zonesigner -genkeys example.com > zonesigner.out 2>&1");
+    #
+    # parse the file using Net::DNS::ZoneFile::Fast to get the serial number
+    #
+    my $serial = get_serial_number($inputfile);
+    $test->ok($serial > 0, "The serial number ($serial) was pulled out ok");
+
+    #
+    # run zonesigner the first time, generating keys
+    #
+    system("zonesigner -genkeys $inputfile > zonesigner.out 2>&1");
     $test->is_eq($?, 0, "zonesigner error code was ok");
+    $test->ok(-f "$inputfile.signed", "$testfile was signed properly");
+
+    #
+    # check the serial numbers
+    #
+    check_serial_numbers($inputfile, $serial, 1);
+
+    #
+    # run zonesigner a second time, reuse keys
+    #
+    unlink("$inputfile.signed");
+    system("zonesigner $inputfile > zonesigner.out 2>&1");
+    $test->is_eq($?, 0, "zonesigner error code was ok again");
+    $test->ok(-f "$inputfile.signed", "$testfile was signed properly again");
+
+    #
+    # check the serial numbers
+    #
+    check_serial_numbers($inputfile, $serial, 2);
 
     chdir($origdir);
     rmtree($testdir);
 }
+
+sub get_serial_number {
+    my ($file) = @_;
+    my $rrs = Net::DNS::ZoneFile::Fast::parse(file => "$inputfile",
+					      soft_errors => 1);
+    $test->ok(defined($rrs), "the zone file parsed ok");
+    my $serial = -1;
+    foreach my $rr (@$rrs) {
+	if ($rr->type() eq 'SOA') {
+	    $serial = $rr->serial();
+	}
+    }
+    return $serial;
+}
+
+sub check_serial_numbers {
+    my ($file, $serial, $increment) = @_;
+
+    #
+    # check the serial numbers
+    #
+    my $serial2 = get_serial_number($file);
+    $test->ok($serial2 > 0, "The serial number ($serial2) was pulled out ok");
+    $test->ok($serial2 == $serial + $increment,
+	      "The serial number ($serial2) was +$increment of the last");
+
+    $serial2 = get_serial_number("$file.signed");
+    $test->ok($serial2 > 0,
+	      "The serial number ($serial2) was pulled from the signed file");
+    $test->ok($serial2 == $serial + $increment,
+	      "The serial number ($serial2) was +$increment of the original");
+}
+
+
 
 summary($test, "zonesigner-soas");
 exit(0);
