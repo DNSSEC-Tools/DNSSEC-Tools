@@ -110,13 +110,13 @@ sub check_serial_numbers {
     my $serial2 = get_serial_number($file);
     $test->ok($serial2 > 0, "The serial number ($serial2) was pulled out ok");
     $test->ok($serial2 == $serial + $increment,
-	      "The serial number ($serial2) was +$increment of the last");
+	      "The serial number ($serial2) was +$increment of the last ($serial)");
 
     $serial2 = get_serial_number("$file.signed");
     $test->ok($serial2 > 0,
 	      "The serial number ($serial2) was pulled from the signed file");
     $test->ok($serial2 == $serial + $increment,
-	      "The serial number ($serial2) was +$increment of the original");
+	      "The serial number ($serial2) was +$increment of the original ($serial)");
 }
 
 
