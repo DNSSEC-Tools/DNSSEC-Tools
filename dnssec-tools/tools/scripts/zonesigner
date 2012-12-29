@@ -2785,8 +2785,9 @@ sub hasincludes
 # Routine:	serialincr
 #
 # Purpose:	This routine increments the serial number of an SOA record in
-#		a zone file.  The serial number is found in both the multi-line
-#		parenthesized form and the single line unparenthesized form.
+#		a previously opened zone file.  The serial number is found in
+#		both the multi-line parenthesized form and the single line
+#		unparenthesized form.
 #
 #		The SOA line is searched for, line by line.  There are three
 #		basic formats of interest:
@@ -2795,16 +2796,18 @@ sub hasincludes
 #			- serial number not on SOA line, with parentheses
 #
 #		Getting the old serial number and setting the new serial
-#		number maintain the existing format and any comments that
-#		may be on the line.
+#		number maintain the existing format and any comments that may
+#		be on the line.  The only difference between the "before" SOA
+#		line and the "after" SOA line is the changed serial number.
 #
 #		On success, the new serial number is returned.
 #		On failure, -1 is returned.
 #
 sub serialincr
 {
-	my $file = "";				# Contents of zone file.
-	my @lines = ();				# Contents of zone file.
+	my $file;				# Contents string of zone file.
+	my @lines = ();				# Contents array of zone file.
+	my $soare;				# SOA regular expression.
 
 	my $serialnew = -1;			# New serial number.
 
@@ -2813,6 +2816,16 @@ sub serialincr
 	#
 	seek(ZF,0,0);
 	@lines = <ZF>;
+
+	#
+	# This regular expression will find the IN SOA line in the zone
+	# file.  It handles parenthesess, spacing, and no spacing.  When
+	# used, it matches everything from the beginning of the line to
+	# the SOA, plus any trailing lparens and spacing.  It will also
+	# handle the optional name and TTL from the beginning of the line.
+	# Gaze in wonder upon this testament to pattern matching.
+	#
+	$soare = '^.*?[ \t\(\)]+IN[ \t\(\)]+SOA[ \t\(\)]+';
 
 	#
 	# Find the SOA line and components.
@@ -2826,21 +2839,17 @@ sub serialincr
 		#
 		# Skip comments and empty lines.
 		#
-		if(($line =~ /^\s*$/) || ($line =~ /^\s*;/))
+		if(($line =~ /^[ \t\(\)]*$/) || ($line =~ /^[ \t\(\)]*;/))
 		{
 			next;
 		}
 
 		#
-		# Skip this line if it isn't an SOA line.
-		# We'll dump any comments from the copy for the sake of
-		# checking for the SOA.
-		# This is a bit of a crude check and it's possible it
-		# could be fooled.  We'll use it until someone gives us
-		# a mutant zone file that breaks this.
+		# Skip this line if it isn't an SOA line.  We'll dump any
+		# comments from the copy for the sake of checking for the SOA.
 		#
 		$lncp =~ s/;.*$//;
-		next if($lncp !~ /^.*?\s+IN\s+SOA\s+/i);
+		next if($lncp !~ /$soare/i);
 
 		#
 		# If this line has a left paren, we'll treat this as a multi-
@@ -2849,178 +2858,89 @@ sub serialincr
 		#
 		if($line =~ /\(/)
 		{
-			my $datacnt = 0;	# Count of SOA data we've seen.
 			my $ln = '';		# Modified line.
+			my $datacnt = 0;	# Count of SOA data we've seen.
 			my @chgrps;		# Line's non-whitespace groups.
 			my @spgrps;		# Line's whitespace groups.
 
 			#
-			# Keep looking through lines until we find the serial
-			# number.
+			# Split the line into the IN SOA marker chunk and the
+			# chunk of whatever follows.  The latter will be
+			# searched for the serial number; the former will be
+			# saved for (potential) later use.
 			#
-			while(42)
+			$line =~ /$soare/i;
+			$ln	= $&;
+			$line	= $';
+
+			#
+			# Keep looking through lines until we find the serial
+			# number or EOF.
+			#
+			while($ind < @lines)
 			{
 				my $found = 0;	# Serial-number-found flag.
 
 				#
 				# Skip comment and blank lines.
 				#
-				if(($line =~ /^\s*$/) || ($line =~ /^\s*;/))
+				if(($line =~ /^[ \t\(\)]*$/) ||
+				   ($line =~ /^[ \t\(\)]*;/))
 				{
+					last if($ind == @lines);
 					$line = $lines[++$ind];
+					$ln = '';
 					next;
 				}
 
 				#
-				# Break the line up into its pieces, maintaining
-				# the character blobs and whitespace blobs.
+				# Break the line up into its pieces, dividing
+				# up the character blobs and whitespace blobs.
 				# We'll be interleaving these anon.
 				#
-				@chgrps = split /\s+/, $line;
-				@spgrps = split /\S+/, $line;
+				@chgrps = split /[\s\(\)]+/, $line;
+				@spgrps = split /[^\s\(\)]+/, $line;
 
 				#
-				# We've got to dump the initial pseudo line
-				# piece from one of the two line-blob arrays.
-				# If the line started with whitespace, we'll
-				# dump the null from the beginning of the
-				# non-whitespace group.  If the line started
-				# with non-whitespace, we'll dump the null from
-				# the beginning of the whitespace group.
+				# Dump any initial null elements from the
+				# two blob arrays.
 				#
-				shift @spgrps if($line =~ /^\S/);
-				shift @chgrps if($line =~ /^\s/);
+				shift @spgrps if($spgrps[0] eq '');
+				shift @chgrps if($chgrps[0] eq '');
 
-		#
-		# Now we'll look through the line's tokens.  The serial number
-		# is the sixth non-parenthesis token on a SOA line, so we've
-		# got to look until we find the sixth token.  We're going to
-		# account for the previously found lparen, multiple lines, and
-		# the optional whitespace separating the lparen from the tokens
-		# before and after it.
-		#
+				#
+				# Now we'll look through the line's tokens.  The
+				# serial number is the third non-parenthesis
+				# token on a SOA line after the SOA token, so
+				# we've got to look until we find the 3rd token.
+				# We're going to account for parens, multiple
+				# lines, comments, and whitespace.
+				#
 				for(my $grind=0; $grind < @chgrps; $grind++)
 				{
 					my $datum = $chgrps[$grind];	# Token.
 					my $comment = 0;	# Comment found.
+					my $comstr = '';	# Comment str.
 
-		#
-		# Handle a mid-line comment.
-		# If this token starts with the comment char, we'll go
-		# to the next line.  If not, we'll handle the non-comment
-		# portion of this token and then go to the next line.
-		#
+					next if($datum eq '');
+
+					#
+					# Handle a mid-line comment.
+					# If this token starts with the comment
+					# character, we'll go to the next line.
+					# If not, we'll handle the non-comment
+					# portion of this token and then go to
+					# the next line.  The comment portion
+					# will be saved and re-added later.
+					#
 					if($datum =~ /;/)
 					{
+						$datum =~ /;.*$/;
+						$comstr = $&;
+
 						$datum =~ s/;.*$//;
 						$comment = 1;
 						last if(length($datum) == 0);
-					}
-
-		#
-		# Handle the left parenthesis.
-		# We must recognize the following left paren configurations:
-		#	(	entirety of token
-		#	a(b	no spaces between tokens
-		#	a (b	token starts with lparen
-		#	a( b	token ends with lparen
-		# In all cases, 'a' or 'b' can be the serial number we're
-		# searching for.
-		# The serial number can also be neither 'a' nor 'b'.
-		#
-					if($datum =~ /\(/)
-					{
-						my $front; # Front of datum.
-						my $back;  # Back of datum.
-
-						#
-						# Go to the next token if this
-						# whole token is the lparen.
-						#
-						next if($datum eq '(');
-
-						#
-						# Pull off the subtokens around
-						# the lparen.  One of them can
-						# be empty.
-						#
-						$datum =~ /^(.*)\((.*)$/;
-						$front = $1;
-						$back  = $2;
-
-						#
-						# Increment our token count by
-						# the number of subtokens in
-						# this token.
-						#
-						$datacnt +=(length($front) > 0)+
-							   (length($back)  > 0);
-
-		#
-		# Handle the serial number in this lparenthesized token.
-		# If we've reached the sixth token, which is the serial
-		# number, we'll figure out which subtoken is the sixth.
-		# If we've reached the seventh token, then the pre-lparen
-		# subtoken is the serial number.
-		# In both cases, we'll increment the appropriate subtoken,
-		# save it in $serialnew, and set a found flag.
-		#
-						if($datacnt == 6)
-						{
-
-			#
-			# If we've hit six data items on this SOA line so far,
-			# the serial number must be the last subtoken in this
-			# token.  It will be the first subtoken iff there
-			# isn't a second subtoken.
-			# Otherwise, it must be the last token.
-			#
-							if(($front ne '') && ($back eq ''))
-							{
-								$front = serialfix($front);
-								$serialnew = $front;
-							}
-							else
-							{
-								$back = serialfix($back);
-								$serialnew = $back;
-							}
-
-							#
-							# Set the found flag.
-							#
-							$found = 1;
-						}
-						elsif($datacnt == 7)
-						{
-			#
-			# If we've hit seven data items on this SOA line
-			# so far, then the serial number must be the first
-			# subtoken in this token.
-			#
-							$front = serialfix($front);
-							$serialnew = $front;
-							$found = 1;
-						}
-
-		#
-		# If we found the serial number in this token, we'll
-		# reassemble the token with the incremented serial number.
-		# We'll also stop looking through the zone file since we've
-		# found what we were looking for.
-		#
-						if($found)
-						{
-							$datum = "$front($back";
-							$chgrps[$grind] = $datum;
-
-							last;
-						}
-
-						#
-						# Go to the next token on line.
-						#
-						next;
 					}
 
 					#
@@ -3028,10 +2948,17 @@ sub serialincr
 					#
 					$datacnt++;
 
-					if($datacnt == 6)
+					#
+					# If this is the third SOA token (after
+					# the SOA, of course), then it's the
+					# current serial number.  We'll adjust
+					# it, save it, and mark it found.
+					#
+					if($datacnt == 3)
 					{
-						$chgrps[$grind] = serialfix($chgrps[$grind]);
-						$serialnew = $chgrps[$grind];
+						$serialnew = serialfix($chgrps[$grind]);
+						$chgrps[$grind] = $serialnew .
+								  $comstr;
 
 						$found = 1;
 						last;
@@ -3051,9 +2978,10 @@ sub serialincr
 				last if($found);
 
 				#
-				# Move to the next line.
+				# On to the next line and reset the line buffer.
 				#
 				$line = $lines[++$ind];
+				$ln = '';
 			}
 
 			#
@@ -3075,23 +3003,23 @@ sub serialincr
 				}
 			}
 
+
 			#
 			# Return the rebuilt line to the file-contents array.
-			# (This is really only necessary for the serial-number
-			# line.)
-			# We'll also add a newline if it doesn't have one
-			# already.
+			# This is only done for the serial-number line.  We'll
+			# also add a newline if it doesn't have one already.
 			#
 			$ln .= "\n" if($ln !~ /\n$/);
 			$lines[$ind] = $ln;
+			$ln = '';
 		}
 		else
 		{
 			#
 			# Get the pieces of the line.
 			#
-			$line =~ /^(.*?\s+IN\s+SOA\s+\S+\s+\S+\s+)(\d+)(.*)/;
-			$serialnew = $2;
+			$line =~ /^(.*?([0-9]+[smhdw]?)?\s+IN\s+SOA\s+\S+\s+\S+\s+)(\d+)(.*)/i;
+			$serialnew = $3;
 
 			#
 			# Increment the larger serial number of the one in
@@ -3102,7 +3030,7 @@ sub serialincr
 			#
 			# Build the new line.
 			#
-			$lines[$ind] = $1 . $serialnew . $3 . "\n";
+			$lines[$ind] = $1 . $serialnew . $4 . "\n";
 
 		}
 
