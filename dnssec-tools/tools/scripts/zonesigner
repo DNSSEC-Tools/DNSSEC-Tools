@@ -2789,6 +2789,12 @@ sub hasincludes
 #		both the multi-line parenthesized form and the single line
 #		unparenthesized form.
 #
+#		serialincr() isn't an an all-purpose SOA parser.  It is
+#		sufficient for finding the SOA serial number and updated
+#		*just* the serial number without changing anything else.
+#		It does not ensure the parens are balanced or check validity
+#		of other fields. 
+#
 #		The SOA line is searched for, line by line.  There are three
 #		basic formats of interest:
 #			- serial number on SOA line, without parentheses
