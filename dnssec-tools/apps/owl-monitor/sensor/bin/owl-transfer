@@ -374,7 +374,7 @@ sub teleporter
 		foreach my $sshuser (@sshusers)
 		{
 			my @args;			# Separated arguments.
-			my $user;			# User portion.
+			my $sensor;			# Sensor portion.
 			my $rshargs;			# rsh-arguments portion.
 			my $cmd;			# Command for rsync.
 			my $out;			# Output from rsync.
@@ -385,17 +385,17 @@ sub teleporter
 			# line has this format:
 			#	user@host;ssh arguments
 			# The ssh arguments are whatever is needed for
-			# owl-transfer to ssh to this particular user.
+			# owl-transfer to ssh to this particular sensor.
 			#
 			@args = split /;/, $sshuser;
-			$user = $args[0];
+			$sensor = $args[0];
 			$rshargs = "--rsh=\"ssh $args[1]\"";
 			$cmd = "rsync -ar $rshargs $args";
 
 			#
-			# Do the transfer for this user.
+			# Do the transfer for this sensor.
 			#
-			$out = `$cmd $datadir $user:`;
+			$out = `$cmd $datadir $sensor:`;
 			$err = $? >> 8;
 
 			#
@@ -418,7 +418,7 @@ sub teleporter
 				#
 				$out =~ /(Number of files transferred:\s+\d+)\n/g;
 				$numstr = $1;
-				$msg = "$numstr \t$user";
+				$msg = "$numstr \t$sensor";
 
 				print "$chronos:  $msg\n" if($numstr ne '');
 				logger($msg);
@@ -430,7 +430,7 @@ sub teleporter
 			#
 			if($err)
 			{
-				my $msg = "problem transferring files, error return $err; command - $cmd $user";
+				my $msg = "problem transferring files, error return $err; command - $cmd $sensor";
 				print STDERR "$msg\n";
 				logger($msg);
 				$errxfers{$sshuser}++;
@@ -450,7 +450,7 @@ sub teleporter
 				#
 				# Build the message.
 				#
-				$msg  = "$xfercnt transfer attempts to $user";
+				$msg  = "$xfercnt transfer attempts to $sensor";
 				$msg .= "; $errs failed" if($errs > 0);
 
 				#
