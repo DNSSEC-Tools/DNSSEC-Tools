@@ -390,12 +390,12 @@ sub teleporter
 			@args = split /;/, $sshuser;
 			$user = $args[0];
 			$rshargs = "--rsh=\"ssh $args[1]\"";
-			$cmd = "rsync -ar $rshargs $args $datadir";
+			$cmd = "rsync -ar $rshargs $args";
 
 			#
 			# Do the transfer for this user.
 			#
-			$out = `$cmd $user:`;
+			$out = `$cmd $datadir $user:`;
 			$err = $? >> 8;
 
 			#
@@ -430,7 +430,7 @@ sub teleporter
 			#
 			if($err)
 			{
-				my $msg = "problem transferring files, error return $err";
+				my $msg = "problem transferring files, error return $err; command - $cmd $user";
 				print STDERR "$msg\n";
 				logger($msg);
 				$errxfers{$sshuser}++;
