@@ -61,7 +61,7 @@ my $pat_maybefullnameorroot = qr{(?:\.|[-\w\$\d\/*]+(?:\.[-\w\$\d\/]+)*\.?)};
 # dots in usernames.  Keeping the original version here for easy reference.
 #
 # my $pat_maybefullname = qr{[-\w\$\d\/*]+(?:\.[-\w\$\d\/]+)*\.?};
-my $pat_maybefullname   = qr{[-\w\$\d\/*\\]+(?:\.[-\w\$\d\/]+)*\.?};
+my $pat_maybefullname   = qr{[-\+\w\$\d\/*\\]+(?:\.[-\+\w\$\d\/]+)*\.?};
 
 my $debug;
 my $domain;
