@@ -198,8 +198,7 @@ sub parse
 	      $z->{mbox} = uc $z->{mbox} if defined $z->{mbox};
 	      $z->{txtdname} = uc $z->{txtdname} if defined $z->{txtdname};
 	  }
-	  my $newrec = 
-	    Net::DNS::RR->new_from_hash(%$z);
+	  my $newrec = Net::DNS::RR->new(%$z);
 
 	  if ($newrec->{'type'} eq 'DNSKEY') {
 	      if (ref($newrec) ne 'Net::DNS::RR::DNSKEY') {
