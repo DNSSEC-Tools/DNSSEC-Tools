@@ -2,7 +2,7 @@
 #
 #     written by G. S. Marzot (marz@users.sourceforge.net)
 #
-#     Copyright (c) 2006-2012 SPARTA, Inc.  All rights reserved.
+#     Copyright (c) 2006-2013 SPARTA, Inc.  All rights reserved.
 #
 #     Copyright (c) 2006-2009 G. S. Marzot. All rights reserved.
 #

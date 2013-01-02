@@ -1,5 +1,5 @@
 #
-# Copyright 2011-2012 SPARTA, Inc.  All rights reserved.
+# Copyright 2011-2013 SPARTA, Inc.  All rights reserved.
 # See the COPYING file distributed with this software for details.
 #
 
