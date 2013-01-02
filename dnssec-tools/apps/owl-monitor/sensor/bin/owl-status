@@ -198,18 +198,18 @@ sub startup
 	#
 	# Pick up the configuration data.
 	#
-	@nservers = @owlutils::cf_servers;
-	@targets  = @owlutils::cf_targets;
-	@qtypes	  = @owlutils::cf_qtypes;
+	@nservers  = @owlutils::cf_servers;
+	@targets   = @owlutils::cf_targets;
+	@qtypes	   = @owlutils::cf_qtypes;
 
-	$datadir = $owlutils::datadir		if($datadir eq '');
+	$datadir   = $owlutils::datadir		if($datadir eq '');
 
 	@intervals = @owlutils::cf_intervals;
 	@timeouts  = @owlutils::cf_timeouts;
 	@rollints  = @owlutils::cf_rollints;
 	@states	   = @owlutils::cf_states;
 
-	$datadir =  "$FindBin::Bin/../data" if(! -e $datadir);
+	$datadir   = "$FindBin::Bin/../data"	if(! -e $datadir);
 
 }
 
