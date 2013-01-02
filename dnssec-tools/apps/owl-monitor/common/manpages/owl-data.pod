@@ -1,0 +1,92 @@
+#!/usr/bin/perl
+#
+# Copyright 2012-2013 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details.
+#
+# owl-data.pod						Owl Monitoring System
+#
+#       This module contains contains the pod describing the data files
+#	created by the Owl sensor scripts.
+#
+# Revision History:
+#	1.0	121201	Initial version.
+#
+
+1;
+
+
+=pod
+
+=head1 NAME
+
+owl-data - Data file format for Owl sensor programs
+
+=head1 DESCRIPTION
+
+Each query thread run by B<owl-dnstimer> writes the results of its queries
+to its own data file.  These files are periodically rolled so the data aren't
+stored in a single file and the file size doesn't grow too large.
+
+=head2 Filename Format
+
+The format of the data file names is as follows:
+
+    <YYMMDD>.<hhmm>,<sensor>,<target>,<ns>,<query>.dns
+
+where:
+
+    YYMMDD - year, month, day
+    hhmm   - hour, minute
+    sensor - name of sensor that generated the data
+    target - target host's name
+    ns     - nameserver's name
+    query  - type of DNS query; e.g., A, AAAA, NS
+
+Examples of the data file names:
+
+    121208.1710,sensor41,example.com,h.root-servers.net,A.dns
+    121208.1710,sensor41,example.com,h.root-servers.net,NS.dns
+    121208.1710,sensor41,example.com,m.root-servers.net,A.dns
+    121208.1740,sensor41,.,d.root-servers.net,ANY.dns
+    121208.1740,sensor41,example.com,h.root-servers.net,A.dns
+    121208.1740,sensor41,example.com,h.root-servers.net,NS.dns
+
+=head2 Data Format
+
+Each line in the data file contains a single query response.
+The line format follows:
+
+    <timestamp> <target> <ns> <query type> <query time> <return code>
+
+where:
+
+    timestamp   - timestamp from the epoch
+    target      - target host
+    ns          - nameserver name
+    query type  - type of DNS query
+    query time  - time in seconds from query to response
+    return code - success/error indicator
+
+If an ANYCAST query is performed, then a I<root name> field will be appended
+to the data line.  This is the field returned by the nameserver.
+
+Examples of data file entries:
+
+    1354951630.21238 tislabs.com ns1.local A 0.009197950363159 NOERROR 
+    1354951630.28425 tislabs.com ns1.local NS 0.008725881576538 NOERROR 
+    1354951690.23512 tislabs.com h.root-servers.net ANYCAST 0.009922981262207 NOERROR H3
+
+=head1 SEE ALSO
+
+B<owl-dnstimer(1)>
+
+=head1 COPYRIGHT
+
+Copyright 2012-2013 SPARTA, Inc.  All rights reserved.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@tislabs.com
+
+=cut
+
