@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Copyright 2012 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2012-2013 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details.
 #
 # owlutils.pm						Owl Monitoring System
@@ -1457,7 +1457,7 @@ B<owl-data(5)>
 
 =head1 COPYRIGHT
 
-Copyright 2012 SPARTA, Inc.  All rights reserved.
+Copyright 2012-2013 SPARTA, Inc.  All rights reserved.
 
 =head1 AUTHOR
 

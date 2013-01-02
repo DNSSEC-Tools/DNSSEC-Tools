@@ -26,7 +26,7 @@
  * SUCH DAMAGE.
  */
 /*
- * Copyright 2007-2012 SPARTA, Inc.  All rights reserved.
+ * Copyright 2007-2013 SPARTA, Inc.  All rights reserved.
  * See the COPYING file distributed with this software for details.
  */
 

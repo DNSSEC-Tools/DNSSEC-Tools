@@ -16,7 +16,7 @@
  * WITH THE USE OR PERFORMANCE OF THE SOFTWARE.
  */
 /*
- * Copyright 2005-2012 SPARTA, Inc.  All rights reserved.
+ * Copyright 2005-2013 SPARTA, Inc.  All rights reserved.
  * See the COPYING file distributed with this software for details.
  */
 #ifndef VAL_SUPPORT_H

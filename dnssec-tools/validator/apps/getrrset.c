@@ -1,5 +1,5 @@
 /*
- * Copyright 2005-2012 SPARTA, Inc.  All rights reserved.
+ * Copyright 2005-2013 SPARTA, Inc.  All rights reserved.
  * See the COPYING file distributed with this software for details.
  *
  * A command-line tool for testing the val_get_rrset() function.
