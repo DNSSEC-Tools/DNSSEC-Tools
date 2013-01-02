@@ -5,7 +5,7 @@
 #
 # owlutils.pm						Owl Monitoring System
 #
-#       This module contains routines used by the Owl sensor scripts.
+#       This module contains routines used by the Owl scripts.
 #
 # Revision History:
 #	1.0	121201	Initial version.
@@ -112,13 +112,18 @@ my %dnsqueries =
 #
 
 my $progname;					# Program we're part of.
-my $sensorlog;					# Sensor's log object.
+my $owllog;					# The log object.
+
+my $OWL_SENSOR	= 1;				# Sensor daemon.
+my $OWL_MANAGER	= 1;				# Sensor manager.
 
 my %owldaemons =				# Owl daemons.
 (
-	'owl-dnstimer'	=> 1,
-	'owl-sensord'	=> 1,
-	'owl-transfer'	=> 1,
+	'owl-dnstimer'		=> $OWL_SENSOR,
+	'owl-sensord'		=> $OWL_SENSOR,
+	'owl-transfer'		=> $OWL_SENSOR,
+
+	'owl-transfer-mgr'	=> $OWL_MANAGER,
 );
 
 #------------------------------------------------------------------------
@@ -133,15 +138,23 @@ our $logdir  = $DEF_LOGDIR;		# Log directory.
 
 our $transfer_interval = $DEF_INTERVAL;	# Actual transfer interval.
 
-our @heartbeaturls = ();		# URLs for heartbeat to managers.
+our @heartbeaturls = ();		# URLs for heartbeat to remote hosts.
 our $pidfile = '';			# Filename of process-id file.
-our $sensorname = '';			# Name of this sensor.
-our @sshusers = ();			# Users on managers that receive data.
+our $hostname = '';			# Name of this host from config file.
+our @sshusers = ();			# Users on remote hosts for data.
 
+#
+# Fields specific to programs on Owl sensors.
+#
 our $dnstimerargs;			# Arguments for the owl-dnstimer daemon.
 our $transferargs;			# Arguments for owl-transfer daemon.
-our $admins = 'root';			# Administrator email.
 
+#
+# Fields specific to programs on Owl managers.
+#
+our $transfermgrargs;			# Arguments for owl-transfer-mgr daemon.
+
+our $admins = 'root';			# Administrator email.
 our $hesitation;			# Sleep time between executions.
 our $hibernation;			# Sleep time for minion xtn problems.
 our $quickcount;			# Consecutive quick xtns before pausing.
@@ -201,7 +214,7 @@ sub owl_setup
 #------------------------------------------------------------------------
 # Routine:	owl_halt()
 #
-# Purpose:	This routine will halt other instances of a given Owl sensor
+# Purpose:	This routine will halt other instances of a given Owl 
 #		program running.  The current process will not be HUP'd.
 #
 # Return Values
@@ -316,7 +329,7 @@ sub owl_printdefs
 #------------------------------------------------------------------------
 # Routine:	owl_readconfig()
 #
-# Purpose:	Parse an Owl sensor configuration file, building a set of
+# Purpose:	Parse an Owl configuration file, building a set of
 #		variables along the way.
 #
 sub owl_readconfig
@@ -374,31 +387,31 @@ sub owl_readconfig
 
 		#
 		# Look at the line's keyword to figure out what it's for.
-		#	data    - parameter for data storage
-		#	log     - parameter for logging
-		#	manager - data about the managers
-		#	sensor  - data about the sensor
-		#	target  - defines a field for a target/nameserver pair
+		#	data	- parameter for data storage
+		#	host	- data about the host
+		#	log	- parameter for logging
+		#	query	- defines a field for a target/nameserver pair
+		#	remote	- data about the remote hosts we'll contact
 		#
-		if($atoms[0] =~ /^query$/)
-		{
-			$errs += conf_queryline(@atoms);
-		}
-		elsif($atoms[0] =~ /^data$/i)
+		if($atoms[0] =~ /^data$/i)
 		{
 			$errs += conf_dataline($ddir,@atoms);
+		}
+		elsif($atoms[0] =~ /^host$/i)
+		{
+			$errs += conf_hostline(@atoms);
 		}
 		elsif($atoms[0] =~ /^log$/i)
 		{
 			$errs += conf_logline($ldir,@atoms);
 		}
-		elsif($atoms[0] =~ /^manager$/i)
+		elsif($atoms[0] =~ /^query$/)
 		{
-			$errs += conf_mgrline(@atoms);
+			$errs += conf_queryline(@atoms);
 		}
-		elsif($atoms[0] =~ /^sensor$/i)
+		elsif($atoms[0] =~ /^remote$/i)
 		{
-			$errs += conf_sensorline(@atoms);
+			$errs += conf_remoteline(@atoms);
 		}
 		else
 		{
@@ -487,7 +500,7 @@ sub owl_readconfig
 # Routine:	owl_running()
 #
 # Purpose:	This routine returns a boolean indicating if the named
-#		Owl sensor program is running.
+#		Owl program is running.
 #
 sub owl_running
 {
@@ -501,21 +514,21 @@ sub owl_running
 #------------------------------------------------------------------------
 # Routine:	owl_setlog()
 #
-# Purpose:	This routine initializes logging for an Owl sensor program.
+# Purpose:	This routine initializes logging for an Owl program.
 #
 sub owl_setlog
 {
 	my $pname = shift;			# Program's hostname.
 	my $newlogdir = shift;			# New log directory (optional.)
-	my $hostname = `hostname`;		# Sensor's hostname.
+	my $realhost;				# Actual hostname.
 	my @chron;				# Current times.
 	my $tstmp;				# Timestamp for logname.
 
 	#
-	# Get the sensor's hostname.
+	# Get the name of the host we're sitting on.
 	#
-	$hostname = `hostname`;
-	chomp $hostname;
+	$realhost = `hostname`;
+	chomp $realhost;
 
 	#
 	# Build the timestamp to be added to the log's name.
@@ -537,16 +550,16 @@ sub owl_setlog
 	$loginfo{logfile} ||= "$progname-$tstmp.log";
 
 	#
-	# Set up the log handler...
+	# Set up the log handler.
 	#
-	$sensorlog = new Log::Dispatch(
+	$owllog = new Log::Dispatch(
 		callbacks => sub
 		     {
 				my %h = @_;
 				my $msg;
 
 				$msg = Date::Format::time2str('%B %e %T', time);
-				$msg .= " $hostname $progname: $h{message}\n";
+				$msg .= " $realhost $progname: $h{message}\n";
 
 				return($msg);
 		     }
@@ -558,9 +571,9 @@ sub owl_setlog
 	$loginfo{filename} = File::Spec->catfile($loginfo{logdir},$loginfo{logfile});
 
 	#
-	# ... and make sure the log will rotate periodically.
+	# Make sure the log will rotate periodically.
 	#
-	$sensorlog->add(Log::Dispatch::FileRotate->new(
+	$owllog->add(Log::Dispatch::FileRotate->new(
 					name      => "$pname logfile",
 					min_level => 'debug',
 					mode      => 'append',
@@ -572,15 +585,15 @@ sub owl_setlog
 	#
 	# Let the caller use our log.
 	#
-	return($sensorlog);
+	return($owllog);
 }
 
 #------------------------------------------------------------------------
 # Routine:	owl_singleton()
 #
-# Purpose:	This routine will ensure that there's only one instance
-#		of a given Owl sensor program running.  If the argument
-#		is non-zero, we'll exit if another instance is running.
+# Purpose:	This routine will ensure that there's only one instance of
+#		a given Owl program running.  If the argument is non-zero,
+#		we'll exit if another instance is running.
 #
 sub owl_singleton
 {
@@ -598,10 +611,10 @@ sub owl_singleton
 	#
 	# Let the log know we're starting.
 	#
-	if($sensorlog)
+	if($owllog)
 	{
-		$sensorlog->warning("-" x 36);
-		$sensorlog->warning("$progname starting");
+		$owllog->warning("-" x 36);
+		$owllog->warning("$progname starting");
 	}
 
 	#
@@ -639,7 +652,7 @@ sub owl_getpid
 #
 sub owl_writepid
 {
-	my $pid = $$;				# Process id.
+	my $pid = $$;					# Process id.
 
 	if(open(PIDFILE,"> $pidfile") == 0)
 	{
@@ -753,6 +766,82 @@ sub conf_dataline
 }
 
 #------------------------------------------------------------------------
+# Routine:	conf_hostline()
+#
+# Purpose:	Handle a "host" line from the config file.
+#
+#		Type host config values:
+#			0 - "host" (keyword)
+#			1 - field keyword
+#			2 - value
+#
+#
+sub conf_hostline
+{
+	my @atoms = @_;			# Components of the host config line.
+	my $atoms = @atoms;		# Count of line's atoms.
+	my $keyword;			# Line's field keyword.
+
+	#
+	# Ensure we've got enough fields.
+	#
+	if($atoms < 2)
+	{
+		print STDERR "no values given for \"host\" line\n";
+		return(1);
+	}
+
+	#
+	# We don't need the line keyword, but we do need the field keyword.
+	#
+	shift @atoms;
+	$keyword = shift @atoms;
+
+	#
+	# Pick up one of the host configuration values.
+	#
+	if($keyword =~ /^name$/i)
+	{
+		$hostname = $atoms[0];
+	}
+	elsif($keyword =~ /^dnstimer-args$/i)
+	{
+		$dnstimerargs = join(' ', @atoms);
+	}
+	elsif($keyword =~ /^transfer-args$/i)
+	{
+		$transferargs = join(' ', @atoms);
+	}
+	elsif($keyword =~ /^admin$/i)
+	{
+		$admins = join(' ', @atoms);
+	}
+	elsif($keyword =~ /^hesitation$/i)
+	{
+		$hesitation = $atoms[0];
+	}
+	elsif($keyword =~ /^hibernation$/i)
+	{
+		$hibernation = $atoms[0];
+	}
+	elsif($keyword =~ /^quickcount$/i)
+	{
+		$quickcount = $atoms[0];
+	}
+	elsif($keyword =~ /^quickseconds$/i)
+	{
+		$quickseconds = $atoms[0];
+	}
+	else
+	{
+		print STDERR "unknown keyword given for \"host\" line:  $keyword\n";
+		return(1);
+	}
+
+	return(0);
+}
+
+#------------------------------------------------------------------------
 # Routine:	conf_logline()
 #
 # Purpose:	Handle a "log" line from the config file.
@@ -790,134 +879,6 @@ sub conf_logline
 		return(0) if(defined($ldir));
 
 		$logdir = $atoms[2];
-	}
-
-	return(0);
-}
-
-#------------------------------------------------------------------------
-# Routine:	conf_mgrline()
-#
-# Purpose:	Handle a "manager" line from the config file.
-#
-#		Type manager config values:
-#			0 - "manager" (keyword)
-#			1 - field keyword
-#			2 - value
-#
-#
-sub conf_mgrline
-{
-	my @atoms = @_;			# Components of the manager config line.
-	my $atoms = @atoms;		# Count of line's atoms.
-	my $keyword;			# Line's field keyword.
-
-	#
-	# Ensure we've got enough fields.
-	#
-	if($atoms < 2)
-	{
-		print STDERR "no values given for \"manager\" line\n";
-		return(1);
-	}
-
-	#
-	# We don't need the line keyword, but we do need the field keyword.
-	#
-	shift @atoms;
-	$keyword = shift @atoms;
-
-	#
-	# Pull out the value.
-	#
-	if($keyword =~ /^heartbeat$/i)
-	{
-		push @heartbeaturls, $atoms[0];
-	}
-	elsif($keyword =~ /^ssh-user$/i)
-	{
-		push @sshusers, join(' ', @atoms);
-	}
-	else
-	{
-		print STDERR "invalid keyword given for \"manager\" line\n";
-		return(1);
-	}
-
-	return(0);
-}
-
-#------------------------------------------------------------------------
-# Routine:	conf_sensorline()
-#
-# Purpose:	Handle a "sensor" line from the config file.
-#
-#		Type sensor config values:
-#			0 - "sensor" (keyword)
-#			1 - field keyword
-#			2 - value
-#
-#
-sub conf_sensorline
-{
-	my @atoms = @_;			# Components of the sensor config line.
-	my $atoms = @atoms;		# Count of line's atoms.
-	my $keyword;			# Line's field keyword.
-
-	#
-	# Ensure we've got enough fields.
-	#
-	if($atoms < 2)
-	{
-		print STDERR "no values given for \"sensor\" line\n";
-		return(1);
-	}
-
-	#
-	# We don't need the line keyword, but we do need the field keyword.
-	#
-	shift @atoms;
-	$keyword = shift @atoms;
-
-	#
-	# Pick up one of the three sensor configuration values.
-	#
-	if($keyword =~ /^name$/i)
-	{
-		$sensorname = $atoms[0];
-	}
-	elsif($keyword =~ /^dnstimerargs$/i)
-	{
-		$dnstimerargs = join(' ', @atoms);
-	}
-	elsif($keyword =~ /^transferargs$/i)
-	{
-		$transferargs = join(' ', @atoms);
-	}
-	elsif($keyword =~ /^admin$/i)
-	{
-		$admins = join(' ', @atoms);
-	}
-	elsif($keyword =~ /^hesitation$/i)
-	{
-		$hesitation = $atoms[0];
-	}
-	elsif($keyword =~ /^hibernation$/i)
-	{
-		$hibernation = $atoms[0];
-	}
-	elsif($keyword =~ /^quickcount$/i)
-	{
-		$quickcount = $atoms[0];
-	}
-	elsif($keyword =~ /^quickseconds$/i)
-	{
-		$quickseconds = $atoms[0];
-	}
-	else
-	{
-		print STDERR "unknown keyword given for \"sensor\" line:  $keyword\n";
-		return(1);
 	}
 
 	return(0);
@@ -1046,6 +1007,58 @@ sub conf_queryline
 }
 
 #------------------------------------------------------------------------
+# Routine:	conf_remoteline()
+#
+# Purpose:	Handle a "remote" line from the config file.
+#
+#		Type remote config values:
+#			0 - "remote" (keyword)
+#			1 - field keyword
+#			2 - value
+#
+#
+sub conf_remoteline
+{
+	my @atoms = @_;			# Components of the remote config line.
+	my $atoms = @atoms;		# Count of line's atoms.
+	my $keyword;			# Line's field keyword.
+
+	#
+	# Ensure we've got enough fields.
+	#
+	if($atoms < 2)
+	{
+		print STDERR "no values given for \"remote\" line\n";
+		return(1);
+	}
+
+	#
+	# We don't need the line keyword, but we do need the field keyword.
+	#
+	shift @atoms;
+	$keyword = shift @atoms;
+
+	#
+	# Pull out the value.
+	#
+	if($keyword =~ /^heartbeat$/i)
+	{
+		push @heartbeaturls, $atoms[0];
+	}
+	elsif($keyword =~ /^ssh-user$/i)
+	{
+		push @sshusers, join(' ', @atoms);
+	}
+	else
+	{
+		print STDERR "invalid keyword given for \"remote\" line\n";
+		return(1);
+	}
+
+	return(0);
+}
+
+#------------------------------------------------------------------------
 # Routine:	running()
 #
 # Purpose:	Check if another instance of a program is running.  If so,
@@ -1107,7 +1120,7 @@ sub running
 
 =head1 NAME
 
-owlutils - Utility routines for Owl sensor programs.
+owlutils - Utility routines for Owl programs.
 
 =head1 SYNOPSIS
 
@@ -1135,7 +1148,7 @@ owlutils - Utility routines for Owl sensor programs.
 
 =head1 DESCRIPTION
 
-The B<owlutils.pm> module provides a set of common routines for the Owl sensor
+The B<owlutils.pm> module provides a set of common routines for the Owl
 programs.  These routines provide for a variety of things, such as program
 initialization, ensuring only one instance of a particular program is running,
 manipulation of process-id files.
@@ -1143,8 +1156,8 @@ manipulation of process-id files.
 =head1 DEFAULTS
 
 The B<owlutils.pm> module contains definitions for several defaults used by
-the Owl sensor programs.  There are externally available defaults and
-internal-only defaults.
+the Owl programs.  There are externally available defaults and internal-only
+defaults.
 
 =head2 External Defaults
 
@@ -1236,11 +1249,11 @@ Data specified by calling programs or built by B<owlutils.pm>:
     $quickcount              Consecutive quick executions before pausing.
     $quickseconds            Seconds that make a quick execution.
 
-Data specified on a I<sensor> line:
+Data specified on a I<host> line:
 
     $admins                  Administrator email addresses.
     $dnstimerargs            Arguments for the owl-dnstimer daemon.
-    $sensorname              Name of this sensor.
+    $hostname                Name of this host.
     $transferargs            Arguments for owl-transfer daemon.
 
 Data specified on a I<data> line:
@@ -1252,10 +1265,10 @@ Data specified on a I<log> line:
 
     $logdir                  Log directory.
 
-Data specified on a I<manager> line:
+Data specified on a I<remote> line:
 
-    @heartbeaturls           URLs for heartbeat to managers.
-    @sshusers                Users on managers that receive data.
+    @heartbeaturls           URLs for heartbeat to remote hosts.
+    @sshusers                Users on remote hosts for data transfer.
 
 =head1 INTERFACES
 
@@ -1288,7 +1301,7 @@ be returned.
 
 =item I<owl_halt(progname)>
 
-I<owl_halt()> will halt all instances of the named Owl sensor program.  It
+I<owl_halt()> will halt all instances of the named Owl program.  It
 tries to send SIGHUP to the program and reports the success or failure of
 the attempt.
 
@@ -1317,7 +1330,7 @@ Data constructed at program compile-time:
     $owlutils::pidfile  - program's process-id file
     %owlutils::loginfo  - log file information
 
-Data from "sensor" lines:
+Data from "host" lines:
 
     $owlutils::admins       - email addresses for Owl administrators
     $owlutils::dnstimerargs - arguments for the owl-dnstimer daemon
@@ -1327,7 +1340,7 @@ Data from "sensor" lines:
 			      pausing
     $owlutils::quickseconds - seconds count that makes a quick
 			      execution
-    $owlutils::sensorname   - name of this sensor
+    $owlutils::hostname     - name of this host
     $owlutils::transferargs - arguments for the owl-transfer daemon
 
 Data from "data" lines:
@@ -1335,12 +1348,9 @@ Data from "data" lines:
     $owlutils::datadir           - data directory
     $owlutils::transfer_interval - transfer interval
 
-Data from "manager" lines:
+Data from "log" lines:
 
-    @owlutils::heartbeaturls - URLs  for sending heartbeats to
-			       managers
-    @owlutils::sshusers      - contact info for transferring data
-			       to managers
+    @owlutils::logdir       - log directory
 
 Data from "query" lines:
 
@@ -1351,6 +1361,13 @@ Data from "query" lines:
     @owlutils::cf_states    - targets from "query" lines
     @owlutils::cf_targets   - targets from "query" lines
     @owlutils::cf_timeouts  - query timeouts from "query" lines
+
+Data from "remote" lines:
+
+    @owlutils::heartbeaturls - URLs  for sending heartbeats to
+			       remote hosts
+    @owlutils::sshusers      - contact info for transferring data
+			       to remote hosts
 
 See B<owl-config(5)> for a definition of the configuration file's format.
 
@@ -1369,13 +1386,13 @@ then a default value is used.
 Blank lines and lines starting with a pound sign are ignored.
 
 The return value is the number of errors encountered when reading and parsing
-the configuration file.  Calling programs should not trust an Owl sensor
+the configuration file.  Calling programs should not trust an Owl
 configuration data if any errors were encountered while reading the
 configuration file.
 
 =item I<owl_running(progname)>
 
-This interface returns a boolean value indicating if the Owl sensor program
+This interface returns a boolean value indicating if the Owl program
 named I<progname> is executing.  This is determined by checking for a
 process-id file in the configuration directory and then checking if the
 program is running.  Signal 0 is sent to the process id to determine if the
@@ -1389,7 +1406,7 @@ Return Values:
 
 =item I<owl_setlog(progname)>
 
-This routine initializes logging for an Owl sensor program.  The log file will
+This routine initializes logging for an Owl program.  The log file will
 be rotated when it reaches a size of 2MB, and a maximum of 60 files will be
 kept.  The %loginfo hash is given values for the log file name and location.
 
@@ -1423,14 +1440,14 @@ default value will be used.
 =item I<owl_singleton(exitflag)>
 
 I<owl_singleton()> ensures that there's only one instance of the calling Owl
-sensor program is running.  (The program name is taken from the I<progname>
+program is running.  (The program name is taken from the I<progname>
 argument passed to a prior invocation of I<owl_setup()>.)  If the argument is
 non-zero the calling program will exit if another instance is running.
 
 Return Values:
 
-    0 - Another Owl sensor program with the same name is running.
-    1 - Another Owl sensor program with the same name is not running.
+    0 - Another Owl program with the same name is running.
+    1 - Another Owl program with the same name is not running.
 
 =item I<owl_writepid()>
 
