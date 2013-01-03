@@ -148,6 +148,7 @@ our @sshusers = ();			# Users on remote hosts for data.
 #
 our $dnstimerargs;			# Arguments for the owl-dnstimer daemon.
 our $transferargs;			# Arguments for owl-transfer daemon.
+our $transfermgrargs;			# Arguments for owl-transfer-mgr daemon.
 
 #
 # Fields specific to programs on Owl managers.
@@ -812,6 +813,10 @@ sub conf_hostline
 	{
 		$transferargs = join(' ', @atoms);
 	}
+	elsif($keyword =~ /^transfer-mgr-args$/i)
+	{
+		$transfermgrargs = join(' ', @atoms);
+	}
 	elsif($keyword =~ /^admin$/i)
 	{
 		$admins = join(' ', @atoms);
@@ -1255,6 +1260,7 @@ Data specified on a I<host> line:
     $dnstimerargs            Arguments for the owl-dnstimer daemon.
     $hostname                Name of this host.
     $transferargs            Arguments for owl-transfer daemon.
+    $transfermgrargs         Arguments for owl-transfer-mgr daemon.
 
 Data specified on a I<data> line:
 
@@ -1332,16 +1338,17 @@ Data constructed at program compile-time:
 
 Data from "host" lines:
 
-    $owlutils::admins       - email addresses for Owl administrators
-    $owlutils::dnstimerargs - arguments for the owl-dnstimer daemon
-    $owlutils::hesitation   - time between Owl daemon executions
-    $owlutils::hibernation  - sleep time upon execution problems
-    $owlutils::quickcount   - count of quick executions before
-			      pausing
-    $owlutils::quickseconds - seconds count that makes a quick
-			      execution
-    $owlutils::hostname     - name of this host
-    $owlutils::transferargs - arguments for the owl-transfer daemon
+    $owlutils::admins          - email addresses for Owl administrators
+    $owlutils::dnstimerargs    - arguments for the owl-dnstimer daemon
+    $owlutils::hesitation      - time between Owl daemon executions
+    $owlutils::hibernation     - sleep time upon execution problems
+    $owlutils::quickcount      - count of quick executions before
+			         pausing
+    $owlutils::quickseconds    - seconds count that makes a quick
+			         execution
+    $owlutils::hostname        - name of this host
+    $owlutils::transferargs    - arguments for the owl-transfer daemon
+    $owlutils::transfermgrargs - arguments for the owl-transfer-mgr daemon
 
 Data from "data" lines:
 
