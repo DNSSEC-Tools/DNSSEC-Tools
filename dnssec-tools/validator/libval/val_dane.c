@@ -42,19 +42,42 @@ get_dane_from_result(struct val_daneparams *dparam,
     struct val_danestatus *dtail, *dcur;
     u_char *cp, *end;
     int rc = VAL_DANE_NOERROR;
+    int validated;
 
     *dres = NULL;
-
     dtail = NULL;
     dcur = NULL;
+    validated = 1;
 
     for (res = results; res != NULL; res = res->val_rc_next) {
+
+        /*
+         * If the answer is not even trusted then return failure
+         */
+        if (!val_istrusted(res->val_rc_status))
+            return VAL_DANE_NOTVALIDATED;
+
+        /* 
+         * not validated is okay for non-existence conditions
+         */
+        if (!validated || !val_isvalidated(res->val_rc_status))
+            validated = 0;
+
+        /* 
+         * skip the aliases 
+         */
+        if (res->val_rc_alias) {
+            continue;
+        }
 
         if (val_does_not_exist(res->val_rc_status))
             return VAL_DANE_IGNORE_TLSA;
 
-        /* DANE resource records MUST be validated */
-        if (!val_isvalidated(res->val_rc_status))
+        /* 
+         * We're now about to process the DANE record
+         * DANE resource records MUST be validated 
+         */
+        if (!validated)
             return VAL_DANE_NOTVALIDATED;
 
         rrset = res->val_rc_rrset;
