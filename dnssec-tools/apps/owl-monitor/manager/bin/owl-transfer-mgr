@@ -394,6 +394,7 @@ sub teleporter
 			# Beware:  If this sshusers field contains spaces,
 			# so with the directory name.
 			#
+			next if($args[2] eq '');
 			$datadir = "$sensorsdir/$args[2]";
 
 			#
@@ -569,6 +570,12 @@ owl-transfer-mgr - Transfers Owl sensor data to Owl manager
 B<owl-transfer-mgr> transfers Owl sensor data from an Owl sensor host to
 its manager host.  B<owl-transfer-mgr> sets itself up as a daemon on the
 Owl manager and periodically transfers new data files from the Owl sensor.
+
+The Owl configuration file specifies the sensors that B<owl-transfer-mgr>.
+will contact.  Only those sensors listed in a I<data ssh-user> line that
+have the third subfield defined -- the sensor name subfield -- will be
+contacted for data retrieval.  No other sensors will be contacted by
+B<owl-transfer-mgr>.
 
 The data-transfer operations are performed by B<rsync> over an B<ssh>
 connection.  The efficiency of B<rsync> will minimize the impact on network
