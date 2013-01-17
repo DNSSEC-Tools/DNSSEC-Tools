@@ -52,12 +52,13 @@ our @EXPORT = qw(
 
 my $NSBASE = 'root-servers.net';		# Base name for root servers.
 
-our $DEF_ARCHDIR = "$FindBin::Bin/../old.data";	# Default archive directory.
-our $DEF_CONFDIR = "$FindBin::Bin/../conf";	# Default config directory.
-our $DEF_DATADIR = "$FindBin::Bin/../data";	# Default data directory.
-our $DEF_LOGDIR	 = "$FindBin::Bin/../log";	# Default log directory.
+our $DEF_ARCHDIR    = "$FindBin::Bin/../old.data";	# Default archive dir.
+our $DEF_CONFDIR    = "$FindBin::Bin/../conf";		# Default config dir.
+our $DEF_DATADIR    = "$FindBin::Bin/../data";		# Default data dir.
+our $DEF_LOGDIR	    = "$FindBin::Bin/../log";		# Default log dir.
+our $DEF_SENSORSDIR = "$FindBin::Bin/../sensors";	# Def. sensors data dir.
 
-our $DEF_CONFIG   = "owl.conf";			# Default config file.
+our $DEF_CONFIG     = "owl.conf";			# Default config file.
 
 #------------------------------------------------------------------------
 #
@@ -130,11 +131,12 @@ my %owldaemons =				# Owl daemons.
 # Shared data.
 #
 
-our $archdir = $DEF_ARCHDIR;		# Archive directory.
-our $confdir = $DEF_CONFDIR;		# Configuration directory.
+our $archdir	= $DEF_ARCHDIR;		# Archive directory.
+our $confdir	= $DEF_CONFDIR;		# Configuration directory.
 our $conffile;				# Configuration file.
-our $datadir = $DEF_DATADIR;		# Data directory.
-our $logdir  = $DEF_LOGDIR;		# Log directory.
+our $datadir	= $DEF_DATADIR;		# Data directory.
+our $logdir	= $DEF_LOGDIR;		# Log directory.
+our $sensorsdir = $DEF_SENSORSDIR;	# Sensors' data directory.
 
 our $transfer_interval = $DEF_INTERVAL;	# Actual transfer interval.
 
@@ -313,6 +315,7 @@ sub owl_printdefs
 	print "default config directory              $DEF_CONFDIR\n";
 	print "default data directory                $DEF_DATADIR\n";
 	print "default log directory                 $DEF_LOGDIR\n";
+	print "default sensors directory             $DEF_SENSORSDIR\n";
 	print "default config file                   $DEF_CONFIG\n";
 	print "\n";
 	print "default query interval                $DEF_QUINT\n";
@@ -749,7 +752,7 @@ sub conf_dataline
 
 		$datadir = $atoms[2];
 	}
-	if($atoms[1] =~ /^archive$/)
+	elsif($atoms[1] =~ /^archive$/)
 	{
 		$archdir = $atoms[2];
 	}
@@ -761,6 +764,10 @@ sub conf_dataline
 			print STDERR "data transfer interval ($transfer_interval) is less than minimum allowed ($MIN_INTERVAL)\n";
 			return(1)
 		}
+	}
+	elsif($atoms[1] =~ /^sensors$/)
+	{
+		$sensorsdir = $atoms[2];
 	}
 
 	return(0);
@@ -1174,12 +1181,14 @@ The default directories are relative to the B<bin> directory from which the Owl
 programs are executed.  The B<FindBin.pm> Perl module is used to locate this
 starting-point directory.
 
-  DEF_ARCHDIR   "$FindBin::Bin/../old.data"  Default archive directory.
-  DEF_CONFDIR   "$FindBin::Bin/../conf"      Default config directory.
-  DEF_DATADIR   "$FindBin::Bin/../data"      Default data directory.
-  DEF_LOGDIR    "$FindBin::Bin/../log"       Default log directory.
+  DEF_ARCHDIR     "$FindBin::Bin/../old.data"  Default archive directory.
+  DEF_CONFDIR     "$FindBin::Bin/../conf"      Default config directory.
+  DEF_DATADIR     "$FindBin::Bin/../data"      Default data directory.
+  DEF_LOGDIR      "$FindBin::Bin/../log"       Default log directory.
+  DEF_SENSORSDIR  "$FindBin::Bin/../sensors"   Default sensors data
+					       directory.
 
-  DEF_CONFIG    "owl.conf"                   Default config file.
+  DEF_CONFIG      "owl.conf"                   Default config file.
 
 
 =head2 Internal Defaults
@@ -1265,6 +1274,7 @@ Data specified on a I<host> line:
 Data specified on a I<data> line:
 
     $datadir                 Data directory.
+    $sensorsdir              Sensors data directory.
     $transfer_interval       Actual transfer interval.
 
 Data specified on a I<log> line:
@@ -1338,8 +1348,10 @@ Data constructed at program compile-time:
 
 Data from "host" lines:
 
-    $owlutils::admins          - email addresses for Owl administrators
-    $owlutils::dnstimerargs    - arguments for the owl-dnstimer daemon
+    $owlutils::admins          - email addresses for Owl
+				 administrators
+    $owlutils::dnstimerargs    - arguments for the owl-dnstimer
+				 daemon
     $owlutils::hesitation      - time between Owl daemon executions
     $owlutils::hibernation     - sleep time upon execution problems
     $owlutils::quickcount      - count of quick executions before
@@ -1347,12 +1359,15 @@ Data from "host" lines:
     $owlutils::quickseconds    - seconds count that makes a quick
 			         execution
     $owlutils::hostname        - name of this host
-    $owlutils::transferargs    - arguments for the owl-transfer daemon
-    $owlutils::transfermgrargs - arguments for the owl-transfer-mgr daemon
+    $owlutils::transferargs    - arguments for the owl-transfer
+				 daemon
+    $owlutils::transfermgrargs - arguments for the owl-transfer-mgr
+				 daemon
 
 Data from "data" lines:
 
     $owlutils::datadir           - data directory
+    $owlutils::sensorsdir        - sensors data directory
     $owlutils::transfer_interval - transfer interval
 
 Data from "log" lines:
@@ -1472,7 +1487,9 @@ Return Values:
 =head1 SEE ALSO
 
 B<owl-dnstimer(1)>,
-B<owl-sensord(1)>
+B<owl-sensord(1)>,
+B<owl-transfer(1)>,
+B<owl-transfer-mgr(1)>
 
 B<FindBin(3pm)>
 
