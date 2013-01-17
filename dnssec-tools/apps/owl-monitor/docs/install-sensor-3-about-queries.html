@@ -23,10 +23,17 @@
 Before running your Owl Monitoring System, you must consider a number of
 questions.  How many Owl sensors will be providing data to the Owl manager?
 How many queries will the sensors be performing?  What queries will the
-sensors be performing?  Will each sensor be performing the same queries?
-Will the sensor be providing "heartbeat" information to the manager?
-These questions are important for the sensor administrator, but they are
-critical for the manager administrator.
+sensors be performing?  Will each sensor be performing the same queries?  Will
+the sensor be providing "heartbeat" information to the manager?  Who will
+transfer the sensor data to the manager?  These questions are important for
+the sensor administrator, but they are critical for the manager administrator.
+
+<p>
+
+<!*********************************************************>
+
+<a name="3.1."></a>
+<h3>3.1. Gathering and Storing Sensor Data</h3>
 
 <p>
 
@@ -130,6 +137,56 @@ Breaking out the fields of the last example above gives this table:
 <td valign=top>.dns
 
 </table>
+
+<p>
+
+<!*********************************************************>
+
+<a name="3.2."></a>
+<h3>3.2. Transferring Sensor Data</h3>
+
+<p>
+
+The Owl Monitoring System provides utilities to transfer sensor data from
+the sensor to the manager.  One utility, <b>owl-transfer</b> runs on the
+sensor and transfers the data to the manager.  The other utility,
+<b>owl-transfer-mgr</b> runs on the manager and transfers the data from
+the sensor.  Both utilities are front-ends for the <b>rsync</b> program
+and run using an <b>ssh</b>-initiated connection.
+
+<p>
+
+In both cases, the transferring host <u>must</u> be able to <b>ssh</b> into
+the remote host without a password.  The FOSS <b>rrsync</b> ("restricted
+rsync", written by Joe Smith, modified by Wayne Davison) is used to restrict
+the transferring host's access to the remote host.
+
+<p>
+
+The administrators of the sensor and the manager must agree on which host
+will be transferring data to the manager.  The appropriate SSH public keys
+from the transferring host must be placed on the other host, so that the
+password-less <b>ssh</b> (as described above) may be performed.
+
+<p>
+
+<!*********************************************************>
+
+<a name="3.3."></a>
+<h3>3.3. Sensor Heartbeats</h3>
+
+The "heartbeat" facility allows an Owl sensor to periodically contact a
+manager to let it know that the sensor is still alive and network accessible.
+The heartbeat is sent by contacting a particular webpage on the Owl manager.
+
+<p>
+
+The heartbeat facility is not necessary for Owl operation and Owl runs
+perfectly well without it.  However, it can provide a useful assurance to
+the manager administrator that the sensor is still working.  Enabling this
+facility on the sensor is at the discretion of the sensor administrator.
+Since this requires a webserver to be running on the manager host, that
+aspect is at the discretion of the manager administrator.
 
 <p>
 
