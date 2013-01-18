@@ -241,8 +241,10 @@ val_log_assertion_pfx(const val_context_t * ctx, int level,
     int             class_h;
     int             type_h;
     struct          val_rr_rec  *data;
+    struct          val_rr_rec  *sig;
     struct          sockaddr *serv;
     val_astatus_t   status;
+    struct val_rr_rec  *curkey, *cursig;
 
 
     if (next_as == NULL)
@@ -251,6 +253,7 @@ val_log_assertion_pfx(const val_context_t * ctx, int level,
     class_h = next_as->val_ac_rrset->val_rrset_class;
     type_h = next_as->val_ac_rrset->val_rrset_type;
     data = next_as->val_ac_rrset->val_rrset_data;
+    sig = next_as->val_ac_rrset->val_rrset_sig;
     serv = next_as->val_ac_rrset->val_rrset_server;
     status = next_as->val_ac_status;
 
@@ -265,7 +268,6 @@ val_log_assertion_pfx(const val_context_t * ctx, int level,
         serv_pr = "NULL";
 
     if (type_h == ns_t_dnskey) {
-        struct val_rr_rec  *curkey;
         for (curkey = data; curkey; curkey = curkey->rr_next) {
             if ((curkey->rr_status == VAL_AC_VERIFIED_LINK) ||
                 (curkey->rr_status == VAL_AC_TRUST_POINT) ||
@@ -286,6 +288,7 @@ val_log_assertion_pfx(const val_context_t * ctx, int level,
             }
         }
     }
+
     if (tag != 0) {
         val_log(ctx, level,
                 "%sname=%s class=%s type=%s[tag=%d] from-server=%s "
@@ -297,6 +300,31 @@ val_log_assertion_pfx(const val_context_t * ctx, int level,
                 prefix, name_pr, p_class(class_h), p_type(type_h), serv_pr,
                 p_ac_status(status), status);
     }
+#if 0
+    for (cursig = sig; cursig; cursig = cursig->rr_next) {
+        char incpTime[1028];
+        char exprTime[1028];
+        struct timeval  tv_sig;
+        val_rrsig_rdata_t rrsig;
+
+        val_parse_rrsig_rdata(cursig->rr_rdata, cursig->rr_rdata_length, &rrsig);
+
+        memset(&tv_sig, 0, sizeof(tv_sig));
+        tv_sig.tv_sec = rrsig.sig_incp;
+        GET_TIME_BUF((const time_t *)(&tv_sig.tv_sec), incpTime);
+
+        memset(&tv_sig, 0, sizeof(tv_sig));
+        tv_sig.tv_sec = rrsig.sig_expr;
+        GET_TIME_BUF((const time_t *)(&tv_sig.tv_sec), exprTime);
+
+        val_log(ctx, level,
+                "%s    ->tag=%d status=%s sig-incep=%s sig-expr=%s",
+                prefix, rrsig.key_tag,
+                p_ac_status(cursig->rr_status),
+                incpTime, exprTime);
+    }
+#endif
+
 #if 0
     struct val_rr_rec  *rr;
     struct val_rr_rec  *sig = next_as->val_ac_rrset->val_rrset_sig;
