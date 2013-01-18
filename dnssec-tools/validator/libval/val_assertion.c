@@ -1873,7 +1873,6 @@ copy_rr_rec_list(struct rrset_rr *o_rr)
     struct rrset_rr *c_rr;
     struct val_rr_rec *n_rr, *head_rr;
     size_t siz = 0;;
-    size_t off = 0;;
     u_char *buf;
 
     if (NULL == o_rr)
@@ -3323,22 +3322,36 @@ prove_nonexistence(val_context_t * ctx,
             continue;
 
         /*
+         * skip any proof that doesn't seem to be relevant
+         */
+        if (NULL == namename(qname_n, the_set->rrs_zonecut_n)) {
+            continue;
+        }
+
+        /*
          * check if can skip validation 
          */
         if (val_istrusted(res->val_rc_status) &&
             !val_isvalidated(res->val_rc_status)) {
 
+            if (skip_validation == -1) {
+                /* conflict: some other proof fragment says that validation is required */
+                *status = VAL_BOGUS_PROOF;
+                retval = VAL_NO_ERROR; 
+                /* free any result structures that might have been created */
+                goto err;
+            }
             skip_validation = 1;
             continue;
-        }
-
-        if (skip_validation) {
+        } 
+        if (skip_validation == 1) {
             /* conflict: some other proof fragment says that validation is required */
             *status = VAL_BOGUS_PROOF;
             retval = VAL_NO_ERROR; 
             /* free any result structures that might have been created */
             goto err;
         }
+        skip_validation = -1;
 
         if (the_set->rrs_type_h == ns_t_soa) {
             /* Use the SOA minimum time */
@@ -3384,7 +3397,7 @@ prove_nonexistence(val_context_t * ctx,
 #endif
     }
 
-    if (skip_validation) {
+    if (skip_validation == 1) {
         /*
          * use the error code as status 
          */
