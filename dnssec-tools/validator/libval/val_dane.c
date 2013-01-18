@@ -324,7 +324,7 @@ int val_dane_submit(val_context_t *context,
     if (name == NULL || status == NULL)
        return VAL_BAD_ARGUMENT; 
 
-    ctx = val_create_or_refresh_context(context);
+    ctx = val_create_or_refresh_context(context);/* does CTX_LOCK_POL_SH */
     if (ctx == NULL)
         return VAL_INTERNAL_ERROR;
 
@@ -332,16 +332,20 @@ int val_dane_submit(val_context_t *context,
      * Check if valid DANE lookup name can be constructed
      */
     rc = get_dane_prefix(name, params, dane_name, NS_MAXDNAME); 
-    if (rc != VAL_NO_ERROR)
+    if (rc != VAL_NO_ERROR) {
+        CTX_UNLOCK_POL(ctx);
         return rc;
+    }
 
     /*
      * Do all the memory allocations upfront
      */
     dstat = (_val_dane_async_status_t *) 
                 MALLOC (sizeof(_val_dane_async_status_t));
-    if (NULL == dstat) 
+    if (NULL == dstat) {
+        CTX_UNLOCK_POL(ctx);
         return VAL_ENOMEM;
+    }
 
     /*
      * Save the caller information so that we can
@@ -392,7 +396,7 @@ int val_getdaneinfo(val_context_t *context,
     if (name == NULL || params == NULL || dres == NULL)
        return VAL_DANE_INTERNAL_ERROR; 
 
-    ctx = val_create_or_refresh_context(context);
+    ctx = val_create_or_refresh_context(context);/* does CTX_LOCK_POL_SH */
     if (ctx == NULL)
         return VAL_DANE_INTERNAL_ERROR;
 
@@ -402,8 +406,10 @@ int val_getdaneinfo(val_context_t *context,
      * Check if valid DANE lookup name can be constructed
      */
     rc = get_dane_prefix(name, params, dane_name, NS_MAXDNAME); 
-    if (rc != VAL_NO_ERROR)
+    if (rc != VAL_NO_ERROR) {
+        CTX_UNLOCK_POL(ctx);
         return VAL_DANE_INTERNAL_ERROR;
+    }
 
     if ((rc = val_resolve_and_check(ctx, dane_name, ns_c_in, ns_t_tlsa,
                                     0, &results))
@@ -411,6 +417,7 @@ int val_getdaneinfo(val_context_t *context,
         val_log(ctx, LOG_INFO,
                 "val_getdaneinfo(): val_resolve_and_check failed - %s",
                 p_val_err(rc));
+        CTX_UNLOCK_POL(ctx);
         return VAL_DANE_INTERNAL_ERROR;
     }    
 
@@ -421,7 +428,11 @@ int val_getdaneinfo(val_context_t *context,
     dane_rc = get_dane_from_result(params,
                                    results, 
                                    dres);
+    val_log(ctx, LOG_INFO,
+            "val_getdaneinfo(): returning %s(%d)", 
+            p_dane_error(dane_rc), dane_rc);
 
+    CTX_UNLOCK_POL(ctx);
     return dane_rc;
 }
 
@@ -464,16 +475,20 @@ int get_pkeybuf(const unsigned char *data, int len,
     return rv;
 }
 
-int val_dane_match(val_context_t *ctx,
+int val_dane_match(val_context_t *context,
                    struct val_danestatus *dane_cur, 
                    const unsigned char *data, 
                    int len)
 {
-    SHA256_CTX ctx256;
-    SHA512_CTX ctx512;
+    val_context_t *ctx;
+    int retval = VAL_DANE_CHECK_FAILED;
 
     if (dane_cur == NULL || data == NULL)
         return VAL_DANE_CHECK_FAILED;
+
+    ctx = val_create_or_refresh_context(context);/* does CTX_LOCK_POL_SH */
+    if (ctx == NULL)
+        return VAL_DANE_INTERNAL_ERROR;
 
     val_log(ctx, LOG_DEBUG,
             "val_dane_match(): checking for DANE cert match - sel:%d type:%d", 
@@ -484,6 +499,7 @@ int val_dane_match(val_context_t *ctx,
         val_log(ctx, LOG_DEBUG,
             "val_dane_match(): Unknown DANE selector:%d",
             dane_cur->selector);
+        CTX_UNLOCK_POL(ctx);
         return VAL_DANE_CHECK_FAILED;
     }
 
@@ -513,6 +529,7 @@ int val_dane_match(val_context_t *ctx,
                 X509_free(cert);
                 X509_free(tlsa_cert);
                 val_log(ctx, LOG_DEBUG, "val_dane_match(): DANE_SEL_FULLCERT/DANE_MATCH_EXACT success");
+                CTX_UNLOCK_POL(ctx);
                 return VAL_DANE_NOERROR;
             }
             val_log(ctx, LOG_DEBUG, "val_dane_match(): DANE_SEL_FULLCERT/DANE_MATCH_EXACT failed");
@@ -522,18 +539,22 @@ int val_dane_match(val_context_t *ctx,
             int pkeyLen = 0;
             unsigned char *pkeybuf = NULL;
 
-            if (0 != get_pkeybuf(data, len, &pkeyLen, &pkeybuf))
+            if (0 != get_pkeybuf(data, len, &pkeyLen, &pkeybuf)) {
+                CTX_UNLOCK_POL(ctx);
                 return VAL_DANE_CHECK_FAILED;
+            }
 
             if (pkeyLen == dane_cur->datalen &&
                 0 == memcmp(pkeybuf, dane_cur->data, pkeyLen)) {
 
                 val_log(ctx, LOG_DEBUG, "val_dane_match(): DANE_SEL_PUBKEY/DANE_MATCH_EXACT success");
                 FREE(pkeybuf);
+                CTX_UNLOCK_POL(ctx);
                 return VAL_DANE_NOERROR;
             }
             val_log(ctx, LOG_DEBUG, "val_dane_match(): DANE_SEL_PUBKEY/DANE_MATCH_EXACT failed");
             FREE(pkeybuf);
+            CTX_UNLOCK_POL(ctx);
             return VAL_DANE_NOERROR;
         }
 
@@ -547,8 +568,10 @@ int val_dane_match(val_context_t *ctx,
         } else {
             int pkeyLen = 0;
             unsigned char *pkeybuf = NULL;
-            if (0 != get_pkeybuf(data, len, &pkeyLen, &pkeybuf))
+            if (0 != get_pkeybuf(data, len, &pkeyLen, &pkeybuf)) {
+                CTX_UNLOCK_POL(ctx);
                 return VAL_DANE_CHECK_FAILED;
+            }
 #if 0
             {
                 char buf1[1028];
@@ -578,6 +601,7 @@ int val_dane_match(val_context_t *ctx,
         if (dane_cur->datalen == SHA256_DIGEST_LENGTH && 
             0 == memcmp(cert_sha, dane_cur->data, SHA256_DIGEST_LENGTH)) {
             val_log(ctx, LOG_DEBUG, "val_dane_match(): DANE_MATCH_SHA256 success");
+            CTX_UNLOCK_POL(ctx);
             return VAL_DANE_NOERROR;
         }
         val_log(ctx, LOG_DEBUG, 
@@ -594,8 +618,10 @@ int val_dane_match(val_context_t *ctx,
         } else {
             int pkeyLen = 0;
             unsigned char *pkeybuf = NULL;
-            if (0 != get_pkeybuf(data, len, &pkeyLen, &pkeybuf))
+            if (0 != get_pkeybuf(data, len, &pkeyLen, &pkeybuf)) {
+                CTX_UNLOCK_POL(ctx);
                 return VAL_DANE_CHECK_FAILED;
+            }
             SHA512(pkeybuf, pkeyLen, cert_sha);
             FREE(pkeybuf);
         }
@@ -616,6 +642,7 @@ int val_dane_match(val_context_t *ctx,
         if (dane_cur->datalen == SHA512_DIGEST_LENGTH &&
             0 == memcmp(cert_sha, dane_cur->data, SHA512_DIGEST_LENGTH)) {
             val_log(ctx, LOG_DEBUG, "val_dane_match(): DANE_MATCH_SHA512 success");
+            CTX_UNLOCK_POL(ctx);
             return VAL_DANE_NOERROR;
         }
         val_log(ctx, LOG_DEBUG, "val_dane_match(): DANE_MATCH_SHA512 failed");
@@ -624,11 +651,12 @@ int val_dane_match(val_context_t *ctx,
             "val_dane_match(): Error - Unknown DANE type:%d", dane_cur->type);
     }
 
+    CTX_UNLOCK_POL(ctx);
     return VAL_DANE_CHECK_FAILED;
 }
 
 
-int val_dane_check(val_context_t *context,
+int val_dane_check(val_context_t *ctx,
                    SSL *con,
                    struct val_danestatus *danestatus,
                    int *do_pathval) 
@@ -642,10 +670,14 @@ int val_dane_check(val_context_t *context,
     int cert_datalen = 0;
     int rv;
     int i;
+    val_context_t *context;
 
-    if (context == NULL || con == NULL || danestatus == NULL ||
-            do_pathval == NULL)
+    if (con == NULL || danestatus == NULL || do_pathval == NULL)
         return VAL_DANE_CHECK_FAILED;
+
+    context = val_create_or_refresh_context(ctx);/* does CTX_LOCK_POL_SH */
+    if (context == NULL)
+        return VAL_DANE_INTERNAL_ERROR;
 
     dane_cur = danestatus;
     while(dane_cur)  {
@@ -670,17 +702,24 @@ int val_dane_check(val_context_t *context,
                 }
                 for (i = 0; i < sk_X509_num(certList); i++) {
                     cert = sk_X509_value(certList, i);
-                    c = cert_data;
-                    cert_datalen = i2d_X509(cert, &c);
-                    if(cert_datalen > 0 &&
-                            val_dane_match(context,
-                                dane_cur,
-                                (const unsigned char *)cert_data,
-                                cert_datalen) == 0) {
-                        val_log(context, LOG_DEBUG, "DANE: val_dane_match() success\n");
-                        rv = VAL_DANE_NOERROR;
-                        free(cert_data);
-                        goto done;
+                    cert_datalen = i2d_X509(cert, NULL);
+                    if (cert_datalen > 0) {
+                        cert_data = OPENSSL_malloc(cert_datalen);
+                        if (cert_data) {
+                            c = cert_data;
+                            cert_datalen = i2d_X509(cert, &c);
+                            if(cert_datalen > 0 &&
+                                val_dane_match(context,
+                                    dane_cur,
+                                    (const unsigned char *)cert_data,
+                                    cert_datalen) == 0) {
+                                val_log(context, LOG_DEBUG, "DANE: val_dane_match() success\n");
+                                rv = VAL_DANE_NOERROR;
+                                OPENSSL_free(cert_data);
+                                goto done;
+                            }
+                            OPENSSL_free(cert_data);
+                        }
                     }
                 }
                 val_log(context, LOG_DEBUG, "DANE: val_dane_match() failed\n");
@@ -692,17 +731,24 @@ int val_dane_check(val_context_t *context,
                 /* fall-through */
             case DANE_USE_SVC_CONSTRAINT: /*1*/ 
                 cert = SSL_get_peer_certificate(con);
-                c = cert_data;
-                cert_datalen = i2d_X509(cert, &c);
-                if(cert_datalen > 0 && 
-                        val_dane_match(context, 
-                                  dane_cur,
-                                  (const unsigned char *)cert_data,
-                                  cert_datalen) == 0) {
-                    val_log(context, LOG_DEBUG, "DANE: val_dane_match() success\n");
-                    rv = VAL_DANE_NOERROR;
-                    free(cert_data);
-                    goto done;
+                cert_datalen = i2d_X509(cert, NULL);
+                if (cert_datalen > 0) {
+                    cert_data = OPENSSL_malloc(cert_datalen);
+                    if (cert_data) {
+                        c = cert_data;
+                        cert_datalen = i2d_X509(cert, &c);
+                        if(cert_datalen > 0 &&
+                                val_dane_match(context,
+                                    dane_cur,
+                                    (const unsigned char *)cert_data,
+                                    cert_datalen) == 0) {
+                            val_log(context, LOG_DEBUG, "DANE: val_dane_match() success\n");
+                            rv = VAL_DANE_NOERROR;
+                            OPENSSL_free(cert_data);
+                            goto done;
+                        }
+                        OPENSSL_free(cert_data);
+                    }
                 }
                 val_log(context, LOG_DEBUG, "DANE: val_dane_match() failed\n");
                 break;
@@ -747,6 +793,7 @@ done:
         }
     }
 
-   return rv;
+    CTX_UNLOCK_POL(context);
+    return rv;
 }
 
