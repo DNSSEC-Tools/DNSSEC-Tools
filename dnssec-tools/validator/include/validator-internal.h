@@ -371,6 +371,9 @@ extern          "C" {
 #ifdef VAL_REFCOUNTS
         int   refcount;
 #endif
+
+        int have_ipv4;
+        int have_ipv6;
     } ; 
 
 #define CTX_PROCESS_ALL_THREADS             0x00000001

@@ -83,6 +83,8 @@ int             val_free_validator_state(void);
 int             val_context_setqflags(val_context_t *context,
                                       unsigned char action,
                                       unsigned int flags);
+int             val_context_ip4(val_context_t * context);
+int             val_context_ip6(val_context_t * context);
 
 #ifndef VAL_NO_ASYNC
 /* remove asynchronous status from context async queries list */

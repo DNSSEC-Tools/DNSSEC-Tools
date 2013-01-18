@@ -21,7 +21,8 @@ struct glue_fetch_bucket {
 int             fix_glue(val_context_t * context,
                          struct queries_for_query **queries,
                          int *data_missing);
-int             res_zi_unverified_ns_list(struct name_server **ns_list,
+int             res_zi_unverified_ns_list(val_context_t *context,
+                                          struct name_server **ns_list,
                                           u_char * zone_name,
                                           struct rrset_rec
                                           *unchecked_zone_info, struct name_server
