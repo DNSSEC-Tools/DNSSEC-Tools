@@ -165,7 +165,7 @@ find_matching_glue(val_context_t *context,
          */
         flags = pc->qc_flags | (VAL_QUERY_GLUE_REQUEST | VAL_QUERY_DONT_VALIDATE);
 
-        if (find_glue_type & Q_WAIT_FOR_A_GLUE) {
+        if (find_glue_type == Q_WAIT_FOR_A_GLUE) {
             glue_type = ns_t_a;
 #ifdef VAL_IPV6
         } else  {/* Q_WAIT_FOR_AAAA_GLUE) */ 
@@ -295,11 +295,16 @@ merge_glue_in_referral(val_context_t *context,
     
     pending_ns = pc->qc_referral->cur_pending_glue_ns;
     if (pending_ns) {
-        if (VAL_NO_ERROR != (retval = find_matching_glue(context, Q_WAIT_FOR_A_GLUE, qfq_pc, bucket, queries)))
-            return retval;
 
-        if (VAL_NO_ERROR != (retval = find_matching_glue(context, Q_WAIT_FOR_AAAA_GLUE, qfq_pc, bucket, queries)))
-            return retval;
+        if (val_context_ip4(context)) {
+            if (VAL_NO_ERROR != (retval = find_matching_glue(context, Q_WAIT_FOR_A_GLUE, qfq_pc, bucket, queries)))
+                return retval;
+        }
+
+        if (val_context_ip6(context)) {
+            if (VAL_NO_ERROR != (retval = find_matching_glue(context, Q_WAIT_FOR_AAAA_GLUE, qfq_pc, bucket, queries)))
+                return retval;
+        }
 
         if (pc->qc_state & Q_WAIT_FOR_GLUE) {
             /* we're not done with fetching glue  */
@@ -385,18 +390,23 @@ merge_glue_in_referral(val_context_t *context,
         flags = pc->qc_flags | 
                 (VAL_QUERY_GLUE_REQUEST | VAL_QUERY_DONT_VALIDATE);
 
-        if (VAL_NO_ERROR != (retval = add_to_qfq_chain(context,
-                                       queries, pending_ns->ns_name_n, ns_t_a,
-                                       ns_c_in, flags, &added_q)))
-           return retval;
+        pc->qc_state = Q_INIT;
+        if (val_context_ip4(context)) {
+            if (VAL_NO_ERROR != (retval = add_to_qfq_chain(context,
+                                           queries, pending_ns->ns_name_n, ns_t_a,
+                                           ns_c_in, flags, &added_q)))
+                return retval;
+            pc->qc_state |= Q_WAIT_FOR_A_GLUE;
+        }
 #ifdef VAL_IPV6
-        if (VAL_NO_ERROR != (retval = add_to_qfq_chain(context,
-                                       queries, pending_ns->ns_name_n, ns_t_aaaa,
-                                       ns_c_in, flags, &added_q)))
-           return retval;
+        if (val_context_ip6(context)) {
+            if (VAL_NO_ERROR != (retval = add_to_qfq_chain(context,
+                                           queries, pending_ns->ns_name_n, ns_t_aaaa,
+                                           ns_c_in, flags, &added_q)))
+                return retval;
+            pc->qc_state |= Q_WAIT_FOR_AAAA_GLUE;
+        }
 #endif
-
-        pc->qc_state = Q_WAIT_FOR_GLUE;
 
     } 
 
@@ -484,7 +494,8 @@ err:
  * in "pending glue"
  */ 
 int
-res_zi_unverified_ns_list(struct name_server **ns_list,
+res_zi_unverified_ns_list(val_context_t *context,
+                          struct name_server **ns_list,
                           u_char * zone_name,
                           struct rrset_rec *unchecked_zone_info,
                           struct name_server **pending_glue)
@@ -501,7 +512,7 @@ res_zi_unverified_ns_list(struct name_server **ns_list,
     int             retval;
     u_char ns_cred = SR_CRED_UNSET;
 
-    if ((ns_list == NULL) || (pending_glue == NULL))
+    if ((context == NULL) || (ns_list == NULL) || (pending_glue == NULL))
         return VAL_BAD_ARGUMENT;
 
     *ns_list = NULL;
@@ -587,8 +598,8 @@ res_zi_unverified_ns_list(struct name_server **ns_list,
 
     unchecked_set = unchecked_zone_info;
     while (unchecked_set != NULL) {
-        if (unchecked_set->rrs_type_h == ns_t_a ||
-            unchecked_set->rrs_type_h == ns_t_aaaa) {
+        if ((val_context_ip4(context) && unchecked_set->rrs_type_h == ns_t_a) ||
+            (val_context_ip6(context) && unchecked_set->rrs_type_h == ns_t_aaaa)) {
             /*
              * If the owner name matches the name in an *ns_list entry...
              */
@@ -834,7 +845,7 @@ bootstrap_referral(val_context_t *context,
     }
     
     if ((ret_val =
-         res_zi_unverified_ns_list(ref_ns_list, referral_zone_n,
+         res_zi_unverified_ns_list(context, ref_ns_list, referral_zone_n,
                                    learned_zones, &pending_glue))
         != VAL_NO_ERROR) {
         return ret_val;
@@ -892,17 +903,23 @@ bootstrap_referral(val_context_t *context,
             flags = matched_q->qc_flags | 
                         (VAL_QUERY_GLUE_REQUEST | VAL_QUERY_DONT_VALIDATE);
 
-            matched_q->qc_state = Q_WAIT_FOR_A_GLUE;
-            if (VAL_NO_ERROR != (ret_val = add_to_qfq_chain(context,
+            matched_q->qc_state = Q_INIT;
+
+            if (val_context_ip4(context)) {
+                matched_q->qc_state |= Q_WAIT_FOR_A_GLUE;
+                if (VAL_NO_ERROR != (ret_val = add_to_qfq_chain(context,
                                        queries, pending_glue->ns_name_n, ns_t_a,
                                        ns_c_in, flags, &added_q)))
-                return ret_val;
+                    return ret_val;
+            }
 #ifdef VAL_IPV6
-            matched_q->qc_state |= Q_WAIT_FOR_AAAA_GLUE;
-            if (VAL_NO_ERROR != (ret_val = add_to_qfq_chain(context,
+            if (val_context_ip6(context)) {
+                matched_q->qc_state |= Q_WAIT_FOR_AAAA_GLUE;
+                if (VAL_NO_ERROR != (ret_val = add_to_qfq_chain(context,
                                        queries, pending_glue->ns_name_n, ns_t_aaaa,
                                        ns_c_in, flags, &added_q)))
-                return ret_val;
+                    return ret_val;
+            }
 #endif
 
         }
@@ -1810,7 +1827,8 @@ digest_response(val_context_t * context,
                                 type_h, set_type_h, class_h, ttl_h, hptr,
                                 rdata, rdata_len_h, from_section,
                                 authoritive, iterative, rrs_zonecut_n);
-            } else if (set_type_h == ns_t_a || set_type_h == ns_t_aaaa) {
+            } else if ((val_context_ip4(context) && set_type_h == ns_t_a) || 
+                       (val_context_ip6(context) && set_type_h == ns_t_aaaa)) {
                 SAVE_RR_TO_LIST(resp_ns,
                                 &learned_zones, name_n,
                                 type_h, set_type_h, class_h, ttl_h, hptr,

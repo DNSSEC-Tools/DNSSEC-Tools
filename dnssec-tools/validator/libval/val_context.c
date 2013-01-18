@@ -8,6 +8,13 @@
  */ 
 #include "validator-internal.h"
 
+#ifdef HAVE_NET_IF_H
+#include <net/if.h>
+#endif
+#ifdef HAVE_IFADDRS_H
+#include <ifaddrs.h>
+#endif
+
 #include "val_support.h"
 #include "val_policy.h"
 #include "val_cache.h"
@@ -60,6 +67,87 @@ pthread_mutex_t ctx_default =  PTHREAD_MUTEX_INITIALIZER;
 #endif
 
 
+/*
+ * check if we have ipv4/ipv6 addresses
+ */
+static void
+_have_addrs(int *have4, int *have6) {
+    struct ifaddrs *ifaddr, *ifa;
+    in_addr_t addr;
+    struct in6_addr addr6;
+    int family;
+
+    if (NULL == have4
+#ifdef VAL_IPV6
+       && NULL == have6
+#endif
+       ) {
+        return;
+    }
+
+    val_log(NULL, LOG_INFO, "_have_addrs(): checking for A/AAAA addrs");
+
+    if (have4)
+        *have4 = 0;
+    if (have6)
+        *have6 = 0;
+
+    if (getifaddrs(&ifaddr) == -1) {
+        val_log(NULL, LOG_ERR, "getifaddrs failed");
+        return;
+    }
+
+    /* Walk through linked list, maintaining head pointer so we
+       can free list later */
+
+    for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
+        if (ifa->ifa_addr == NULL)
+            continue;
+
+        family = ifa->ifa_addr->sa_family;
+
+        if (have4 && family == AF_INET && *have4 == 0) {
+            addr = ((struct sockaddr_in *) (ifa->ifa_addr))->sin_addr.s_addr;
+            if ((ifa->ifa_flags & IFF_UP)
+#ifdef IFF_RUNNING
+                && (ifa->ifa_flags & IFF_RUNNING)
+#endif                          /* IFF_RUNNING */
+                && !(ifa->ifa_flags & IFF_LOOPBACK)
+                && addr != INADDR_LOOPBACK) {
+                ++*have4;
+                val_log(NULL, LOG_INFO, "have v4 addr!");
+            }
+        }
+#ifdef VAL_IPV6
+        else if (have6 && family == AF_INET6 && *have6 == 0) {
+            addr6 = ((struct sockaddr_in6 *) (ifa->ifa_addr))->sin6_addr;
+            if ((ifa->ifa_flags & IFF_UP)
+#ifdef IFF_RUNNING
+                && (ifa->ifa_flags & IFF_RUNNING)
+#endif                          /* IFF_RUNNING */
+                && !(ifa->ifa_flags & IFF_LOOPBACK)
+                && !IN6_IS_ADDR_LOOPBACK(&addr6)
+                && !IN6_IS_ADDR_LINKLOCAL(&addr6)
+                ) {
+                ++*have6;
+                val_log(NULL, LOG_INFO, "have v6 addr!");
+            }
+        }
+#endif
+        else
+            continue;
+        if ((NULL == have4 || *have4) 
+#ifdef VAL_IPV6
+             && (NULL == have6 || *have6)
+#endif
+           )
+            break;
+    } /* for ifrp */
+    goto cleanup;
+
+  cleanup:
+    freeifaddrs(ifaddr);
+}
 
 /*
  * re-read resolver policy into the context
@@ -283,6 +371,9 @@ val_create_context_internal( char *label,
         ((*newcontext)->id, VAL_CTX_IDLEN - 1, "%u", (u_int)(*newcontext)) < 0)
         strcpy((*newcontext)->id, "libval");
 
+    /* check if we have ipv4 and ipv6 addresses */
+    _have_addrs(&(*newcontext)->have_ipv4, &(*newcontext)->have_ipv6);
+
     /* 
      * Set default configuration files 
      */
@@ -352,6 +443,7 @@ val_create_context_internal( char *label,
     if ((*newcontext)->val_log_targets != NULL) {
         (*newcontext)->def_cflags |= VAL_QUERY_AC_DETAIL;
     }
+
 
     val_log(*newcontext, LOG_DEBUG, 
             "val_create_context_with_conf(): Context created with %s %s %s", 
@@ -447,10 +539,8 @@ val_create_or_refresh_context(val_context_t *ctx)
     val_context_t *context = NULL;
     int retval;
 
-    /*
-     * Create a default context if one does not exist
-     */
     if (ctx == NULL) {
+        /* return the default context */
         if (VAL_NO_ERROR != (retval = val_create_context(NULL, &context)))
             return NULL;
     } else {
@@ -613,3 +703,21 @@ val_context_setqflags(val_context_t *context,
 
     return VAL_NO_ERROR;
 }  
+
+int
+val_context_ip4(val_context_t * context)
+{
+    if(context)
+        return context->have_ipv4;
+
+    return 0;
+}
+
+int
+val_context_ip6(val_context_t * context)
+{
+    if(context)
+        return context->have_ipv6;
+
+    return 0;
+}

@@ -14,13 +14,6 @@
  */
 #include "validator-internal.h"
 
-#ifdef HAVE_NET_IF_H
-#include <net/if.h>
-#endif
-#ifdef HAVE_IFADDRS_H
-#include <ifaddrs.h>
-#endif
-
 #include "val_policy.h"
 #include "val_parse.h"
 #include "val_context.h"
@@ -693,81 +686,6 @@ get_addrinfo_from_result(const val_context_t * ctx,
     return retval;
 }                               /* get_addrinfo_from_result() */
 
-#ifdef AI_ADDRCONFIG
-/*
- * check if we have ipv4/ipv6 addresses
- */
-static void
-_have_addrs(int *have4, int *have6) {
-    struct ifaddrs *ifaddr, *ifa;
-    in_addr_t addr;
-    struct in6_addr addr6;
-    int family;
-
-    val_log(NULL, LOG_INFO, "_have_addrs(): checking for A/AAAA addrs");
-
-    if (have4)
-        *have4 = 0;
-#ifdef VAL_IPV6
-    if (have6)
-        *have6 = 0;
-#endif
-
-    if (getifaddrs(&ifaddr) == -1) {
-        val_log(NULL, LOG_ERR, "getifaddrs failed");
-        return;
-    }
-
-    /* Walk through linked list, maintaining head pointer so we
-       can free list later */
-
-    for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
-        if (ifa->ifa_addr == NULL)
-            continue;
-
-        family = ifa->ifa_addr->sa_family;
-
-        if (have4 && family == AF_INET && *have4 == 0) {
-            addr = ((struct sockaddr_in *) (ifa->ifa_addr))->sin_addr.s_addr;
-            if ((ifa->ifa_flags & IFF_UP)
-#ifdef IFF_RUNNING
-                && (ifa->ifa_flags & IFF_RUNNING)
-#endif                          /* IFF_RUNNING */
-                && !(ifa->ifa_flags & IFF_LOOPBACK)
-                && addr != INADDR_LOOPBACK) {
-                ++*have4;
-                val_log(NULL, LOG_INFO, "have v4 addr!");
-            }
-        }
-#ifdef VAL_IPV6
-        else if (have6 && family == AF_INET6 && *have6 == 0) {
-            addr6 = ((struct sockaddr_in6 *) (ifa->ifa_addr))->sin6_addr;
-            if ((ifa->ifa_flags & IFF_UP)
-#ifdef IFF_RUNNING
-                && (ifa->ifa_flags & IFF_RUNNING)
-#endif                          /* IFF_RUNNING */
-                && !(ifa->ifa_flags & IFF_LOOPBACK)
-                && !IN6_IS_ADDR_LOOPBACK(&addr6)
-                && !IN6_IS_ADDR_LINKLOCAL(&addr6)
-                ) {
-                ++*have6;
-                val_log(NULL, LOG_INFO, "have v6 addr!");
-            }
-        }
-#endif
-        else
-            continue;
-        if ((NULL == have4 || *have4) &&
-            (NULL == have6 || *have6))
-            break;
-    } /* for ifrp */
-    goto cleanup;
-
-  cleanup:
-    freeifaddrs(ifaddr);
-}
-#endif /* AI_ADDRCONFIG */
-
 /*
  * Function: get_addrinfo_from_dns
  *
@@ -831,8 +749,10 @@ get_addrinfo_from_dns(val_context_t * ctx,
     }
 
 #ifdef AI_ADDRCONFIG
-    if (hints->ai_flags & AI_ADDRCONFIG)
-        _have_addrs(&have4, &have6);
+    if (hints->ai_flags & AI_ADDRCONFIG) {
+        have4 = val_context_ipv4(ctx);
+        have6 = val_context_ipv6(ctx);
+    }
 #endif
     
     /*
@@ -1809,8 +1729,10 @@ val_getaddrinfo_submit(val_context_t * context, const char *nodename,
         vgai->nodename = (char *)strdup(nodename);
 
 #ifdef AI_ADDRCONFIG
-    if (hints->ai_flags & AI_ADDRCONFIG)
-        _have_addrs(&have4, &have6);
+    if (hints->ai_flags & AI_ADDRCONFIG) {
+        have4 = val_context_ipv4(ctx);
+        have6 = val_context_ipv6(ctx);
+    }
 #endif
 
     /*

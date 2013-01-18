@@ -2573,7 +2573,7 @@ read_root_hints_file(val_context_t * ctx)
 
     if (VAL_NO_ERROR !=
         (retval =
-         res_zi_unverified_ns_list(&ns_list, root_zone_n, root_info,
+         res_zi_unverified_ns_list(ctx, &ns_list, root_zone_n, root_info,
                                    &pending_glue))) {
 
         goto err;
