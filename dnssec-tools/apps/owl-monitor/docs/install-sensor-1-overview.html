@@ -38,10 +38,10 @@ The Owl Monitoring System has a conceptually simple method of operations.
 There is a manager host and a set of sensor hosts.  The sensors periodically
 make a set of DNS queries and time how long it takes to get a response.  The
 response times are saved to data files.  After a certain amount of time, the
-data files are transferred from the sensor to the manager host.  This data
-transfer may be initiated by the manager or by the sensor.  The manager
-transfers the data into a monitoring package, which allows easy display of
-the data.
+data files are transferred from the sensor to the manager host.  For any
+particular sensor, this data transfer may be configured to be initiated by
+either the manager or by the sensor.  The manager transfers the data into a
+monitoring package, which allows easy display of the data.
 
 <p>
 
