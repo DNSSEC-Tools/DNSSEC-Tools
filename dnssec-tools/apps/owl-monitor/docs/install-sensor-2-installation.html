@@ -159,6 +159,14 @@ having to manually enter a password.
 
 <p>
 
+Example of a command to generate a new SSH key:
+
+<pre>
+    $ ssh-keygen -b 1024 -t dsa
+</pre>
+
+<p>
+
 If the Owl sensor will be pushing data to the manager, then the newly
 generated public key must be transferred to the Owl manager host.  This key
 must be added to the list of authorized keys for the Owl manager's account.
@@ -170,15 +178,21 @@ without need of a password.
 
 <p>
 
-If the Owl manager will be pulling data from the sensor, then the ...
-<b>fill in this paragraph</b>.
+If the Owl manager will be pulling data from the sensor, then you must do the
+following things.  First, install the <b>rrsync</b> utility. This is a
+front-end to <b>rsync</b> that restricts the locations to which <b>rsync</b>
+may copy data.  <b>rrsync</b> is available here:
+<b>http://ftp.samba.org/pub/unpacked/rsync/support/rrsync</b>.  Next, the
+manager's administrator must provide you with a public SSH key.  This public
+key must be added to the <b>authorized_keys</b> file belonging to the Owl
+sensor account.
 
 <p>
 
-Example of a command to generate a new SSH key:
+The <b>authorized_keys</b> entry should look something like this:
 
 <pre>
-    $ ssh-keygen -b 1024 -t dsa
+    command="/usr/local/bin/rrsync /owl/data" ssh-rsa AAAAB3Nza...A3Q== owl-manager@owl.example.com
 </pre>
 
 <p>
