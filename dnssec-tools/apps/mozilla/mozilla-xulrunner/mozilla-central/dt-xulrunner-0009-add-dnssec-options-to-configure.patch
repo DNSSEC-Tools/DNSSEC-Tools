@@ -1,0 +1,124 @@
+From d3a5ccdc522e508fbe7a7980f6b4a4cb780ae219 Mon Sep 17 00:00:00 2001
+From: Robert Story <rstory@localhost>
+Date: Thu, 13 Oct 2011 01:34:28 -0400
+Subject: [PATCH 09/22] XULRUNNER add dnssec options to configure
+
+---
+ configure.in | 101 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 101 insertions(+)
+
+diff --git a/configure.in b/configure.in
+index 1de24b9..07b9bc5 100644
+--- a/configure.in
++++ b/configure.in
+@@ -8325,6 +8325,107 @@ if test "$MOZ_APP_COMPONENT_MODULES"; then
+ fi
+ 
+ dnl ========================================================
++dnl = Add DNSSEC support
++dnl ========================================================
++
++AC_ARG_WITH(system-val,
++[  --with-system-val[=PFX]
++                  Use system DNSSEC validator [installed at prefix PFX]],
++   ,
++   [with_system_val=no])
++
++AC_ARG_WITH(system-openssl,
++[  --with-system-openssl[=PFX]
++                  Use system openssl libraries [installed at prefix PFX]],
++   ,
++   [with_system_openssl=no])
++
++VAL_LIBS=""
++VAL_CFLAGS=""
++VAL_LDFLAGS=""
++OPENSSL_LIBS=""
++MOZ_DNSSEC=""
++if test "x$with_system_val" != xno; then
++  if test "x$with_system_val" != xyes; then
++    VAL_CFLAGS="-I${with_system_val}/include"
++    VAL_LDFLAGS="-L${with_system_val}/lib"
++  fi
++  CFLAGS="$CFLAGS $VAL_CFLAGS"
++  if test -n "$_WIN32_MSVC"; then
++    VAL_LIBS="${with_system_val}/lib/libval-threads.a ${with_system_val}/lib/libsres.a ${with_system_val}/lib/libcrypto.a ${with_system_val}/lib/libpthread.dll.a ${with_system_val}/lib/libgcc.a user32.lib gdi32.lib Ws2_32.lib"
++    AC_DEFINE([MOZ_DNSSEC], [1], [Define if DNSSEC is enabled])
++  else
++    LDFLAGS="$LDFLAGS $VAL_LDFLAGS"
++    dnl echo "with_system_openssl='"$with_system_openssl"'"
++    if test "x$with_system_openssl" != xno; then
++        if test "x$with_system_openssl" != xyes; then
++            CFLAGS="$CFLAGS -I${with_system_openssl}/include"
++            LDFLAGS="$LDFLAGS -L${with_system_openssl}/lib"
++            OPENSSL_PATH="${with_system_openssl}/lib"
++        else
++            OPENSSL_PATH="/usr/lib"
++        fi
++    else
++        OPENSSL_PATH="/usr/lib"
++    fi
++    AC_CHECK_LIB(crypto, EVP_md5, OPENSSL_LIBS="-lcrypto")
++
++    dnl because of conflict with nss, we need static version of openssl
++    AC_CHECK_LIB(ssl, SSL_get_SSL_CTX, , [AC_MSG_ERROR(Cannot find OpenSSL libraries.)])
++    if test -n "$HAVE_64BIT_OS"; then
++       if test -e "${OPENSSL_PATH}64/libssl.a"; then
++          OPENSSL_LIBS="$OPENSSL_LIBS ${OPENSSL_PATH}64/libssl.a"
++       elif test -e "${OPENSSL_PATH}/libssl.a"; then
++          OPENSSL_LIBS="$OPENSSL_LIBS $OPENSSL_PATH/libssl.a"
++       else
++          AC_MSG_ERROR("Static SSL library not found.")
++       fi
++    else
++       if test -e "${OPENSSL_PATH}/libssl.a"; then
++          OPENSSL_LIBS="$OPENSSL_LIBS $OPENSSL_PATH/libssl.a"
++       else
++          AC_MSG_ERROR("Static SSL library not found.")
++       fi
++    fi
++
++    dnl with static openssl, apparently we need to pull in libkrb5
++    AC_CHECK_LIB(krb5, krb5_init_context, OPENSSL_LIBS="$OPENSSL_LIBS -lkrb5")
++    AC_CHECK_LIB(k5crypto, krb5_checksum_size, OPENSSL_LIBS="$OPENSSL_LIBS -lk5crypto")
++
++    dnl val-threads check
++    AC_CHECK_LIB(val-threads, val_gethostbyname,
++        [VAL_LIBS="-lval-threads -lsres ${OPENSSL_LIBS} ${_PTHREAD_LDFLAGS}"
++         MOZ_DNSSEC="1"
++         AC_DEFINE([MOZ_DNSSEC], [1], [Define if DNSSEC is enabled])],
++        [AC_MSG_ERROR(Can't find val_gethostbyname.)],
++        -lsres ${OPENSSL_LIBS} ${_PTHREAD_LDFLAGS})
++  fi
++  dnl functions added in 1.11
++  AC_CHECK_LIB(val-threads, val_getaddrinfo_submit,
++                AC_DEFINE(HAVE_VAL_GETADDRINFO_SUBMIT), ,
++                -lsres ${OPENSSL_LIBS} ${_PTHREAD_LDFLAGS} ${OS_LDFLAGS})
++  dnl functions added in 1.12
++  AC_CHECK_LIB(val-threads, val_context_setqflags,
++                AC_DEFINE(HAVE_VAL_CONTEXT_SETQFLAGS), ,
++                -lsres ${OPENSSL_LIBS} ${_PTHREAD_LDFLAGS} ${OS_LDFLAGS})
++
++  dnl functions added in 1.13
++  AC_CHECK_LIB(val-threads, val_freeaddrinfo,
++                AC_DEFINE(HAVE_VAL_FREEADDRINFO), ,
++                -lsres ${OPENSSL_LIBS} ${_PTHREAD_LDFLAGS} ${OS_LDFLAGS})
++  AC_CHECK_LIB(val-threads, val_getaddrinfo_cancel,
++                AC_DEFINE(HAVE_VAL_GETADDRINFO_CANCEL), ,
++                -lsres ${OPENSSL_LIBS} ${_PTHREAD_LDFLAGS} ${OS_LDFLAGS})
++fi
++LIBS="$LIBS $VAL_LIBS"
++NSPR_LIBS="$NSPR_LIBS $VAL_LDFLAGS $VAL_LIBS"
++NSPR_CFLAGS="$NSPR_CFLAGS $VAL_CFLAGS"
++AC_SUBST(VAL_LIBS)
++AC_SUBST(VAL_CFLAGS)
++AC_SUBST(VAL_LDFLAGS)
++AC_SUBST(MOZ_DNSSEC)
++
++dnl ========================================================
+ dnl =
+ dnl = Maintainer debug option (no --enable equivalent)
+ dnl =
+-- 
+1.7.11.7
+

@@ -1,18 +1,18 @@
-From d4340eccddc310203a2407c437582868ae845290 Mon Sep 17 00:00:00 2001
+From 2ef997c1bf8ecfd8a2edcdd31a99ed74807dccbc Mon Sep 17 00:00:00 2001
 From: Robert Story <rstory@localhost>
 Date: Mon, 4 Jun 2012 15:54:20 -0400
-Subject: [PATCH 5/6] update browser local overrides for DNSSEC
+Subject: [PATCH 15/22] BROWSER update browser local overrides for DNSSEC
 
 ---
- .../en-US/chrome/overrides/appstrings.properties   |    2 +
- .../locales/en-US/chrome/overrides/netError.dtd    |   26 ++++++++++++++++++++
- 2 files changed, 28 insertions(+), 0 deletions(-)
+ .../en-US/chrome/overrides/appstrings.properties   |  2 ++
+ .../locales/en-US/chrome/overrides/netError.dtd    | 26 ++++++++++++++++++++++
+ 2 files changed, 28 insertions(+)
 
 diff --git a/browser/locales/en-US/chrome/overrides/appstrings.properties b/browser/locales/en-US/chrome/overrides/appstrings.properties
-index 87e9538..aa01edf 100644
+index 1de0093..568040d 100644
 --- a/browser/locales/en-US/chrome/overrides/appstrings.properties
 +++ b/browser/locales/en-US/chrome/overrides/appstrings.properties
-@@ -37,6 +37,8 @@
+@@ -5,6 +5,8 @@
  malformedURI=The URL is not valid and cannot be loaded.
  fileNotFound=Firefox can't find the file at %S.
  dnsNotFound=Firefox can't find the server at %S.
@@ -22,10 +22,10 @@ index 87e9538..aa01edf 100644
  connectionFailure=Firefox can't establish a connection to the server at %S.
  netInterrupt=The connection to %S was interrupted while the page was loading.
 diff --git a/browser/locales/en-US/chrome/overrides/netError.dtd b/browser/locales/en-US/chrome/overrides/netError.dtd
-index 5b964b1..343d276 100644
+index 9f6cf04..70432f8 100644
 --- a/browser/locales/en-US/chrome/overrides/netError.dtd
 +++ b/browser/locales/en-US/chrome/overrides/netError.dtd
-@@ -25,6 +25,32 @@
+@@ -29,6 +29,32 @@
  </ul>
  ">
  
@@ -59,5 +59,5 @@ index 5b964b1..343d276 100644
  <!ENTITY fileNotFound.longDesc "
  <ul>
 -- 
-1.7.7.6
+1.7.11.7
 

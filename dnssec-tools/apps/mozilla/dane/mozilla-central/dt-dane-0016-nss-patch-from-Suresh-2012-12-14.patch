@@ -1,0 +1,314 @@
+From 8184fdf47cb4517ee875619091d4632ad58d9bde Mon Sep 17 00:00:00 2001
+From: Robert Story <rstory@localhost>
+Date: Sat, 22 Dec 2012 17:54:41 -0500
+Subject: [PATCH 16/22] DANE nss patch from Suresh; 2012-12-14
+
+---
+ security/nss/lib/ssl/Makefile    |   2 +
+ security/nss/lib/ssl/config.mk   |   3 +
+ security/nss/lib/ssl/manifest.mn |   1 +
+ security/nss/lib/ssl/ssl.def     |   1 +
+ security/nss/lib/ssl/ssl.h       |   4 +
+ security/nss/lib/ssl/ssldane.c   | 185 +++++++++++++++++++++++++++++++++++++++
+ security/nss/lib/ssl/sslerr.h    |   4 +
+ security/nss/lib/ssl/sslimpl.h   |   1 +
+ security/nss/lib/ssl/sslsock.c   |   1 +
+ 9 files changed, 202 insertions(+)
+ create mode 100644 security/nss/lib/ssl/ssldane.c
+
+diff --git a/security/nss/lib/ssl/Makefile b/security/nss/lib/ssl/Makefile
+index d56cbf2..4196d2d 100644
+--- a/security/nss/lib/ssl/Makefile
++++ b/security/nss/lib/ssl/Makefile
+@@ -39,6 +39,8 @@ CSRCS	+= unix_err.c
+ endif
+ endif
+ 
++DEFINES += -I/usr/local/opt/include
++
+ #######################################################################
+ # (5) Execute "global" rules. (OPTIONAL)                              #
+ #######################################################################
+diff --git a/security/nss/lib/ssl/config.mk b/security/nss/lib/ssl/config.mk
+index 1a717fa..21c6f20 100644
+--- a/security/nss/lib/ssl/config.mk
++++ b/security/nss/lib/ssl/config.mk
+@@ -90,3 +90,6 @@ EXTRA_LIBS += $(ZLIB_LIBS)
+ endif
+ 
+ endif
++
++# DANE
++OS_LIBS += -L/usr/local/opt/lib -lval-threads -lsres -lcrypto
+diff --git a/security/nss/lib/ssl/manifest.mn b/security/nss/lib/ssl/manifest.mn
+index 3bb28a2..ac38b5a 100644
+--- a/security/nss/lib/ssl/manifest.mn
++++ b/security/nss/lib/ssl/manifest.mn
+@@ -44,6 +44,7 @@ CSRCS = \
+ 	cmpcert.c \
+ 	sslinfo.c \
+ 	ssl3ecc.c \
++	ssldane.c \
+ 	$(NULL)
+ 
+ LIBRARY_NAME = ssl
+diff --git a/security/nss/lib/ssl/ssl.def b/security/nss/lib/ssl/ssl.def
+index 0f2cbff..6f24075 100644
+--- a/security/nss/lib/ssl/ssl.def
++++ b/security/nss/lib/ssl/ssl.def
+@@ -153,6 +153,7 @@ SSL_VersionRangeSet;
+ SSL_VersionRangeSetDefault;
+ SSL_GetSRTPCipher;
+ SSL_SetSRTPCiphers;
++SSL_DANECheck;
+ ;+    local:
+ ;+*;
+ ;+};
+diff --git a/security/nss/lib/ssl/ssl.h b/security/nss/lib/ssl/ssl.h
+index fff4338..f89a89e 100644
+--- a/security/nss/lib/ssl/ssl.h
++++ b/security/nss/lib/ssl/ssl.h
+@@ -867,6 +867,10 @@ SSL_IMPORT SECStatus DTLS_GetHandshakeTimeout(PRFileDesc *socket,
+  */
+ extern PRBool NSSSSL_VersionCheck(const char *importedVersion);
+ 
++
++SSL_IMPORT SECStatus SSL_DANECheck(void * pinarg, const char *hostname, int32_t
++        port, CERTCertificate *cert, int *do_pathval);
++
+ /*
+  * Returns a const string of the SSL library version.
+  */
+diff --git a/security/nss/lib/ssl/ssldane.c b/security/nss/lib/ssl/ssldane.c
+new file mode 100644
+index 0000000..4b9c0f3
+--- /dev/null
++++ b/security/nss/lib/ssl/ssldane.c
+@@ -0,0 +1,185 @@
++
++#define _GNU_SOURCE
++
++#include "nspr.h"
++#include "cert.h"
++#include "ssl.h"
++#include "sslimpl.h"
++#include "pk11func.h" /* PK11_HashBuf */
++#include "secitem.h"
++#include "keyhi.h"
++
++#include <validator/validator.h>
++#include <validator/val_dane.h>
++
++static PRBool disabled = PR_FALSE;
++static PRBool initSuccess = PR_FALSE;
++val_context_t *context = NULL;
++
++
++void ssl_DANEInit() {
++	int rc;
++
++	const char *labelStr = getenv("DANE_DNSVAL_POLICY");
++	const char *disableStr = getenv("NSS_SSL_DANE_DISABLE");
++
++	disabled = (disableStr != NULL && atoi(disableStr) > 0);
++	if (disabled) {
++        fprintf(stderr, "DANE is disabled\n");
++		return;
++	}
++
++    if (labelStr != NULL && 
++            VAL_NO_ERROR != (rc = val_create_context(labelStr, &context))) {
++        fprintf(stderr, "Could not create dnsval policy for DANE\n");
++        return;
++    }
++
++	initSuccess = PR_TRUE;
++}
++
++SECStatus SSL_DANECheck(void * pinarg, const char *hostname, int32_t port, CERTCertificate *cert, int *do_pathval) {
++    struct val_daneparams daneparams;
++    struct val_danestatus *danestatus = NULL;
++    struct val_danestatus *dane_cur = NULL;
++    int dane_retval;
++    int have_dane = 0;
++    CERTCertDBHandle *certdb;
++	SECStatus rv = SECSuccess; /* don't ask */
++
++    fprintf(stderr, "DANE: checking if disabled\n");
++	if (disabled) {
++        rv = SECSuccess;
++        goto done;
++	}
++
++    fprintf(stderr, "DANE: checking if initialized\n");
++	if (!initSuccess) {
++		PORT_SetError(SSL_ERROR_DANE_INIT_FAILED);
++        rv = SECFailure;
++        goto done;
++	}
++
++	if (!hostname) {
++		PORT_SetError(SSL_ERROR_BAD_CERT_DOMAIN);
++        rv = SECFailure;
++        goto done;
++	}
++
++    daneparams.port = port;
++    daneparams.proto = DANE_PARAM_PROTO_TCP;
++
++    if (VAL_DANE_NOERROR != (dane_retval = val_getdaneinfo(context,
++                    hostname, &daneparams, &danestatus))) {
++        if (dane_retval == VAL_DANE_IGNORE_TLSA) {
++            fprintf(stderr, "DANE: val_getdaneinfo() - TLSA does not exist for %s:\n",
++                    hostname);
++            return SECSuccess;
++        }
++
++        fprintf(stderr, "DANE: val_getdaneinfo(%s) failed: %s\n",
++                hostname, p_dane_error(dane_retval));
++		PORT_SetError(SSL_ERROR_DANE_QUERY_FAILED);
++        return SECFailure;
++    }
++
++    fprintf(stderr, "DANE: lookup completed for %s\n", hostname);
++
++    dane_cur = danestatus;
++    while(dane_cur)  {
++        have_dane = 1;
++        *do_pathval = 1;
++    
++        fprintf(stderr, "DANE check s,t,u=%d,%d,%d\n",
++                dane_cur->selector,
++                dane_cur->type,
++                dane_cur->usage); 
++
++        switch (dane_cur->usage) {
++            case DANE_USE_CA_CONSTRAINT: /*0*/ {
++                /* 
++                 * Check that the TLSA cert matches one on the cert
++                 * chain
++                 */
++                CERTCertList *certList = 
++                    CERT_GetCertChainFromCert(cert, PR_Now(), certUsageSSLCA);
++                if (!certList) {
++                    break;
++                }
++                for (CERTCertListNode *node = CERT_LIST_HEAD(certList);
++                     !CERT_LIST_END(node, certList);
++                     node = CERT_LIST_NEXT(node)) {
++
++                    if(val_dane_match(context,
++                                dane_cur,
++                                (const unsigned char *)node->cert->derCert.data,
++                                node->cert->derCert.len) == VAL_DANE_NOERROR) {
++                        fprintf(stderr, "DANE: val_dane_match() success\n");
++                        rv = SECSuccess;
++                        goto done;
++                    }
++                }
++                fprintf(stderr, "DANE: val_dane_match() failed\n");
++                break;
++            }
++
++            case DANE_USE_DOMAIN_ISSUED: /*3*/
++                *do_pathval = 0;
++                /* fall through */
++            case DANE_USE_SVC_CONSTRAINT: /*1*/ 
++                if(val_dane_match(context, 
++                                  dane_cur,
++                                  (const unsigned char *)cert->derCert.data,
++                                  cert->derCert.len) == VAL_DANE_NOERROR) {
++                    fprintf(stderr, "DANE: val_dane_match() success\n");
++                    rv = SECSuccess;
++                    goto done;
++                }
++                fprintf(stderr, "DANE: val_dane_match() failed\n");
++                break;
++
++            case DANE_USE_TA_ASSERTION: /*2*/ {
++                SECItem tlsaCert;
++                *do_pathval = 0;
++                certdb = CERT_GetDefaultCertDB();
++                /* Create a new CERTCertificate from given bytes */
++                tlsaCert.data = dane_cur->data;
++                tlsaCert.len = dane_cur->datalen;
++
++                CERT_NewTempCertificate(certdb, &tlsaCert, NULL,
++                        PR_FALSE,
++                        PR_TRUE);
++                if (SECSuccess == 
++                        CERT_VerifyCertNow(certdb,
++                            cert, PR_TRUE, certUsageSSLServer, pinarg)) {
++                    fprintf(stderr, "DANE: val_dane_match() success\n");
++                    rv = SECSuccess;
++                    goto done;
++                }
++                fprintf(stderr, "DANE: val_dane_match() failed\n");
++                break;
++            }
++            default:
++                fprintf(stderr, "DANE: val_dane_match() failed\n");
++                break;
++        }
++
++        dane_cur = dane_cur->next;
++	}
++
++    rv = SECFailure; 
++
++done:
++    val_free_dane(danestatus);
++    if (have_dane) {
++        if (rv == SECSuccess)
++            fprintf(stderr, "DANE: Passed validation\n");
++        else {
++            fprintf(stderr, "DANE: validation failed\n");
++	        PORT_SetError(SSL_ERROR_DANE_UNAUTHORIZED);
++        }
++    }
++
++	return rv;
++}
++
+diff --git a/security/nss/lib/ssl/sslerr.h b/security/nss/lib/ssl/sslerr.h
+index 8d1395d..1f44861 100644
+--- a/security/nss/lib/ssl/sslerr.h
++++ b/security/nss/lib/ssl/sslerr.h
+@@ -188,6 +188,10 @@ SSL_ERROR_RX_UNEXPECTED_HELLO_VERIFY_REQUEST = (SSL_ERROR_BASE + 123),
+ 
+ SSL_ERROR_FEATURE_NOT_SUPPORTED_FOR_VERSION = (SSL_ERROR_BASE + 124),
+ 
++SSL_ERROR_DANE_INIT_FAILED  = (SSL_ERROR_BASE + 125),
++SSL_ERROR_DANE_QUERY_FAILED = (SSL_ERROR_BASE + 126),
++SSL_ERROR_DANE_UNAUTHORIZED = (SSL_ERROR_BASE + 127),
++
+ SSL_ERROR_END_OF_LIST	/* let the c compiler determine the value of this. */
+ } SSLErrorCodes;
+ #endif /* NO_SECURITY_ERROR_ENUM */
+diff --git a/security/nss/lib/ssl/sslimpl.h b/security/nss/lib/ssl/sslimpl.h
+index 891d5f4..4673220 100644
+--- a/security/nss/lib/ssl/sslimpl.h
++++ b/security/nss/lib/ssl/sslimpl.h
+@@ -1684,6 +1684,7 @@ extern void ssl_FreePRSocket(PRFileDesc *fd);
+  * various ciphers */
+ extern int ssl3_config_match_init(sslSocket *);
+ 
++extern void ssl_DANEInit();
+ 
+ /* Create a new ref counted key pair object from two keys. */
+ extern ssl3KeyPair * ssl3_NewKeyPair( SECKEYPrivateKey * privKey, 
+diff --git a/security/nss/lib/ssl/sslsock.c b/security/nss/lib/ssl/sslsock.c
+index 5656a37..dd373be 100644
+--- a/security/nss/lib/ssl/sslsock.c
++++ b/security/nss/lib/ssl/sslsock.c
+@@ -2324,6 +2324,7 @@ ssl_Poll(PRFileDesc *fd, PRInt16 how_flags, PRInt16 *p_out_flags)
+ 	    *p_out_flags = lower_out_flags;
+ 	    new_flags    = lower_new_flags;
+ 	}
++	ssl_DANEInit();
+     }
+ 
+     return new_flags;
+-- 
+1.7.11.7
+

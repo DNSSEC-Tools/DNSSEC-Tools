@@ -1,8 +1,9 @@
-From 52dc886ca59bef18c537dbe3e81037c4e1b2c7ac Mon Sep 17 00:00:00 2001
+From 3c9243c6c15405832fb36204a6b831779c029d51 Mon Sep 17 00:00:00 2001
 From: Robert Story <rstory@localhost>
 Date: Thu, 23 Feb 2012 11:31:34 -0500
-Subject: [PATCH 06/10] header definitions for Extended (DNSSEC) and
- asynchronous API
+Subject: [PATCH 06/22] NSPR header definitions for new APIs
+
+Extended (DNSSEC) and asynchronous API
 
      PR_GetHostByNameExtended, PR_GetIPNodeByNameExtended
      PR_GetAddrInfoByNameExtended, PR_AsyncSubmit_GetAddrInfoByName
@@ -10,14 +11,14 @@ Subject: [PATCH 06/10] header definitions for Extended (DNSSEC) and
      PR_AsyncDNS_Cancel, PR_set_dnssec_validate_policy,
      PR_dnssec_result_checks
 ---
- nsprpub/pr/include/prnetdb.h |  291 ++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 291 insertions(+), 0 deletions(-)
+ nsprpub/pr/include/prnetdb.h | 291 +++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 291 insertions(+)
 
 diff --git a/nsprpub/pr/include/prnetdb.h b/nsprpub/pr/include/prnetdb.h
-index f1b7ddc..4aedd8d 100644
+index 49b77b1..6576809 100644
 --- a/nsprpub/pr/include/prnetdb.h
 +++ b/nsprpub/pr/include/prnetdb.h
-@@ -39,6 +39,8 @@
+@@ -7,6 +7,8 @@
  #define prnetdb_h___
  
  #include "prtypes.h"
@@ -26,7 +27,7 @@ index f1b7ddc..4aedd8d 100644
  #include "prio.h"
  
  PR_BEGIN_EXTERN_C
-@@ -494,6 +496,295 @@ NSPR_API(PRUint16) PR_htons(PRUint16);
+@@ -462,6 +464,295 @@ NSPR_API(PRUint16) PR_htons(PRUint16);
  NSPR_API(PRUint32) PR_htonl(PRUint32);
  NSPR_API(PRUint64) PR_htonll(PRUint64);
  
@@ -51,7 +52,7 @@ index f1b7ddc..4aedd8d 100644
 +#undef LOG_0
 +
 +/** define some flags */
-+enum 
++enum
 +{
 +  PR_DNSSEC_NO_FLAGS = 0,
 +  PR_DNSSEC_IS_TRUSTED = 1 << 0,
@@ -61,7 +62,7 @@ index f1b7ddc..4aedd8d 100644
 +
 +
 +/***********************************************************************
-+** FUNCTION:	
++** FUNCTION:
 +** DESCRIPTION:	PR_GetHostByNameExtended()
 +** Lookup a host by name and provide extended error information
 +**
@@ -99,7 +100,7 @@ index f1b7ddc..4aedd8d 100644
 +    PRUint16 *security_flags);
 +
 +/***********************************************************************
-+** FUNCTION:	
++** FUNCTION:
 +** DESCRIPTION:	PR_GetIPNodeByNameExtended()
 +** Lookup a host by name. Equivalent to getipnodebyname(AI_DEFAULT)
 +** of RFC 2553.
@@ -323,5 +324,5 @@ index f1b7ddc..4aedd8d 100644
  
  #endif /* prnetdb_h___ */
 -- 
-1.7.7.6
+1.7.11.7
 

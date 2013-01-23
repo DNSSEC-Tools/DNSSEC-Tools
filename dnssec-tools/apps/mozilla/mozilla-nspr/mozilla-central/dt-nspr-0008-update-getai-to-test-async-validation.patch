@@ -1,17 +1,17 @@
-From 6bd2d89e23e1509ae83b7aa3c285f37113f304cf Mon Sep 17 00:00:00 2001
+From 33b37603dce561baa9604b777553766f8ca853b9 Mon Sep 17 00:00:00 2001
 From: Robert Story <rstory@localhost>
 Date: Thu, 23 Feb 2012 12:35:22 -0500
-Subject: [PATCH 08/10] update getai to test async, disable validation
+Subject: [PATCH 08/22] NSPR update getai to test async/validation
 
 ---
- nsprpub/pr/tests/getai.c |  268 ++++++++++++++++++++++++++++++++++++++++++++--
- 1 files changed, 261 insertions(+), 7 deletions(-)
+ nsprpub/pr/tests/getai.c | 268 +++++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 261 insertions(+), 7 deletions(-)
 
 diff --git a/nsprpub/pr/tests/getai.c b/nsprpub/pr/tests/getai.c
-index eaa41d4..974d43d 100644
+index f398ca3..5356b30 100644
 --- a/nsprpub/pr/tests/getai.c
 +++ b/nsprpub/pr/tests/getai.c
-@@ -39,26 +39,280 @@
+@@ -7,26 +7,280 @@
  
  #include <stdio.h>
  #include <stdlib.h>
@@ -78,7 +78,7 @@ index eaa41d4..974d43d 100644
 +
 +static int pending = 0;
 +
-+static int 
++static int
 +_callback(void *callback_data, int eai_retval, struct addrinfo *res,
 +          val_status_t val_status)
 +{
@@ -120,10 +120,10 @@ index eaa41d4..974d43d 100644
 +    PRIntervalTime   timeout;
 +    val_gai_status   *vgs;
 +    struct getai_cb_data *cb_data;
-+#if defined(HAVE_VAL_GETADDRINFO_CANCEL) && defined (DEBUG_rstory)
++#if defined(HAVE_VAL_GETADDRINFO_CANCEL) && defined (DEBUG_VAL_GETADDRINFO_CANCEL)
 +    PRIntn           submitted;
 +#endif
-+   
++
 +    while (arg_idx < argc && argv[arg_idx]) {
 +      cb_data = PR_Malloc(sizeof(*cb_data));
 +      if (NULL == cb_data) {
@@ -151,7 +151,7 @@ index eaa41d4..974d43d 100644
 +      ++arg_idx;
 +      ++pending;
 +    }
-+#if defined(HAVE_VAL_GETADDRINFO_CANCEL) && defined (DEBUG_rstory)
++#if defined(HAVE_VAL_GETADDRINFO_CANCEL) && defined (DEBUG_VAL_GETADDRINFO_CANCEL)
 +    submitted = pending;
 +#endif
 +
@@ -160,7 +160,7 @@ index eaa41d4..974d43d 100644
 +      if (debug)
 +          printf("pending %d\n", pending);
 +
-+#if defined(HAVE_VAL_GETADDRINFO_CANCEL) && defined (DEBUG_rstory)
++#if defined(HAVE_VAL_GETADDRINFO_CANCEL) && defined (DEBUG_VAL_GETADDRINFO_CANCEL)
 +      /* if more than 3 request, cancel the last one */
 +      if (submitted > 3 && NULL != vgs) {
 +        printf("cancelling one\n");
@@ -300,5 +300,5 @@ index eaa41d4..974d43d 100644
      return 0;
  }
 -- 
-1.7.7.6
+1.7.11.7
 
