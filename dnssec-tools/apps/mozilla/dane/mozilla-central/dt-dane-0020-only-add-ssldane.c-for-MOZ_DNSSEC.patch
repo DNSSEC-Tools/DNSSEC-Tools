@@ -1,0 +1,37 @@
+From 5a8e50183d4c9b7ecee72a9ff3ce98723496a112 Mon Sep 17 00:00:00 2001
+From: Robert Story <rstory@localhost>
+Date: Sun, 23 Dec 2012 00:18:17 -0500
+Subject: [PATCH 20/22] DANE only add ssldane.c for MOZ_DNSSEC
+
+---
+ security/nss/lib/ssl/Makefile    | 1 +
+ security/nss/lib/ssl/manifest.mn | 1 -
+ 2 files changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/security/nss/lib/ssl/Makefile b/security/nss/lib/ssl/Makefile
+index c29d3d5..a8204b6 100644
+--- a/security/nss/lib/ssl/Makefile
++++ b/security/nss/lib/ssl/Makefile
+@@ -42,6 +42,7 @@ endif
+ # MOZ_DANE
+ ifdef MOZ_DNSSEC
+ DEFINES += $(VAL_CFLAGS)
++CSRCS	+= ssldane.c
+ endif
+ 
+ #######################################################################
+diff --git a/security/nss/lib/ssl/manifest.mn b/security/nss/lib/ssl/manifest.mn
+index ac38b5a..3bb28a2 100644
+--- a/security/nss/lib/ssl/manifest.mn
++++ b/security/nss/lib/ssl/manifest.mn
+@@ -44,7 +44,6 @@ CSRCS = \
+ 	cmpcert.c \
+ 	sslinfo.c \
+ 	ssl3ecc.c \
+-	ssldane.c \
+ 	$(NULL)
+ 
+ LIBRARY_NAME = ssl
+-- 
+1.7.11.7
+

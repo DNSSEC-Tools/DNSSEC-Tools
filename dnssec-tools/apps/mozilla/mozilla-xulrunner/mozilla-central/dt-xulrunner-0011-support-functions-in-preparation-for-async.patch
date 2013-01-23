@@ -1,0 +1,189 @@
+From ebd7bfd12fec3dad8635b18ca038d0c23252046a Mon Sep 17 00:00:00 2001
+From: Robert Story <rstory@localhost>
+Date: Mon, 30 Jan 2012 17:40:30 -0500
+Subject: [PATCH 11/22] XULRUNNER support functions in preparation for async
+ support
+
+ - factor out some code from GetHostToLookup into new functions
+   GetHostToLookupNoWaiting(), GetHostLookupTimeout() and
+   GetHostLookupIdleWait().
+---
+ netwerk/dns/nsHostResolver.cpp | 126 +++++++++++++++++++++++++++--------------
+ netwerk/dns/nsHostResolver.h   |   4 ++
+ 2 files changed, 86 insertions(+), 44 deletions(-)
+
+diff --git a/netwerk/dns/nsHostResolver.cpp b/netwerk/dns/nsHostResolver.cpp
+index 4a66b2d..b96d97f 100644
+--- a/netwerk/dns/nsHostResolver.cpp
++++ b/netwerk/dns/nsHostResolver.cpp
+@@ -786,70 +786,108 @@ nsHostResolver::DeQueue(PRCList &aQ, nsHostRecord **aResult)
+     (*aResult)->onQueue = false;
+ }
+ 
++void
++nsHostResolver::GetHostLookupTimeout(PRIntervalTime &timeout)
++{
++    mLock.AssertCurrentThreadOwns();
++
++    timeout = (mNumIdleThreads >= HighThreadThreshold) ?
++        mShortIdleTimeout : mLongIdleTimeout;
++}
++
++bool
++nsHostResolver::GetHostToLookupNoWaiting(nsHostRecord **result)
++{
++    mLock.AssertCurrentThreadOwns();
++
++    if (mShutdown)
++        return false;
++
++    // remove next record from Q; hand over owning reference.
++    // Check high, then med, then low
++
++    if (!PR_CLIST_IS_EMPTY(&mHighQ)) {
++        DeQueue (mHighQ, result);
++        return true;
++    }
++
++    if (mActiveAnyThreadCount < HighThreadThreshold) {
++        if (!PR_CLIST_IS_EMPTY(&mMediumQ)) {
++            DeQueue (mMediumQ, result);
++            mActiveAnyThreadCount++;
++            (*result)->usingAnyThread = true;
++            return true;
++        }
++
++        if (!PR_CLIST_IS_EMPTY(&mLowQ)) {
++            DeQueue (mLowQ, result);
++            mActiveAnyThreadCount++;
++            (*result)->usingAnyThread = true;
++            return true;
++        }
++    }
++
++    return false;
++}
++
++void
++nsHostResolver::GetHostLookupIdleWait(PRIntervalTime &epoch,
++                                      PRIntervalTime &timeout, bool &timedOut)
++{
++    mLock.AssertCurrentThreadOwns();
++
++    PRIntervalTime now;
++
++    // wait for one or more of the following to occur:
++    //  (1) the pending queue has a host record to process
++    //  (2) the shutdown flag has been set
++    //  (3) the thread has been idle for too long
++
++    mNumIdleThreads++;
++    mIdleThreadCV.Wait(timeout);
++    mNumIdleThreads--;
++
++    now = PR_IntervalNow();
++
++    if ((PRIntervalTime)(now - epoch) >= timeout)
++        timedOut = true;
++    else {
++        // It is possible that PR_WaitCondVar() was interrupted and returned
++        // early, in which case we will loop back and re-enter it. In that case
++        // we want to do so with the new timeout reduced to reflect time
++        // already spent waiting.
++        timeout -= (PRIntervalTime)(now - epoch);
++        epoch = now;
++    }
++}
++
+ bool
+ nsHostResolver::GetHostToLookup(nsHostRecord **result)
+ {
+     bool timedOut = false;
+-    PRIntervalTime epoch, now, timeout;
++    PRIntervalTime epoch, timeout;
+     
+     MutexAutoLock lock(mLock);
+ 
+-    timeout = (mNumIdleThreads >= HighThreadThreshold) ? mShortIdleTimeout : mLongIdleTimeout;
++    GetHostLookupTimeout(timeout);
+     epoch = PR_IntervalNow();
+ 
+     while (!mShutdown) {
+-        // remove next record from Q; hand over owning reference. Check high, then med, then low
+-        
+-        if (!PR_CLIST_IS_EMPTY(&mHighQ)) {
+-            DeQueue (mHighQ, result);
++
++        if (GetHostToLookupNoWaiting(result))
+             return true;
+-        }
+ 
+-        if (mActiveAnyThreadCount < HighThreadThreshold) {
+-            if (!PR_CLIST_IS_EMPTY(&mMediumQ)) {
+-                DeQueue (mMediumQ, result);
+-                mActiveAnyThreadCount++;
+-                (*result)->usingAnyThread = true;
+-                return true;
+-            }
+-            
+-            if (!PR_CLIST_IS_EMPTY(&mLowQ)) {
+-                DeQueue (mLowQ, result);
+-                mActiveAnyThreadCount++;
+-                (*result)->usingAnyThread = true;
+-                return true;
+-            }
+-        }
+-        
+         // Determining timeout is racy, so allow one cycle through checking the queues
+         // before exiting.
+         if (timedOut)
+             break;
+ 
+-        // wait for one or more of the following to occur:
+-        //  (1) the pending queue has a host record to process
+-        //  (2) the shutdown flag has been set
+-        //  (3) the thread has been idle for too long
+-        
+-        mNumIdleThreads++;
+-        mIdleThreadCV.Wait(timeout);
+-        mNumIdleThreads--;
+-        
+-        now = PR_IntervalNow();
+-        
+-        if ((PRIntervalTime)(now - epoch) >= timeout)
+-            timedOut = true;
+-        else {
+-            // It is possible that PR_WaitCondVar() was interrupted and returned early,
+-            // in which case we will loop back and re-enter it. In that case we want to
+-            // do so with the new timeout reduced to reflect time already spent waiting.
+-            timeout -= (PRIntervalTime)(now - epoch);
+-            epoch = now;
+-        }
++        GetHostLookupIdleWait(timeout, epoch, timedOut);
+     }
+     
+-    // tell thread to exit...
+     mThreadCount--;
++
++    // tell thread to exit...
+     return false;
+ }
+ 
+diff --git a/netwerk/dns/nsHostResolver.h b/netwerk/dns/nsHostResolver.h
+index dfa08eb..408be4b 100644
+--- a/netwerk/dns/nsHostResolver.h
++++ b/netwerk/dns/nsHostResolver.h
+@@ -259,6 +259,10 @@ private:
+     nsresult Init();
+     nsresult IssueLookup(nsHostRecord *);
+     bool     GetHostToLookup(nsHostRecord **m);
++    bool     GetHostToLookupNoWaiting(nsHostRecord **m);
++    void     GetHostLookupTimeout(PRIntervalTime &timeout);
++    void     GetHostLookupIdleWait(PRIntervalTime &epoch,
++                                   PRIntervalTime &timeout, bool &timedOut);
+     void     OnLookupComplete(nsHostRecord *, nsresult, PRAddrInfo *);
+     void     DeQueue(PRCList &aQ, nsHostRecord **aResult);
+     void     ClearPendingQueue(PRCList *aPendingQueue);
+-- 
+1.7.11.7
+
