@@ -75,8 +75,15 @@ struct dane_cb {
     int done;
 };
 
+struct getaddr_s {
+    int *retval;
+    struct addrinfo **ainfo;
+    val_status_t     *vstatus;
+    int               done;
+};
+
 static int 
-_callback(void *callback_data, 
+_danecallback(void *callback_data, 
           int dane_rc, 
           struct val_danestatus **res)
 {
@@ -91,11 +98,30 @@ _callback(void *callback_data,
         *dcb->danestatus = NULL;
     dcb->done = 1;
 
-    val_log(NULL, LOG_DEBUG, "_callback %p %d %p\n", 
+    val_log(NULL, LOG_DEBUG, "_danecallback %p %d %p\n", 
             callback_data, dane_rc, res);
 
     return 0; /* OK */
 }
+
+static int
+_aicallback(void *callback_data, int eai_retval, struct addrinfo *res,
+          val_status_t val_status)
+{
+    struct getaddr_s *gas = (struct getaddr_s*)callback_data;
+
+    *gas->retval = eai_retval;
+    *gas->ainfo = res;
+    *gas->vstatus = val_status;
+    gas->done = 1;
+
+    val_log(NULL, LOG_DEBUG, "_aicallback %p %d %p %d\n", 
+            callback_data, eai_retval, res, val_status);
+
+    return 0; /* OK */
+}
+
+
 #endif
 
 int
@@ -104,16 +130,20 @@ main(int argc, char *argv[])
     const char     *allowed_args = "sl:o:Vv:r:i:nx:p:";
     char           *node = NULL;
     int             retval;
-    int             dane_retval = VAL_DANE_INTERNAL_ERROR;
     int             async = 1;
     val_log_t      *logp;
     char           *label_str = NULL;
     struct val_daneparams daneparams;
     struct val_danestatus *danestatus = NULL;
-    struct val_danestatus *dane_cur = NULL;
     int port = 443;
     int proto = DANE_PARAM_PROTO_TCP;
     val_context_t *context = NULL;
+    val_status_t val_status;
+    struct addrinfo *val_ainfo = NULL;
+    struct addrinfo hints;
+    int ret = 0;
+    int dane_retval = VAL_DANE_INTERNAL_ERROR;
+    int ai_retval = 0;
 
     /* Parse the command line */
     while (1) {
@@ -203,12 +233,8 @@ main(int argc, char *argv[])
         return -1;
     }
 
-    if (val_log_highest_debug_level() > 6)
-        res_set_debug_level(val_log_highest_debug_level());
-
-    if (label_str != NULL && 
-            VAL_NO_ERROR != (retval = val_create_context(label_str, 
-                    &context))) {
+    if (VAL_NO_ERROR != (retval = 
+                val_create_context(label_str, &context))) {
         fprintf(stderr, "Cannot create context %s(%d)\n", 
                 p_val_error(retval), retval);
         return -1;
@@ -216,46 +242,57 @@ main(int argc, char *argv[])
 
     daneparams.port = port;
     daneparams.proto = proto;
+    memset(&hints, 0, sizeof(struct addrinfo));
+#ifdef AI_ADDRCONFIG
+    hints.ai_flags = AI_ADDRCONFIG;
+#endif
 
     if (!async) {
-
         /* synchronous lookup and validation */
+        ai_retval = val_getaddrinfo(context, node, NULL, &hints,
+                                    &val_ainfo, &val_status);
         dane_retval = val_getdaneinfo(context, node, &daneparams, &danestatus); 
     }
     else {
 #ifdef VAL_NO_ASYNC
         fprintf(stderr, "async support not available\n");
 #else
-        struct dane_cb cb_data = { &dane_retval, &danestatus, 0 };
-        val_dane_callback my_cb = &_callback;
+        struct dane_cb cb_data_dane = { &dane_retval, &danestatus, 0 };
+        val_dane_callback my_dane_cb = &_danecallback;
         struct timeval tv;
         val_async_status *das = NULL; /* helps us cancel the lookup if we need to */
 
-        /*
-         * submit request
-         */
-        retval = val_dane_submit(context, node, &daneparams,
-                                 my_cb, &cb_data, &das);
+        struct getaddr_s cb_data_ai = { &ai_retval, &val_ainfo, &val_status, 0 };
+        val_gai_callback my_ai_cb = &_aicallback;
+        val_gai_status *status = NULL;
 
-        if (VAL_NO_ERROR != retval) {
+        /*
+         * submit requests
+         */
+        if (VAL_NO_ERROR != val_dane_submit(context, node, &daneparams,
+                                 my_dane_cb, &cb_data_dane, &das) ||
+            VAL_NO_ERROR != val_getaddrinfo_submit(context, node, NULL,
+                                &hints, my_ai_cb, &cb_data_ai, 0, &status)) {
             dane_retval = VAL_DANE_INTERNAL_ERROR; 
             goto done;
         }
+
         /*
          * wait for it to complete
          */
-#if 0
-        while(0 == cb_data.done) {
+#if 1
+        while(0 == cb_data_dane.done ||
+              0 == cb_data_ai.done) {
             tv.tv_sec = 10;
             tv.tv_usec = 0;
             val_async_check_wait(context, NULL, NULL, &tv, 0);
         }
 #else
-        while(0 == cb_data.done) {
+        while(0 == cb_data_dane.done || 
+              0 == cb_data_ai.done) {
             fd_set  activefds;
             int nfds = 0;
             int ready;
-            int rc;
 
             FD_ZERO(&activefds);
 
@@ -275,33 +312,93 @@ main(int argc, char *argv[])
 #endif
     }
 
-    /* XXX Print DANE information */
-
 done:
-    printf("Return code for %s = %s(%d)\n", 
-            node,
-            p_dane_error(dane_retval), dane_retval);
+    if (ai_retval != 0) {
+        fprintf(stderr, "Error in val_getaddrinfo(): %d\n", ai_retval);
+        return -1;
+    }
 
-    dane_cur = danestatus;
-    while (dane_cur) {
-        printf("DANE check s,t,u=%d,%d,%d\n",
-               dane_cur->selector,
-               dane_cur->type,
-               dane_cur->usage);
+    if (!val_istrusted(val_status)) {
+        fprintf(stderr, 
+                "Address lookup information could not be validated: %s\n", 
+                p_val_status(val_status));
 
-        dane_cur = dane_cur->next;
+    } else if(dane_retval == VAL_DANE_NOERROR && 
+              proto == DANE_PARAM_PROTO_TCP) {
+
+        /* Set up the SSL connection */
+        SSL_library_init();
+        SSL_load_error_strings();
+        const SSL_METHOD *meth = SSLv3_client_method();
+        SSL_CTX *ctx = SSL_CTX_new(meth);
+        struct addrinfo *ai = NULL;
+
+        ai = val_ainfo; 
+        while(ai && (ai->ai_protocol == IPPROTO_TCP) && 
+             (ai->ai_family == AF_INET || ai->ai_family == AF_INET6)) {
+
+            int do_pathval = 0;
+            int sock;
+            char buf[INET6_ADDRSTRLEN];
+            size_t buflen = sizeof(buf);
+            const char *addr = NULL;
+
+            if (ai->ai_family == AF_INET) {
+                sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+                ((struct sockaddr_in *)(ai)->ai_addr)->sin_port = htons(port);
+            } else {
+                sock = socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
+                ((struct sockaddr_in6 *)(ai)->ai_addr)->sin6_port = htons(port);
+            }
+
+            INET_NTOP(ai->ai_family, ai->ai_addr, sizeof(ai->ai_addr), buf, buflen, addr);
+            fprintf(stderr, "Connecting to %s\n", addr);
+
+            if (0 == connect(sock, ai->ai_addr, ai->ai_addrlen)) {
+                int err;
+                SSL *ssl = SSL_new(ctx);
+                BIO * sbio = BIO_new_socket(sock,BIO_NOCLOSE);
+
+                SSL_set_bio(ssl,sbio,sbio);
+                if((err = SSL_connect(ssl)) == 1) {
+                    
+                    dane_retval = val_dane_check(context,
+                                                 ssl,
+                                                 danestatus,
+                                                 &do_pathval);
+                    fprintf(stderr,
+                            "DANE validation for %s returned %s(%d)\n", 
+                            node,
+                            p_dane_error(dane_retval), dane_retval);
+                } else {
+                    fprintf(stderr, "SSL Connect to %s failed: %d\n", node, err);
+                }
+                SSL_shutdown(ssl);
+                SSL_free(ssl);
+            } else {
+                fprintf(stderr, "TCP Connect to %s failed\n", node);
+            }
+
+            if (dane_retval != VAL_DANE_NOERROR)
+                ret = -1;
+
+            ai = (struct addrinfo *) (ai->ai_next);
+        }
+
+    } else {
+        fprintf(stderr, "TLSA record could not be validated\n");
     }
 
     if (danestatus != NULL)
         val_free_dane(danestatus);
 
+    if (val_ainfo != NULL)
+        val_freeaddrinfo(val_ainfo);    
+
     if (context)
         val_free_context(context);
+
     val_free_validator_state();
 
-    if (dane_retval != VAL_DANE_NOERROR) {
-        return -1;
-    }
-
-    return 0;
+    return ret;
 }
