@@ -4546,9 +4546,10 @@ the command line, the default signed zone filename is the I<zone-file>
 appended with ".signed".  Thus, executing B<zonesigner example.com> will
 result in the signed zone being stored in I<example.com.signed>.
 
-Unless the B<-genkeys>, B<-genksk>, B<-genzsk>, or B<-newpubksk> options are
-specified, the last keys generated for a particular zone will be used in
-subsequent B<zonesigner> executions.
+Unless the B<-genkeys>, B<-genksk>, B<-genzsk>, or B<-newpubksk> options
+are specified, the last keys generated for a particular zone will be used
+in subsequent B<zonesigner> executions.  DS records will be included in
+signing operations unless the B<-nogends> option is used.
 
 B<zonesigner> can be used with a rollover manager, such as B<rollerd>, to
 provide automated management of a zone, its keys, and the signing of the zone.
