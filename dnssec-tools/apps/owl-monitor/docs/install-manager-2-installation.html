@@ -137,8 +137,22 @@ completing each step of the installation.
 
 <li>An unprivileged user account must be created for the Owl manager software.
 An existing account may be used, but it would probably be best to use a new
-account as this will segregate files and processes from existing users.  In
-the following instructions, this user will be referred to as the Owl User.
+account as this will segregate files and processes from existing users.  The
+user's name and group are not required to be any particular values.
+
+<p>
+
+You may want to create two unprivileged users for use by the Owl manager.
+One would run the various Owl commands, and the other would be used for
+sensor data transfers (in the case that the sensor is to initiate transfers.)
+The first user will need <i>rwx</i> permission to all the Owl directories and
+files.  The second user will need to be able to write data into the Owl data
+directories.
+
+<p>
+
+In the following instructions, it is assumed that a single user will created
+for the Owl manager and it will be referred to as the Owl User.
 
 <p>
 
