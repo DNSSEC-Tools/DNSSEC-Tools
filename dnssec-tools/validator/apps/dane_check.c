@@ -280,14 +280,16 @@ main(int argc, char *argv[])
         /*
          * wait for it to complete
          */
-#if 1
+#if 0
         while(0 == cb_data_dane.done ||
               0 == cb_data_ai.done) {
             tv.tv_sec = 10;
             tv.tv_usec = 0;
             val_async_check_wait(context, NULL, NULL, &tv, 0);
         }
-#else
+#endif
+
+#if 1
         while(0 == cb_data_dane.done || 
               0 == cb_data_ai.done) {
             fd_set  activefds;
@@ -303,12 +305,11 @@ main(int argc, char *argv[])
             ready = select(nfds+1, &activefds, NULL, NULL, &tv);
             if (ready < 0) {
                 continue;
-            } else if (ready == 0) {
-                break;
             } 
             val_async_check(context, &activefds, &nfds, 0);
         }
 #endif
+
 #endif
     }
 
