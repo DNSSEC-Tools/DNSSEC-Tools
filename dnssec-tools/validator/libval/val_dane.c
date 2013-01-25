@@ -721,7 +721,9 @@ int val_dane_check(val_context_t *ctx,
                         }
                     }
                 }
-                val_log(context, LOG_NOTICE, "DANE: val_dane_match() failed");
+                val_log(context, LOG_NOTICE, 
+                        "DANE: val_dane_check() for usage %d failed",
+                        dane_cur->usage);
                 break;
             }
 
@@ -749,7 +751,9 @@ int val_dane_check(val_context_t *ctx,
                         OPENSSL_free(cert_data);
                     }
                 }
-                val_log(context, LOG_NOTICE, "DANE: val_dane_match() failed");
+                val_log(context, LOG_NOTICE, 
+                        "DANE: val_dane_check() for usage %d failed",
+                        dane_cur->usage);
                 break;
 
             case DANE_USE_TA_ASSERTION: /*2*/ {
@@ -770,11 +774,15 @@ int val_dane_check(val_context_t *ctx,
                     }
                 }
 
-                val_log(context, LOG_NOTICE, "DANE: val_dane_match() failed");
+                val_log(context, LOG_NOTICE, 
+                        "DANE: val_dane_check() for usage %d failed",
+                        dane_cur->usage);
                 break;
             }
             default:
-                val_log(context, LOG_NOTICE, "DANE: val_dane_match() failed");
+                val_log(context, LOG_NOTICE, 
+                        "DANE: val_dane_check() for usage %d failed",
+                        dane_cur->usage);
                 break;
         }
 
