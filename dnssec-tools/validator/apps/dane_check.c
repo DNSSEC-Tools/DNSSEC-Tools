@@ -386,8 +386,10 @@ done:
             ai = (struct addrinfo *) (ai->ai_next);
         }
 
+    } else if (dane_retval == VAL_DANE_IGNORE_TLSA) {
+        fprintf(stderr, "TLSA is provably non-existent.\n");
     } else {
-        fprintf(stderr, "TLSA record could not be validated\n");
+        fprintf(stderr, "TLSA record could not be validated.\n");
     }
 
     if (danestatus != NULL)
