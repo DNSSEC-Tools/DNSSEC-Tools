@@ -1,0 +1,417 @@
+From bd11e294a2d8ec1d1b269d5e485d0fa35ff0b30b Mon Sep 17 00:00:00 2001
+From: Robert Story <rstory@localhost>
+Date: Tue, 29 Jan 2013 15:06:43 -0500
+Subject: [PATCH 23/25] BLOODHOUND replace mozilla URLs
+
+---
+ b2g/app/b2g.js                                     | 32 +++++++++++-----------
+ browser/app/profile/firefox.js                     |  2 +-
+ browser/base/content/aboutDialog.xul               |  8 +++---
+ browser/base/content/abouthome/aboutHome.js        |  2 +-
+ browser/base/content/abouthome/aboutHome.xhtml     |  2 +-
+ browser/base/content/urlbarBindings.xml            |  4 +--
+ browser/base/content/utilityOverlay.js             |  2 +-
+ browser/branding/aurora/pref/firefox-branding.js   |  8 +++---
+ browser/branding/nightly/pref/firefox-branding.js  | 12 ++++----
+ browser/branding/official/branding.nsi             | 12 ++++----
+ browser/branding/official/pref/firefox-branding.js | 12 ++++----
+ .../branding/unofficial/pref/firefox-branding.js   | 12 ++++----
+ browser/installer/windows/nsis/defines.nsi.in      |  2 +-
+ browser/locales/en-US/profile/bookmarks.inc        | 10 +++----
+ modules/libpref/src/init/all.js                    |  4 +--
+ toolkit/content/aboutRights.xhtml                  |  2 +-
+ 16 files changed, 63 insertions(+), 63 deletions(-)
+
+diff --git a/b2g/app/b2g.js b/b2g/app/b2g.js
+index 7b0ea94..8c49493 100644
+--- a/b2g/app/b2g.js
++++ b/b2g/app/b2g.js
+@@ -163,7 +163,7 @@ pref("privacy.item.siteSettings", true);
+ pref("privacy.item.syncAccount", true);
+ 
+ // URL to the Learn More link XXX this is the firefox one.  Bug 495578 fixes this.
+-pref("browser.geolocation.warning.infoURL", "http://www.mozilla.com/%LOCALE%/firefox/geolocation/");
++pref("browser.geolocation.warning.infoURL", "http://www.dnssec-tools.org/bloodhound/geolocation/");
+ 
+ // base url for the wifi geolocation network provider
+ pref("geo.wifi.uri", "https://maps.googleapis.com/maps/api/browserlocation/json");
+@@ -188,14 +188,14 @@ pref("dom.ipc.plugins.enabled", true);
+ 
+ // product URLs
+ // The breakpad report server to link to in about:crashes
+-pref("breakpad.reportURL", "http://crash-stats.mozilla.com/report/index/");
+-pref("app.releaseNotesURL", "http://www.mozilla.com/%LOCALE%/b2g/%VERSION%/releasenotes/");
+-pref("app.support.baseURL", "http://support.mozilla.com/b2g");
+-pref("app.feedbackURL", "http://input.mozilla.com/feedback/");
+-pref("app.privacyURL", "http://www.mozilla.com/%LOCALE%/m/privacy.html");
+-pref("app.creditsURL", "http://www.mozilla.org/credits/");
+-pref("app.featuresURL", "http://www.mozilla.com/%LOCALE%/b2g/features/");
+-pref("app.faqURL", "http://www.mozilla.com/%LOCALE%/b2g/faq/");
++pref("breakpad.reportURL", "http://www.dnssec-tools.org/blodhound/crash-stats/");
++pref("app.releaseNotesURL", "http://www.dnssec-tools.org/bloodhound/%VERSION%/releasenotes/");
++pref("app.support.baseURL", "http://www.dnssec-tools.org/bloodhound/support/");
++pref("app.feedbackURL", "http://www.dnssec-tools.org/bloodhound/feedback/");
++pref("app.privacyURL", "http://www.dnssec-tools.org/bloodhound/privacy.html");
++pref("app.creditsURL", "http://www.dnssec-tools.org/bloodhound/credits/");
++pref("app.featuresURL", "http://www.dnssec-tools.org/bloodhound/features/");
++pref("app.faqURL", "http://www.dnssec-tools.org/bloodhound/faq/");
+ 
+ // Name of alternate about: page for certificate errors (when undefined, defaults to about:neterror)
+ pref("security.alternate_certificate_error_page", "certerror");
+@@ -303,15 +303,15 @@ pref("browser.safebrowsing.provider.0.reportURL", "http://safebrowsing.clients.g
+ pref("browser.safebrowsing.provider.0.gethashURL", "http://safebrowsing.clients.google.com/safebrowsing/gethash?client={moz:client}&appver={moz:version}&pver=2.2");
+ 
+ // HTML report pages
+-pref("browser.safebrowsing.provider.0.reportGenericURL", "http://{moz:locale}.phish-generic.mozilla.com/?hl={moz:locale}");
+-pref("browser.safebrowsing.provider.0.reportErrorURL", "http://{moz:locale}.phish-error.mozilla.com/?hl={moz:locale}");
+-pref("browser.safebrowsing.provider.0.reportPhishURL", "http://{moz:locale}.phish-report.mozilla.com/?hl={moz:locale}");
+-pref("browser.safebrowsing.provider.0.reportMalwareURL", "http://{moz:locale}.malware-report.mozilla.com/?hl={moz:locale}");
+-pref("browser.safebrowsing.provider.0.reportMalwareErrorURL", "http://{moz:locale}.malware-error.mozilla.com/?hl={moz:locale}");
++pref("browser.safebrowsing.provider.0.reportGenericURL", "http://{moz:locale}.phish-generic.dnssec-tools.org/?hl={moz:locale}");
++pref("browser.safebrowsing.provider.0.reportErrorURL", "http://{moz:locale}.phish-error.dnssec-tools.org/?hl={moz:locale}");
++pref("browser.safebrowsing.provider.0.reportPhishURL", "http://{moz:locale}.phish-report.dnssec-tools.org/?hl={moz:locale}");
++pref("browser.safebrowsing.provider.0.reportMalwareURL", "http://{moz:locale}.malware-report.dnssec-tools.org/?hl={moz:locale}");
++pref("browser.safebrowsing.provider.0.reportMalwareErrorURL", "http://{moz:locale}.malware-error.dnssec-tools.org/?hl={moz:locale}");
+ 
+ // FAQ URLs
+-pref("browser.safebrowsing.warning.infoURL", "http://www.mozilla.com/%LOCALE%/%APP%/phishing-protection/");
+-pref("browser.geolocation.warning.infoURL", "http://www.mozilla.com/%LOCALE%/%APP%/geolocation/");
++pref("browser.safebrowsing.warning.infoURL", "http://www.dnssec-tools.org/%APP%/phishing-protection/");
++pref("browser.geolocation.warning.infoURL", "http://www.dnssec-tools.org/%APP%/geolocation/");
+ 
+ // Name of the about: page contributed by safebrowsing to handle display of error
+ // pages on phishing/malware hits.  (bug 399233)
+diff --git a/browser/app/profile/firefox.js b/browser/app/profile/firefox.js
+index d6a186c..f976407 100644
+--- a/browser/app/profile/firefox.js
++++ b/browser/app/profile/firefox.js
+@@ -843,7 +843,7 @@ pref("browser.zoom.updateBackgroundTabs", true);
+ pref("breakpad.reportURL", "http://crash-stats.mozilla.com/report/index/");
+ 
+ // base URL for web-based support pages
+-pref("app.support.baseURL", "http://support.mozilla.org/1/firefox/%VERSION%/%OS%/%LOCALE%/");
++pref("app.support.baseURL", "http://www.dnssec-tools.org/support/bloodhound/%VERSION%/%OS%/%LOCALE%/");
+ 
+ // Name of alternate about: page for certificate errors (when undefined, defaults to about:neterror)
+ pref("security.alternate_certificate_error_page", "certerror");
+diff --git a/browser/base/content/aboutDialog.xul b/browser/base/content/aboutDialog.xul
+index d6cef8d..bb9372a 100644
+--- a/browser/base/content/aboutDialog.xul
++++ b/browser/base/content/aboutDialog.xul
+@@ -96,14 +96,14 @@
+ #endif
+             </description>
+             <description class="text-blurb" id="communityExperimentalDesc">
+-              &community.exp.start;<label class="text-link" href="http://www.mozilla.org/">&community.exp.mozillaLink;</label>&community.exp.middle;<label class="text-link" href="about:credits">&community.exp.creditsLink;</label>&community.exp.end;
++              &community.exp.start;<label class="text-link" href="http://www.dnssec-tools.org/">&community.exp.mozillaLink;</label>&community.exp.middle;<label class="text-link" href="about:credits">&community.exp.creditsLink;</label>&community.exp.end;
+             </description>
+           </vbox>
+           <description class="text-blurb" id="communityDesc">
+-            &community.start2;<label class="text-link" href="http://www.mozilla.org/">&community.mozillaLink;</label>&community.middle2;<label class="text-link" href="about:credits">&community.creditsLink;</label>&community.end3;
++            &community.start2;<label class="text-link" href="http://www.dnssec-tools.org/">&community.mozillaLink;</label>&community.middle2;<label class="text-link" href="about:credits">&community.creditsLink;</label>&community.end3;
+           </description>
+           <description class="text-blurb" id="contributeDesc">
+-            &contribute.start;<label class="text-link" href="http://www.mozilla.org/contribute/">&contribute.getInvolvedLink;</label>&contribute.end;
++            &contribute.start;<label class="text-link" href="http://www.dnssec-tools.org/bloodhound/contribute/">&contribute.getInvolvedLink;</label>&contribute.end;
+           </description>
+         </vbox>
+       </vbox>
+@@ -112,7 +112,7 @@
+       <hbox pack="center">
+         <label class="text-link bottom-link" href="about:license">&bottomLinks.license;</label>
+         <label class="text-link bottom-link" href="about:rights">&bottomLinks.rights;</label>
+-        <label class="text-link bottom-link" href="http://www.mozilla.com/legal/privacy/">&bottomLinks.privacy;</label>
++        <label class="text-link bottom-link" href="http://www.dnssec-tools.org/bloodhound/legal/privacy/">&bottomLinks.privacy;</label>
+       </hbox>
+       <description id="trademark">&trademarkInfo.part1;</description>
+     </vbox>
+diff --git a/browser/base/content/abouthome/aboutHome.js b/browser/base/content/abouthome/aboutHome.js
+index 42344e5..48ffc94 100644
+--- a/browser/base/content/abouthome/aboutHome.js
++++ b/browser/base/content/abouthome/aboutHome.js
+@@ -78,7 +78,7 @@ const SEARCH_ENGINES = {
+ //   * add an entry here in the proper ordering (based on spans)
+ // The <a/> part of the snippet will be linked to the corresponding url.
+ const DEFAULT_SNIPPETS_URLS = [
+-  "http://www.mozilla.com/firefox/features/?WT.mc_ID=default1"
++  "http://www.dnssec-tools.org/bloodhound/features/?WT.mc_ID=default1"
+ , "https://addons.mozilla.org/firefox/?src=snippet&WT.mc_ID=default2"
+ ];
+ 
+diff --git a/browser/base/content/abouthome/aboutHome.xhtml b/browser/base/content/abouthome/aboutHome.xhtml
+index 1cb8b6d..061ea98 100644
+--- a/browser/base/content/abouthome/aboutHome.xhtml
++++ b/browser/base/content/abouthome/aboutHome.xhtml
+@@ -66,6 +66,6 @@
+       <button class="launchButton" id="restorePreviousSession">&historyRestoreLastSession.label;</button>
+     </div>
+ 
+-    <a id="aboutMozilla" href="http://www.mozilla.org/about/"/>
++    <a id="aboutMozilla" href="http://www.dnssec-tools.org/about/"/>
+   </body>
+ </html>
+diff --git a/browser/base/content/urlbarBindings.xml b/browser/base/content/urlbarBindings.xml
+index f0323d8..999e6d2 100644
+--- a/browser/base/content/urlbarBindings.xml
++++ b/browser/base/content/urlbarBindings.xml
+@@ -1759,9 +1759,9 @@
+       <property name="_notificationLink">
+         <getter><![CDATA[
+           if (this._notificationType == "addons-sync-disabled") {
+-            return "https://support.mozilla.org/kb/how-do-i-enable-add-sync";
++            return "https://www.dnssec-tools.org/support/how-do-i-enable-add-sync";
+           }
+-          return "https://services.mozilla.com/sync/";
++          return "https://www.dnssec-tools.com/bloodhound/services/sync/";
+         ]]></getter>
+       </property>
+       <method name="onCloseButtonCommand">
+diff --git a/browser/base/content/utilityOverlay.js b/browser/base/content/utilityOverlay.js
+index 5aa0b8f..43d1a41 100644
+--- a/browser/base/content/utilityOverlay.js
++++ b/browser/base/content/utilityOverlay.js
+@@ -525,7 +525,7 @@ function openTroubleshootingPage()
+  */
+ function openFeedbackPage()
+ {
+-  openUILinkIn("http://input.mozilla.com/feedback", "tab");
++  openUILinkIn("http://www.dnssec-tools.org/bloodhound/feedback", "tab");
+ }
+ 
+ function buildHelpMenu()
+diff --git a/browser/branding/aurora/pref/firefox-branding.js b/browser/branding/aurora/pref/firefox-branding.js
+index dd841df..e1816ce 100644
+--- a/browser/branding/aurora/pref/firefox-branding.js
++++ b/browser/branding/aurora/pref/firefox-branding.js
+@@ -14,14 +14,14 @@ pref("app.update.download.backgroundInterval", 60);
+ pref("app.update.promptWaitTime", 86400);
+ // URL user can browse to manually if for some reason all update installation
+ // attempts fail.
+-pref("app.update.url.manual", "http://www.mozilla.com/firefox/channel/");
++pref("app.update.url.manual", "http://www.dnssec-tools.org/%APP%/update/");
+ // A default value for the "More information about this update" link
+ // supplied in the "An update is available" page of the update wizard. 
+-pref("app.update.url.details", "http://www.mozilla.org/projects/%APP%/");
++pref("app.update.url.details", "http://www.dnssec-tools.org/%APP%/update-details/");
+ 
+ // Release notes and vendor URLs
+-pref("app.releaseNotesURL", "http://www.mozilla.org/projects/%APP%/%VERSION%/releasenotes/");
+-pref("app.vendorURL", "http://www.mozilla.org/projects/%APP%/");
++pref("app.releaseNotesURL", "http://www.dnssec-tools.org/%APP%/%VERSION%/releasenotes/");
++pref("app.vendorURL", "http://www.dnssec-tools.org/%APP%/");
+ 
+ // Search codes belong only in builds with official branding
+ pref("browser.search.param.yahoo-fr", "");
+diff --git a/browser/branding/nightly/pref/firefox-branding.js b/browser/branding/nightly/pref/firefox-branding.js
+index df470b4..846728e 100644
+--- a/browser/branding/nightly/pref/firefox-branding.js
++++ b/browser/branding/nightly/pref/firefox-branding.js
+@@ -2,8 +2,8 @@
+  * License, v. 2.0. If a copy of the MPL was not distributed with this
+  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+ 
+-pref("startup.homepage_override_url","http://www.mozilla.org/projects/%APP%/%VERSION%/whatsnew/?oldversion=%OLD_VERSION%");
+-pref("startup.homepage_welcome_url","http://www.mozilla.org/projects/%APP%/%VERSION%/firstrun/");
++pref("startup.homepage_override_url","http://www.dnssec-tools.org/%APP%/%VERSION%/whatsnew/?oldversion=%OLD_VERSION%");
++pref("startup.homepage_welcome_url","http://www.dnssec-tools.org/%APP%/%VERSION%/firstrun/");
+ // The time interval between checks for a new version (in seconds)
+ pref("app.update.interval", 7200); // 2 hours
+ // The time interval between the downloading of mar file chunks in the
+@@ -13,14 +13,14 @@ pref("app.update.download.backgroundInterval", 60);
+ pref("app.update.promptWaitTime", 43200);
+ // URL user can browse to manually if for some reason all update installation
+ // attempts fail.
+-pref("app.update.url.manual", "http://nightly.mozilla.org/");
++pref("app.update.url.manual", "http://www.dnssec-tools.org/%APP%/nightly/");
+ // A default value for the "More information about this update" link
+ // supplied in the "An update is available" page of the update wizard. 
+-pref("app.update.url.details", "http://www.mozilla.org/projects/%APP%/");
++pref("app.update.url.details", "http://www.dnssec-tools.org/%APP%/");
+ 
+ // Release notes and vendor URLs
+-pref("app.releaseNotesURL", "http://www.mozilla.org/projects/%APP%/%VERSION%/releasenotes/");
+-pref("app.vendorURL", "http://www.mozilla.org/projects/%APP%/");
++pref("app.releaseNotesURL", "http://www.dnssec-tools.org/%APP%/%VERSION%/releasenotes/");
++pref("app.vendorURL", "http://www.dnssec-tools.org/%APP%/");
+ 
+ // Search codes belong only in builds with official branding
+ pref("browser.search.param.yahoo-fr", "");
+diff --git a/browser/branding/official/branding.nsi b/browser/branding/official/branding.nsi
+index 684db0f..2b3f801 100644
+--- a/browser/branding/official/branding.nsi
++++ b/browser/branding/official/branding.nsi
+@@ -8,16 +8,16 @@
+ 
+ # BrandFullNameInternal is used for some registry and file system values
+ # instead of BrandFullName and typically should not be modified.
+-!define BrandFullNameInternal "Mozilla Firefox"
+-!define CompanyName           "Mozilla Corporation"
+-!define URLInfoAbout          "http://www.mozilla.com/${AB_CD}/"
+-!define URLUpdateInfo         "http://www.mozilla.com/${AB_CD}/firefox/"
++!define BrandFullNameInternal "DNSSEC-Tools Bloodhound"
++!define CompanyName           "DNSSEC-Tools"
++!define URLInfoAbout          "http://www.dnssec-tools.org/${AB_CD}/"
++!define URLUpdateInfo         "http://www.dnssec-tools.org/${AB_CD}/bloodhound/"
+ 
+ ; Prevents the beta channel urls in stub.nsi from being used when not using
+ ; official branding
+ !define Official
+-!define URLStubDownload "http://download.mozilla.org/?product=firefox-latest&os=win&lang=${AB_CD}"
+-!define URLManualDownload "https://www.mozilla.org/firefox/installer-help/?channel=release"
++!define URLStubDownload "http://www.dnssec-tools.org/?product=bloodhound-latest&os=win&lang=${AB_CD}"
++!define URLManualDownload "https://www.dnssec-tools.org/bloodhound/installer-help/?channel=release"
+ !define Channel "release"
+ 
+ # The installer's certificate name and issuer expected by the stub installer
+diff --git a/browser/branding/official/pref/firefox-branding.js b/browser/branding/official/pref/firefox-branding.js
+index ffbc85c..03a0dac 100644
+--- a/browser/branding/official/pref/firefox-branding.js
++++ b/browser/branding/official/pref/firefox-branding.js
+@@ -2,8 +2,8 @@
+  * License, v. 2.0. If a copy of the MPL was not distributed with this
+  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+ 
+-pref("startup.homepage_override_url","http://www.mozilla.com/%LOCALE%/%APP%/%VERSION%/whatsnew/?oldversion=%OLD_VERSION%");
+-pref("startup.homepage_welcome_url","http://www.mozilla.com/%LOCALE%/%APP%/%VERSION%/firstrun/");
++pref("startup.homepage_override_url","http://www.dnssec-tools.org/bloodhound/releases/%VERSION%/whatsnew.html");
++pref("startup.homepage_welcome_url","file:///usr/local/dnssec-tools/share/doc/bloodhound/dnssec-threats.html");
+ // Interval: Time between checks for a new version (in seconds)
+ pref("app.update.interval", 43200); // 12 hours
+ // The time interval between the downloading of mar file chunks in the
+@@ -13,14 +13,14 @@ pref("app.update.download.backgroundInterval", 60);
+ pref("app.update.promptWaitTime", 86400);
+ // URL user can browse to manually if for some reason all update installation
+ // attempts fail.
+-pref("app.update.url.manual", "http://www.firefox.com");
++pref("app.update.url.manual", "http://www.dnssec-tools.org/bloodhound/update/");
+ // A default value for the "More information about this update" link
+ // supplied in the "An update is available" page of the update wizard. 
+-pref("app.update.url.details", "http://www.mozilla.com/%LOCALE%/%APP%/releases/");
++pref("app.update.url.details", "http://www.dnssec-tools.org/bloodhound/releases/");
+ 
+ // Release notes and vendor URLs
+-pref("app.releaseNotesURL", "http://www.mozilla.com/%LOCALE%/%APP%/%VERSION%/releasenotes/");
+-pref("app.vendorURL", "http://www.mozilla.com/%LOCALE%/%APP%/");
++pref("app.releaseNotesURL", "http://www.dnssec-tools.org/bloodhound/releases/%VERSION%/notes.html");
++pref("app.vendorURL", "http://www.dnssec-tools.org/bloodhound/");
+ 
+ pref("browser.search.param.ms-pc", "MOZI");
+ pref("browser.search.param.yahoo-fr", "moz35");
+diff --git a/browser/branding/unofficial/pref/firefox-branding.js b/browser/branding/unofficial/pref/firefox-branding.js
+index a30b055..4060034 100644
+--- a/browser/branding/unofficial/pref/firefox-branding.js
++++ b/browser/branding/unofficial/pref/firefox-branding.js
+@@ -2,8 +2,8 @@
+  * License, v. 2.0. If a copy of the MPL was not distributed with this
+  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+ 
+-pref("startup.homepage_override_url","http://www.mozilla.org/projects/%APP%/%VERSION%/whatsnew/");
+-pref("startup.homepage_welcome_url","http://www.mozilla.org/projects/%APP%/%VERSION%/firstrun/");
++pref("startup.homepage_override_url","http://www.dnssec-tools.org/%APP%/%VERSION%/whatsnew/");
++pref("startup.homepage_welcome_url","http://www.dnssec-tools.org/%APP%/%VERSION%/firstrun/");
+ // The time interval between checks for a new version (in seconds)
+ pref("app.update.interval", 86400); // 24 hours
+ // The time interval between the downloading of mar file chunks in the
+@@ -13,14 +13,14 @@ pref("app.update.download.backgroundInterval", 60);
+ pref("app.update.promptWaitTime", 86400);
+ // URL user can browse to manually if for some reason all update installation
+ // attempts fail.
+-pref("app.update.url.manual", "http://www.mozilla.org/products/%APP%/");
++pref("app.update.url.manual", "http://www.dnssec-tools.org/%APP%/update");
+ // A default value for the "More information about this update" link
+ // supplied in the "An update is available" page of the update wizard. 
+-pref("app.update.url.details", "http://www.mozilla.org/projects/%APP%/");
++pref("app.update.url.details", "http://www.dnssec-tools.org/%APP%/update-details");
+ 
+ // Release notes and vendor URLs
+-pref("app.releaseNotesURL", "http://www.mozilla.org/projects/%APP%/%VERSION%/releasenotes/");
+-pref("app.vendorURL", "http://www.mozilla.org/projects/%APP%/");
++pref("app.releaseNotesURL", "http://www.dnssec-tools.org/%APP%/%VERSION%/releasenotes/");
++pref("app.vendorURL", "http://www.dnssec-tools.org/%APP%/");
+ 
+ // Search codes belong only in builds with official branding
+ pref("browser.search.param.yahoo-fr", "");
+diff --git a/browser/installer/windows/nsis/defines.nsi.in b/browser/installer/windows/nsis/defines.nsi.in
+index 5436776..63425dc 100644
+--- a/browser/installer/windows/nsis/defines.nsi.in
++++ b/browser/installer/windows/nsis/defines.nsi.in
+@@ -35,7 +35,7 @@
+ !define BETA_UPDATE_CHANNEL
+ !endif
+ 
+-!define BaseURLStubPing "http://download-stats.mozilla.org/stub/v4/"
++!define BaseURLStubPing "http://www.dnssec-tools.org/bloodhound/download-stats/stub/v4/"
+ 
+ # NO_INSTDIR_FROM_REG is defined for pre-releases which have a PreReleaseSuffix
+ # (e.g. Alpha X, Beta X, etc.) to prevent finding a non-default installation
+diff --git a/browser/locales/en-US/profile/bookmarks.inc b/browser/locales/en-US/profile/bookmarks.inc
+index f91f15e..a667559 100644
+--- a/browser/locales/en-US/profile/bookmarks.inc
++++ b/browser/locales/en-US/profile/bookmarks.inc
+@@ -14,7 +14,7 @@
+ #define bookmarks_toolbarfolder_description Add bookmarks to this folder to see them displayed on the Bookmarks Toolbar
+ 
+ # LOCALIZATION NOTE (getting_started):
+-# link title for http://en-US.www.mozilla.com/en-US/firefox/central/
++# link title for http://www.dnssec-tools.org/bloodhound/central/
+ #define getting_started Getting Started
+ 
+ # LOCALIZATION NOTE (firefox_heading):
+@@ -22,19 +22,19 @@
+ #define firefox_heading Mozilla Firefox
+ 
+ # LOCALIZATION NOTE (firefox_help):
+-# link title for http://en-US.www.mozilla.com/en-US/firefox/help/
++# link title for http://www.dnssec-tools.org/bloodhound/help/
+ #define firefox_help Help and Tutorials
+ 
+ # LOCALIZATION NOTE (firefox_customize):
+-# link title for http://en-US.www.mozilla.com/en-US/firefox/customize/
++# link title for http://www.dnssec-tools.org/bloodhound/customize/
+ #define firefox_customize Customize Firefox
+ 
+ # LOCALIZATION NOTE (firefox_community):
+-# link title for http://en-US.www.mozilla.com/en-US/firefox/community/
++# link title for http://www.dnssec-tools.org/bloodhound/community/
+ #define firefox_community Get Involved
+ 
+ # LOCALIZATION NOTE (firefox_about):
+-# link title for http://en-US.www.mozilla.com/en-US/about/
++# link title for http://www.dnssec-tools.org/bloodhound/about/
+ #define firefox_about About Us
+ 
+ #unfilter emptyLines
+diff --git a/modules/libpref/src/init/all.js b/modules/libpref/src/init/all.js
+index 9c86a09..748b3ec 100644
+--- a/modules/libpref/src/init/all.js
++++ b/modules/libpref/src/init/all.js
+@@ -354,11 +354,11 @@ pref("toolkit.scrollbox.clickToScroll.scrollDelay", 150);
+ 
+ // Telemetry
+ pref("toolkit.telemetry.enabled", false);
+-pref("toolkit.telemetry.server", "https://data.mozilla.com");
++pref("toolkit.telemetry.server", "https://bloodhound-data.dnssec-tools.org/");
+ // Telemetry server owner. Please change if you set toolkit.telemetry.server to a different server
+ pref("toolkit.telemetry.server_owner", "Mozilla");
+ // Information page about telemetry (temporary ; will be about:telemetry in the end)
+-pref("toolkit.telemetry.infoURL", "http://www.mozilla.com/legal/privacy/firefox.html#telemetry");
++pref("toolkit.telemetry.infoURL", "http://www.dnssec-tools.org/bloodhound/legal/privacy/bloodhound.html#telemetry");
+ // Determines whether full SQL strings are returned when they might contain sensitive info
+ // i.e. dynamically constructed SQL strings or SQL executed by addons against addon DBs
+ pref("toolkit.telemetry.debugSlowSql", false);
+diff --git a/toolkit/content/aboutRights.xhtml b/toolkit/content/aboutRights.xhtml
+index 9ce1c76..b9356bb 100644
+--- a/toolkit/content/aboutRights.xhtml
++++ b/toolkit/content/aboutRights.xhtml
+@@ -34,7 +34,7 @@
+    - Point 4 discusses web service terms, unbranded builds gets a placeholder (for the vendor to replace) -->
+   <li>&rights.intro-point2-a;<a href="http://www.mozilla.org/foundation/trademarks/policy.html">&rights.intro-point2-b;</a>&rights.intro-point2-c;</li>
+   <li>&rights.intro-point2.5;</li>
+-  <li>&rights2.intro-point3a;<a href="http://www.mozilla.com/legal/privacy/">&rights2.intro-point3b;</a>&rights.intro-point3c;</li>
++  <li>&rights2.intro-point3a;<a href="http://www.dnssec-tools.org/bloodhound/legal/privacy/">&rights2.intro-point3b;</a>&rights.intro-point3c;</li>
+   <li>&rights2.intro-point4a;<a href="about:rights#webservices" onclick="showServices();">&rights.intro-point4b;</a>&rights.intro-point4c;</li>
+ </ul>
+ 
+-- 
+1.7.11.7
+
