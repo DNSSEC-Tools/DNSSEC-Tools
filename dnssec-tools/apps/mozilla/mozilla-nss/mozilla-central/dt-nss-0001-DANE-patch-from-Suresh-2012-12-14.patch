@@ -1,7 +1,7 @@
-From 8184fdf47cb4517ee875619091d4632ad58d9bde Mon Sep 17 00:00:00 2001
+From 7a7fbf9664008d159113def448e2b5cdcde57009 Mon Sep 17 00:00:00 2001
 From: Robert Story <rstory@localhost>
 Date: Sat, 22 Dec 2012 17:54:41 -0500
-Subject: [PATCH 16/22] DANE nss patch from Suresh; 2012-12-14
+Subject: [PATCH 09/25] NSS DANE patch from Suresh; 2012-12-14
 
 ---
  security/nss/lib/ssl/Makefile    |   2 +
@@ -9,11 +9,11 @@ Subject: [PATCH 16/22] DANE nss patch from Suresh; 2012-12-14
  security/nss/lib/ssl/manifest.mn |   1 +
  security/nss/lib/ssl/ssl.def     |   1 +
  security/nss/lib/ssl/ssl.h       |   4 +
- security/nss/lib/ssl/ssldane.c   | 185 +++++++++++++++++++++++++++++++++++++++
+ security/nss/lib/ssl/ssldane.c   | 196 +++++++++++++++++++++++++++++++++++++++
  security/nss/lib/ssl/sslerr.h    |   4 +
  security/nss/lib/ssl/sslimpl.h   |   1 +
  security/nss/lib/ssl/sslsock.c   |   1 +
- 9 files changed, 202 insertions(+)
+ 9 files changed, 213 insertions(+)
  create mode 100644 security/nss/lib/ssl/ssldane.c
 
 diff --git a/security/nss/lib/ssl/Makefile b/security/nss/lib/ssl/Makefile
@@ -81,10 +81,21 @@ index fff4338..f89a89e 100644
   */
 diff --git a/security/nss/lib/ssl/ssldane.c b/security/nss/lib/ssl/ssldane.c
 new file mode 100644
-index 0000000..4b9c0f3
+index 0000000..8b442d4
 --- /dev/null
 +++ b/security/nss/lib/ssl/ssldane.c
-@@ -0,0 +1,185 @@
+@@ -0,0 +1,196 @@
++/*
++ * The DANE implementation originally started out as an extension 
++ * to Matt McCutchen's patch (found at
++ * https://mattmccutchen.net/cryptid/nss-dane-20110413.patch) but has
++ * since diverged significantly from that piece of code.
++ *
++ * DANE support in Bloodhound is enabled through the DNSSEC-Tools dnsval
++ * package, specifically the libval and libsres libraries. Further
++ * details can be found at 
++ * https://www.dnssec-tools.org/wiki/index.php/Firefox 
++ */
 +
 +#define _GNU_SOURCE
 +
