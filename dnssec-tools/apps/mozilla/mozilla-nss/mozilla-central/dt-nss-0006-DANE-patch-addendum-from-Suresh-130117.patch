@@ -1,55 +1,14 @@
-From e40e08ea5792366cee8aee8e1f874f3a8384919b Mon Sep 17 00:00:00 2001
+From 7ccc1ebb9deb7a52feeff56814ae9a35e79c3849 Mon Sep 17 00:00:00 2001
 From: Robert Story <rstory@localhost>
 Date: Tue, 22 Jan 2013 12:37:22 -0500
-Subject: [PATCH 22/22] DANE patch addendum from Suresh; 130117
+Subject: [PATCH 14/25] NSS DANE patch addendum from Suresh; 130117
 
 ---
- .../en-US/chrome/pipnss/nsserrors.properties       |  3 ++
- .../manager/ssl/src/SSLServerCertVerification.cpp  | 14 ++++++++
- security/nss/lib/ssl/SSLerrs.h                     | 10 ++++++
- security/nss/lib/ssl/ssldane.c                     | 40 +++++++---------------
- security/nss/lib/ssl/sslerr.h                      |  6 ++--
- 5 files changed, 43 insertions(+), 30 deletions(-)
+ security/nss/lib/ssl/SSLerrs.h | 10 ++++++++++
+ security/nss/lib/ssl/ssldane.c | 40 +++++++++++++---------------------------
+ security/nss/lib/ssl/sslerr.h  |  6 +++---
+ 3 files changed, 26 insertions(+), 30 deletions(-)
 
-diff --git a/security/manager/locales/en-US/chrome/pipnss/nsserrors.properties b/security/manager/locales/en-US/chrome/pipnss/nsserrors.properties
-index 188222a..2c796c0 100644
---- a/security/manager/locales/en-US/chrome/pipnss/nsserrors.properties
-+++ b/security/manager/locales/en-US/chrome/pipnss/nsserrors.properties
-@@ -122,6 +122,9 @@ SSL_ERROR_NEXT_PROTOCOL_DATA_INVALID=SSL received invalid NPN extension data.
- SSL_ERROR_FEATURE_NOT_SUPPORTED_FOR_SSL2=SSL feature not supported for SSL 2.0 connections.
- SSL_ERROR_FEATURE_NOT_SUPPORTED_FOR_SERVERS=SSL feature not supported for servers.
- SSL_ERROR_FEATURE_NOT_SUPPORTED_FOR_CLIENTS=SSL feature not supported for clients.
-+SSL_ERROR_DANE_QUERY_FAILED=Could not fetch a DANE record or prove its absence.
-+SSL_ERROR_DANE_UNAUTHORIZED=DANE certificate mismatch.
-+SSL_ERROR_DANE_INIT_FAILED=SSL DANE Support could not be initialized.
- SEC_ERROR_IO=An I/O error occurred during security authorization.
- SEC_ERROR_LIBRARY_FAILURE=security library failure.
- SEC_ERROR_BAD_DATA=security library: received bad data.
-diff --git a/security/manager/ssl/src/SSLServerCertVerification.cpp b/security/manager/ssl/src/SSLServerCertVerification.cpp
-index 19a5b6c..6dab105 100644
---- a/security/manager/ssl/src/SSLServerCertVerification.cpp
-+++ b/security/manager/ssl/src/SSLServerCertVerification.cpp
-@@ -421,6 +421,20 @@ CreateCertErrorRunnable(PRErrorCode defaultErrorCodeToReport,
-     return nullptr;
-   }
- 
-+  // if we have a DANE validation failure don't do anything else
-+  if (defaultErrorCodeToReport == SSL_ERROR_DANE_INIT_FAILED) {
-+    PR_SetError(SSL_ERROR_DANE_INIT_FAILED, 0);
-+    return nullptr;
-+  }
-+  if (defaultErrorCodeToReport == SSL_ERROR_DANE_QUERY_FAILED) {
-+    PR_SetError(SSL_ERROR_DANE_QUERY_FAILED, 0);
-+    return nullptr;
-+  }
-+  if (defaultErrorCodeToReport == SSL_ERROR_DANE_UNAUTHORIZED) {
-+    PR_SetError(SSL_ERROR_DANE_UNAUTHORIZED, 0);
-+    return nullptr;
-+  }
-+
-   if (defaultErrorCodeToReport == 0) {
-     NS_ERROR("No error code set during certificate validation failure.");
-     PR_SetError(PR_INVALID_STATE_ERROR, 0);
 diff --git a/security/nss/lib/ssl/SSLerrs.h b/security/nss/lib/ssl/SSLerrs.h
 index 12dceaa..bd9b2d9 100644
 --- a/security/nss/lib/ssl/SSLerrs.h
@@ -69,10 +28,10 @@ index 12dceaa..bd9b2d9 100644
 +"SSL DANE Support could not be initialized.")
 +
 diff --git a/security/nss/lib/ssl/ssldane.c b/security/nss/lib/ssl/ssldane.c
-index e0dd41a..a295c92 100644
+index 8555e8b..01ae5fc 100644
 --- a/security/nss/lib/ssl/ssldane.c
 +++ b/security/nss/lib/ssl/ssldane.c
-@@ -43,27 +43,22 @@ SECStatus SSL_DANECheck(void * pinarg, const char *hostname, int32_t port, CERTC
+@@ -54,27 +54,22 @@ SECStatus SSL_DANECheck(void * pinarg, const char *hostname, int32_t port, CERTC
      struct val_danestatus *danestatus = NULL;
      struct val_danestatus *dane_cur = NULL;
      int dane_retval;
@@ -103,7 +62,7 @@ index e0dd41a..a295c92 100644
  	}
  
      daneparams.port = port;
-@@ -87,7 +82,6 @@ SECStatus SSL_DANECheck(void * pinarg, const char *hostname, int32_t port, CERTC
+@@ -98,7 +93,6 @@ SECStatus SSL_DANECheck(void * pinarg, const char *hostname, int32_t port, CERTC
  
      dane_cur = danestatus;
      while(dane_cur)  {
@@ -111,7 +70,7 @@ index e0dd41a..a295c92 100644
          *do_pathval = 1;
      
          fprintf(stderr, "DANE check s,t,u=%d,%d,%d\n",
-@@ -116,8 +110,7 @@ SECStatus SSL_DANECheck(void * pinarg, const char *hostname, int32_t port, CERTC
+@@ -127,8 +121,7 @@ SECStatus SSL_DANECheck(void * pinarg, const char *hostname, int32_t port, CERTC
                                  (const unsigned char *)node->cert->derCert.data,
                                  node->cert->derCert.len) == VAL_DANE_NOERROR) {
                          fprintf(stderr, "DANE: val_dane_match() success\n");
@@ -121,7 +80,7 @@ index e0dd41a..a295c92 100644
                      }
                  }
                  fprintf(stderr, "DANE: val_dane_match() failed\n");
-@@ -133,8 +126,7 @@ SECStatus SSL_DANECheck(void * pinarg, const char *hostname, int32_t port, CERTC
+@@ -144,8 +137,7 @@ SECStatus SSL_DANECheck(void * pinarg, const char *hostname, int32_t port, CERTC
                                    (const unsigned char *)cert->derCert.data,
                                    cert->derCert.len) == VAL_DANE_NOERROR) {
                      fprintf(stderr, "DANE: val_dane_match() success\n");
@@ -131,7 +90,7 @@ index e0dd41a..a295c92 100644
                  }
                  fprintf(stderr, "DANE: val_dane_match() failed\n");
                  break;
-@@ -154,8 +146,7 @@ SECStatus SSL_DANECheck(void * pinarg, const char *hostname, int32_t port, CERTC
+@@ -165,8 +157,7 @@ SECStatus SSL_DANECheck(void * pinarg, const char *hostname, int32_t port, CERTC
                          CERT_VerifyCertNow(certdb,
                              cert, PR_TRUE, certUsageSSLServer, pinarg)) {
                      fprintf(stderr, "DANE: val_dane_match() success\n");
@@ -141,7 +100,7 @@ index e0dd41a..a295c92 100644
                  }
                  fprintf(stderr, "DANE: val_dane_match() failed\n");
                  break;
-@@ -168,19 +159,14 @@ SECStatus SSL_DANECheck(void * pinarg, const char *hostname, int32_t port, CERTC
+@@ -179,19 +170,14 @@ SECStatus SSL_DANECheck(void * pinarg, const char *hostname, int32_t port, CERTC
          dane_cur = dane_cur->next;
  	}
  

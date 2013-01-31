@@ -1,17 +1,17 @@
-From e83bbf77c1e5842085de9bc402801a52a22a054b Mon Sep 17 00:00:00 2001
+From fcae6097022f1dd98b1462ac96c882cb60ac8737 Mon Sep 17 00:00:00 2001
 From: Robert Story <rstory@localhost>
 Date: Sat, 22 Dec 2012 18:11:49 -0500
-Subject: [PATCH 21/22] DANE keep compiler happy
+Subject: [PATCH 13/25] NSS DANE keep compiler happy
 
 ---
  security/nss/lib/ssl/ssldane.c | 3 ++-
  1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/security/nss/lib/ssl/ssldane.c b/security/nss/lib/ssl/ssldane.c
-index 4b9c0f3..e0dd41a 100644
+index 8b442d4..8555e8b 100644
 --- a/security/nss/lib/ssl/ssldane.c
 +++ b/security/nss/lib/ssl/ssldane.c
-@@ -101,12 +101,13 @@ SECStatus SSL_DANECheck(void * pinarg, const char *hostname, int32_t port, CERTC
+@@ -112,12 +112,13 @@ SECStatus SSL_DANECheck(void * pinarg, const char *hostname, int32_t port, CERTC
                   * Check that the TLSA cert matches one on the cert
                   * chain
                   */
