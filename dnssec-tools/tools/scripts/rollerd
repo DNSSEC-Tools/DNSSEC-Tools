@@ -464,7 +464,7 @@ sub eminent_domains
 
 	#
 	# Exit with failure if the rollrec file is bad.
-	# 
+	#
 	if(!rrfokay($rrf,""))
 	{
 		rolllog_log(LOG_FATAL,'',"rollrec file \"$rrf\" invalid");
@@ -537,7 +537,7 @@ sub eminent_domains
 
 	#
 	# Return success.
-	# 
+	#
 	return(1);
 }
 
@@ -755,12 +755,12 @@ sub rollkeys
 
 		#
 		# Turn off the flag indicating that the zone was signed.
-		# 
+		#
 		$wassigned = 0;
 
 		#
 		# If this zone's current KSK has expired, we'll get it rolling.
-		# 
+		#
 		if(ksk_expired($rname,$rrr,"kskcur"))
 		{
 			rolllog_log(LOG_TMI,$rname,"current KSK has expired\n") if($rr{'zskphase'} == 0);
@@ -774,7 +774,7 @@ sub rollkeys
 
 		#
 		# If this zone's current ZSK has expired, we'll get it rolling.
-		# 
+		#
 		if(zsk_expired($rname,$rrr,"zskcur"))
 		{
 			rolllog_log(LOG_INFO,$rname,"current ZSK has expired\n") if($rr{'zskphase'} == 0);
@@ -1330,7 +1330,7 @@ sub queue_scanone
 #		a zone already in rollover moves to the next rollover phase.
 #
 #		If a zone is not in rollover, the event time is calculated by
-		
+
 #		We'll calculate this time based on the maximum TTL in the
 #		zone's signed zonefile.  However, if If the signed zonefile
 #		hasn't been modified since we last checked, we'll use the
@@ -1668,7 +1668,7 @@ sub queue_rollevent
 
 	#
 	# If this zone's current KSK has expired, we'll get it rolling.
-	# 
+	#
 	if(ksk_expired($rname,$rrr,"kskcur"))
 	{
 		rolllog_log(LOG_TMI,$rname,"current KSK has expired\n") if($rr{'zskphase'} == 0);
@@ -1682,7 +1682,7 @@ sub queue_rollevent
 
 	#
 	# If this zone's current ZSK has expired, we'll get it rolling.
-	# 
+	#
 	if(zsk_expired($rname,$rrr,"zskcur"))
 	{
 		rolllog_log(LOG_INFO,$rname,"current ZSK has expired\n") if($rr{'zskphase'} == 0);
@@ -1783,7 +1783,7 @@ sub queue_rollevent
 #		The key keyrec of the specified key type (currently, just
 #		"zskcur") is pulled from the keyrec file.  Each key in the
 #		named signing set will be checked.
-#		
+#
 #		Key expiration is determined by comparing the key keyrec's
 #		gensecs field to the current time.  The key hasn't expired
 #		if the current time is less than the gensecs; the key has
@@ -4264,7 +4264,6 @@ sub bootmsg
 #				- no zonename field exists
 #
 #			If any of these problems are found, they will be fixed.
-#			
 #
 sub rrfchk
 {
@@ -4273,7 +4272,7 @@ sub rrfchk
 
 	#
 	# Return failure if the rollrec file is bad.
-	# 
+	#
 	if(!rrfokay($rrf,""))
 	{
 		return(0);
@@ -4403,7 +4402,7 @@ sub rrfchk
 
 	#
 	# Return success.
-	# 
+	#
 	return(1);
 }
 
@@ -4666,7 +4665,7 @@ sub groupcmd
 
 	#
 	# Run the named command on each zone in the specified zone group.
-	# 
+	#
 	@zonegroup = rollrec_zonegroup($data);
 	foreach my $zn (@zonegroup)
 	{
@@ -5357,7 +5356,7 @@ sub cmd_rollnow
 #-----------------------------------------------------------------------------
 # Routine:	cmd_rollzone()
 #
-# Purpose:	This command restores a skipped zone to rollover processing. 
+# Purpose:	This command restores a skipped zone to rollover processing.
 #
 sub cmd_rollzone
 {
@@ -5447,7 +5446,7 @@ sub cmd_rollzsk
 #
 # Purpose:	This command forces rollerd to run its queue.  It does this
 #		by setting the elapsed-sleep-time equal to the time-to-sleep.
-#		Upon return, sleeper() will see that sleepers must awake, 
+#		Upon return, sleeper() will see that sleepers must awake,
 #		and rollerd will go run its rollrec queue.
 #
 sub cmd_runqueue
@@ -5776,7 +5775,7 @@ sub cmd_skipall
 #-----------------------------------------------------------------------------
 # Routine:	cmd_skipzone()
 #
-# Purpose:	This command removes a zone from rollover processing. 
+# Purpose:	This command removes a zone from rollover processing.
 #
 sub cmd_skipzone
 {
@@ -5972,7 +5971,7 @@ sub cmd_zonegroup
 		#
 		foreach my $zg (sort(keys(%zgroups)))
 		{
-			$outbuf .= "$zg:\t$zgroups{$zg} zones\n";		
+			$outbuf .= "$zg:\t$zgroups{$zg} zones\n";
 		}
 
 		#
@@ -6001,7 +6000,7 @@ sub cmd_zonegroup
 		{
 			$errbuf = "invalid zone group \"$data\"";
 		}
-		
+
 	}
 
 	#
@@ -6283,7 +6282,7 @@ sub cmd_zsargs
 
 	#
 	# Ensure the specified zones are in the rollrec file.
-	# 
+	#
 	foreach my $rname (@zones)
 	{
 		my $rrr;		# Reference to rollrec.
@@ -6298,7 +6297,7 @@ sub cmd_zsargs
 	#
 	# Return an error if any zones were specified that aren't in the
 	# rollrec file,
-	# 
+	#
 	if(@badzones > 0)
 	{
 		rollrec_unlock();
@@ -6341,7 +6340,7 @@ sub cmd_zsargs
 #		it's in KSK phase 6.
 #
 #		If the zone isn't in KSK phase 6, then the zone's phase will
-#		be left alone.  If the call came from cmd_dspub(), then error 
+#		be left alone.  If the call came from cmd_dspub(), then error
 #		messages will be generated; if it came from cmd_dspuball(),
 #		then no error messages will be given.
 #
@@ -7302,7 +7301,7 @@ The I<prog-normal> configuration key controls the normal, non-rollover state.
 
 To be generally useful, the site-specific commands executed by B<rollerd>
 will be given a standard set of arguments, and a standard set of exit
-values will be recognized.  
+values will be recognized.
 
 The standard arguments from B<rollerd> are:
     1. zonename - Zone to be handled.
@@ -7320,7 +7319,7 @@ The standard exit values expected by B<rollerd> are:
        This is only applicable to the current command; other
        commands in this phase's command list must still be run.
     1. The zone should stay in the current rollover phase.
-       This is not necessarily the result of an error. 
+       This is not necessarily the result of an error.
     2. An error was found in the arguments given to the command.
     3. An error was encountered during execution.
 
@@ -7521,13 +7520,13 @@ values.
 =item 3. install the rollover configuration
 
 The complete rollover configuration -- B<rollerd>, I<rollrec> file,
-DNSSEC-Tools configuration file values, zone files -- should be installed.  
+DNSSEC-Tools configuration file values, zone files -- should be installed.
 The appropriate places for these locations are both installation-dependent
 and operating system-dependent.
 
 =item 4. test the rollover configuration
 
-The complete rollover configuration should be tested.  
+The complete rollover configuration should be tested.
 
 Edit the zone files so that their zones have short TTL values.  A minute TTL
 should be sufficient.  Test rollovers of this speed should B<only> be done
