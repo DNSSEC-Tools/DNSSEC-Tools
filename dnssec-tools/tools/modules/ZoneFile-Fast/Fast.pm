@@ -78,6 +78,7 @@ my $sshfp;
 my $key;
 my $dnskey;
 my $ds;
+my $tlsa;
 my $on_error;
 my $quiet;
 my $soft_errors;
@@ -898,6 +899,37 @@ sub parse_line
 	  } else {
 	      error("bad DS data");
 	  }
+      } elsif (/\G(tlsa)[ \t]+/igc) {
+	  if (!/\G(\d+)\s+(\d+)\s+(\d+)\s+/gc) {
+	      error("bad TLSA data 1");
+	  }
+	  $tlsa = {
+		 Line      => $ln,
+		 name      => $domain,
+		 class     => "IN",
+		 ttl       => $ttl,
+		 type      => "TLSA",
+		 usage     => $1,
+		 selector  => $2,
+		 matchingtype => $3,
+		};
+	  if (/\G\(\s*$/gc) {
+	      # multi-line
+	      $parse = \&parse_tlsa;
+	  } elsif (/\G(.*\S)\s*$/) {
+	      # single line
+	      $tlsa->{'cert'} .= $1;
+	      $tlsa->{'cert'} = lc($tlsa->{'cert'});
+	      $tlsa->{'cert'} =~ s/\s//g;
+	      # remove any surrounding single line ()s
+	      $tlsa->{'cert'} =~ s/^\(//;
+	      $tlsa->{'cert'} =~ s/\)$//;
+	      $tlsa->{'certbin'} = pack("H*", $tlsa->{'cert'});
+	      push @zone, $tlsa;
+	      $tlsa = undef;
+	  } else {
+	      error("bad TLSA data");
+	  }
       } elsif (/\G(nsec)[ \t]+/igc) {
 	  if (/\G\s*($pat_maybefullnameorroot)\s+(.*?)$pat_skip$/gc) {
 	      # XXX: set the typebm field ourselves?
@@ -1221,6 +1253,32 @@ sub parse_ds
 	      $ds->{'digest'} .= $1;
 	  } else {
 	      error("bad ds remaining lines");
+	  }
+      }
+  }
+
+sub parse_tlsa
+  {
+      # got more data
+      if (/\)\s*$/) {
+	  if (/\G\s*(\S*)\s*\)\s*$/gc) {
+	      $tlsa->{'cert'} .= $1;
+	      $tlsa->{'cert'} = lc($tlsa->{'cert'});
+
+	      # we're done
+	      $parse = \&parse_line;
+
+	      $tlsa->{'certbin'} = pack("H*",$tlsa->{'cert'});
+	      push @zone, $tlsa;
+	      $tlsa = undef;
+	  } else {
+	      error("bad tlsa last line");
+	  }
+      } else {
+	  if (/\G\s*(\S+)\s*$/gc) {
+	      $tlsa->{'cert'} .= $1;
+	  } else {
+	      error("bad tlsa remaining lines");
 	  }
       }
   }
