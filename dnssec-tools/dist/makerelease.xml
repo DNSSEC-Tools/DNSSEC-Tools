@@ -51,6 +51,13 @@
 	    <file>validator/apps/dnssec-check/DnssecCheckVersion.h</file>
 	  </files>
 	</modify>
+	<modify
+	  find='(DNSSECToolsVersion",\s*)[\.0-9]+(rc\d+|pre\d+|)'
+	  replace='$1{VERSION}'>
+	  <files>
+	    <file>validator/apps/dnssec-check/TestManager.cpp</file>
+	  </files>
+	</modify>
       </modifications>
     </step>
 
