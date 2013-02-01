@@ -1,5 +1,6 @@
 # This is -*- perl -*-
 
+use Net::DNS;
 use Net::DNS::ZoneFile::Fast;
 
 BEGIN {
@@ -61,6 +62,10 @@ BEGIN {
 	 q{acme.com. IN HINFO "SUN4/110 foo" UNIX},
 	 q{acme.com. IN HINFO "SUN4/110 foo" "UNIX bar"},
 	 );
+
+    if ($Net::DNS::VERSION > 0.72) {
+	push @test, 	 q{acme.com. IN TLSA 3 0 1 1BFC4290C5798EFCC6D4A1F2D79C3C5F49ACCAC687DF42974B68A45F 05BA074F},
+    }
 }
 
 use Test::More tests => 2 + 2 * scalar @test;
