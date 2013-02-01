@@ -535,6 +535,9 @@ int val_dane_match(val_context_t *context,
             val_log(ctx, LOG_NOTICE, "val_dane_match(): DANE_SEL_FULLCERT/DANE_MATCH_EXACT failed");
             X509_free(cert);
             X509_free(tlsa_cert);
+            CTX_UNLOCK_POL(ctx);
+            return VAL_DANE_CHECK_FAILED;
+
         } else {
             int pkeyLen = 0;
             unsigned char *pkeybuf = NULL;
@@ -555,7 +558,8 @@ int val_dane_match(val_context_t *context,
             val_log(ctx, LOG_NOTICE, "val_dane_match(): DANE_SEL_PUBKEY/DANE_MATCH_EXACT failed");
             FREE(pkeybuf);
             CTX_UNLOCK_POL(ctx);
-            return VAL_DANE_NOERROR;
+            return VAL_DANE_CHECK_FAILED;
+
         }
 
     } else if (dane_cur->type == DANE_MATCH_SHA256) {
@@ -607,6 +611,9 @@ int val_dane_match(val_context_t *context,
         val_log(ctx, LOG_NOTICE, 
                 "val_dane_match(): DANE SHA256 does NOT match (len = %d)", 
                 dane_cur->datalen);
+        CTX_UNLOCK_POL(ctx);
+        return VAL_DANE_CHECK_FAILED;
+
     } else if (dane_cur->type == DANE_MATCH_SHA512) {
 
         unsigned char cert_sha[SHA512_DIGEST_LENGTH];
@@ -645,11 +652,13 @@ int val_dane_match(val_context_t *context,
             return VAL_DANE_NOERROR;
         }
         val_log(ctx, LOG_NOTICE, "val_dane_match(): DANE_MATCH_SHA512 failed");
-    } else {
-        val_log(ctx, LOG_NOTICE,
-            "val_dane_match(): Error - Unknown DANE type:%d", dane_cur->type);
-    }
+        CTX_UNLOCK_POL(ctx);
+        return VAL_DANE_CHECK_FAILED;
 
+    } 
+
+    val_log(ctx, LOG_NOTICE,
+            "val_dane_match(): Error - Unknown DANE type:%d", dane_cur->type);
     CTX_UNLOCK_POL(ctx);
     return VAL_DANE_CHECK_FAILED;
 }
