@@ -254,6 +254,7 @@ my %LegendInformation =
  A => 'An A (IPv4) address record',
  AAAA => 'An AAAA (IPv6) address record',
  CNAME => 'A CNAME record pointing to an address record',
+ DNAME => 'A DNAME record pointing to a parallel subzone',
  NS => 'An NS record pointing to a child zone.',
  longlabel => 'A TXT record with a maximum length label (63)',
  longrecord => 'A TXT record with a maximum length record (254)',
@@ -408,6 +409,12 @@ sub generate_records {
 	    my $savefh = $fh;
 	    generate_zone("${nsprefix}.$domain", 1, 1);
 	    $fh = $savefh;
+
+	    # DNAME records
+	    print_record("dname-${nsprefix}",
+			 "1D IN", "DNAME",
+			 lc("${nsprefix}.$domain."));
+
 	    foreach my $ns (split(",",$opts{'ns'})) {
 		my ($rec,$addr) = split(/=/,$ns);
 
