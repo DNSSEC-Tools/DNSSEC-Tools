@@ -3,7 +3,7 @@
 
 var hosts = []
 var tests = []
-var numTests = 10
+var numTests = 11
 var numLeftColumns = 2
 var numColumns = numTests + numLeftColumns
 var numHeaders = numColumns
@@ -124,6 +124,7 @@ function assignHostGrade() {
                  testObject.name == "NSEC" ||
                  testObject.name == "NSEC3" ||
                  testObject.name == "DNSKEY" ||
+                 testObject.name == "DNAME" ||
                  testObject.name == "DS") &&
                 testObject.status != DNSSECTest.GOOD) {
                 maxGrade = Math.max(2, maxGrade);
@@ -189,6 +190,7 @@ function addHost(labelComponent, resultComponent, hostComponent, host) {
     makeLight(resultComponent, 7, "NSEC3", host)
     makeLight(resultComponent, 8, "DNSKEY", host)
     makeLight(resultComponent, 9, "DS", host)
+    makeLight(resultComponent, 10, "DNAME", host)
 
     // makeLight(resultComponent, 10, "DNS", host) // libval async testing only
 

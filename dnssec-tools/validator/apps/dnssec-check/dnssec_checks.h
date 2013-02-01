@@ -38,6 +38,7 @@ int check_do_has_rrsigs_async(char *ns_name, char *buf, size_t buf_len, int *ret
 int check_small_edns0_async(char *ns_name, char *buf, size_t buf_len, int *testStatus);
 int check_can_get_dnskey_async(char *ns_name, char *buf, size_t buf_len, int *testStatus);
 int check_can_get_ds_async(char *ns_name, char *buf, size_t buf_len, int *testStatus);
+int check_can_get_signed_dname_async(char *ns_name, char *buf, size_t buf_len, int *testStatus);
 
 /* libval async test */
 void check_basic_async(char *ns_name, char *buf, size_t buf_len, int *return_status);
