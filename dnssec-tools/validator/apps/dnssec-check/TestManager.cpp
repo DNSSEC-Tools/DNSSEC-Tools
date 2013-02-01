@@ -268,8 +268,8 @@ void TestManager::submitResults(QVariantList tests) {
     }
 
     // add base data
-    accessURL.addQueryItem("dataVersion", "1");
-    accessURL.addQueryItem("DNSSECToolsVersion", "1.11");
+    accessURL.addQueryItem("dataVersion", "2");
+    accessURL.addQueryItem("DNSSECToolsVersion", "1.14");
 
     // add the query results passed to us
     for(int i = 0; i < tests.count(); i += 2) {
