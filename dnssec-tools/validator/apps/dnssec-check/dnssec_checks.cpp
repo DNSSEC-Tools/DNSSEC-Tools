@@ -938,3 +938,67 @@ int check_can_get_ds_async(char *ns_name, char *buf, size_t buf_len, int *testSt
 
 
 #endif /* VAL_NO_ASYNC */
+
+int check_can_get_signed_dname(char *ns_name, char *buf, size_t buf_len, const char *name, int rrtype, const char *rrtypename) {
+    // XXX
+}
+
+
+#ifndef VAL_NO_ASYNC
+void _check_dname_async_response(u_char *response, size_t response_size,
+                                 int rc, int *testStatus, char *buf, size_t buf_len, void *localData) {
+    int             rrnum;
+    ns_msg          handle;
+    ns_rr           rr;
+
+    if (rc != SR_UNSET)
+        SET_ERROR("Query for a dname response failed to get an answer entirely");
+
+
+    /* Check for DNAME */
+    rrnum = count_types(response, response_size, buf, buf_len, ns_t_dname, ns_s_an, "DNAME");
+
+    if (rrnum <= 0)
+        SET_ERROR("Failed to find an expected DNAME record.");
+
+
+
+    /* Check for an RRSIG that signs the DNAME */
+    if (ns_initparse(response, response_size, &handle) < 0)
+        SET_ERROR("Fatal internal error: failed to init parser");
+    rrnum = 0;
+    for (;;) {
+        if (ns_parserr(&handle, ns_s_an, rrnum, &rr)) {
+            if (errno != ENODEV) {
+                /* parse error */
+                SET_ERROR("failed to parse a returned additional RRSET");
+            }
+            break; /* out of data */
+        }
+        if (ns_rr_type(rr) == ns_t_rrsig) {
+            // XXX: check signing type
+            SET_SUCCESS("Querying for a record in a DNAMEd zone returned a DNAME and a signature.");
+        }
+        rrnum++;
+    }
+
+    SET_ERROR("Failed to find an expected RRSIG on the DNAME record.");
+}
+
+int check_can_get_signed_dname_async(char *ns_name, char *buf, size_t buf_len, int *testStatus) {
+    /* queries with the DO bit for something that should be DNAMEd to elsewhere.  The answer should have both a DNAME record,
+     * and a signature on that record. The CNAME is optional so we don't check it.
+     */
+
+    struct name_server *ns;
+    struct expected_arrival *ea;
+
+    ns = _parse_name_server(ns_name, SR_QUERY_VALIDATING_STUB_FLAGS | SR_QUERY_RECURSE);
+
+    ea = res_async_query_send("good-a.dname-good-ns.test.dnssec-tools.org", ns_t_a, ns_c_in, ns);
+    add_outstanding_async_query(ea, _check_dname_async_response,
+                                testStatus, buf, buf_len, NULL);
+    return CHECK_CRITICAL;
+}
+
+#endif /* VAL_NO_ASYNC */

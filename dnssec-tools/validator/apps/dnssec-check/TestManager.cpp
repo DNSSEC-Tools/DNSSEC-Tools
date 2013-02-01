@@ -194,7 +194,9 @@ DNSSECTest *TestManager::makeTest(testType type, QString address, QString name) 
     case basic_tcp:
         newtest =  new DNSSECTest(m_parent, &check_basic_tcp_async, address.toAscii().data(), name, true, &m_otherThread);
         break;
-
+    case can_get_signed_dname:
+        newtest =  new DNSSECTest(m_parent, &check_can_get_signed_dname_async, address.toAscii().data(), name, true);
+        break;
 #endif
 
 #ifdef LIBVAL_ASYNC_TESTING
@@ -211,6 +213,8 @@ DNSSECTest *TestManager::makeTest(testType type, QString address, QString name) 
         if (newtest->async()) {
             connect(newtest, SIGNAL(asyncTestSubmitted()), this, SLOT(updateWatchedSockets()));
         }
+    } else {
+        qDebug() << "no test created...  help? " << type << " - " << can_get_signed_dname;
     }
     return newtest;
 }

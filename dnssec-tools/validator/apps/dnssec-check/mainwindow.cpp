@@ -144,6 +144,9 @@ void MainWindow::addAddress(QString server, int row) {
 
     m_results->addWidget(light = new QStatusLight(0, &check_can_get_ds, server.toAscii().data(), "DS", row), row, column++);
     m_tests.push_back(light);
+
+    //m_results->addWidget(light = new QStatusLight(0, &check_can_get_signed_dname, server.toAscii().data(), "DNAME", row), row, column++);
+    //m_tests.push_back(light);
 }
 
 void MainWindow::setupMenus() {

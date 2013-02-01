@@ -41,6 +41,7 @@ public:
           can_get_nsec3,
           can_get_dnskey,
           can_get_ds,
+          can_get_signed_dname,
           basic_async
         };
     explicit TestManager(QObject *parent = 0);

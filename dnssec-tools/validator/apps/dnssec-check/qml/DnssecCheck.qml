@@ -115,7 +115,7 @@ Rectangle {
             x: parent.border.width * 2 + 4
             y: parent.border.width * 2 + 4
 
-            property int resultWidth: 54
+            property int resultWidth: 50
 
             Header { text: "Host" ; width: 130 }
             Header { text: "Grade" }
@@ -129,6 +129,7 @@ Rectangle {
             Header { text: "NSEC3" }
             Header { text: "DNSKEY" }
             Header { text: "DS" }
+            Header { text: "DNAME" }
         }
     }
 
