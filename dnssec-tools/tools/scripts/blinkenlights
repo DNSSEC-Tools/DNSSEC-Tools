@@ -99,9 +99,6 @@ my $RRFCOL	= $COL0;	# Rollrec filename.
 my $ROLLCNTCOL	= $COL1;	# Rolled zones count.
 my $SKIPCNTCOL	= $COL2;	# Skipped zones count.
 my $SLEEPCOL	= $COL3;	# Rollerd's sleeptime.
-# my $INFO4	= $COL4;	# Unused.
-# my $INFO5	= $COL5;	# Unused.
-# my $DISPLAYCOL	= $COL6;	# Count of displayed zones.
 my $DISPLAYCOL	= $COL4;	# Count of displayed zones.
 my $INFO5	= $COL5;	# Unused.
 my $INFO6	= $COL6;	# Unused.
@@ -264,14 +261,14 @@ my @zphasecolors =
 #
 my @kphasedescr =
 (
-	"  normal operation  ",				# phase 0
-	"  first cache-expire wait  ",			# phase 1
-	"  sign with KSKCUR, KSKPUB, and ZSKCUR  ",	# phase 2
-	"  second cache-expire wait  ",			# phase 3
-	"  sign with KSKPUB and ZSKCUR  ",		# phase 4
-	"  transfer keyset to parent  ",		# phase 5
-	"  wait for parent to publish DS  ",		# phase 6
-	"  reload zone  ",				# phase 7
+	"  normal operation  ",					# phase 0
+	"  first cache-expire wait  ",				# phase 1
+	"  sign with KSKCUR, KSKPUB, and ZSKCUR  ",		# phase 2
+	"  second cache-expire wait  ",				# phase 3
+	"  transfer keyset to parent  ",			# phase 4
+	"  wait for parent to publish DS  ",			# phase 5
+	"  third cache-expire wait  ",				# phase 6
+	"  sign with KSKPUB and ZSKCUR and reload zone  ",	# phase 7
 );
 
 #
@@ -650,7 +647,7 @@ sub buildmainwind
 	$op_skip = $disp->command(-label => $skipmsg, -command => \&disp_skip);
 	$disp->pack(-side => 'left');
 
-	$timemsg = $notimes? $SHOWTIME : $NOTIME;
+	$timemsg = $notimes ? $SHOWTIME : $NOTIME;
 	$op_time = $disp->command(-label => $timemsg, -command => \&disp_time);
 	$disp->pack(-side => 'left');
 
@@ -2574,6 +2571,7 @@ sub zonestripe
 	$phasestr = ($phase != 0) ? "$rolltype phase $phase" : ' ';
 	$chronos  = ' ' if((($phase != 1) &&
 			    ($phase != 3) &&
+			    ($phase != 6) &&
 			    ($phase != 0))	||
 			   ($notimes == 1));
 
@@ -2803,7 +2801,7 @@ sub rollerdcmd
 		{
 			$zonechron{$zone} = ' '
 		}
-		elsif(($phase != 1) && ($phase != 3))
+		elsif(($phase != 1) && ($phase != 3) && ($phase != 6))
 		{
 			$zonechron{$zone} = ' '
 		}
@@ -2887,7 +2885,8 @@ sub rollerdcmd
 		{
 			$timestr = "starting roll in $timestr";
 		}
-		elsif(($phase == 1) || ($phase == 3))
+#		elsif(($phase == 1) || ($phase == 3))
+		elsif(($phase == 1) || ($phase == 3) || ($phase == 6))
 		{
 			# Leave the time string as it is for these phases.
 		}
@@ -4410,17 +4409,17 @@ related to KSK-specific zone management.
 DS Published for Selected Zone
 
 This command is used to indicate that the selected zone's parent has published
-a new DS record for the zone.  It moves the zone from phase 6 to phase 7 of
+a new DS record for the zone.  It moves the zone from phase 5 to phase 6 of
 KSK rollover.
 
 =item *
 
 DS Published for All Zones
 
-This command is used to indicate that all the zones in KSK rollover phase 6
+This command is used to indicate that all the zones in KSK rollover phase 5
 have new DS records published by their parents.  It moves all these zones from
-phase 6 to phase 7 of KSK rollover.  There is no effect on zones not in KSK
-rollover phase 6.
+phase 5 to phase 6 of KSK rollover.  There is no effect on zones not in KSK
+rollover phase 5.
 
 =item *
 
@@ -4582,7 +4581,7 @@ Display a window containing help information.
 
 About Blinkenlights
 
-Display a window containing versoin information on B<blinkenlights> and
+Display a window containing version information on B<blinkenlights> and
 DNSSEC-Tools.
 
 =back
