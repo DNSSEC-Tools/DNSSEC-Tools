@@ -450,6 +450,8 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
         QColor arrowColor = Qt::black;
         if (dnsKeyToStatus[dsIter.key().first] == VAL_AC_VERIFIED_LINK)
             arrowColor = Qt::green;
+        else
+            arrowColor = Qt::yellow;
         drawArrow(dsLocation.first + boxWidth/2, dsLocation.second + boxHeight,
                   dnskeyLocation.first, dnskeyLocation.second, arrowColor);
     }
@@ -461,7 +463,7 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
     for (rrsigIter = signedByList.constBegin(); rrsigIter != rrsigEnd; rrsigIter++) {
         QPair<QString, int> nameAndType = rrsigIter.key();
         int raiseMultiplier = 4;
-        int widthOffset = 20, rightWidthOffset = 20;
+        int widthOffset = 20;
 
         // ...there is a key that created the signature, which signed...
         QList<QPair<int, int> >::const_iterator keyIter, keyEnd = (*rrsigIter).constEnd();
@@ -484,7 +486,7 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
                 if (dnsKeyLocation.second == (*listIter).second) {
                     // signing something in the same row (another key)
 
-                    widthOffset = abs(dnsKeyLocation.first - (*listIter).first) * 50 / (boxWidth + boxHorizontalSpacing);
+                    widthOffset = abs(dnsKeyLocation.first - (*listIter).first) * 40 / (boxWidth + boxHorizontalSpacing);
                     raiseMultiplier = widthOffset / 10;
                     if (widthOffset == 0) {
                         // signing itself
@@ -503,8 +505,9 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
                         drawArrow(dnsKeyLocation.first + boxWidth - widthOffset, dnsKeyLocation.second,
                                   (*listIter).first + widthOffset, (*listIter).second, arrowColor, raiseMultiplier);
                     }
-                    widthOffset += 20;
-                    raiseMultiplier += 2;
+                    // old adjustment values before using calculated positions
+                    // widthOffset += 20;
+                    // raiseMultiplier += 2;
                 } else {
                     // signing something in a different row (DNSKEY signing the final record or a DS)
                     drawArrow(dnsKeyLocation.first + boxWidth/2, dnsKeyLocation.second + boxHeight,
