@@ -97,13 +97,13 @@ void val_collect_logs(struct val_log *logp, int level, const char *buf)
 }
 
 GraphWidget::GraphWidget(QWidget *parent, QLineEdit *editor, QTabWidget *tabs, const QString &fileName, QHBoxLayout *infoBox)
-    : QGraphicsView(parent), timerId(0), m_editor(editor), m_tabs(tabs),
+    : QGraphicsView(parent), timerId(0), m_editor(editor),
       m_nodeScale(2), m_localScale(false), m_lockNodes(false), m_shownsec3(false),
       m_timer(0),
       m_layoutType(springyLayout), m_childSize(30), m_lookupType(1), m_animateNodeMovements(true),
       m_updateLineEditAlways(false), m_autoValidateServFails(false),
       m_infoBox(infoBox), m_infoLabel(0), m_infoMoreButton(0), m_nodeInfoLabel(0), m_previousFileMenu(0), m_mapper(),
-      m_nodeList(new NodeList(this)), m_logWatcher(new LogWatcher(this)), m_legend(0), m_useStraightValidationLines(false)
+      m_nodeList(new NodeList(this)), m_logWatcher(new LogWatcher(this)), m_legend(0), m_tabs(tabs), m_useStraightValidationLines(false)
 #ifdef WITH_PCAP
     , m_pcapWatcher(new PcapWatcher())
 #endif
@@ -189,6 +189,7 @@ void GraphWidget::scaleWindow() {
 }
 
 void GraphWidget::doLookupFromServFail(QString nodeName, DNSData nodeData, QString optionalLogMessage) {
+    Q_UNUSED(optionalLogMessage)
     if (autoValidateServFails())
         doActualLookup(nodeName, DNSResources::RRNameToType(nodeData.recordType()));
 }

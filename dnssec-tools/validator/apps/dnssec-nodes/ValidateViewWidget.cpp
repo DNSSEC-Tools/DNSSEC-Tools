@@ -39,7 +39,7 @@ u_int16_t id_calc(const u_char * key, const int keysize);
 }
 
 ValidateViewWidget::ValidateViewWidget(QString nodeName, QString recordType, GraphWidget *graphWidget, QWidget *parent) :
-    QGraphicsView(parent), m_nodeName(nodeName), m_recordType(recordType), m_statusToName(), m_graphWidget(graphWidget),
+    QGraphicsView(parent), m_graphWidget(graphWidget), m_nodeName(nodeName), m_recordType(recordType), m_statusToName(),
     m_useStraightLines(false)
 {
     myScene = new QGraphicsScene(this);
@@ -396,8 +396,10 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
         for(rrrec = vrcptr->val_ac_rrset->val_rrset_sig; rrrec; rrrec = rrrec->rr_next) {
             int type;
             u_long tmp;
+            Q_UNUSED(tmp);
             unsigned short keyId;
             u_char algorithm;
+            Q_UNUSED(algorithm);
             rdata = rrrec->rr_rdata;
 
             if (rrrec->rr_rdata_length < 22U)
