@@ -148,7 +148,8 @@ void ValidateViewWidget::scaleView(qreal scaleFactor)
     scale(scaleFactor, scaleFactor);
 }
 
-void ValidateViewWidget::drawArrow(int fromX, int fromY, int toX, int toY, QColor color, int horizRaiseMultiplier) {
+void ValidateViewWidget::drawArrow(int fromX, int fromY, int toX, int toY, QColor color,
+                                   ValidateViewBox *box, int horizRaiseMultiplier) {
     const int arrowHalfWidth = 10;
 
     QBrush brush(color);
@@ -161,14 +162,20 @@ void ValidateViewWidget::drawArrow(int fromX, int fromY, int toX, int toY, QColo
             QGraphicsLineItem *line = new QGraphicsLineItem(fromX, fromY - horizRaiseMultiplier*arrowHalfWidth, toX, toY - horizRaiseMultiplier*arrowHalfWidth);
             line->setPen(pen);
             myScene->addItem(line);
+            if (box)
+                box->addLineObject(line);
 
             line = new QGraphicsLineItem(fromX, fromY, fromX, fromY - horizRaiseMultiplier*arrowHalfWidth);
             line->setPen(pen);
             myScene->addItem(line);
+            if (box)
+                box->addLineObject(line);
 
             line = new QGraphicsLineItem(toX, toY - horizRaiseMultiplier*arrowHalfWidth, toX, toY - arrowHalfWidth);
             line->setPen(pen);
             myScene->addItem(line);
+            if (box)
+                box->addLineObject(line);
         } else {
             QGraphicsPathItem *pathItem = new QGraphicsPathItem();
             QPainterPath path;
@@ -178,6 +185,8 @@ void ValidateViewWidget::drawArrow(int fromX, int fromY, int toX, int toY, QColo
             pathItem->setPen(pen);
             pathItem->setPath(path);
             myScene->addItem(pathItem);
+            if (box)
+                box->addPathObject(pathItem);
         }
     } else {
         if (useStraightLines()) {
@@ -185,14 +194,20 @@ void ValidateViewWidget::drawArrow(int fromX, int fromY, int toX, int toY, QColo
             QGraphicsLineItem *line = new QGraphicsLineItem(fromX, fromY + 2*arrowHalfWidth, toX, toY - 2*arrowHalfWidth);
             line->setPen(pen);
             myScene->addItem(line);
+            if (box)
+                box->addLineObject(line);
 
             line = new QGraphicsLineItem(fromX, fromY, fromX, fromY + 2*arrowHalfWidth);
             line->setPen(pen);
             myScene->addItem(line);
+            if (box)
+                box->addLineObject(line);
 
             line = new QGraphicsLineItem(toX, toY - 2*arrowHalfWidth, toX, toY - arrowHalfWidth);
             line->setPen(pen);
             myScene->addItem(line);
+            if (box)
+                box->addLineObject(line);
         } else {
             QGraphicsPathItem *pathItem = new QGraphicsPathItem();
             QPainterPath path;
@@ -202,6 +217,8 @@ void ValidateViewWidget::drawArrow(int fromX, int fromY, int toX, int toY, QColo
 
             pathItem->setPen(pen);
             pathItem->setPath(path);
+            if (box)
+                box->addPathObject(pathItem);
             myScene->addItem(pathItem);
         }
     }
@@ -255,6 +272,7 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
     const u_char * rdata;
 
     QMap<int, QPair<int, int> > dnskeyIdToLocation;
+    QMap<int, ValidateViewBox *> dnskeyIdToBox;
     QMap<QPair<int, int>, QPair<int, int> > dsIdToLocation;
     QMap<int, int> dnsKeyToStatus;
     QMap<QPair<QString, int>, QList< QPair<int, int> > > nameAndTypeToLocation;
@@ -344,7 +362,8 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
                         .arg(protocol)
                         .arg(algName);
                 dnskeyIdToLocation[keyId] = QPair<int,int>(horizontalSpot, spot + boxTopMargin);
-                dnsKeyToStatus[keyId] = rrrec->rr_status;
+                dnsKeyToStatus[keyId] = rrrec->rr_status;                
+                dnskeyIdToBox[keyId] = rect;
                 break;
 
             case ns_t_ds:
@@ -494,14 +513,16 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
                     if (dnsKeyLocation.first > (*listIter).first) {
                         // the thing being signed is to the key's left
                         drawArrow(dnsKeyLocation.first + widthOffset, dnsKeyLocation.second,
-                                  (*listIter).first + boxWidth - widthOffset, (*listIter).second, arrowColor, raiseMultiplier);
+                                  (*listIter).first + boxWidth - widthOffset, (*listIter).second, arrowColor,
+                                  dnskeyIdToBox[keyId], raiseMultiplier);
 
 
 
                     } else {
                         // the thing being signed is to the key's right
                         drawArrow(dnsKeyLocation.first + boxWidth - widthOffset, dnsKeyLocation.second,
-                                  (*listIter).first + widthOffset, (*listIter).second, arrowColor, raiseMultiplier);
+                                  (*listIter).first + widthOffset, (*listIter).second, arrowColor,
+                                  dnskeyIdToBox[keyId], raiseMultiplier);
                     }
                     // old adjustment values before using calculated positions
                     // widthOffset += 20;
@@ -509,7 +530,8 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
                 } else {
                     // signing something in a different row (DNSKEY signing the final record or a DS)
                     drawArrow(dnsKeyLocation.first + boxWidth/2, dnsKeyLocation.second + boxHeight,
-                              (*listIter).first, (*listIter).second, arrowColor);
+                              (*listIter).first, (*listIter).second, arrowColor,
+                              dnskeyIdToBox[keyId]);
                 }
 
                 // update the graph's data

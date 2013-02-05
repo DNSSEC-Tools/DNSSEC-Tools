@@ -28,7 +28,7 @@ public slots:
 
 private:
     void scaleView(qreal scaleFactor);
-    void drawArrow(int fromX, int fromY, int toX, int toY, QColor color = Qt::black, int horizRaiseMultiplier = 4);
+    void drawArrow(int fromX, int fromY, int toX, int toY, QColor color = Qt::black, ValidateViewBox *box = 0, int horizRaiseMultiplier = 4);
 
     QGraphicsScene *myScene;
     GraphWidget    *m_graphWidget;
