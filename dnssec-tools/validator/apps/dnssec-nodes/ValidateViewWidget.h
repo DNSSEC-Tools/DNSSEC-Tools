@@ -7,7 +7,7 @@
 
 #include "NodeList.h"
 #include "graphwidget.h"
-#include "qt_auto_properties.h"
+#include "qtauto_properties.h"
 
 class ValidateViewWidget : public QGraphicsView
 {

@@ -10,7 +10,7 @@
 
 #include "DNSData.h"
 
-#include "qt_auto_properties.h"
+#include "qtauto_properties.h"
 
 //
 // Implemantation note:

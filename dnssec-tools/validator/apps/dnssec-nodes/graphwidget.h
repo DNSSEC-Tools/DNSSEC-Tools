@@ -58,7 +58,7 @@
 
 #include "Legend.h"
 #include "DNSData.h"
-#include "qt_auto_properties.h"
+#include "qtauto_properties.h"
 
 class Node;
 class Edge;
