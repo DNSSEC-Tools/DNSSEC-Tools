@@ -214,6 +214,7 @@ QString DNSResources::rrDataToQString(ns_rr rr)
     QString data;
     char buf[1024];
     const char *addr;
+    Q_UNUSED(addr);
     size_t buflen = sizeof(buf);
     struct sockaddr_in sa;
 #ifdef VAL_IPV6

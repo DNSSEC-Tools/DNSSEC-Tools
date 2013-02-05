@@ -210,9 +210,7 @@ private:
 
     Legend      *m_legend;
 
-#ifdef WITH_PCAP
-    PcapWatcher *m_pcapWatcher;
-#endif
+
 
     QTabWidget  *m_tabs;
 
@@ -221,6 +219,9 @@ private:
     // QTAUTO_HERE
     /* AGST */ Q_PROPERTY(bool useStraightValidationLines READ useStraightValidationLines WRITE setUseStraightValidationLines NOTIFY useStraightValidationLinesChanged) public: const bool &useStraightValidationLines() const { return m_useStraightValidationLines; } signals: void useStraightValidationLinesChanged(); void useStraightValidationLinesChanged(bool); public slots: void setUseStraightValidationLines(const bool &newval) { if (newval != m_useStraightValidationLines) { QTAUTO_DEBUG("setting new value for " << QTAUTO_STRING(useStraightValidationLines) << " " << m_useStraightValidationLines << " => " << newval); m_useStraightValidationLines = newval; emit useStraightValidationLinesChanged(); emit useStraightValidationLinesChanged(newval); } } private: bool m_useStraightValidationLines;
 
+#ifdef WITH_PCAP
+    PcapWatcher *m_pcapWatcher;
+#endif
 };
 //! [0]
 
