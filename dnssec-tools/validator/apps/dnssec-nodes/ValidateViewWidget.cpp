@@ -451,7 +451,7 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
         if (dnsKeyToStatus[dsIter.key().first] == VAL_AC_VERIFIED_LINK)
             arrowColor = Qt::green;
         drawArrow(dsLocation.first + boxWidth/2, dsLocation.second + boxHeight,
-                  dnskeyLocation.first + boxWidth/2, dnskeyLocation.second, arrowColor);
+                  dnskeyLocation.first, dnskeyLocation.second, arrowColor);
     }
 
     // loop through all the signatures and draw arrows for them
@@ -461,7 +461,7 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
     for (rrsigIter = signedByList.constBegin(); rrsigIter != rrsigEnd; rrsigIter++) {
         QPair<QString, int> nameAndType = rrsigIter.key();
         int raiseMultiplier = 4;
-        int leftWidthOffset = 20, rightWidthOffset = 20;
+        int widthOffset = 20, rightWidthOffset = 20;
 
         // ...there is a key that created the signature, which signed...
         QList<QPair<int, int> >::const_iterator keyIter, keyEnd = (*rrsigIter).constEnd();
@@ -483,21 +483,33 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
                 }
                 if (dnsKeyLocation.second == (*listIter).second) {
                     // signing something in the same row (another key)
+
+                    widthOffset = abs(dnsKeyLocation.first - (*listIter).first) * 50 / (boxWidth + boxHorizontalSpacing);
+                    raiseMultiplier = widthOffset / 10;
+                    if (widthOffset == 0) {
+                        // signing itself
+                        widthOffset = boxWidth / 3;
+                        raiseMultiplier = 5;
+                    }
+                    qDebug() << "width offset: " << widthOffset << ", raise: " << raiseMultiplier;
                     if (dnsKeyLocation.first > (*listIter).first) {
                         // the thing being signed is to the key's left
-                        drawArrow(dnsKeyLocation.first + leftWidthOffset, dnsKeyLocation.second,
-                                  (*listIter).first + boxWidth - leftWidthOffset, (*listIter).second, arrowColor, raiseMultiplier);
+                        drawArrow(dnsKeyLocation.first + widthOffset, dnsKeyLocation.second,
+                                  (*listIter).first + boxWidth - widthOffset, (*listIter).second, arrowColor, raiseMultiplier);
+
+
+
                     } else {
                         // the thing being signed is to the key's right
-                        drawArrow(dnsKeyLocation.first + boxWidth - leftWidthOffset, dnsKeyLocation.second,
-                                  (*listIter).first + leftWidthOffset, (*listIter).second, arrowColor, raiseMultiplier);
+                        drawArrow(dnsKeyLocation.first + boxWidth - widthOffset, dnsKeyLocation.second,
+                                  (*listIter).first + widthOffset, (*listIter).second, arrowColor, raiseMultiplier);
                     }
-                    leftWidthOffset += 20;
+                    widthOffset += 20;
                     raiseMultiplier += 2;
                 } else {
                     // signing something in a different row (DNSKEY signing the final record or a DS)
                     drawArrow(dnsKeyLocation.first + boxWidth/2, dnsKeyLocation.second + boxHeight,
-                              (*listIter).first + boxWidth/2, (*listIter).second, arrowColor);
+                              (*listIter).first, (*listIter).second, arrowColor);
                 }
 
                 // update the graph's data
