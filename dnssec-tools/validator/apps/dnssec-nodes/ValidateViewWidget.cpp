@@ -288,7 +288,41 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
         // for each rrset in an auth record, display a box
         // qDebug() << "chain: " << vrcptr->val_ac_rrset->val_rrset_name << " -> " << vrcptr->val_ac_rrset->val_rrset_type;
 
+        // sort the data ahead of time to order them on the line in the best way possible (eg, put KSKs first)
+        QList<struct val_rr_rec *> records;
+
+        // add ksk keys first
         for(rrrec = vrcptr->val_ac_rrset->val_rrset_data; rrrec; rrrec = rrrec->rr_next) {
+            if (vrcptr->val_ac_rrset->val_rrset_type == ns_t_dnskey && rrrec->rr_rdata[1] & 0x1) {
+                if (rrrec->rr_status == VAL_AC_VERIFIED_LINK || rrrec->rr_status == VAL_AC_TRUST_POINT) // more interesting
+                    records.push_front(rrrec);
+                else
+                    records.push_back(rrrec);
+            }
+        }
+
+        // add zone keys that are used, followed by ones that aren't
+        for(rrrec = vrcptr->val_ac_rrset->val_rrset_data; rrrec; rrrec = rrrec->rr_next) {
+            if (vrcptr->val_ac_rrset->val_rrset_type == ns_t_dnskey && !(rrrec->rr_rdata[1] & 0x1)) {
+                if (rrrec->rr_status == VAL_AC_DS_NOMATCH)
+                    records.push_back(rrrec);
+            }
+        }
+        for(rrrec = vrcptr->val_ac_rrset->val_rrset_data; rrrec; rrrec = rrrec->rr_next) {
+            if (vrcptr->val_ac_rrset->val_rrset_type == ns_t_dnskey && !(rrrec->rr_rdata[1] & 0x1)) {
+                if (rrrec->rr_status != VAL_AC_DS_NOMATCH)
+                    records.push_back(rrrec);
+            }
+        }
+
+        // add any other records
+        for(rrrec = vrcptr->val_ac_rrset->val_rrset_data; rrrec; rrrec = rrrec->rr_next) {
+            if (vrcptr->val_ac_rrset->val_rrset_type != ns_t_dnskey) {
+                records.push_back(rrrec);
+            }
+        }
+
+        foreach(struct val_rr_rec *rrrec, records) {
             QString nextLineText;
 
             rdata = rrrec->rr_rdata;
