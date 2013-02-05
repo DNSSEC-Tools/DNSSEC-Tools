@@ -155,6 +155,8 @@ public slots:
     void setLineEditValue(const QString &value);
     void maybeSetLineEditValue(const QString &value);
 
+    void saveUseStraightValidationLinesPref();
+
     bool showNsec3() { return m_shownsec3; }
 
     void showPrefs();
