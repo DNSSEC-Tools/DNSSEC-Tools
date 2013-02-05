@@ -23,7 +23,7 @@ HEADERS += \
     Effects/SetBorderColor.h \
     ValidateViewWidget.h \
     MainWindow.h \
-    qt_auto_properties.h \
+    qtauto_properties.h \
     DNSResources.h \
     ValidateViewWidgetHolder.h
 
