@@ -1,12 +1,12 @@
 #!/usr/bin/perl
 #
-# Copyright 2006-2013 SPARTA, Inc.  All rights reserved.
+# Copyright 2009-2013 SPARTA, Inc.  All rights reserved.
 # See the COPYING file included with the DNSSEC-Tools package for details.
 #
 # autods
 #
 #	This script performs automatic DS acknowledgments when it sees a
-#	zone has entered phase 6 of KSK rollover.
+#	zone has entered phase 5 of KSK rollover.
 #
 #	This is intended for development and demo purposes ONLY.
 #	It is NOT intended for use in a live system.
@@ -55,7 +55,7 @@ sub main
 	print "\nstarting auto-DS checking of rollrec $rrfile, sleeping $nap seconds\n\n";
 
 	#
-	# Whenever a zone hits KSK rollover phase 6, tell rollerd that
+	# Whenever a zone hits KSK rollover phase 5, tell rollerd that
 	# the parent has published the new DS record.
 	#
 	while(42)
@@ -65,7 +65,7 @@ sub main
 		{
 			my $kphase = rollrec_recval($zone,'kskphase');
 
-			next if($kphase != 6);
+			next if($kphase != 5);
 
 			print "forcing dspub for zone $zone\n";
 			system("rollctl -dspub \"$zone\" > /dev/null");
@@ -107,7 +107,7 @@ sub usage
 
 =head1 NAME
 
-autods - Automatic DS notifications in phase 6 of KSK rollover
+autods - Automatic DS notifications in phase 5 of KSK rollover
 
 =head1 SYNOPSIS
 
@@ -116,7 +116,7 @@ autods - Automatic DS notifications in phase 6 of KSK rollover
 =head1 DESCRIPTION
 
 B<autods> watches B<rollerd> status and simulates the publication of a zone's
-DS record whenever that zone reaches phase 6 of KSK rollover.
+DS record whenever that zone reaches phase 5 of KSK rollover.
 
 If a I<rollrec> file is not specified on the command line, I<demo.rollrec>
 will be used.
