@@ -8,6 +8,7 @@
 #include "NodeList.h"
 #include "graphwidget.h"
 #include "qtauto_properties.h"
+#include "ValidateViewBox.h"
 
 class ValidateViewWidget : public QGraphicsView
 {

@@ -249,7 +249,7 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
 
     int spot = 0;
     int maxWidth = 0;
-    QGraphicsRectItem        *rect = 0;
+    ValidateViewBox          *rect = 0;
     QGraphicsSimpleTextItem  *text;
     struct val_rr_rec *rrrec;
     const u_char * rdata;
@@ -273,12 +273,7 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
             rdata = rrrec->rr_rdata;
 
             // draw the bounding box of the record
-            rect = new QGraphicsRectItem(horizontalSpot, spot+boxTopMargin, boxWidth, boxHeight);
-            rect->setPen(QPen(Qt::black));
-            QBrush brush = rect->brush();
-            brush.setColor(QColor(Qt::gray).lighter());
-            brush.setStyle(Qt::SolidPattern);
-            rect->setBrush(brush);
+            rect = new ValidateViewBox(horizontalSpot, spot+boxTopMargin, boxWidth, boxHeight);
             myScene->addItem(rect);
 
             //
