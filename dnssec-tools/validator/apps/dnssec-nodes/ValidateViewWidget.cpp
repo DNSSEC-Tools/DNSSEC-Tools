@@ -375,6 +375,7 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
             u_int   keyflags, protocol, algorithm, digest_type;
             QString algName;
 
+            nextLineText = "";
             switch (vrcptr->val_ac_rrset->val_rrset_type) {
             case ns_t_dnskey:
                 if (rrrec->rr_rdata_length < 0U + NS_INT16SZ + NS_INT8SZ + NS_INT8SZ)
