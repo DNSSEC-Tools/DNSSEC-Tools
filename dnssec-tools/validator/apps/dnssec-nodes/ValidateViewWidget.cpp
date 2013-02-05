@@ -487,13 +487,12 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
                         // the thing being signed is to the key's left
                         drawArrow(dnsKeyLocation.first + leftWidthOffset, dnsKeyLocation.second,
                                   (*listIter).first + boxWidth - leftWidthOffset, (*listIter).second, arrowColor, raiseMultiplier);
-                        leftWidthOffset += 20;
                     } else {
                         // the thing being signed is to the key's right
                         drawArrow(dnsKeyLocation.first + boxWidth - leftWidthOffset, dnsKeyLocation.second,
                                   (*listIter).first + leftWidthOffset, (*listIter).second, arrowColor, raiseMultiplier);
-                        leftWidthOffset += 20;
                     }
+                    leftWidthOffset += 20;
                     raiseMultiplier += 2;
                 } else {
                     // signing something in a different row (DNSKEY signing the final record or a DS)
