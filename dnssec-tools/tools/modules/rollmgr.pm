@@ -2212,7 +2212,7 @@ The available commands and their required data are:
    ROLLCMD_DSPUB	zone-name	a DS record has been
 					published
    ROLLCMD_DSPUBALL	none		DS records published for all
-					zones in KSK rollover phase 6
+					zones in KSK rollover phase 5
    ROLLCMD_GETSTATUS	none		currently unused
    ROLLCMD_LOGFILE	log filename	change the log file
    ROLLCMD_LOGLEVEL	log level	set a new logging level
