@@ -2492,14 +2492,15 @@ sub ksk_expired
 #
 # Purpose:	Move the specified zone's KSKs through the appropriate phases.
 #
-#		Phases:
+#		Phases in rollover:
 #			1 - wait for cache data to expire
-#			2 - generate a new (published) KSK
+#			2 - generate a new (published) KSK and load zone
 #			3 - wait for the old DNSKEY RRset to expire from caches
-#			4 - roll the KSKs
-#			5 - transfer new keyset to the parent
-#			6 - wait for parent to publish the new DS record
-#			7 - reload the zone
+#			4 - transfer new keyset to the parent
+#			5 - wait for parent to publish DS record
+#			6 - wait for cache data to expire
+#			7 - roll the KSKs and load the zone
+#
 #
 sub ksk_phaser
 {
@@ -2516,12 +2517,12 @@ sub ksk_phaser
 	# Work on this rollrec's phase.
 	#
 	$ph = phasecmd(\&nextphase,$rname,$rrr,'normal','KSK')	if($ph == 0);
-	$ph = phasecmd(\&phasewait,$rname,$rrr,'ksk1')		if($ph == 1);
+	$ph = phasecmd(\&phasewait, $rname,$rrr,'ksk1')		if($ph == 1);
 	$ph = phasecmd(\&ksk_phase2,$rname,$rrr,'ksk2')		if($ph == 2);
-	$ph = phasecmd(\&phasewait,$rname,$rrr,'ksk3')		if($ph == 3);
+	$ph = phasecmd(\&phasewait, $rname,$rrr,'ksk3')		if($ph == 3);
 	$ph = phasecmd(\&ksk_phase4,$rname,$rrr,'ksk4')		if($ph == 4);
 	$ph = phasecmd(\&ksk_phase5,$rname,$rrr,'ksk5')		if($ph == 5);
-	$ph = phasecmd(\&ksk_phase6,$rname,$rrr,'ksk6')		if($ph == 6);
+	$ph = phasecmd(\&phasewait, $rname,$rrr,'ksk6')		if($ph == 6);
 	$ph = phasecmd(\&ksk_phase7,$rname,$rrr,'ksk7')		if($ph == 7);
 }
 
@@ -2597,62 +2598,6 @@ sub ksk_phase2
 # Routine:	ksk_phase4()
 #
 # Purpose:	Perform the phase 4 steps of the KSK rollover.  These are:
-#			- delete the Current KSK from the zone file
-#			- move the Published KSK to be the Current KSK
-#			- sign the zone file with the (new) Current KSK
-#		These steps are handled by zonesigner.
-#
-sub ksk_phase4
-{
-	my $rname = shift;		# Name of rollrec.
-	my $rrr = shift;		# Reference to rollrec.
-
-	my %rr = %$rrr;			# Rollrec hash.
-	my $krf;			# Rollrec's keyrec name.
-	my $krr;			# Keyrec reference.
-
-	my $ret;			# Result from command executions.
-
-	#
-	# Get the rollrec's associated keyrec file and ensure that it exists.
-	#
-	$krf = $rr{'keyrec'};
-	if(!$krf || ($krf eq ""))
-	{
-		rolllog_log(LOG_ERR,$rname,"KSK phase 4:  no keyrec for zone specified");
-		return(-1);
-	}
-	if(! -e $krf)
-	{
-		rolllog_log(LOG_ERR,$rname,"KSK phase 4:  keyrec \"$krf\" for zone does not exist");
-		return(-1);
-	}
-
-	#
-	# Get the keyrec.
-	#
-	$krr = opts_zonekr($krf,$rr{'zonename'});
-
-	#
-	# Roll the Published KSK to the Current KSK.
-	#
-	$ret = signer($rname,"KSK phase 4",$krr);
-	if($ret)
-	{
-		rolllog_log(LOG_ERR,$rname,"KSK phase 4:  unable to roll the Published KSK to the Current KSK");
-		return(-1);
-	}
-
-	#
-	# Now to phase 5.
-	#
-	return(5);
-}
-
-#-----------------------------------------------------------------------------
-# Routine:	ksk_phase5()
-#
-# Purpose:	Perform the phase 5 steps of the KSK rollover.  These are:
 #			- notify the admin that the new keyset should be
 #			  transferred to the parent zone
 #
@@ -2661,7 +2606,7 @@ sub ksk_phase4
 #		of keyset transfer; one may be added in future.
 #
 #
-sub ksk_phase5
+sub ksk_phase4
 {
 	my $rname = shift;		# Name of rollrec.
 	my $rrr = shift;		# Reference to rollrec.
@@ -2671,13 +2616,13 @@ sub ksk_phase5
 
 	if($auto)
 	{
-		rolllog_log(LOG_ERR,$rname,"KSK phase 5:  automatic keyset transfer not yet supported");
+		rolllog_log(LOG_ERR,$rname,"KSK phase 4:  automatic keyset transfer not yet supported");
 		return(-1);
 	}
 	elsif(($dtconf{'admin-email'}  eq 'nomail') ||
 	      ($rrr->{'administrator'} eq 'nomail'))
 	{
-		rolllog_log(LOG_INFO,$rname,"KSK phase 5:  admin must transfer keyset");
+		rolllog_log(LOG_INFO,$rname,"KSK phase 4:  admin must transfer keyset");
 	}
 	else
 	{
@@ -2706,25 +2651,25 @@ to continue, its keyset must be transferred to its parent.";
 
 		if($ret == 1)
 		{
-			rolllog_log(LOG_INFO,$rname,"KSK phase 5:  admin notified to transfer keyset");
+			rolllog_log(LOG_INFO,$rname,"KSK phase 4:  admin notified to transfer keyset");
 		}
 		else
 		{
-			rolllog_log(LOG_INFO,$rname,"KSK phase 5:  admin must transfer keyset");
-			rolllog_log(LOG_ERR,$rname,"KSK phase 5:  invalid admin; unable to notify about transferring keyset");
+			rolllog_log(LOG_INFO,$rname,"KSK phase 4:  admin must transfer keyset");
+			rolllog_log(LOG_ERR,$rname,"KSK phase 4:  invalid admin; unable to notify about transferring keyset");
 		}
 	}
 
 	#
-	# Pressing on to phase 6.
+	# Pressing on to phase 5.
 	#
-	return(6);
+	return(5);
 }
 
 #-----------------------------------------------------------------------------
-# Routine:	ksk_phase6()
+# Routine:	ksk_phase5()
 #
-# Purpose:	Perform the phase 6 steps of the KSK rollover.  These are:
+# Purpose:	Perform the phase 5 steps of the KSK rollover.  These are:
 #			- wait for the parent to publish the DS record
 #
 #		This is currently handled by the admin telling us that the
@@ -2732,7 +2677,7 @@ to continue, its keyset must be transferred to its parent.";
 #		automated method of determining this; one may be added in
 #		future.
 #
-sub ksk_phase6
+sub ksk_phase5
 {
 	my $rname = shift;		# Name of rollrec.
 	my $rrr = shift;		# Reference to rollrec.
@@ -2741,26 +2686,31 @@ sub ksk_phase6
 
 	if($auto)
 	{
-		rolllog_log(LOG_ERR,$rname,"KSK phase 6:  automatic DS-record determination not yet supported");
+		rolllog_log(LOG_ERR,$rname,"KSK phase 5:  automatic DS-record determination not yet supported");
 		return(-1);
 	}
 	else
 	{
-		rolllog_log(LOG_INFO,$rname,"KSK phase 6:  waiting for parental publication of DS record");
+		rolllog_log(LOG_INFO,$rname,"KSK phase 5:  waiting for parental publication of DS record");
 	}
 
-	return(6);
+	return(5);
+#	return(6);
 }
 
 #-----------------------------------------------------------------------------
 # Routine:	ksk_phase7()
 #
 # Purpose:	Perform the phase 7 steps of the KSK rollover.  These are:
+#			- delete the Current KSK from the zone file
+#			- move the Published KSK to be the Current KSK
+#			- sign the zone file with the (new) Current KSK
 #			- load the zone
 #			- archive keys that need to be archived
 #			- move to phase 0
 #			- save a timestamp for rollover completion
 #
+#		These first three steps are handled by zonesigner.
 #
 sub ksk_phase7
 {
@@ -2769,10 +2719,41 @@ sub ksk_phase7
 
 	my %rr = %$rrr;			# Rollrec hash.
 	my $krf;			# Rollrec's keyrec name.
+	my $krr;			# Keyrec reference.
 	my $zname;			# Name of rolling zone.
 	my $keyarch_cmd;		# Keyarch command string.
 
 	my $ret;			# Result from command executions.
+
+	#
+	# Get the rollrec's associated keyrec file and ensure that it exists.
+	#
+	$krf = $rr{'keyrec'};
+	if(!$krf || ($krf eq ''))
+	{
+		rolllog_log(LOG_ERR,$rname,"KSK phase 7:  no keyrec for zone specified");
+		return(-1);
+	}
+	if(! -e $krf)
+	{
+		rolllog_log(LOG_ERR,$rname,"KSK phase 7:  keyrec \"$krf\" for zone does not exist");
+		return(-1);
+	}
+
+	#
+	# Get the keyrec.
+	#
+	$krr = opts_zonekr($krf,$rr{'zonename'});
+
+	#
+	# Roll the Published KSK to the Current KSK.
+	#
+	$ret = signer($rname,'KSK phase 7',$krr);
+	if($ret)
+	{
+		rolllog_log(LOG_ERR,$rname,"KSK phase 7:  unable to roll the Published KSK to the Current KSK");
+		return(-1);
+	}
 
 	#
 	# Reload the zone.
@@ -2786,7 +2767,6 @@ sub ksk_phase7
 	#
 	# Set up the keyarch command we'll be executing.
 	#
-	$krf = $rr{'keyrec'};
 	$zname = $rr{'zonename'};
 	$keyarch_cmd = "$keyarch -dtconf $dtcf -zone $zname $krf -verbose";
 
@@ -3564,7 +3544,7 @@ sub signer
 	{
 		$zsflag = '-newpubksk';
 	}
-	elsif($zsflag eq 'KSK phase 4')
+	elsif($zsflag eq 'KSK phase 7')
 	{
 		$zsflag = '-rollksk';
 	}
@@ -4864,7 +4844,7 @@ sub cmd_display
 #-----------------------------------------------------------------------------
 # Routine:	cmd_dspub()
 #
-# Purpose:	Move a zone from KSK rollover phase 6 to phase 7.
+# Purpose:	Move a zone from KSK rollover phase 5 to phase 6.
 #
 sub cmd_dspub
 {
@@ -4874,7 +4854,7 @@ sub cmd_dspub
 	rolllog_log(LOG_TMI,'<command>',"dspub command received; zone - \"$zone\"");
 
 	#
-	# Move the zone to KSK phase 7.  This might also do some directory
+	# Move the zone to KSK phase 6.  This might also do some directory
 	# swapping, so we'll save the current directory as well.
 	#
 	$curdir = cwd();
@@ -4891,8 +4871,8 @@ sub cmd_dspub
 #-----------------------------------------------------------------------------
 # Routine:	cmd_dspuball()
 #
-# Purpose:	Move all zones that are currently in KSK rollover phase 6
-#		to phase 7.
+# Purpose:	Move all zones that are currently in KSK rollover phase 5
+#		to phase 6.
 #
 sub cmd_dspuball
 {
@@ -4909,7 +4889,7 @@ sub cmd_dspuball
 	$curdir = cwd();
 
 	#
-	# Move all the zones in KSK phase 6 over to KSK phase 7.
+	# Move all the zones in KSK phase 5 over to KSK phase 6.
 	#
 	foreach my $zone (sort(rollrec_names()))
 	{
@@ -6336,10 +6316,10 @@ sub cmd_zsargs
 #-----------------------------------------------------------------------------
 # Routine:	dspubber()
 #
-# Purpose:	Move the specified zone to KSK rollover phase 7, but only if
-#		it's in KSK phase 6.
+# Purpose:	Move the specified zone to KSK rollover phase 6, but only if
+#		it's in KSK phase 5.
 #
-#		If the zone isn't in KSK phase 6, then the zone's phase will
+#		If the zone isn't in KSK phase 5, then the zone's phase will
 #		be left alone.  If the call came from cmd_dspub(), then error
 #		messages will be generated; if it came from cmd_dspuball(),
 #		then no error messages will be given.
@@ -6372,12 +6352,12 @@ sub dspubber
 	# Ensure we're in the proper KSK-rollover phase to do this command.
 	#
 	$phase = rollrec_recval($rname,'kskphase');
-	if($phase != 6)
+	if($phase != 5)
 	{
 		if($cmd eq 'dspub')
 		{
-			rolllog_log(LOG_INFO,'<command>',"\"$rname\" in KSK-rollover phase 6");
-			rollmgr_sendresp(ROLLCMD_RC_BADZONEDATA,"\"$rname\" not in KSK-rollover phase 6");
+			rolllog_log(LOG_INFO,'<command>',"\"$rname\" not in KSK-rollover phase 5");
+			rollmgr_sendresp(ROLLCMD_RC_BADZONEDATA,"\"$rname\" not in KSK-rollover phase 5");
 		}
 		return;
 	}
@@ -6393,10 +6373,10 @@ sub dspubber
 	}
 
 	#
-	# Change the zone's rollover phase to phase 7 (the final phase).
+	# Change the zone's rollover phase to phase 6.
 	#
-	nextphase($rname,$rrr,7,'KSK');
-	rollmgr_sendresp(ROLLCMD_RC_OKAY,"zone \"$rname\" now in KSK rollover phase 7");
+	nextphase($rname,$rrr,6,'KSK');
+	rollmgr_sendresp(ROLLCMD_RC_OKAY,"zone \"$rname\" now in KSK rollover phase 6");
 
 }
 
@@ -7191,24 +7171,30 @@ information.
 The Double Signature Method has seven phases that are entered when it is time
 to perform KSK rollover:
 
-    1. wait for old zone data to expire from caches
-    2. generate a new (published) KSK
-    3. wait for the old DNSKEY RRset to expire from caches
-    4. roll the KSKs
-    5. transfer new keyset to the parent
-    6. wait for parent to publish the new DS record
-    7. reload the zone
+    1 - wait for cache data to expire
+    2 - generate a new (published) KSK and load zone
+    3 - wait for the old DNSKEY RRset to expire from caches
+    4 - transfer new keyset to the parent
+    5 - wait for parent to publish DS record
+    6 - wait for cache data to expire
+    7 - roll the KSKs and load the zone
 
-B<rollerd> uses the B<zonesigner> command during KSK rollover phases 2 and 4.
+This is a modification of the original Double Signature Method.  In the
+original method, the KSK keys were rolled before the new keyset was
+transferred to the parent.  The new method rolls the KSK keys after the
+parent has published the new DS records and old data has expired for caches.
+This addresses a potential problem with signing zones during key rollovers.
+
+B<rollerd> uses the B<zonesigner> command during KSK rollover phases 2 and 7.
 B<zonesigner> will generate keys as required and sign the zone during these
 two phases.
 
-Currently, step 6 is handled manually.  In step 5, B<rollerd> informs the
-administrator via email that the zone's keyset must be transferred to its
-parent in order for rollover to continue.  In step 6, after the keyset has
-been transferred to the parent and the parent has published a new DS record,
-the administrator uses B<rollctl> to inform B<rollerd> that the DS record has
-been published and rollover may continue.
+Currently, leaving the waiting period in step 5 is handled manually.  In step
+4, B<rollerd> informs the administrator via email that the zone's keyset must
+be transferred to its parent in order for rollover to continue.  In step 5,
+after the keyset has been transferred to the parent and the parent has
+published a new DS record, the administrator uses B<rollctl> to inform
+B<rollerd> that the DS record has been published and rollover may continue.
 
 The Double Signature Method of key rollover is defined in the Step-by-Step
 DNS Security Operator Guidance Document.  See that document for more detailed
