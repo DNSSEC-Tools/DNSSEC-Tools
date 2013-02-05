@@ -491,7 +491,6 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
                         widthOffset = boxWidth / 3;
                         raiseMultiplier = 5;
                     }
-                    qDebug() << "width offset: " << widthOffset << ", raise: " << raiseMultiplier;
                     if (dnsKeyLocation.first > (*listIter).first) {
                         // the thing being signed is to the key's left
                         drawArrow(dnsKeyLocation.first + widthOffset, dnsKeyLocation.second,
