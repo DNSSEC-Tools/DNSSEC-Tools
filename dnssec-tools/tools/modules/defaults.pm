@@ -77,7 +77,6 @@ my %defaults =
 	'tasmtpserver'     => "localhost",	# Trustman's SMTP server.
 	'taresolvconf'	   => "/etc/resolv.conf",	# resolv.conf file.
 	'usegui'	   => 0,		# Use GUI for option entry flag.
-#	'viewimage'	   => "/usr/X11R6/bin/viewimage",
 	'zone_errors'	   => 5,
 	'zonecheck'	   => getprefixdir() . "/sbin/named-checkzone",
 	'zonecheck-opts'   => "-i local",	# Options for zone checker.
