@@ -102,7 +102,6 @@ my @opts =
 	"admin=s",			# Administrator's email address.
 	"binddir=s",			# Path to BIND programs.
 	"dtdir=s",			# Path to DNSSEC-Tools programs.
-#	"viewimage=s",			# Path to image viewer.
 
 	"autosign!",			# Turn on/off rollerd's autosign flag.
 	"roll-loadzone",		# Turn on rollerd's zone-loading flag.
@@ -423,7 +422,6 @@ sub optsandargs
 
 	$binddir   = $opts{'binddir'};
 	$dtdir	   = $opts{'dtdir'};
-#	$viewimg   = $opts{'viewimage'}	|| dnssec_tools_default("viewimage");
 
 	$outfile   = $opts{'outfile'}	|| getconffile();
 	$overwrite = $opts{'overwrite'};
@@ -579,7 +577,6 @@ sub writeconf()
 		print "\trndc       - \"$rndc\"\n";
 		print "\tzonecheck  - \"$zonecheck\"\n";
 		print "\tzonesign   - \"$zonesign\"\n";
-#		print "\tviewimage  - \"$viewimg\"\n\n";
 
 		print "\tkeygen options     - \"$kgopts\"\n";
 		print "\tzonecheck options  - \"$zcopts\"\n";
@@ -629,13 +626,6 @@ zonecheck	$zonecheck
 zonesign	$zonesign
 
 ";
-
-#
-# The "viewimage" line was removed from the output file because it is not
-# currently in use.  If it is later found to be needed, it should be moved
-# back up after the "zonesign" line.
-#
-# viewimage	$viewimg
 
 	if(($kgopts ne "") || ($zcopts ne "") || ($zsopts ne ""))
 	{
