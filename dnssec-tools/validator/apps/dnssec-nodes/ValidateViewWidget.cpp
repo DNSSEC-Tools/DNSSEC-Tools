@@ -300,12 +300,13 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
             // add the domain line
             //
             QString rrsetName = vrcptr->val_ac_rrset->val_rrset_name;
-            text = new QGraphicsSimpleTextItem(rrsetName == "." ? "<root>" : rrsetName);
-            text->setPen(QPen(Qt::black));
-            text->setPos(boxLeftMargin + horizontalSpot, spot + boxHeight/2);
-            text->setScale(2.0);
-            myScene->addItem(text);
-
+            if (horizontalSpot == boxLeftMargin) {
+                text = new QGraphicsSimpleTextItem(rrsetName == "." ? "<root>" : rrsetName);
+                text->setPen(QPen(Qt::black));
+                text->setPos(boxLeftMargin + horizontalSpot, spot + boxHeight + 20);
+                text->setScale(2.0);
+                myScene->addItem(text);
+            }
 
             //
             // update the validation records in any existing data
