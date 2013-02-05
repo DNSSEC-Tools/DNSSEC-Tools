@@ -8,7 +8,8 @@ class ValidateViewWidgetHolder : public QWidget
 {
     Q_OBJECT
 public:
-    explicit ValidateViewWidgetHolder(const QString &nodeName, const QString &recordType, GraphWidget *graphWidget, QWidget *parent = 0);
+    explicit ValidateViewWidgetHolder(const QString &nodeName, const QString &recordType,
+                                      GraphWidget *graphWidget, QWidget *parent = 0);
     
 signals:
     

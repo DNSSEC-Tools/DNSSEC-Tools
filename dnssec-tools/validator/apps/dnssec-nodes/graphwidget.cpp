@@ -103,7 +103,7 @@ GraphWidget::GraphWidget(QWidget *parent, QLineEdit *editor, QTabWidget *tabs, c
       m_layoutType(springyLayout), m_childSize(30), m_lookupType(1), m_animateNodeMovements(true),
       m_updateLineEditAlways(false), m_autoValidateServFails(false),
       m_infoBox(infoBox), m_infoLabel(0), m_infoMoreButton(0), m_nodeInfoLabel(0), m_previousFileMenu(0), m_mapper(),
-      m_nodeList(new NodeList(this)), m_logWatcher(new LogWatcher(this)), m_legend(0)
+      m_nodeList(new NodeList(this)), m_logWatcher(new LogWatcher(this)), m_legend(0), m_useStraightValidationLines(false)
 #ifdef WITH_PCAP
     , m_pcapWatcher(new PcapWatcher())
 #endif
