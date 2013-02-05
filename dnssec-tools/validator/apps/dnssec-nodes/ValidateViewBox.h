@@ -3,6 +3,11 @@
 
 #include <QGraphicsRectItem>
 #include <QList>
+#include <QColor>
+#include <QPair>
+
+typedef QPair<QGraphicsLineItem *, QColor> LineItemPair;
+typedef QPair<QGraphicsPathItem *, QColor> PathItemPair;
 
 class ValidateViewBox : public QGraphicsRectItem
 {
@@ -12,13 +17,16 @@ public:
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
 
     bool isSelected() const { return m_isSelected; }
-    void addLineObject(QGraphicsLineItem *item) { m_lines.append(item); }
-    void addPathObject(QGraphicsPathItem *item) { m_paths.append(item); }
+    void addLineObject(LineItemPair *item) { m_lines.append(item); }
+    void addPathObject(PathItemPair *item) { m_paths.append(item); }
+    void addLineObject(QGraphicsLineItem *item, QColor color) { m_lines.append(new LineItemPair(item, color)); }
+    void addPathObject(QGraphicsPathItem *item, QColor color) { m_paths.append(new PathItemPair(item, color)); }
+
 
 private:
     bool m_isSelected;
-    QList<QGraphicsLineItem *> m_lines;
-    QList<QGraphicsPathItem *> m_paths;
+    QList<LineItemPair *> m_lines;
+    QList<PathItemPair *> m_paths;
 
 };
 

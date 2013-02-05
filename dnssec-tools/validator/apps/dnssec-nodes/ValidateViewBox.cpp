@@ -22,13 +22,13 @@ void ValidateViewBox::mousePressEvent(QGraphicsSceneMouseEvent *event)
     thebrush.setColor(QColor(Qt::blue).lighter());
     setBrush(thebrush);
     m_isSelected = true;
-    foreach(QGraphicsLineItem *item, m_lines) {
-        item->setPen(QPen(Qt::blue));
-        item->update();
+    foreach(LineItemPair *item, m_lines) {
+        item->first->setPen(QPen(Qt::blue));
+        item->first->update();
     }
-    foreach(QGraphicsPathItem *item, m_paths) {
-        item->setPen(QPen(Qt::blue));
-        item->update();
+    foreach(PathItemPair *item, m_paths) {
+        item->first->setPen(QPen(Qt::blue));
+        item->first->update();
     }
     update();
 
@@ -42,13 +42,13 @@ void ValidateViewBox::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
     thebrush.setColor(QColor(Qt::gray).lighter());
     setBrush(thebrush);
     m_isSelected = false;
-    foreach(QGraphicsLineItem *item, m_lines) {
-        item->setPen(QPen(Qt::green));
-        item->update();
+    foreach(LineItemPair *item, m_lines) {
+        item->first->setPen(QPen(item->second));
+        item->first->update();
     }
-    foreach(QGraphicsPathItem *item, m_paths) {
-        item->setPen(QPen(Qt::green));
-        item->update();
+    foreach(PathItemPair *item, m_paths) {
+        item->first->setPen(QPen(item->second));
+        item->first->update();
     }
     update();
     QGraphicsItem::mouseReleaseEvent(event);

@@ -163,19 +163,19 @@ void ValidateViewWidget::drawArrow(int fromX, int fromY, int toX, int toY, QColo
             line->setPen(pen);
             myScene->addItem(line);
             if (box)
-                box->addLineObject(line);
+                box->addLineObject(line, color);
 
             line = new QGraphicsLineItem(fromX, fromY, fromX, fromY - horizRaiseMultiplier*arrowHalfWidth);
             line->setPen(pen);
             myScene->addItem(line);
             if (box)
-                box->addLineObject(line);
+                box->addLineObject(line, color);
 
             line = new QGraphicsLineItem(toX, toY - horizRaiseMultiplier*arrowHalfWidth, toX, toY - arrowHalfWidth);
             line->setPen(pen);
             myScene->addItem(line);
             if (box)
-                box->addLineObject(line);
+                box->addLineObject(line, color);
         } else {
             QGraphicsPathItem *pathItem = new QGraphicsPathItem();
             QPainterPath path;
@@ -186,7 +186,7 @@ void ValidateViewWidget::drawArrow(int fromX, int fromY, int toX, int toY, QColo
             pathItem->setPath(path);
             myScene->addItem(pathItem);
             if (box)
-                box->addPathObject(pathItem);
+                box->addPathObject(pathItem, color);
         }
     } else {
         if (useStraightLines()) {
@@ -195,19 +195,19 @@ void ValidateViewWidget::drawArrow(int fromX, int fromY, int toX, int toY, QColo
             line->setPen(pen);
             myScene->addItem(line);
             if (box)
-                box->addLineObject(line);
+                box->addLineObject(line, color);
 
             line = new QGraphicsLineItem(fromX, fromY, fromX, fromY + 2*arrowHalfWidth);
             line->setPen(pen);
             myScene->addItem(line);
             if (box)
-                box->addLineObject(line);
+                box->addLineObject(line, color);
 
             line = new QGraphicsLineItem(toX, toY - 2*arrowHalfWidth, toX, toY - arrowHalfWidth);
             line->setPen(pen);
             myScene->addItem(line);
             if (box)
-                box->addLineObject(line);
+                box->addLineObject(line, color);
         } else {
             QGraphicsPathItem *pathItem = new QGraphicsPathItem();
             QPainterPath path;
@@ -218,7 +218,7 @@ void ValidateViewWidget::drawArrow(int fromX, int fromY, int toX, int toY, QColo
             pathItem->setPen(pen);
             pathItem->setPath(path);
             if (box)
-                box->addPathObject(pathItem);
+                box->addPathObject(pathItem, color);
             myScene->addItem(pathItem);
         }
     }
