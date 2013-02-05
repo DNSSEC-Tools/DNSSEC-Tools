@@ -143,6 +143,9 @@ DNSData::Status DNSData::getStatusFromValAStatus(int val_astatus) {
     if (val_astatus == VAL_AC_TRUST_POINT)
         return DNSData::TRUSTED;
 
-    qDebug() << "unknown astatus: " << val_astatus;
+    if (val_astatus == VAL_AC_DS_NOMATCH)
+        return DNSData::DSNOMATCH;
+
+    qDebug() << "unknown astatus: " << val_astatus << " tp = " << VAL_AC_TRUST_POINT;
     return DNSData::UNKNOWN;
 }
