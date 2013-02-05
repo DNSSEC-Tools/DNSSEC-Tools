@@ -274,6 +274,7 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
     QMap<int, QPair<int, int> > dnskeyIdToLocation;
     QMap<int, ValidateViewBox *> dnskeyIdToBox;
     QMap<QPair<int, int>, QPair<int, int> > dsIdToLocation;
+    QMap<QPair<int, int>, ValidateViewBox *> dsIdToBox;
     QMap<int, int> dnsKeyToStatus;
     QMap<QPair<QString, int>, QList< QPair<int, int> > > nameAndTypeToLocation;
     QMap<QPair<QString, int>, QList<QPair<int, int> > > signedByList;
@@ -387,6 +388,7 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
                         .arg(algName)
                         .arg(digestName);
                 dsIdToLocation[QPair<int, int>(keyId, digest_type)] = QPair<int,int>(horizontalSpot, spot + boxTopMargin);
+                dsIdToBox[QPair<int, int>(keyId, digest_type)] = rect;
                 break;
             }
 
@@ -470,7 +472,7 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
         else
             arrowColor = Qt::yellow;
         drawArrow(dsLocation.first + boxWidth/2, dsLocation.second + boxHeight,
-                  dnskeyLocation.first, dnskeyLocation.second, arrowColor);
+                  dnskeyLocation.first, dnskeyLocation.second, arrowColor, dsIdToBox[dsIter.key()]);
     }
 
     // loop through all the signatures and draw arrows for them
