@@ -39,7 +39,8 @@ u_int16_t id_calc(const u_char * key, const int keysize);
 }
 
 ValidateViewWidget::ValidateViewWidget(QString nodeName, QString recordType, GraphWidget *graphWidget, QWidget *parent) :
-    QGraphicsView(parent), m_nodeName(nodeName), m_recordType(recordType), m_statusToName(), m_graphWidget(graphWidget)
+    QGraphicsView(parent), m_nodeName(nodeName), m_recordType(recordType), m_statusToName(), m_graphWidget(graphWidget),
+    m_useStraightLines(false)
 {
     myScene = new QGraphicsScene(this);
     myScene->setItemIndexMethod(QGraphicsScene::NoIndex);
@@ -151,30 +152,53 @@ void ValidateViewWidget::drawArrow(int fromX, int fromY, int toX, int toY, QColo
 
     if (fromY == toY) {
         // draw horizontal lines differently...  up -> across -> down
-        QGraphicsLineItem *line = new QGraphicsLineItem(fromX, fromY - horizRaiseMultiplier*arrowHalfWidth, toX, toY - horizRaiseMultiplier*arrowHalfWidth);
-        line->setPen(pen);
-        myScene->addItem(line);
+        if (useStraightLines()) {
+            QGraphicsLineItem *line = new QGraphicsLineItem(fromX, fromY - horizRaiseMultiplier*arrowHalfWidth, toX, toY - horizRaiseMultiplier*arrowHalfWidth);
+            line->setPen(pen);
+            myScene->addItem(line);
 
-        line = new QGraphicsLineItem(fromX, fromY, fromX, fromY - horizRaiseMultiplier*arrowHalfWidth);
-        line->setPen(pen);
-        myScene->addItem(line);
+            line = new QGraphicsLineItem(fromX, fromY, fromX, fromY - horizRaiseMultiplier*arrowHalfWidth);
+            line->setPen(pen);
+            myScene->addItem(line);
 
-        line = new QGraphicsLineItem(toX, toY - horizRaiseMultiplier*arrowHalfWidth, toX, toY - arrowHalfWidth);
-        line->setPen(pen);
-        myScene->addItem(line);
+            line = new QGraphicsLineItem(toX, toY - horizRaiseMultiplier*arrowHalfWidth, toX, toY - arrowHalfWidth);
+            line->setPen(pen);
+            myScene->addItem(line);
+        } else {
+            QGraphicsPathItem *pathItem = new QGraphicsPathItem();
+            QPainterPath path;
+            path.moveTo(fromX, fromY);
+            path.quadTo(fromX, fromY - horizRaiseMultiplier*arrowHalfWidth, toX - (toX - fromX)/2, toY - horizRaiseMultiplier*arrowHalfWidth);
+            path.quadTo(toX, toY - horizRaiseMultiplier*arrowHalfWidth, toX, toY);
+            pathItem->setPen(pen);
+            pathItem->setPath(path);
+            myScene->addItem(pathItem);
+        }
     } else {
-        // draw line in 3 segments, two vertical stubs to make the arrow to triangle look better
-        QGraphicsLineItem *line = new QGraphicsLineItem(fromX, fromY + 2*arrowHalfWidth, toX, toY - 2*arrowHalfWidth);
-        line->setPen(pen);
-        myScene->addItem(line);
+        if (useStraightLines()) {
+            // draw line in 3 segments, two vertical stubs to make the arrow to triangle look better
+            QGraphicsLineItem *line = new QGraphicsLineItem(fromX, fromY + 2*arrowHalfWidth, toX, toY - 2*arrowHalfWidth);
+            line->setPen(pen);
+            myScene->addItem(line);
 
-        line = new QGraphicsLineItem(fromX, fromY, fromX, fromY + 2*arrowHalfWidth);
-        line->setPen(pen);
-        myScene->addItem(line);
+            line = new QGraphicsLineItem(fromX, fromY, fromX, fromY + 2*arrowHalfWidth);
+            line->setPen(pen);
+            myScene->addItem(line);
 
-        line = new QGraphicsLineItem(toX, toY - 2*arrowHalfWidth, toX, toY - arrowHalfWidth);
-        line->setPen(pen);
-        myScene->addItem(line);
+            line = new QGraphicsLineItem(toX, toY - 2*arrowHalfWidth, toX, toY - arrowHalfWidth);
+            line->setPen(pen);
+            myScene->addItem(line);
+        } else {
+            QGraphicsPathItem *pathItem = new QGraphicsPathItem();
+            QPainterPath path;
+            path.moveTo(fromX, fromY);
+            path.quadTo(fromX, fromY + (toY-fromY)/2, fromX + (toX-fromX)/2, fromY + (toY-fromY)/2);
+            path.quadTo(toX, fromY + (toY-fromY)/2, toX, toY);
+
+            pathItem->setPen(pen);
+            pathItem->setPath(path);
+            myScene->addItem(pathItem);
+        }
     }
 
     QPolygon polygon;

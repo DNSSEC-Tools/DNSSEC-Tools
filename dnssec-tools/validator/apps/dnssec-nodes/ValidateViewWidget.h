@@ -7,6 +7,7 @@
 
 #include "NodeList.h"
 #include "graphwidget.h"
+#include "qt_auto_properties.h"
 
 class ValidateViewWidget : public QGraphicsView
 {
@@ -38,6 +39,11 @@ private:
     QMap<int, QColor>  m_statusColors;
     QMap<int, QString> m_algorithmToName;
     QMap<int, QString> m_digestToName;
+
+    QTAUTO_GET_SET_SIGNAL(bool, useStraightLines);
+
+    // QTAUTO_HERE
+    /* AGST */ Q_PROPERTY(bool useStraightLines READ useStraightLines WRITE setUseStraightLines NOTIFY useStraightLinesChanged) public: const bool &useStraightLines() const { return m_useStraightLines; } signals: void useStraightLinesChanged(); void useStraightLinesChanged(bool); public slots: void setUseStraightLines(const bool &newval) { if (newval != m_useStraightLines) { QTAUTO_DEBUG("setting new value for " << QTAUTO_STRING(useStraightLines) << " " << m_useStraightLines << " => " << newval); m_useStraightLines = newval; emit useStraightLinesChanged(); emit useStraightLinesChanged(newval); } } private: bool m_useStraightLines;
 
 };
 
