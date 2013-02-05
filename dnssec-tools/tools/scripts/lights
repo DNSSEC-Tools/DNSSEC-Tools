@@ -61,26 +61,26 @@ my $cmd = "rollctl -zonestatus";	# Command to get zone status.
 # Data for zones.
 #
 
-my $ored	= -1;		# Old count of KSK-6 rolling zones.
-my $oyellow	= -1;		# Old count of non-KSK-6 rolling zones.
+my $ored	= -1;		# Old count of KSK-5 rolling zones.
+my $oyellow	= -1;		# Old count of non-KSK-5 rolling zones.
 my $ogreen	= -1;		# Old count of non-rolling zones.
 
-my $okyellow	= -1;		# Old count of KSK non-KSK-6 rolling zones.
+my $okyellow	= -1;		# Old count of KSK non-KSK-5 rolling zones.
 my $ozyellow	= -1;		# Old count of ZSK rolling zones.
 
 my $skipcnt = 0;		# Number of skipped zones.
 
-my $red	   = 0;			# Number of KSK-6 rolling zones.
-my $yellow = 0;			# Number of non-KSK-6 rolling zones.
+my $red	   = 0;			# Number of KSK-5 rolling zones.
+my $yellow = 0;			# Number of non-KSK-5 rolling zones.
 my $green  = 0;			# Number of non-rolling zones.
 
-my $kyellow = 0;		# Number of KSK non-KSK-6 rolling zones.
+my $kyellow = 0;		# Number of KSK non-KSK-5 rolling zones.
 my $zyellow = 0;		# Number of ZSK rolling zones.
 
 my @greenzones = ();		# Zones in normal state.
 my @kyellowzones = ();		# Zones in KSK rollover state.
 my @zyellowzones = ();		# Zones in ZSK rollover state.
-my @redzones = ();		# Zones in KSK rollover phase 6.
+my @redzones = ();		# Zones in KSK rollover phase 5.
 
 ######################################################################
 #
@@ -387,7 +387,7 @@ sub buildmainwind
 #
 # Purpose:	Build the display window.  The window holds three buttons,
 #		red, yellow, green.  The red button holds the count of zones
-#		needing attention (KSK phase 6).  The yellow button holds
+#		needing attention (KSK phase 5).  The yellow button holds
 #		the count of zones that are in rollover.  The green button
 #		holds the count of zones not in rollover.  Clicking on each
 #		button gives a list of the relevant zones.
@@ -591,7 +591,7 @@ sub zonecnts
 				# we'll bump our danger count.  Otherwise,
 				# we'll increment our KSK-rollover count.
 				#
-				if($rrr->{'kskphase'} == 6)
+				if($rrr->{'kskphase'} == 5)
 				{
 					$red++;
 					push @redzones, $zone;
@@ -664,7 +664,7 @@ sub zonecnts
 				# we'll bump our danger count.  Otherwise,
 				# we'll increment our KSK-rollover count.
 				#
-				if($num == 6)
+				if($num == 5)
 				{
 					$red++;
 					push @redzones, $zone;
@@ -944,7 +944,7 @@ red.  The green section displays a count of those zones that are in \"normal\"
 status; that is, they are not in rollover.  The yellow section displays a
 count of those zones that are in rollover.  The red section displays a count
 of those zones that are in need of attention.  A common cause for this last
-state is because a zone is in phase 6 of KSK rollover and is waiting for its
+state is because a zone is in phase 5 of KSK rollover and is waiting for its
 parent zone to publish the child's new DS record.
 
 Clicking on the color rows in the main window will bring up a dialog box that
@@ -1082,7 +1082,7 @@ The green section displays a count of those zones that are in "normal" status;
 that is, they are not in rollover.  The yellow section displays a count of
 those zones that are in rollover.  The red section displays a count of those
 zones that are in need of attention.  A common cause for this last state is
-because a zone is in phase 6 of KSK rollover and is waiting for its parent
+because a zone is in phase 5 of KSK rollover and is waiting for its parent
 zone to publish the child's new DS record.
 
 Clicking on the color rows in the main window will bring up a dialog box that
