@@ -132,6 +132,11 @@ ValidateViewWidget::ValidateViewWidget(QString nodeName, QString recordType, Gra
 
     m_graphWidget->window()->setCursor(Qt::WaitCursor);
     QTimer::singleShot(1, this, SLOT(validateDefault()));
+
+    // XXX: these don't work - somewhere there is a missing piece
+    connect(this, SIGNAL(useStraightLinesChanged()), this, SLOT(invalidateScene()));
+    connect(this, SIGNAL(useStraightLinesChanged()), myScene, SLOT(invalidate()));
+    connect(this, SIGNAL(useStraightLinesChanged()), myScene, SLOT(update()));
 }
 
 void ValidateViewWidget::scaleView(qreal scaleFactor)
@@ -270,6 +275,10 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
             // draw the bounding box of the record
             rect = new QGraphicsRectItem(horizontalSpot, spot+boxTopMargin, boxWidth, boxHeight);
             rect->setPen(QPen(Qt::black));
+            QBrush brush = rect->brush();
+            brush.setColor(QColor(Qt::gray).lighter());
+            brush.setStyle(Qt::SolidPattern);
+            rect->setBrush(brush);
             myScene->addItem(rect);
 
             //

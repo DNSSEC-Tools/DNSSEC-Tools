@@ -138,6 +138,11 @@ MainWindow::MainWindow(const QString &fileName, QWidget *parent) :
     action->setChecked(graphWidget->autoValidateServFails());
     action->connect(action, SIGNAL(toggled(bool)), graphWidget, SLOT(setAutoValidateServFails(bool)));
 
+    action = menu->addAction("Use straight lines for the validation diagrams");
+    action->setCheckable(true);
+    action->setChecked(graphWidget->useStraightValidationLines());
+    action->connect(action, SIGNAL(toggled(bool)), graphWidget, SLOT(setUseStraightValidationLines(bool)));
+
     QMenu *layoutMenu = menu->addMenu("Layout");
     action = layoutMenu->addAction("tree");
     action->connect(action, SIGNAL(triggered()), graphWidget, SLOT(switchToTree()));
