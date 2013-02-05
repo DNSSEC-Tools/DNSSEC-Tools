@@ -232,6 +232,8 @@ void ValidateViewWidget::drawArrow(int fromX, int fromY, int toX, int toY, QColo
     polyItem->setBrush(brush);
     polyItem->setFillRule(Qt::OddEvenFill);
     myScene->addItem(polyItem);
+    if (box)
+        box->addPathObject(polyItem, color);
 }
 
 void ValidateViewWidget::validateDefault() {

@@ -7,7 +7,7 @@
 #include <QPair>
 
 typedef QPair<QGraphicsLineItem *, QColor> LineItemPair;
-typedef QPair<QGraphicsPathItem *, QColor> PathItemPair;
+typedef QPair<QAbstractGraphicsShapeItem *, QColor> PathItemPair;
 
 class ValidateViewBox : public QGraphicsRectItem
 {
@@ -20,7 +20,7 @@ public:
     void addLineObject(LineItemPair *item) { m_lines.append(item); }
     void addPathObject(PathItemPair *item) { m_paths.append(item); }
     void addLineObject(QGraphicsLineItem *item, QColor color) { m_lines.append(new LineItemPair(item, color)); }
-    void addPathObject(QGraphicsPathItem *item, QColor color) { m_paths.append(new PathItemPair(item, color)); }
+    void addPathObject(QAbstractGraphicsShapeItem *item, QColor color) { m_paths.append(new PathItemPair(item, color)); }
 
 
 private:
