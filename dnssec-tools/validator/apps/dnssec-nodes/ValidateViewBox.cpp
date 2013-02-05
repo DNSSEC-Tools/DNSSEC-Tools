@@ -23,11 +23,17 @@ void ValidateViewBox::mousePressEvent(QGraphicsSceneMouseEvent *event)
     setBrush(thebrush);
     m_isSelected = true;
     foreach(LineItemPair *item, m_lines) {
-        item->first->setPen(QPen(Qt::blue));
+        QPen pen = QPen(Qt::blue);
+        pen.setWidth(6);
+        item->first->setPen(pen);
+        item->first->setZValue(5);
         item->first->update();
     }
     foreach(PathItemPair *item, m_paths) {
-        item->first->setPen(QPen(Qt::blue));
+        QPen pen = QPen(Qt::blue);
+        pen.setWidth(6);
+        item->first->setPen(pen);
+        item->first->setZValue(5);
         item->first->update();
     }
     update();
@@ -44,10 +50,12 @@ void ValidateViewBox::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
     m_isSelected = false;
     foreach(LineItemPair *item, m_lines) {
         item->first->setPen(QPen(item->second));
+        item->first->setZValue(0);
         item->first->update();
     }
     foreach(PathItemPair *item, m_paths) {
         item->first->setPen(QPen(item->second));
+        item->first->setZValue(0);
         item->first->update();
     }
     update();
