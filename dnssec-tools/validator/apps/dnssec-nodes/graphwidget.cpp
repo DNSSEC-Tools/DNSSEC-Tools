@@ -139,6 +139,8 @@ GraphWidget::GraphWidget(QWidget *parent, QLineEdit *editor, QTabWidget *tabs, c
     connect(m_logWatcher, SIGNAL(dataChanged()), this, SLOT(reLayout()));
     connect(m_nodeList, SIGNAL(dataChanged()), this, SLOT(reLayout()));
 
+    connect(this, SIGNAL(useStraightValidationLinesChanged()), this, SLOT(saveUseStraightValidationLinesPref()));
+
     val_log_add_cb(NULL, 99, &val_collect_logs);
 
     setPrefs();
@@ -680,6 +682,13 @@ void GraphWidget::setPrefs()
     m_animateNodeMovements = settings.value("animateNodes", true).toBool();
     m_autoValidateServFails = settings.value("autoValidateServFails", false).toBool();
     m_updateLineEditAlways = settings.value("updateLineEdit", false).toBool();
+
+    setUseStraightValidationLines(settings.value("useStraightValidationLines", false).toBool());
+}
+
+void GraphWidget::saveUseStraightValidationLinesPref() {
+    QSettings settings("DNSSEC-Tools", "dnssec-nodes");
+    settings.setValue("useStraightValidationLines", useStraightValidationLines());
 }
 
 void GraphWidget::setAnimateNodeMovements(bool newValue) {
