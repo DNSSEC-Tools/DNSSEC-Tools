@@ -225,8 +225,8 @@ void ValidateViewWidget::drawArrow(int fromX, int fromY, int toX, int toY, QColo
 
     QPolygon polygon;
     polygon << QPoint(toX, toY)
-            << QPoint(toX - arrowHalfWidth, toY - arrowHalfWidth)
-            << QPoint(toX + arrowHalfWidth, toY - arrowHalfWidth);
+            << QPoint(toX - arrowHalfWidth, toY - arrowHalfWidth*2)
+            << QPoint(toX + arrowHalfWidth, toY - arrowHalfWidth*2);
     QGraphicsPolygonItem *polyItem = new QGraphicsPolygonItem(polygon);
     polyItem->setPen(pen);
     polyItem->setBrush(brush);
