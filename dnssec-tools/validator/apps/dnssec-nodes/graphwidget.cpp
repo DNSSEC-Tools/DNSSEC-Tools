@@ -103,7 +103,8 @@ GraphWidget::GraphWidget(QWidget *parent, QLineEdit *editor, QTabWidget *tabs, c
       m_layoutType(springyLayout), m_childSize(30), m_lookupType(1), m_animateNodeMovements(true),
       m_updateLineEditAlways(false), m_autoValidateServFails(false),
       m_infoBox(infoBox), m_infoLabel(0), m_infoMoreButton(0), m_nodeInfoLabel(0), m_previousFileMenu(0), m_mapper(),
-      m_nodeList(new NodeList(this)), m_logWatcher(new LogWatcher(this)), m_legend(0), m_tabs(tabs), m_useStraightValidationLines(false)
+      m_nodeList(new NodeList(this)), m_logWatcher(new LogWatcher(this)), m_legend(0), m_tabs(tabs), m_useStraightValidationLines(false),
+      m_startingNode(ROOT_NODE_NAME)
 #ifdef WITH_PCAP
     , m_pcapWatcher(new PcapWatcher())
 #endif
@@ -155,6 +156,10 @@ GraphWidget::GraphWidget(QWidget *parent, QLineEdit *editor, QTabWidget *tabs, c
     connect(this, SIGNAL(openPcapDevice()), m_pcapWatcher, SLOT(openDevice()));
     m_pcapWatcher->start();
 #endif
+}
+
+void GraphWidget::resetStartingNode() {
+    setStartingNode(ROOT_NODE_NAME);
 }
 
 void GraphWidget::addItem(QGraphicsItem *newItem) {
@@ -390,15 +395,18 @@ int GraphWidget::layoutTreeNode(Node *node, int minX, int minY) {
 void GraphWidget::layoutInCircles() {
     m_layoutType = circleLayout;
     QRectF rect;
-    layoutCircleNode(m_nodeList->node(ROOT_NODE_NAME), qreal(rect.left() + (rect.right() - rect.left())/2), qreal(rect.top() + (rect.top() - rect.bottom())/2), 0, 2*3.1415);
-
+    Node *startingNode = m_nodeList->node(m_startingNode);
+    layoutCircleNode(startingNode, qreal(rect.left() + (rect.right() - rect.left())/2),
+                     qreal(rect.top() + (rect.top() - rect.bottom())/2), 0, 2*3.1415, startingNode);
     // XXX: test growth size into borders
 }
 
-void GraphWidget::layoutCircleNode(Node *node, qreal startX, qreal startY, qreal startingDegrees, qreal maxDegrees) {
+void GraphWidget::layoutCircleNode(Node *node, qreal startX, qreal startY, qreal startingDegrees, qreal maxDegrees, Node *upwardFromThis) {
     QSet<Node *> childNodes = node->children();
     const int childSize = 30;
     int numChildren = childNodes.count();
+    if (upwardFromThis && node->parent())
+        numChildren++;
 
     qreal degreesPerChild;
     if (numChildren > 0) {
@@ -406,9 +414,17 @@ void GraphWidget::layoutCircleNode(Node *node, qreal startX, qreal startY, qreal
 
         startingDegrees = startingDegrees - maxDegrees/2 + maxDegrees/(numChildren+1);
         foreach(Node *child, childNodes) {
+            if (upwardFromThis == 0 || upwardFromThis != child) {
+                qreal childX = startX + childSize*2*cos(startingDegrees);
+                qreal childY = startY + childSize*2*sin(startingDegrees);
+                layoutCircleNode(child, childX, childY, startingDegrees, degreesPerChild);
+                startingDegrees += degreesPerChild;
+            }
+        }
+        if (upwardFromThis && node->parent()){
             qreal childX = startX + childSize*2*cos(startingDegrees);
             qreal childY = startY + childSize*2*sin(startingDegrees);
-            layoutCircleNode(child, childX, childY, startingDegrees, degreesPerChild);
+            layoutCircleNode(node->parent(), childX, childY, startingDegrees, degreesPerChild, node);
             startingDegrees += degreesPerChild;
         }
     }

@@ -299,6 +299,7 @@ QMenu *Node::makePopupMenu() {
         menu->addAction(QObject::tr("Copy Name To Lookup Line"));
     menu->addAction(QObject::tr("Show Node Data"));
     menu->addAction(QObject::tr("Show Log Entries"));
+    menu->addAction(QObject::tr("Center Map on This Node"));
     QMenu *validateMenu = menu->addMenu(QObject::tr("Validate"));
 
     QMap<QString, DNSData *>::const_iterator iter, end = m_subData.end();
@@ -341,6 +342,10 @@ void Node::displayDetailsMenu(QPoint where) {
         tabLabel = fqdn() + " Data";
     } else if (menuChoice == QObject::tr("Copy Name To Lookup Line")) {
         graph->setLineEditValue(fqdn());
+    } else if (menuChoice == QObject::tr("Center Map on This Node")) {
+        graph->setStartingNode(fqdn());
+        setNewPos(QPointF(0,0));
+        graph->reLayout();
     } else {
         tabLabel = fqdn() + "/" + menuChoice;
         widget = new ValidateViewWidgetHolder(fqdn(), menuChoice, graph);
