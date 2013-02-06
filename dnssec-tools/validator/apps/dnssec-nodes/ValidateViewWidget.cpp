@@ -180,8 +180,9 @@ void ValidateViewWidget::drawArrow(int fromX, int fromY, int toX, int toY, QColo
             QGraphicsPathItem *pathItem = new QGraphicsPathItem();
             QPainterPath path;
             path.moveTo(fromX, fromY);
+            path.lineTo(fromX, fromY - arrowHalfWidth*2);
             path.quadTo(fromX, fromY - horizRaiseMultiplier*arrowHalfWidth, toX - (toX - fromX)/2, toY - horizRaiseMultiplier*arrowHalfWidth);
-            path.quadTo(toX, toY - horizRaiseMultiplier*arrowHalfWidth, toX, toY);
+            path.quadTo(toX, toY - horizRaiseMultiplier*arrowHalfWidth, toX, toY - arrowHalfWidth*2);
             pathItem->setPen(pen);
             pathItem->setPath(path);
             myScene->addItem(pathItem);
@@ -213,7 +214,7 @@ void ValidateViewWidget::drawArrow(int fromX, int fromY, int toX, int toY, QColo
             QPainterPath path;
             path.moveTo(fromX, fromY);
             path.quadTo(fromX, fromY + (toY-fromY)/2, fromX + (toX-fromX)/2, fromY + (toY-fromY)/2);
-            path.quadTo(toX, fromY + (toY-fromY)/2, toX, toY);
+            path.quadTo(toX, fromY + (toY-fromY)/2, toX, toY - arrowHalfWidth*2);
 
             pathItem->setPen(pen);
             pathItem->setPath(path);
