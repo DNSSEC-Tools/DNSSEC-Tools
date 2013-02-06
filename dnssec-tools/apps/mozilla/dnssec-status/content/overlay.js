@@ -25,7 +25,7 @@ dnssecstatusUpdater.prototype = {
             this.container = gBrowser.tabContainer;
             this.container.addEventListener("TabClose", this.onTabClose, false);
             this.strings = document.getElementById("dnssecstatus-strings");
-            this.dnssec_enabled = false;
+            this.dnssec_enabled = true;
             this.registered = true;
         }
     },
@@ -36,7 +36,7 @@ dnssecstatusUpdater.prototype = {
         }
     },
     enable_dnssec: function(value) {
-        if (value == 0) {
+        if (value == 0 || value == 2) {
             this.dnssec_enabled = true;
         } else {
             this.dnssec_enabled = false;
