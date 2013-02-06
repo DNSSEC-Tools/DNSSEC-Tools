@@ -36,7 +36,9 @@ QString NodeList::removeTrailingDots(const QString &from) {
 }
 
 Node *NodeList::node(const QString &nodeName) {
-    QString maybeToLong = removeTrailingDots(nodeName);
+    QString maybeToLong = nodeName; //removeTrailingDots(nodeName);
+    if (maybeToLong == "")
+        maybeToLong = ROOT_NODE_NAME;
 
     if (! m_nodes.contains(maybeToLong)) {
         return addNodes(maybeToLong);
