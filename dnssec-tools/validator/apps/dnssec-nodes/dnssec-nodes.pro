@@ -26,7 +26,9 @@ HEADERS += \
     qtauto_properties.h \
     DNSResources.h \
     ValidateViewWidgetHolder.h \
-    ValidateViewBox.h
+    ValidateViewBox.h \
+    FilterEditorWindow.h \
+    filtersAndEffects.h
 
 SOURCES += \
         edge.cpp \
@@ -55,7 +57,8 @@ SOURCES += \
     MainWindow.cpp \
     DNSResources.cpp \
     ValidateViewWidgetHolder.cpp \
-    ValidateViewBox.cpp
+    ValidateViewBox.cpp \
+    FilterEditorWindow.cpp
 
 BINDIR = $$PREFIX/bin
 DATADIR =$$PREFIX/share
