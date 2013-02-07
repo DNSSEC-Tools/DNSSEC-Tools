@@ -39,9 +39,7 @@ void FilterEditorWindow::setupEditPanel() {
         pairing->first->configWidgets(hbox);
         filterBox->setLayout(hbox);
 
-
         QGroupBox *effectBox = new QGroupBox(pairing->second->name());
         pairBox->addWidget(effectBox);
-
     }
 }
