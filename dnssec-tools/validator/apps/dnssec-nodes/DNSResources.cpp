@@ -199,7 +199,7 @@ QStringList DNSResources::dnsDataToQStringList(const char *buf, size_t buf_len) 
             break; /* out of data */
         }
 
-        QString data = DNSResources::rrDataToQString(rr);
+        QString data = DNSResources::rrDataToQString(rr, ns_msg_base(handle), ns_msg_size(handle));
         if (data.length() > 0)
             results.push_back(data);
 
@@ -207,45 +207,27 @@ QStringList DNSResources::dnsDataToQStringList(const char *buf, size_t buf_len) 
     }
     return results;
 }
+extern "C" {
 
-QString DNSResources::rrDataToQString(ns_rr rr)
+int	ns_sprintrrf_data(const u_char *, size_t, const char *,
+        ns_class, ns_type, u_long, const u_char *,
+        size_t, const char *,
+        char *, size_t);
+}
+QString DNSResources::rrDataToQString(ns_rr rr, const u_char *msgBase, size_t msgSize)
 {
-    // XXX: move ot dns resources:
-    QString data;
-    char buf[1024];
+    char buf[4096];
     const char *addr;
     Q_UNUSED(addr);
     size_t buflen = sizeof(buf);
-    struct sockaddr_in sa;
-#ifdef VAL_IPV6
-    struct sockaddr_in6 sa6;
-#endif
+    int len;
 
-    switch (ns_rr_type(rr)) {
-    case ns_t_a:
-        if (ns_rr_rdlen(rr) == (size_t) NS_INADDRSZ) {
-            memcpy(&sa.sin_addr, ns_rr_rdata(rr), NS_INADDRSZ);
-            INET_NTOP(AF_INET, ((struct sockaddr *)&sa), sizeof(sa), buf, buflen, addr);
-            data = QString(buf);
-        }
-        break;
+    len = ns_sprintrrf_data(msgBase, msgSize,
+                            ns_rr_name(rr), ns_rr_class(rr), ns_rr_type(rr),
+                            ns_rr_ttl(rr), ns_rr_rdata(rr), ns_rr_rdlen(rr),
+                            "dnssec-tools.org" /* XXX: origin */, buf, buflen);
+    if (len < 0)
+        return(QString());
 
-#ifdef VAL_IPV6
-    case ns_t_aaaa:
-        if (ns_rr_rdlen(rr) == (size_t) NS_IN6ADDRSZ) {
-            memcpy(&sa6.sin6_addr, ns_rr_rdata(rr), NS_IN6ADDRSZ);
-            INET_NTOP(AF_INET6, ((struct sockaddr *)&sa6), sizeof(sa6), buf, buflen, addr);
-            data = QString(buf);
-        }
-        break;
-#endif
-
-    case ns_t_txt: // XXX
-        break;
-
-    default:
-        break;
-    }
-
-    return data;
+    return QString(buf);
 }
