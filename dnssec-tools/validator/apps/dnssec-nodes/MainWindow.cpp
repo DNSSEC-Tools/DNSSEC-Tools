@@ -177,6 +177,10 @@ MainWindow::MainWindow(const QString &fileName, QWidget *parent) :
     action->setActionGroup(filterActions);
     graphWidget->nodeList()->setFilterBox(filterBox);
 
+    filterMenu->addSeparator();
+
+    action = filterMenu->addAction("Open Filter Editor");
+    action->connect(action, SIGNAL(triggered()), graphWidget->nodeList(), SLOT(filterEditor()));
     menu->addSeparator();
 
     action = menu->addAction("Preferences");

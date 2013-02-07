@@ -8,6 +8,7 @@
 
 #include "Effects/Effect.h"
 #include "Filters/Filter.h"
+#include "FilterEditorWindow.h"
 
 #include <QtGui/QHBoxLayout>
 
@@ -20,6 +21,7 @@ const QString ROOT_NODE_NAME = "<root>";
 
 typedef QPair<Filter *, Effect *> FilterEffectPair;
 
+class FilterEditorWindow;
 class NodeList : public QObject
 {
     Q_OBJECT
@@ -59,6 +61,7 @@ public:
     void   addFilterAndEffect(Filter *filter, Effect *effect);
     void   setupFilterBox(Filter *filter = 0);
     void   clearLayout(QLayout *layout);
+    QList< FilterEffectPair *> filtersAndEffects() { return m_filtersAndEffects; }
 
     Effect *createDefaultEffect();
 
@@ -79,6 +82,8 @@ public slots:
     void filterByDataType();
     void filterByName();
     void filterNone();
+    void filterEditor();
+    void closeEditor();
 
     void addNodesSlot(QString nodeName);
     void addNodesData(QString nodeName, DNSData nodeData, QString optionalLogMessage = "");
@@ -106,7 +111,9 @@ private:
 
     Node                                 *m_selectedNode;
 
-    QList< QPair<Filter *,Effect *> *>    m_filtersAndEffects;
+    QList< FilterEffectPair *>            m_filtersAndEffects;
+
+    FilterEditorWindow                   *m_filterEditor;
 };
 
 #endif // NODELIST_H

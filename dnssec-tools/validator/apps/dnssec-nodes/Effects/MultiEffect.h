@@ -11,7 +11,7 @@ public:
 
     virtual void    applyToNode(Node *node);
     virtual void    resetNode(Node *node);
-    virtual QString name() { return "Multiple Effects"; } // XXX combine in a () list
+    virtual QString name();
 
     virtual void    addEffect(Effect *effect);
     virtual void    clear();

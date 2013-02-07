@@ -1,15 +1,7 @@
 #include "NodeList.h"
 #include "DelayedDelete.h"
 
-#include "Filters/DNSSECStatusFilter.h"
-#include "Filters/NameFilter.h"
-#include "Filters/NotFilter.h"
-#include "Filters/TypeFilter.h"
-
-#include "Effects/SetAlphaEffect.h"
-#include "Effects/SetZValue.h"
-#include "Effects/SetBorderColor.h"
-#include "Effects/MultiEffect.h"
+#include "filtersAndEffects.h"
 
 #include "graphwidget.h"
 
@@ -20,7 +12,7 @@
 NodeList::NodeList(GraphWidget *parent) :
     QObject(parent), m_graphWidget(parent), m_centerNode(0), m_nodes(), m_edges(),
     m_timer(this), m_maxNodes(0), m_accessCounter(0), m_accessDropOlderThan(0), m_selectedNode(0),
-    m_filtersAndEffects()
+    m_filtersAndEffects(), m_filterEditor(0)
 {
     connect(&m_timer, SIGNAL(timeout()), this, SLOT(limit()));
     m_timer.start(5000); /* clear things out every 5 seconds or so */
@@ -333,6 +325,23 @@ void NodeList::filterBadToTop()
     setupFilterBox(filter);
     applyFilters();
 }
+
+void NodeList::filterEditor()
+{
+    if (m_filterEditor) {
+        m_filterEditor->raise();
+        return;
+    }
+    m_filterEditor = new FilterEditorWindow(this);
+    m_filterEditor->show();
+    connect(m_filterEditor, SIGNAL(destroyed()), this, SLOT(closeEditor()));
+}
+
+void NodeList::closeEditor()
+{
+    m_filterEditor = 0;
+}
+
 
 void NodeList::setFilterBox(QHBoxLayout *filterBox)
 {
