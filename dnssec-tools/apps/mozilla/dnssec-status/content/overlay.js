@@ -56,16 +56,20 @@ dnssecstatusUpdater.prototype = {
         var i;
         var index = -1;
         for (i=0; i<this.tabcnt; i++) {
-            if (this.browsertabs[i] == null) {
-                // try and re-use an existing slot
-                index = i;
-            } else if (this.browsertabs[i] == browser) {
+            // see if a tab already exists 
+            if (this.browsertabs[i] == browser) {
                 return i;
             }
         }
-
+        for (i=0; i<this.tabcnt; i++) {
+            if (this.browsertabs[i] == null) {
+                // try and re-use an existing slot
+                index = i;
+                break;
+            }
+        }
         if (index == -1) {
-            // we didn't find an empty slot
+            // we didn't find a usable slot
             index = this.tabcnt;
             this.tabcnt++;
         }
@@ -105,10 +109,11 @@ dnssecstatusUpdater.prototype = {
             return;
         }
 
-        // Display the address bar icon that says that we are DNSSEC-capable
         document.getElementById("dnssecstatus-label").style.display = "inline";
         document.getElementById("dnssecstatus-unum").style.display = "inline";
-        document.getElementById("dnssec-enabled-icon").style.display = "inline";
+
+        // Display the address bar icon that says that we are DNSSEC-capable
+        //document.getElementById("dnssec-enabled-icon").style.display = "inline";
 
         if (u_cnt > 0) {
             // color the indicator red
@@ -275,7 +280,7 @@ dnssecstatusObserver.prototype = {
 ///////////////////////////////////////////////////////////////////////////
 // Structure for observing web progress events 
 
-const nsIIRequestor = Components.interfaces.nsIInterfaceRequestor;
+//const nsIIRequestor = Components.interfaces.nsIInterfaceRequestor;
 const nsIWebProgress = Components.interfaces.nsIWebProgress;
 const nsIWebProgressListener = Components.interfaces.nsIWebProgressListener;
 
@@ -303,7 +308,8 @@ dnssecprogresslistener.prototype = {
 
     register: function() {
         if (this.registered == false) {
-            gBrowser.addProgressListener(this, nsIWebProgress.NOTIFY_ALL);
+            //gBrowser.addProgressListener(this, nsIWebProgress.NOTIFY_ALL);
+            gBrowser.addProgressListener(this);
             this.registered = true;
         }
     },
@@ -314,6 +320,15 @@ dnssecprogresslistener.prototype = {
         }
     },
 
+    QueryInterface: XPCOMUtils.generateQI(["nsIWebProgressListener",
+                                          "nsISupportsWeakReference"]),
+    //QueryInterface : function(aIID) { 
+    //    if (aIID.equals(Components.interfaces.nsIWebProgressListener) ||  
+    //        aIID.equals(Components.interfaces.nsISupportsWeakReference) ||  
+    //        aIID.equals(Components.interfaces.nsISupports))  
+    //            return this;  
+    //    throw Components.results.NS_NOINTERFACE;
+    //},
     // nsIWebProgressListener methods 
     onStateChange: function(aProgress, aRequest, aFlag, aStatus)
     {
@@ -322,7 +337,6 @@ dnssecprogresslistener.prototype = {
         //  alert( aRequest.URI.spec + ":\n" + aFlag + ":\n" + aStatus);        
         //}
         //return 0;
-        //alert ("onStateChange: " + aFlag);
         //if(aFlag & (nsIWebProgressListener.STATE_START|
         //          nsIWebProgressListener.STATE_IS_DOCUMENT)) {
         //    dsu.init_statusbar_info();
@@ -348,13 +362,6 @@ dnssecprogresslistener.prototype = {
     onStatusChange:function(aProgress, aRequest, aStatus, aMessage){},
     onRefreshAttempted:function(a,b,c,d){},
     onLinkIconAvailable: function(a) {},
-    QueryInterface : function(aIID) { 
-        if (aIID.equals(Components.interfaces.nsIWebProgressListener) ||  
-            aIID.equals(Components.interfaces.nsISupportsWeakReference) ||  
-            aIID.equals(Components.interfaces.nsISupports))  
-                return this;  
-        throw Components.results.NS_NOINTERFACE;
-    },
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -364,15 +371,15 @@ var dnssecstatus = {
   onLoad: function() {
     // initialization code
     dsu = new dnssecstatusUpdater();
-    dso = new dnssecstatusObserver();
     dsp = new dnssecprogresslistener();
+    dso = new dnssecstatusObserver();
     this.initialized = true;
   },
   onUnload: function() {
     // cleanup code
     dsu.unregister();
-    dso.unregister();
     dsp.unregister();
+    dso.unregister();
     this.initialized = false;
   },
   statusbar_action: function() {
