@@ -898,6 +898,10 @@ int	ns_sprintrrf(const u_char *, size_t, const char *,
 		ns_class, ns_type, u_long, const u_char *,
 		size_t, const char *, const char *,
 		char *, size_t);
+int	ns_sprintrrf_data(const u_char *, size_t, const char *,
+		ns_class, ns_type, u_long, const u_char *,
+		size_t, const char *,
+		char *, size_t);
 int	ns_initparse(const u_char *, int, ns_msg *);
 int	ns_format_ttl(u_long, char *, size_t);
 int	ns_parse_ttl(const char *, u_long *);
