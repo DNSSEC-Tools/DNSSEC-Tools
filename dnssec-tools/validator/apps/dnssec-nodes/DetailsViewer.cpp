@@ -89,7 +89,7 @@ void DetailsViewer::addRow(QString recordType, DNSData *data) {
     m_table->setItem(m_rowCount, itemnum++, item);
     info->status = item;
 
-    item = new QTableWidgetItem(QStringList(data->data()).join(", "));
+    item = new QTableWidgetItem(QStringList(data->data()).join(",\n"));
     item->setFlags(Qt::ItemIsEnabled);
     m_table->setItem(m_rowCount, itemnum++, item);
     info->data = item;
@@ -126,7 +126,7 @@ void DetailsViewer::setStatus(const DNSData *data) {
 
     item = m_rows[recordType]->data;
     item->setBackgroundColor(color);
-    item->setText(QStringList(data->data()).join(", "));
+    item->setText(QStringList(data->data()).join(",\n"));
 
     m_rows[recordType]->label->setBackgroundColor(color);
 }

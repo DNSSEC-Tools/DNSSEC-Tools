@@ -329,7 +329,7 @@ void PcapWatcher::processPackets()
                         break; /* out of data */
                     }
 
-                    QString data = DNSResources::rrDataToQString(rr);
+                    QString data = DNSResources::rrDataToQString(rr, ns_msg_base(handle), ns_msg_size(handle));
                     emit addNodeData(ns_rr_name(rr), DNSData(p_sres_type(ns_rr_type(rr)), status, QStringList(data)), "Data collected from network draffic");
 
                     rrnum++;
