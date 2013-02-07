@@ -133,14 +133,8 @@ ns_sprintrrf(const u_char * msg, size_t msglen,
              const char *name_ctx, const char *origin,
              char *buf, size_t buflen)
 {
-    const char *addr = NULL;
     const char     *obuf = buf;
-    const u_char   *edata = rdata + rdlen;
     int             spaced = 0;
-    struct sockaddr_in sa;
-#ifdef VAL_IPV6
-    struct sockaddr_in6 sa6;
-#endif
 
     const char     *comment;
     char            tmp[100];
@@ -182,7 +176,31 @@ ns_sprintrrf(const u_char * msg, size_t msglen,
     T(addstr(tmp, len, &buf, &buflen));
     if (rdlen == 0U)
         return (buf - obuf);
-    T(spaced = addtab(x + len, 16, spaced, &buf, &buflen));
+     T(spaced = addtab(x + len, 16, spaced, &buf, &buflen));
+
+    return ns_sprintrrf_data(msg, msglen, name, class_h, type_h,
+                             ttl, rdata, rdlen, origin,
+                             buf, buflen);
+}
+
+int
+ns_sprintrrf_data(const u_char * msg, size_t msglen,
+                  const char *name, ns_class class_h, ns_type type_h,
+                  u_long ttl, const u_char * rdata, size_t rdlen,
+                  const char *origin,
+                  char *buf, size_t buflen)
+{
+    struct sockaddr_in sa;
+#ifdef VAL_IPV6
+    struct sockaddr_in6 sa6;
+#endif
+    const char *addr = NULL;
+    int len;
+    const u_char   *edata = rdata + rdlen;
+    int             spaced = 0;
+    char            tmp[100];
+    const char     *obuf = buf;
+    const char     *comment;
 
     /*
      * RData.
