@@ -89,7 +89,6 @@ bind_to_random_source(int af, SOCKET s)
 
     u_int16_t next_port, start_port;
 
-    memset(&ea_source, 0, sizeof(ea_source));
     if (af == AF_INET) {
         sa4->sin_family = AF_INET;
         sa4->sin_addr.s_addr = htonl(INADDR_ANY);
@@ -109,6 +108,7 @@ bind_to_random_source(int af, SOCKET s)
     next_port = start_port;
 
     do {
+        memset(&ea_source, 0, sizeof(ea_source));
         if (af == AF_INET) {
             sa4->sin_port = htons(next_port);
             sa = (struct sockaddr *) sa4;

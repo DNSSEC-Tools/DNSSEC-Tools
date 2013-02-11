@@ -86,6 +86,7 @@ main(int argc, char *argv[])
     val_status_t val_status;
     struct sockaddr_storage saddr;
     size_t sock_size;
+
     // Parse the command line
     while (1) {
         int             c;
@@ -156,15 +157,17 @@ main(int argc, char *argv[])
 
     if (!strchr(node,':'))  {
        struct sockaddr_in *sa = (struct sockaddr_in *)&saddr;
+       sock_size = sizeof(struct sockaddr_in);
+       memset(&saddr, 0, sizeof(saddr));
        sa->sin_port = htons(port);
        sa->sin_family = AF_INET;
-       sock_size = sizeof(struct sockaddr_in);
        INET_PTON(AF_INET, node, ((struct sockaddr *)sa), &sock_size);
     } 
 #ifdef VAL_IPV6
     else {
        struct sockaddr_in6 *sa6 = (struct sockaddr_in6 *)&saddr;
        sock_size = sizeof(struct sockaddr_in6);
+       memset(&saddr, 0, sizeof(saddr));
        sa6->sin6_port = htons(port);
        sa6->sin6_family = AF_INET6;
        INET_PTON(AF_INET6, node, ((struct sockaddr *)sa6), &sock_size);

@@ -132,6 +132,11 @@ get_hostent_from_etc_hosts(val_context_t * ctx,
         const char *addr = NULL;
         size_t buflen = INET6_ADDRSTRLEN;
 
+        memset(&sa, 0, sizeof(sa));
+#ifdef VAL_IPV6
+        memset(&sa6, 0, sizeof(sa6));
+#endif
+
         if ((af == AF_INET)
             && (INET_PTON(AF_INET, hs->address, ((struct sockaddr *)&sa), &addrlen4) > 0)) {
             INET_NTOP(AF_INET, (&sa), sizeof(sa), addr_buf, buflen, addr);
@@ -565,6 +570,11 @@ val_gethostbyname2_r(val_context_t * context,
     val_context_t *ctx = NULL;
 
     *val_status = VAL_DONT_KNOW;
+
+    memset(&sa, 0, sizeof(sa));
+#ifdef VAL_IPV6
+    memset(&sa6, 0, sizeof(sa6));
+#endif
     
     if (!name || !ret || !h_errnop || !val_status || !result || !buf) {
         goto err;

@@ -415,6 +415,10 @@ get_addrinfo_from_etc_hosts(val_context_t * ctx,
         //val_log(ctx, LOG_DEBUG, "}");
 
         memset(ainfo, 0, sizeof(struct addrinfo));
+        memset(&sa, 0, sizeof(sa));
+#ifdef VAL_IPV6
+        memset(&sa6, 0, sizeof(sa6));
+#endif
 
         /*
          * Check if the address is an IPv4 address 
@@ -594,6 +598,7 @@ get_addrinfo_from_result(const val_context_t * ctx,
                         return EAI_MEMORY;
                     }
                     val_log(ctx, LOG_DEBUG, "get_addrinfo_from_result(): rrset of type A found");
+                    memset(saddr4, 0, sizeof(struct sockaddr_in));
                     saddr4->sin_family = AF_INET;
                     ainfo->ai_family = AF_INET;
                     ainfo->ai_addrlen = sizeof(struct sockaddr_in);
@@ -613,6 +618,7 @@ get_addrinfo_from_result(const val_context_t * ctx,
                         return EAI_MEMORY;
                     }
                     val_log(ctx, LOG_DEBUG, "get_addrinfo_from_result(): rrset of type AAAA found");
+                    memset(saddr6, 0, sizeof(struct sockaddr_in6));
                     saddr6->sin6_family = AF_INET6;
                     ainfo->ai_family = AF_INET6;
                     ainfo->ai_addrlen = sizeof(struct sockaddr_in6);
@@ -898,6 +904,11 @@ _getaddrinfo_local(val_context_t * ctx, const char *nodename,
         ) {
         nname = localhost4;
     }
+
+    memset(&sa, 0, sizeof(sa));
+#ifdef VAL_IPV6
+    memset(&sa6, 0, sizeof(sa6));
+#endif
 
     /*
      * check for IPv4 addresses 
