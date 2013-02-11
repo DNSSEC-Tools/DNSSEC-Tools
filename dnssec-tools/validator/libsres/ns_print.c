@@ -202,6 +202,11 @@ ns_sprintrrf_data(const u_char * msg, size_t msglen,
     const char     *obuf = buf;
     const char     *comment;
 
+    memset(&sa, 0, sizeof(sa));
+#ifdef VAL_IPV6
+    memset(&sa6, 0, sizeof(sa6));
+#endif
+
     /*
      * RData.
      */

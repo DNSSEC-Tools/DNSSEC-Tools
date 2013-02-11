@@ -188,6 +188,7 @@ main(int argc, char *argv[])
             printf("\th_addrtype = AF_INET\n");
             for (i = 0; result->h_addr_list[i] != 0; i++) {
                 memset(buf, 0, buflen);
+                memset(&sa, 0, sizeof(sa));
                 memcpy(&sa.sin_addr, result->h_addr_list[i],
                        sizeof(sa.sin_addr));
                 INET_NTOP(AF_INET, ((struct sockaddr *)&sa), sizeof(sa), 
@@ -201,6 +202,7 @@ main(int argc, char *argv[])
             printf("\th_addrtype = AF_INET6\n");
             for (i = 0; result->h_addr_list[i] != 0; i++) {
                 memset(buf, 0, buflen);
+                memset(&sa6, 0, sizeof(sa6));
                 memcpy(&sa6.sin6_addr, result->h_addr_list[i],
                        sizeof(sa6.sin6_addr));
                 INET_NTOP(AF_INET6, ((struct sockaddr *)&sa6), sizeof(sa6), 

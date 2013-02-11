@@ -2516,6 +2516,7 @@ read_root_hints_file(val_context_t * ctx)
         if (type_h == ns_t_a) {
             struct sockaddr_in sa;
             size_t addrlen4 = sizeof(struct sockaddr_in);
+            memset(&sa, 0, sizeof(sa));
             if ((addrlen4 == addrlen4) && /* this is to remove unused variable warning */
                 (INET_PTON(AF_INET, token, ((struct sockaddr *)&sa), &addrlen4) != 1)) {
                 retval = VAL_CONF_PARSE_ERROR;
@@ -2527,6 +2528,7 @@ read_root_hints_file(val_context_t * ctx)
         } else if (type_h == ns_t_aaaa) {
             struct sockaddr_in6 sa6;
             size_t addrlen6 = sizeof(struct sockaddr_in6);
+            memset(&sa6, 0, sizeof(sa6));
             if ((addrlen6 == addrlen6) && /* this is to remove unused variable warning */
                 (INET_PTON(AF_INET6, token, ((struct sockaddr *)&sa6), &addrlen6) != 1)) {
                 val_log(ctx, LOG_INFO, 
