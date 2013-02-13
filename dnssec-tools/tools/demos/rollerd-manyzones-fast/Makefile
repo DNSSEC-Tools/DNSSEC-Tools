@@ -21,13 +21,13 @@ pristine-files:
 	phaser demo.rollrec
 
 zones-short:
-	zonesigner -zsklife 15 -e 25 -genkeys dummy.com
-	zonesigner -zsklife 15 -genkeys example.com
-	zonesigner -zsklife 15 -genkeys test.com
-	zonesigner -zsklife 15 -genkeys woof.com
-	zonesigner -zsklife 15 -genkeys xorn.com
-	zonesigner -zsklife 15 -genkeys yowzah.com
-	zonesigner -zsklife 15 -genkeys zero.com
+	zonesigner -ksklife 15 -zsklife 15 -genkeys dummy.com
+	zonesigner -ksklife 15 -zsklife 15 -genkeys example.com
+	zonesigner -ksklife 15 -zsklife 15 -genkeys test.com
+	zonesigner -ksklife 15 -zsklife 15 -genkeys woof.com
+	zonesigner -ksklife 15 -zsklife 15 -genkeys xorn.com
+	zonesigner -ksklife 15 -zsklife 15 -genkeys yowzah.com
+	zonesigner -ksklife 15 -zsklife 15 -genkeys zero.com
 
 clean:
 	rm -f K* db.* dsset-* keyset-* *.krf *.signed
