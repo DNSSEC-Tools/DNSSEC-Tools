@@ -35,6 +35,7 @@ my @opts =
 	# Records to select:
 		"roll",			# "Active" rollrecs.
 		"skip",			# Skipped rollrecs.
+		"info",			# The info rollrec.
 
 	# Data to display:
 		"type",			# Record type.
@@ -72,6 +73,7 @@ my @opts =
 #
 my $rollflag;
 my $skipflag;
+my $infoflag;
 
 my $typeflag;
 my $nameflag;
@@ -136,7 +138,26 @@ sub main()
 	doopts($argc);
 
 	#
-	# Read the keyrec files.
+	# Handle requests for info rollrecs.
+	#
+	if($infoflag)
+	{
+		my $rrcnt = @ARGV - 1;		# Count of rollrec files.
+
+		$rrcnt = @ARGV;
+		$rrcnt--;
+
+		while(@ARGV)
+		{
+			inforec($ARGV[0],$rrcnt);
+			shift @ARGV;
+		}
+
+		exit(0);
+	}
+
+	#
+	# Read the rollrec files.
 	#
 	while($argc > 0)
 	{
@@ -206,6 +227,7 @@ sub doopts
 	#
 	$rollflag	= $options{'roll'}	|| 0;
 	$skipflag	= $options{'skip'}	|| 0;
+	$infoflag	= $options{'info'}	|| 0;
 
 	$cntflag	= $options{'count'}	|| 0;
 	$headerflag	= $options{'headers'}	|| 0;
@@ -386,6 +408,78 @@ sub doopts
 		$phasesflag = 1;
 	}
 
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	inforec()
+#
+# Purpose:	This routine reads the specified rollrec file and prints data
+#		from the file's info rollrec.
+#
+sub inforec
+{
+	my $rrfile = shift;		# Rollrec file.
+	my $nameflag = shift;		# Flag for using rollrec name.
+
+	my $refinfo;			# Reference to info rollrec.
+	my %rrinfo;			# Hash of info rollrec.
+
+	my $maxlen = -1;		# Maximum length of rollrec keys.
+	my $reccnt = 0;			# Count of printed records.
+	my $outstr = '';		# Output string.
+
+	#
+	# Read the rollrec file.
+	#
+	rollrec_lock();
+	rollrec_read($rrfile);
+	rollrec_unlock();
+
+	#
+	# Get the file's info rollrec.
+	#
+	$refinfo = rollrec_info();
+	%rrinfo = %$refinfo;
+
+	#
+	# Find the longest key length.
+	#
+	foreach my $rrn (sort(keys(%rrinfo)))
+	{
+		my $len;				# Length of key name.
+
+		next if(($rrn eq 'rollrec_name') || ($rrn eq 'rollrec_type'));
+
+		$len = length($rrn);
+		$maxlen = $len if($len > $maxlen);
+	}
+
+	#
+	# Build the output string.
+	#
+	foreach my $rrn (sort(keys(%rrinfo)))
+	{
+		next if(($rrn eq 'rollrec_name') || ($rrn eq 'rollrec_type'));
+
+		$outstr .= "$rrfile:   " if($nameflag);
+		$outstr .= sprintf("%-*s\t\"%s\"\n",
+					$maxlen, $rrn, $rrinfo{$rrn});
+
+		$reccnt++;
+	}
+
+	#
+	# G'head and print any info records -- if we found any.
+	#
+	if($reccnt)
+	{
+		print "$outstr";
+	}
+
+	#
+	# Close up the rollrec file.
+	#
+	rollrec_close();
 }
 
 #-----------------------------------------------------------------------------
@@ -887,6 +981,7 @@ sub usage
 	print STDERR "\trecord-selection options:\n";
 	print STDERR "\t\t-roll		roll records\n";
 	print STDERR "\t\t-skip		skip records\n";
+	print STDERR "\t\t-info		info record\n";
 	print STDERR "\tattribute-selection options:\n";
 	print STDERR "\t\t-type          	record type\n";
 	print STDERR "\t\t-zonename  	zone name\n";
@@ -990,6 +1085,13 @@ zonename can't.  For this reason, B<lsroll> displays the I<rollrec> name in
 quotes, even if the name contains no spaces.  This is intended to allow for
 easier parsing by other programs.
 
+If the B<-info> option is given, then the special I<info rollrec> record will
+be displayed.  If the I<rollrec> file has this informational record, notated
+by having the name I<info rollrec>, then the contents of the <info rollrec>
+record will be printed.  If multiple I<rollrec> files are given on the command
+line, then the I<info rollrec> records for each file will be prefixed with the
+I<rollrec> file's name.
+
 =head1 OPTIONS
 
 There are three types of options recognized by B<lsroll>:  record-selection
@@ -1014,6 +1116,10 @@ List all "roll" records in the I<rollrec> file.
 =item B<-skip>
 
 List all "skip" records in the I<rollrec> file.
+
+=item B<-info>
+
+List all the fields in the I<rollrec> file's "info" record.
 
 =back
 
