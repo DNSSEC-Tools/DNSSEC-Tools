@@ -44,6 +44,8 @@
 #		maxerrors	"5"
 #		phasestart	"Sun Jan 01 16:00:00 2005"
 #
+#	    roll "example2.com"
+#		version		"2"
 #
 #
 #	The current implementation assumes that only one rollrec file will
@@ -71,7 +73,6 @@ our $MODULE_VERSION = "1.14.0";
 our @ISA = qw(Exporter);
 
 #--------------------------------------------------------------------------
-
 #
 # Exported commands.
 #
@@ -79,6 +80,7 @@ our @ISA = qw(Exporter);
 our @EXPORT = qw(
 			rollrec_add
 			rollrec_close
+			rollrec_current
 			rollrec_default
 			rollrec_del
 			rollrec_delfield
@@ -89,6 +91,7 @@ our @EXPORT = qw(
 			rollrec_fields
 			rollrec_fullrec
 			rollrec_init
+			rollrec_info
 			rollrec_lock
 			rollrec_merge
 			rollrec_names
@@ -101,6 +104,7 @@ our @EXPORT = qw(
 			rollrec_setval
 			rollrec_split
 			rollrec_unlock
+			rollrec_version
 			rollrec_write
 			rollrec_zonegroup
 			rollrec_zonegroups
@@ -108,7 +112,6 @@ our @EXPORT = qw(
 		);
 
 #--------------------------------------------------------------------------
-
 #
 # Zonegroup commands.
 #
@@ -122,7 +125,6 @@ my %zg_commands =
 	);
 
 #--------------------------------------------------------------------------
-
 #
 # Default file names.
 #
@@ -131,7 +133,7 @@ my $DEFAULT_ROLLREC = "dnssec-tools.rollrec";
 my $LOCKNAME = "rollrec.lock";
 
 #
-# Valid fields in a rollrec.
+# Valid fields in a non-informational rollrec.
 #
 my @ROLLFIELDS = (
 			'zonename',
@@ -154,6 +156,16 @@ my @ROLLFIELDS = (
 			'zsk_rollsecs',
 			'zsk_rolldate',
 		  );
+
+#
+# Valid fields in an informational rollrec.
+#
+my @ROLLINFOFIELDS = (
+			'version',
+		  );
+
+our $ROLLREC_INFO = 'info rollrec';		# Name of info rollrec.
+our $ROLLREC_CURRENT_VERSION = 2;		# Current version of rollrecs.
 
 #--------------------------------------------------------------------------
 
@@ -235,9 +247,9 @@ sub rollrec_unlock
 #
 sub rollrec_read
 {
-	my $rrf = shift;		# Rollover record file.
-	my $rrcnt;			# Number of rollrecs we found.
-	my @sbuf;			# Buffer for stat().
+	my $rrf = shift;			# Rollover file.
+	my $rrcnt;				# Number of rollrecs we found.
+	my @sbuf;				# Buffer for stat().
 
 # print "rollrec_read:  down in\n";
 
@@ -245,7 +257,7 @@ sub rollrec_read
 	# Use the default rollrec file, unless the caller specified
 	# a different file.
 	#
-	$rrf = rollrec_default() if($rrf eq "");
+	$rrf = rollrec_default() if($rrf eq '');
 
 	#
 	# Make sure the rollrec file exists.
@@ -284,7 +296,7 @@ sub rollrec_read
 	#
 	# Read the contents of the specified rollrec file.
 	#
-	rollrec_readfile(*ROLLREC);
+	rollrec_readfile(*ROLLREC,0);
 
 	#
 	# Return the number of rollrecs we found.
@@ -347,15 +359,26 @@ sub rollrec_merge
 	}
 
 	#
-	# Create a target file if the first rollrec file doesn't exist.
+	# Create a target file if the first rollrec file doesn't exist or
+	# if the file is empty.  A bare-bones rollrec will be created that
+	# only has an info rollrec.
 	#
-	if(! -e $firstrrf)
+	if((! -e $firstrrf) || (-z $firstrrf))
 	{
 		if(open(TMP,"> $firstrrf") == 0)
 		{
 			err("rollrec_merge:  unable to create target rollrec file \"$firstrrf\"\n",1);
 			return(-2);
 		}
+
+		#
+		# Write the new info rollrec.
+		#
+		print TMP "\n";
+		print TMP "skip \"$ROLLREC_INFO\"\n";
+		print TMP "	version		\"$ROLLREC_CURRENT_VERSION\"\n";
+		print TMP "\n";
+
 		close(TMP);
 	}
 
@@ -403,7 +426,7 @@ sub rollrec_merge
 		#
 		# Read the contents of the specified rollrec file.
 		#
-		if(rollrec_readfile(*ROLLREC_MERGE) < 0)
+		if(rollrec_readfile(*ROLLREC_MERGE,1) < 0)
 		{
 			$errs++;
 		}
@@ -446,6 +469,13 @@ sub rollrec_merge
 #		another file.  The rollrec entries will be removed from
 #		@rollreclines and %rollrecs.
 #
+#		Things get interesting with the target rollrec file and the
+#		info rollrec.  If the target file doesn't exist, the source's
+#		info rollrec is copied to it.  If it does exist but doesn't
+#		have an info rollrec, then the source's info rollrec is copied
+#		to the target.  If the target file exists and has an info
+#		rollrec, then the two files must have matching version numbers.
+#
 #		The rollrecs will be appended to the destination file.
 #
 sub rollrec_split
@@ -456,6 +486,7 @@ sub rollrec_split
 	my $valid = 0;			# Count of valid names.
 	my @badnames = ();		# List of invalid names.
 	my $rrcnt = 0;			# Number of rollrecs we split.
+	my $verscopy = 0;		# Flag for copying info rollrec.
 
 # print "rollrec_split:  down in\n";
 
@@ -482,6 +513,7 @@ sub rollrec_split
 	#
 	foreach my $rrn (@rrlist)
 	{
+		next if($rrn eq $ROLLREC_INFO);
 		$valid++ if(defined($rollrecs{$rrn}));
 	}
 
@@ -496,6 +528,185 @@ sub rollrec_split
 	}
 
 	#
+	# If the new rollrec file already exists, make sure it's at the same
+	# version as the old file.
+	#
+	# This code is ugly.  We'll fix it when we objectify the module a bit
+	# further so it can handle multiple open rollrecs.  Having time to do
+	# that will come RSN.
+	#
+	if(-e $newrrf)
+	{
+		my @nlines;				# Lines in new rollrec.
+		my $keyword;				# Keyword from the line.
+		my $value;				# Keyword's value.
+		my $newvers = -1;			# Rollrec's version.
+
+		if(open(TMP,"< $newrrf") == 0)
+		{
+			err("rollrec_split:  unable to read target rollrec file \"$newrrf\"\n",1);
+			return(-20);
+		}
+
+		@nlines = <TMP>;
+		close(TMP);
+
+		#
+		# Find the start of the info rollrec.
+		#
+		for(my $ind=0; $ind < @nlines; $ind++)
+		{
+			my $line = $nlines[$ind];
+
+			#
+			# Skip comment lines and empty lines.
+			#
+			if(($line =~ /^\s*$/) || ($line =~ /^\s*[;#]/))
+			{
+				next;
+			}
+
+			#
+			# Grab the keyword and value from the line.
+			#
+			$line =~ /^\s*([a-zA-Z_]+)\s+"([a-zA-Z0-9\/\-+_.,: \@\t]*)"/;
+			$keyword = $1;
+			$value = $2;
+
+			#
+			# Look for a keyword of "roll" or "skip" and the
+			# info rollrec.
+			#
+			next if(($keyword !~ /^roll$/i)		&&
+				($keyword !~ /^skip$/i));
+			next if($value ne $ROLLREC_INFO);
+
+			#
+			# Okeedokee, we've got the info rollrec now.
+			# Lop off the first chunk o' file.
+			#
+			splice @nlines, 0, $ind;
+			last;
+		}
+
+		#
+		# Find the end of the info rollrec.
+		#
+		for(my $ind=1; $ind < @nlines; $ind++)
+		{
+			my $line = $nlines[$ind];
+
+			#
+			# Skip comment lines and empty lines.
+			#
+			if(($line =~ /^\s*$/) || ($line =~ /^\s*[;#]/))
+			{
+				next;
+			}
+
+			#
+			# Grab the keyword and value from the line.
+			#
+			$line =~ /^\s*([a-zA-Z_]+)\s+"([a-zA-Z0-9\/\-+_.,: \@\t]*)"/;
+			$keyword = $1;
+
+			next if(($keyword !~ /^roll$/i)		&&
+				($keyword !~ /^skip$/i));
+
+			#
+			# Get rid of everything from here to the end.
+			#
+			splice @nlines, $ind, @nlines; 
+		}
+
+		#
+		# We now have the info rollrec -- if there is one.
+		#
+		if(@nlines)
+		{
+			my %newinfo = ();	# New file's info rollrec.
+			my $inforecs = 0;	# Info records we found.
+
+			for(my $ind=0; $ind < @nlines; $ind++)
+			{
+				my $line = $nlines[$ind];
+
+				#
+				# Skip comment lines and empty lines.
+				#
+				if(($line =~ /^\s*$/) || ($line =~ /^\s*[;#]/))
+				{
+					next;
+				}
+
+				#
+				# Save this line's keyword/value pair.
+				#
+				$line =~ /^\s*([a-zA-Z_]+)\s+"([a-zA-Z0-9\/\-+_.,: \@\t]*)"/;
+				$keyword = $1;
+				$value	 = $2;
+				$newinfo{$1} = $2;
+				$inforecs++;
+			}
+
+			#
+			# If we found any actual info records, we'll check
+			# the version.
+			#
+			if($inforecs)
+			{
+				if(defined($newinfo{'version'}))
+				{
+					$newvers = $newinfo{'version'};
+				}
+				else
+				{
+					$newvers = undef;
+				}
+			}
+		}
+
+		#
+		# Figure out what to do with the version based on
+		# value of $newvers:
+		#	< 0	There's no info rollrec.  We'll copy the
+		#		current rollrec's info rollrec to the file.
+		#
+		#	< 2	There's an info rollrec with a pre-info
+		#		rollrec version.  We'll return an error.
+		#
+		#	If it's neither of the above and it doesn't match
+		#	the current rollrec's version, then there's a fatal
+		#	version mismatch.  We'll return an error.
+		#
+		if(! defined($newvers))
+		{
+			return(-8);
+		}
+		elsif($newvers < 0)
+		{
+			$verscopy = 1;
+		}
+		elsif($newvers < 2)
+		{
+			return(-6);
+		}
+		elsif($rollrecs{$ROLLREC_INFO}{'version'} != $newvers)
+		{
+			return(-7);
+		}
+
+	}
+	else
+	{
+		#
+		# If this is a new target rollrec file, we'll copy the
+		# info rollrec from the original file.
+		#
+		$verscopy = 1;
+	}
+
+	#
 	# Open the target rollrec file for appending.
 	#
 	if(open(ROLLREC_SPLIT,">> $newrrf") == 0)
@@ -505,12 +716,23 @@ sub rollrec_split
 	}
 
 	#
+	# Add the info rollrec if we've found we should copy it.
+	#
+	unshift @rrlist, $ROLLREC_INFO if($verscopy);
+
+	#
 	# Read each remaining rollrec file and add it to our internal
 	# rollrec collection.
 	#
 	foreach my $rrn (@rrlist)
 	{
 		my $rrind;			# Index to rollrec's first line.
+
+		#
+		# Skip the info rollrec if it was named and we shouldn't
+		# copy it.
+		#
+		next if(!$verscopy && ($rrn eq $ROLLREC_INFO));
 
 		#
 		# If this name isn't the name of an existing rollrec, we'll
@@ -614,15 +836,27 @@ sub rollrec_split
 sub rollrec_readfile
 {
 	my $rfh = shift;			# File handle for rollrec file.
+	my $merger = shift;			# Merge-rollrec flag.
 	my $name;				# Name of the rollrec entry.
 	my $havecmdsalready = 0;		# Commands-read flag.
 	my $prevline = 'dummy';			# Previous line.
+
+	my $mir_start	 = -1;			# Start of merged rollrec.
+	my $mir_found	 =  0;			# Found-info-rollrec flag.
+	my $mir_ir_start = -1;			# Start of merged info rollrec.
+	my $mir_version	 = -1;			# Merged rollrec's version.
 
 	#
 	# If we already have commands loaded, don't reload them.
 	#
 	my @currentcmds = rollmgr_getallqueuedcmds();
 	$havecmdsalready = 1 if ($#currentcmds > -1);
+
+	#
+	# If we're starting a rollrec merge, we'll save the beginning
+	# of the new rollrec.
+	#
+	$mir_start = $rollreclen if($merger);
 
 	#
 	# Grab the lines and pop 'em into the rollreclines array.  We'll also
@@ -671,12 +905,37 @@ sub rollrec_readfile
 #		print "rollrec_readfile:  keyword <$keyword>\t\t<$value>\n";
 
 		#
-		# If the keyword is "roll", then we're starting a new record.
-		# We'll save the name of the rollrec, and then proceed on to
-		# the next line.  
+		# If the keyword is "roll" or "skip" and we aren't merging
+		# rollrecs, then we're starting a new record.  We'll save
+		# the name of the rollrec, and then proceed on to the next
+		# line.  
 		#
 		if(($keyword =~ /^roll$/i) || ($keyword =~ /^skip$/i))
 		{
+			if($merger)
+			{
+				#
+				# If we've found the start of the info rollrec,
+				# we'll save the position and set a flag that
+				# we've found it.
+				# If we've found the start of the next rollrec
+				# after the info rollrec, then we'll remove
+				# info rollrec from @rollreclines.
+				#
+				if($value eq $ROLLREC_INFO)
+				{
+					$mir_ir_start = $rollreclen - 1;
+					$mir_found = 1;
+					next;
+				}
+				elsif($mir_ir_start > -1)
+				{
+					splice @rollreclines, $mir_ir_start, -1;
+
+					$mir_ir_start = -1;
+				}
+			}
+
 			$name = $value;
 
 			#
@@ -694,7 +953,7 @@ sub rollrec_readfile
 			next;
 		}
 
-		if($keyword =~ /^cmd$/i)
+		elsif($keyword =~ /^cmd$/i)
 		{
 			#
 			# The line is used to issue a specific command to run.
@@ -728,6 +987,25 @@ sub rollrec_readfile
 		}
 
 		#
+		# If we're merging rollrecs and we've found the rollrec
+		# version in the info rollrec, save the version.
+		# Also, we won't be adding anything from the additional
+		# file's info rollrec to the existing info rollrec.
+		#
+		if($merger && ($mir_ir_start > -1) && ($keyword =~ /version/i))
+		{
+			$mir_version = $value;
+
+			if($rollrecs{$ROLLREC_INFO}{'version'} < $mir_version)
+			{
+				err("rollrec_readfile:  merging rollrecs, version mismatch  - $rollrecs{$ROLLREC_INFO}{'version'}, $mir_version\n");
+				return(-2);
+			}
+
+			next;
+		}
+
+		#
 		# Save this zone's zonegroup.
 		#
 		if($keyword =~ /^zonegroup$/i)
@@ -745,10 +1023,51 @@ sub rollrec_readfile
 	#
 	# Make sure the last line is a blank line.
 	#
+	if($mir_found && ($mir_version == -1))
+	{
+		err("rollrec_readfile:  info rollrec found, but it contains no version field\n");
+		return(-3);
+	}
+
+	#
+	# Make sure the last line is a blank line.
+	#
 	if($rollreclines[-1] !~ /^\s*$/)
 	{
 		push @rollreclines, "\n";
 		$rollreclen = @rollreclines;
+	}
+
+	#
+	# If the rollrec doesn't have an info rollrec, we'll prepend a
+	# new one.  The hash entries will be added to %rollrecs; the
+	# file lines will be prepended to @rollreclines.
+	#
+	if(!defined($rollrecs{$ROLLREC_INFO}))
+	{
+		my @newinfo = ();			# New info rollrec.
+
+		#
+		# Build the new info rollrec.
+		#
+		$newinfo[0] = "\n";
+		$newinfo[1] = "skip \"$ROLLREC_INFO\"\n";
+		$newinfo[2] = "	version		\"$ROLLREC_CURRENT_VERSION\"\n";
+		$newinfo[3] = "\n";
+
+		#
+		# Add the new info rollrec to our file contents and the
+		# hash of rollrec entries.
+		#
+		unshift @rollreclines, @newinfo;
+
+		$rollrecs{$ROLLREC_INFO}{'rollrec_type'} = 'skip';
+		$rollrecs{$ROLLREC_INFO}{'version'} = $ROLLREC_CURRENT_VERSION;
+
+		#
+		# Set the file-modified flag and we're good to go.
+		#
+		$modified = 1;
 	}
 
 	#
@@ -760,9 +1079,108 @@ sub rollrec_readfile
 }
 
 #--------------------------------------------------------------------------
+# Routine:	rollrec_current()
+#
+# Purpose:	Return a boolean indicating if this rollrec is current.
+#		Versions 0, 1, and 2 are considered equivalent.
+#
+#		If this rollrec file's version matches the current rollrec
+#		version, we'll return a true value.
+#		If the file's version is less than the current rollrec
+#		version, we'll return a false value.
+#		If the file's version is greater than the current rollrec
+#		version, we'll return a false value and print an error message.
+#		If the file's version is not in the proper format, we'll
+#		return a false value and print an error message.
+#
+#		Since the last two conditions shouldn't ever happen, it could
+#		be argued that a failure value should be returned.  However,
+#		an easy two-value boolean function was wanted, not a three-
+#		value function.
+#
+sub rollrec_current
+{
+	my $rrvers;					# Rollrec's version.
+
+# print "rollrec_current:  down in ($name)\n";
+
+	#
+	# If the rollrec doesn't have a defined version, or there isn't
+	# an info rollrec, then we'll force an out-of-date version.
+	#
+	if(!defined($rollrecs{$ROLLREC_INFO}) ||
+	   !defined($rollrecs{$ROLLREC_INFO}{'version'}))
+	{
+		return(0);
+	}
+
+	#
+	# Ensure the rollrec's version has the appropriate format.
+	#
+	$rrvers = $rollrecs{$ROLLREC_INFO}{'version'};
+
+	if($rrvers !~ /^[0-9]+\.?[0-9]*$/)
+	{
+		print STDERR "invalid format for rollrec version - \"$rrvers\"\n";
+		return(0);
+	}
+
+	#
+	# Return an appropriate boolean for the rollrec file's currency.
+	#
+	if(($rrvers == 0)	||
+	   ($rrvers == 1)	||
+	   ($rrvers == $ROLLREC_CURRENT_VERSION))
+	{
+		return(1);
+	}
+	else
+	{
+		if($rrvers > $ROLLREC_CURRENT_VERSION)
+		{
+			print STDERR "invalid rollrec version - \"$rrvers\"; current version is \"$ROLLREC_CURRENT_VERSION\"\n";
+		}
+		return(0);
+	}
+
+}
+
+#--------------------------------------------------------------------------
+# Routine:	rollrec_info()
+#
+# Purpose:	Return the informational rollrec.
+#
+sub rollrec_info
+{
+	my $nrec = $rollrecs{$ROLLREC_INFO};
+
+# print "rollrec_info:  down in ($name)\n";
+
+	return($nrec);
+}
+
+#--------------------------------------------------------------------------
+# Routine:	rollrec_version()
+#
+# Purpose:	Return the rollrec's version.  If the version is 0, then
+#		we'll bump the number up to 1.
+#
+sub rollrec_version
+{
+	my $rrv = $rollrecs{$ROLLREC_INFO}{'version'};
+
+# print "rollrec_version:  down in\n";
+
+	$rrv = 1 if($rrv == 0);
+
+	return($rrv);
+}
+
+#--------------------------------------------------------------------------
 # Routine:	rollrec_names()
 #
 # Purpose:	Smoosh the rollrec names into an array and return the array.
+#		The name of the informational rollrec willnot be returned.
 #
 sub rollrec_names
 {
@@ -773,6 +1191,7 @@ sub rollrec_names
 
 	foreach $rrn (sort(keys(%rollrecs)))
 	{
+		next if($rrn eq $ROLLREC_INFO);
 		push @names, $rrn;
 	}
 
@@ -813,6 +1232,11 @@ sub rollrec_zonegroup
 	#
 	foreach my $rrn (sort(keys(%rollrecs)))
 	{
+		#
+		# Skip the info rollrec.  It shouldn't have a zonegroup, anyway.
+		#
+		next if($rrn eq $ROLLREC_INFO);
+
 		if($rollrecs{$rrn}{'zonegroup'} eq $zgname)
 		{
 			push @zglist, $rrn;
@@ -848,6 +1272,11 @@ sub rollrec_exists
 
 # print "rollrec_exists:  down in ($name)\n";
 
+	#
+	# Skip the info rollrec.
+	#
+	return if($name eq $ROLLREC_INFO);
+
 	return(exists($rollrecs{$name}));
 }
 
@@ -862,6 +1291,11 @@ sub rollrec_fullrec
 	my $nrec = $rollrecs{$name};
 
 # print "rollrec_fullrec:  down in ($name)\n";
+
+	#
+	# Skip the info rollrec.
+	#
+	return if($name eq $ROLLREC_INFO);
 
 	return($nrec);
 }
@@ -878,6 +1312,11 @@ sub rollrec_recval
 	my $val = $rollrecs{$name}{$field};
 
 # print "rollrec_recval:  down in ($name) ($field) ($val)\n";
+
+	#
+	# Skip the info rollrec.
+	#
+	return if($name eq $ROLLREC_INFO);
 
 	return($val);
 }
@@ -899,6 +1338,11 @@ sub rollrec_rectype
 	my $rrind;			# Rollrec's index.
 
 # print STDERR "rollrec_rectype:  <$name> <$rectype>\n";
+
+	#
+	# Skip the info rollrec.
+	#
+	return(0) if($name eq $ROLLREC_INFO);
 
 	#
 	# Make sure we've got a valid record type.
@@ -947,6 +1391,11 @@ sub rollrec_setval
 	my $lastfld = 0;		# Last found field in @rollreclines.
 
 # print "rollrec_setval:  down in\n";
+
+	#
+	# Skip the info rollrec.
+	#
+	return(0) if($name eq $ROLLREC_INFO);
 
 	#
 	# If a rollrec of the specified name doesn't exist, we'll create a
@@ -1100,6 +1549,11 @@ sub rollrec_delfield
 # print "rollrec_delfield:  down in\n";
 
 	#
+	# Skip the info rollrec.
+	#
+	return(0) if($name eq $ROLLREC_INFO);
+
+	#
 	# Return if a rollrec of the specified name doesn't exist.
 	#
 	return(0) if(!exists($rollrecs{$name}));
@@ -1203,6 +1657,11 @@ sub rollrec_add
 	my %fields;			# Rollrec fields.
 
 # print "rollrec_add:  down in\n";
+
+	#
+	# Skip the info rollrec.
+	#
+	return if($rrname eq $ROLLREC_INFO);
 
 	#
 	# Get the timestamp.
@@ -1315,9 +1774,14 @@ sub rollrec_del
 # print "rollrec_del:  down in\n";
 
 	#
+	# Skip the info rollrec.
+	#
+	return(-1) if($rrname eq $ROLLREC_INFO);
+
+	#
 	# Don't allow empty rollrec names or non-existent rollrecs.
 	#
-	return(-1) if($rrname eq "");
+	return(-1) if($rrname eq '');
 	return(-1) if(!defined($rollrecindex{$rrname}));
 
 	#
@@ -1406,6 +1870,12 @@ sub rollrec_rename
 	my $len;			# Length of array slice to delete.
 
 # print "rollrec_rename:  down in\n";
+
+	#
+	# Skip the info rollrec.
+	#
+	return(-6) if($oldname eq $ROLLREC_INFO);
+	return(-7) if($newname eq $ROLLREC_INFO);
 
 	#
 	# Don't allow empty rollrec names.
@@ -1517,9 +1987,14 @@ sub rollrec_settime
 
 # print "rollrec_settime:  down in\n";
 
+	#
+	# Skip the info rollrec.
+	#
+	return if($name eq $ROLLREC_INFO);
+
 	if(($cnt == 2) && ($val == 0))
 	{
-		$chronos = "";
+		$chronos = '';
 	}
 	else
 	{
@@ -1882,6 +2357,9 @@ Net::DNS::SEC::Tools::rollrec - Manipulate a DNSSEC-Tools rollrec file.
   rollrec_lock();
   rollrec_read("localhost.rollrec");
 
+  $valid = rollrec_current();
+  $rrinfo = rollrec_info();
+
   @rrnames = rollrec_names();
 
   $flag = rollrec_exists("example.com");
@@ -1988,7 +2466,14 @@ closes and the file handle B<without> saving any modified data.
 On reading a I<rollrec> file, consecutive blank lines are collapsed into a
 single blank line.  As I<rollrec> entries are added and deleted, files merged
 and files split, it is possible for blocks of consecutive blanks lines to
-grow.  This will prevent these blocks from growing excessively.
+grow.  This blank-line collapsing will prevent these blocks from growing
+excessively.
+
+There is a special I<rollrec> called the I<info rollrec>.  It contains
+information about the I<rollrec> file, such as the version of I<rollrec>s
+stored within the file.  It is only accessible through the I<rollrec_info()>
+interface, and the I<rollrec_current()> interface will indicate if the file's
+version number is current.
 
 =head1 ROLLREC LOCKING
 
@@ -2049,6 +2534,22 @@ it is internally marked as having been modified.
 This interface saves the internal version of the I<rollrec> file (opened with
 I<rollrec_read()>) and closes the file handle. 
 
+=item I<rollrec_current()>
+
+This routine returns a boolean indicating if this open rollrec is current,
+as defined by the version number in the I<info rollrec>.
+Versions 0, 1, and 2 are considered to be equivalent.
+
+Return values are:
+
+    1 rollrec is current
+    0 rollrec is obsolete
+    0 rollrec has an invalid version
+
+The last condition shouldn't ever happen and it could be argued that a
+failure value should be returned.  However, an easy two-value boolean
+function was wanted, not a three-value function.
+
 =item I<rollrec_del(rollrec_name)>
 
 This routine deletes a I<rollrec> from the set of I<rollrec>s loaded into
@@ -2095,6 +2596,12 @@ I<rollrec_name> exists.
 I<rollrec_fullrec()> returns a reference to the I<rollrec> specified in
 I<rollrec_name>.
 
+=item I<rollrec_info()>
+
+I<rollrec_info()> returns a reference to the I<info rollrec> given in the
+current file.  This interface is the only way for a calling program to
+retrieve this information.
+
 =item I<rollrec_lock()>
 
 I<rollrec_lock()> locks the I<rollrec> lockfile.  An exclusive lock is
@@ -2116,7 +2623,17 @@ be merged with the other files passed to I<rollrec_merge()>.  If the file
 does not exist, I<rollrec_merge()> will create it and merge the remaining
 files into it.
 
-Upon success, I<rollrec_read()> returns the number of I<rollrec>s read from
+The I<info rollrec> can affect how the merging will work.  If the
+I<target_rollrec_file> is doesn't exist or is empty, then a simple I<info
+rollrec> will be added to the file.  No part of the I<info rollrec>s will be
+merged into that of the I<target_rollrec_file>.
+
+If the file does exist but doesn't have an I<info rollrec> B<rollrec>, then
+then the source's I<info rollrec> is copied to the target.  The
+files' I<info rollrec>s must either have the same version or the versions
+must all be less than the version of the I<target_rollrec_file>.
+
+Upon success, I<rollrec_merge()> returns the number of I<rollrec>s read from
 the file.
 
 Failure return values:
@@ -2130,6 +2647,7 @@ Failure return values:
 =item I<rollrec_names()>
 
 This routine returns a list of the I<rollrec> names from the file.
+The name of the I<info rollrec> is not included in this list.
 
 =item I<rollrec_read(rollrec_file)>
 
@@ -2154,12 +2672,16 @@ Failure return values:
     -2 unable to open rollrec file
     -3 duplicate rollrec names in file
 
-=item I<rollrec_readfile(rollrec_file_handle)>
+=item I<rollrec_readfile(rollrec_file_handle,mergeflag)>
 
 This interface reads the specified file handle to a I<rollrec> file and
 parses the file contents into a I<rollrec> hash table and a file-contents
 array.  The hash table and file-contents array are B<not> cleared prior
 to adding data to them.
+
+The I<mergeflag> argument indicates whether the call will be merging a
+I<rollrec> file with a previously read I<rollrec> or if it will be reading
+a fresh I<rollrec> file.
 
 Upon success, I<rollrec_read()> returns zero.
 
@@ -2258,6 +2780,13 @@ and the invalid names will be returned in a list to the caller.
 Only the I<rollrec> entries themselves will be moved to the new I<rollrec>
 file.  Any associated comments will be left in the current I<rollrec> file.
 
+I<rollrec>-splitting gets interesting with the addition of the I<info
+rollrec>.  If the I<new_rollrec_file> file doesn't exist, the source
+B<rollrec> file's I<info rollrec> is copied to the target file.  If the file
+does exist but doesn't have an I<info rollrec>, then then the source's I<info
+rollrec> is copied to the target.  If the target file exists and has an I<info
+rollrec>, then the two files must have matching version numbers.
+
 On success, the count of moved I<rollrec> entries is returned.  Error returns
 are given below.
 
@@ -2267,7 +2796,11 @@ Failure return values:
     -3 - none of the rollrec names given are existing rollrecs
     -4 - unable to open new_rollrec_file
     -5 - invalid rollrec names were specified in rollrec_names,
-         followed by the list of bad names.
+         followed by the list of bad names
+    -6 - target's info rollrec has previous version than current
+    -7 - target's info rollrec has (undefined) later version
+         than current
+    -8 - target's info rollrec exists without version number
 
 =item I<rollrec_unlock()>
 
