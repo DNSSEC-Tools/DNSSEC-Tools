@@ -1,11 +1,11 @@
-$TTL	1m
+$TTL	15s
 
 @	IN	soa	dummy.com.	tewok.leodhas.dummy.com. (
 					2005034774	; serial
 					3h		; refresh
 					30m		; retry
-					1m		; expire
-					1m )		; minimum
+					15s		; expire
+					15s )		; minimum
 
 @		IN  	NS 	leodhas.dummy.com.
 
