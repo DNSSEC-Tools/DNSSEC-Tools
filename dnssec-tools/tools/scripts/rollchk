@@ -118,6 +118,16 @@ my $skipcnt  = 0;			# Count of skip rollrecs.
 my $totalcnt = 0;			# Total count of rollrecs.
 my $version  = 0;			# Display the version number.
 
+###################################################
+#
+# Name of the info rollrec and the rollrec version number.
+#
+
+my $inforec = $Net::DNS::SEC::Tools::rollrec::ROLLREC_INFO;
+my $infovers = $Net::DNS::SEC::Tools::rollrec::ROLLREC_CURRENT_VERSION;
+
+#######################################################################
+
 my $ret;				# Return code from main().
 
 $ret = main();
@@ -172,6 +182,12 @@ sub main()
 	# Read the rollrec file.
 	#
 	getrollrecs($ARGV[0]);
+
+	#
+	# Validate the info rollrec.
+	#
+	$errors += inforec_validate();
+	rollrec_unlock();
 
 	#
 	# Run the rollrec checks.
@@ -632,6 +648,58 @@ sub rollrec_validate
 }
 
 #-----------------------------------------------------------------------------
+# Routine:	inforec_validate()
+#
+# Purpose:	This routine checks the validity of an info rollrec.
+#		These checks are:
+#			- version should be either 0, 1, or 2
+#
+sub inforec_validate
+{
+	my $ir;					# Info rollrec reference.
+	my $irvers;				# Version of info rollrec.
+
+	#
+	# Get a reference to the info rollrec.
+	#
+	$ir = rollrec_info();
+	if(! defined($ir))
+	{
+		qprint("info rollrec:  rollrec has no info rollrec\n");
+		$errs++;
+		return(1);
+	}
+
+	#
+	# Get the info rollrec's version.
+	#
+	$irvers = $ir->{'version'};
+
+	#
+	# Make sure we've got a positive maximum TTL.
+	#
+	if($irvers > $infovers)
+	{
+		qprint("info rollrec:  exceedingly large version in info rollrec -  \"$irvers\"\n");
+		$errs++;
+	}
+	elsif($irvers < 0)
+	{
+		qprint("info rollrec:  negative version in info rollrec -  \"$irvers\"\n");
+		$errs++;
+	}
+	elsif(($irvers != 0)	&&
+	      ($irvers != 1)	&&
+	      ($irvers != 2))
+	{
+		qprint("info rollrec:  unknown version in info rollrec -  \"$irvers\"\n");
+		$errs++;
+	}
+
+	return(0);
+}
+
+#-----------------------------------------------------------------------------
 # Routine:	checkdir()
 #
 # Purpose:	Check a directory for validity.  This is defined as:
@@ -943,9 +1011,10 @@ problems and inconsistencies.
 
 =head1 TYPES OF CHECKS
 
-There are three types of checks performed by B<rollchk>:  file checks,
-"raw" file checks, and I<rollrec> checks.  The checks are performed in that
-order, and if any of the group checks fail then B<rollchk> exits.
+There are four types of checks performed by B<rollchk>:  file checks, "raw"
+file checks, I<info rollrec> checks, and I<rollrec> checks.  The checks are
+performed in that order, and if any of the group checks fail then B<rollchk>
+exits.
 
 =head2 File Checks
 
@@ -974,6 +1043,27 @@ using the I<rollrec.pm> interfaces.  Recognized problems are:
 =item * duplicated rollrec names
 
 A I<rollrec> name is not unique. 
+
+=back
+
+=head2 Info Rollrec Checks
+
+These checks are performed to ensure the I<info rollrec> is valid.
+Recognized problems are:
+
+=over 4
+
+=item * negative version
+
+The version number in the I<info rollrec> is less than 0.
+
+=item * overly large version
+
+The version number in the I<info rollrec> is greater than 2.
+
+=item * invalid version
+
+The version number in the I<info rollrec> is not 0, 1, or 2.
 
 =back
 
