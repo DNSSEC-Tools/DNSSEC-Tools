@@ -47,6 +47,33 @@ numbers, and several special characters.  The special characters are the minus
 sign, the plus sign, the underscore, the comma, the period, the colon, the
 forward-slash, the space, and the tab.
 
+There is a special I<rollrec> called the B<rollrec info> I<rollrec>.  It
+contains information about the I<rollrec> file, such as the version of
+I<rollrec>s stored within the file.  It is only accessible through the
+I<rollrec_info()> interface, and the I<rollrec_current()> interface will
+indicate if the file's version number is current.  The name of this I<rollrec>
+is "rollrec info", which is a reserved name.  It has its own set of fields,
+with only one overlap with regular I<rollrec>s.
+
+=head1 FILE VERSIONS
+
+The B<rollrec> file format will evolve from time to time.  The B<rollrec info>
+I<rollrec> was introduced specifically to account for changes between
+versions.  You should not manually change a B<rollrec> file's version, but let
+the DNSEC-Tools update the file for you.  The version differences are
+summarized below.
+
+B<Version 1>:  This was the original format of the I<rollrec> file.  At
+various times, additional fields were added to it, but the basic format of the
+file remained essentially the same.
+
+B<Version 2>:  The B<rollrec info> I<rollrec> was added for this version.  No
+other format changes were introduced.  The B<rollrec.pm> module was modified
+to recognize this I<rollrec> and not allow calling programs to modify it.  For
+this reason, versions 1 and 2 are considered functionally equivalent when it
+comes to whether or not a I<rollrec> file is considered current.
+(DNSSEC-Tools version 1.15; February 2013)
+
 =head1 FIELDS
 
 The fields in a I<rollrec> record are:
@@ -111,6 +138,13 @@ The maximum time-to-live for the zone.  This is measured in seconds.
  * phasestart
 
 The time-stamp of the beginning of the zone's current phase.
+
+ * version
+
+This is the format version of the I<rollrec>s in the I<rollrec> file.
+The value of this field is a numeric value, such as "1.3" or "2".
+It should B<only> be modified by DNSSEC-Tools programs.
+This field is only available in the B<rollrec info> I<rollrec>.
 
  * zonefile
 
@@ -188,6 +222,11 @@ The following is an example of a skip I<rollrec>:
             zsk_rollsecs    "1172615070"
             zsk_rolldate    "Tue Feb 27 22:24:30 2007"
             phasestart      "Mon Feb 20 12:34:56 2007"
+
+The following is an example of a skip I<rollrec>:
+
+    roll "rollrec info"
+            version         "2"
 
 =head1 COPYRIGHT
 
