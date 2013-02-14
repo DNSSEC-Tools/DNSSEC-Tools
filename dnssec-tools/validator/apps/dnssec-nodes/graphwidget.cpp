@@ -129,8 +129,8 @@ GraphWidget::GraphWidget(QWidget *parent, QLineEdit *editor, QTabWidget *tabs, c
     m_infoLabel->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Minimum);
     m_infoBox->addWidget(m_infoMoreButton = new QPushButton("Details..."));
     connect(m_infoMoreButton, SIGNAL(clicked()), this, SLOT(moreInfoButton()));
-    m_infoMoreButton->hide();
-    m_nodeInfoLabel->hide();
+//    m_infoMoreButton->hide();
+//    m_nodeInfoLabel->hide();
 
     // m_logWatcher->parseLogFile();
 
@@ -396,7 +396,6 @@ void GraphWidget::layoutInCircles() {
     const int childSize = 30;
     QRectF sceneRect(-150,-150,150,150);
     m_layoutType = circleLayout;
-    QRectF rect = sceneRect;
     Node *startingNode = m_nodeList->node(m_startingNode);
     layoutCircleNode(startingNode, 0, 0, 0, 2*3.1415, sceneRect, startingNode);
     sceneRect.setBottom(sceneRect.bottom() + childSize);

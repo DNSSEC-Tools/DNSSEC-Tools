@@ -121,6 +121,8 @@ protected:
     void mousePressEvent(QGraphicsSceneMouseEvent *event);
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
 
+    void hoverEnterEvent(QGraphicsSceneHoverEvent *event);
+
 signals:
 
 private:

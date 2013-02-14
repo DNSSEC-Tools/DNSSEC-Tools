@@ -45,6 +45,7 @@
 #include <QStyleOption>
 #include <QTextEdit>
 #include <QMenu>
+#include <QToolTip>
 #include <qdebug.h>
 
 #include "edge.h"
@@ -64,6 +65,7 @@ Node::Node(GraphWidget *graphWidget, const QString &nodeName, const QString &fqd
     setCacheMode(DeviceCoordinateCache);
     setZValue(-1);
     setToolTip(fqdn);
+    setAcceptHoverEvents(true);
 }
 
 void Node::addEdge(Edge *edge)
@@ -258,7 +260,7 @@ void Node::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWid
         foreach (DNSData *data, m_subData) {
             setupPainting(data->DNSSECStatus(), option, painter);
 
-            painter->drawPie(QRectF(-7, -7, 20, 20), count * angleSegment, angleSegment);
+            painter->drawPie(QRectF(-10, -10, 20, 20), count * angleSegment, angleSegment);
 
             count++;
         }
@@ -378,6 +380,11 @@ void Node::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 {
     update();
     QGraphicsItem::mouseReleaseEvent(event);
+}
+
+void Node::hoverEnterEvent(QGraphicsSceneHoverEvent *event)
+{
+    graph->setInfo(this);
 }
 
 void Node::addChild(Node *child)
