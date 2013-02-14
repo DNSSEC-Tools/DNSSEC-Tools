@@ -12,7 +12,7 @@ class DNSSECStatusFilter : public Filter
     Q_OBJECT
 
 public:
-    DNSSECStatusFilter(int dnssecValidity, bool requireAll = true);
+    DNSSECStatusFilter(int dnssecValidity = DNSData::VALIDATED, bool requireAll = true);
 
 
     virtual bool      matches(Node *node);

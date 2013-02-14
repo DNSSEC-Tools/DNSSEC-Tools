@@ -11,15 +11,13 @@ class TypeFilter : public Filter
 {
     Q_OBJECT
 public:
-    explicit TypeFilter(QString type);
+    explicit TypeFilter(QString type = "A", QObject *parent = 0);
     ~TypeFilter();
 
     virtual QString   name() { return "Type Filter"; }
 
     virtual bool      matches(Node *node);
     virtual void      configWidgets(QHBoxLayout *hbox);
-
-
 signals:
 
 public slots:

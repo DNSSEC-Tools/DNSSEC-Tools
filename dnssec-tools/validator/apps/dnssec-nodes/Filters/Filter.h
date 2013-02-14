@@ -11,7 +11,7 @@ class Filter : public QObject
 {
     Q_OBJECT
 public:
-    Filter();
+    Filter(QObject *parent = 0);
 
     virtual bool      matches(Node *node) = 0;
     virtual QString   name() = 0;
@@ -19,8 +19,11 @@ public:
 
     void              filterHasChanged() { emit filterChanged(); }
 
+    static Filter    *getNewFilterFromMenu(QPoint where);
+
 signals:
     void              filterChanged();
+    void              filterAdded();
 };
 
 #endif // FILTER_H

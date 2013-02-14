@@ -153,25 +153,25 @@ MainWindow::MainWindow(const QString &fileName, QWidget *parent) :
     // Filter menu
     //
     QActionGroup *filterActions = new QActionGroup(this);
-    QMenu *filterMenu = menu->addMenu("Filter");
-    action = filterMenu->addAction("Do Not Filter");
+    QMenu *filterMenu = menu->addMenu("&Filter");
+    action = filterMenu->addAction("&Do Not Filter");
     action->connect(action, SIGNAL(triggered()), m_graphWidget->nodeList(), SLOT(filterNone()));
     action->setCheckable(true);
     action->setChecked(true);
     action->setActionGroup(filterActions);
     filterMenu->addSeparator();
 
-    action = filterMenu->addAction("Filter by Data Status");
+    action = filterMenu->addAction("Filter by Data &Status");
     action->connect(action, SIGNAL(triggered()), m_graphWidget->nodeList(), SLOT(filterBadToTop()));
     action->setCheckable(true);
     action->setActionGroup(filterActions);
 
-    action = filterMenu->addAction("Filter by Data Type");
+    action = filterMenu->addAction("Filter by Data &Type");
     action->connect(action, SIGNAL(triggered()), m_graphWidget->nodeList(), SLOT(filterByDataType()));
     action->setCheckable(true);
     action->setActionGroup(filterActions);
 
-    action = filterMenu->addAction("Filter by Name");
+    action = filterMenu->addAction("Filter by &Name");
     action->connect(action, SIGNAL(triggered()), m_graphWidget->nodeList(), SLOT(filterByName()));
     action->setCheckable(true);
     action->setActionGroup(filterActions);
@@ -179,7 +179,8 @@ MainWindow::MainWindow(const QString &fileName, QWidget *parent) :
 
     filterMenu->addSeparator();
 
-    action = filterMenu->addAction("Open Filter Editor");
+    action = filterMenu->addAction("&Open Filter Editor");
+    action->setShortcut(Qt::CTRL | Qt::Key_F);
     action->connect(action, SIGNAL(triggered()), m_graphWidget->nodeList(), SLOT(filterEditor()));
     menu->addSeparator();
 

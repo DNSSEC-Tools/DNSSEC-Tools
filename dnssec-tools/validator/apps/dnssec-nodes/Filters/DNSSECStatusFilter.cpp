@@ -4,7 +4,7 @@
 #include <QtGui/QLabel>
 
 DNSSECStatusFilter::DNSSECStatusFilter(int dnssecValitiy, bool requireAll)
-    : m_dnssecValidity(dnssecValitiy), m_requireAll(requireAll), m_mapper(), m_menuButton(0)
+    : Filter(), m_dnssecValidity(dnssecValitiy), m_requireAll(requireAll), m_mapper(), m_menuButton(0)
 {
     m_validityType[DNSData::UNKNOWN] = "That Have An Unkown (Inccomplete) Status";
     m_validityType[DNSData::TRUSTED] = "That Are Trusted";
@@ -28,7 +28,8 @@ bool DNSSECStatusFilter::matches(Node *node)
 
 void DNSSECStatusFilter::configWidgets(QHBoxLayout *hbox)
 {
-    QLabel *filterLabel = new QLabel("Highlight Nodes That Contain Records:");
+    QLabel *filterLabel = new QLabel("Contain Records with Status:");
+    filterLabel->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Minimum);
     hbox->addWidget(filterLabel);
 
 

@@ -3,9 +3,12 @@
 #include "node.h"
 #include <qdebug.h>
 
-SetBorderColor::SetBorderColor(QColor borderColor)
-    : m_borderColor(borderColor)
+#include <QLabel>
+
+SetBorderColor::SetBorderColor(QColor borderColor, QObject *parent)
+    : Effect(parent), m_borderColor(borderColor)
 {
+    connect(this, SIGNAL(borderColorChanged()), this, SIGNAL(effectChanged()));
 }
 
 void SetBorderColor::applyToNode(Node *node)
@@ -16,4 +19,10 @@ void SetBorderColor::applyToNode(Node *node)
 void SetBorderColor::resetNode(Node *node)
 {
     node->setBorderColor(Qt::black);
+}
+
+void SetBorderColor::configWidgets(QHBoxLayout *hbox)
+{
+    QLabel *label = new QLabel("color");
+    hbox->addWidget(label);
 }

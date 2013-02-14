@@ -4,8 +4,8 @@
 #include <QtGui/QLineEdit>
 #include <qdebug.h>
 
-NameFilter::NameFilter(const QString &searchName)
-    : m_searchName(searchName.toLower())
+NameFilter::NameFilter(const QString &searchName, QObject *parent)
+    : Filter(parent), m_searchName(searchName.toLower())
 {
     setRegExp();
 }
@@ -37,6 +37,7 @@ bool NameFilter::matches(Node *node)
 void NameFilter::configWidgets(QHBoxLayout *hbox)
 {
     QLabel *filterLabel = new QLabel("Filter by RegExp:");
+    filterLabel->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Minimum);
     hbox->addWidget(filterLabel);
 
     QLineEdit *filterEditBox = new QLineEdit();
