@@ -231,7 +231,8 @@ void Node::setupPainting(int status, const QStyleOptionGraphicsItem *option, QPa
     }
 
     painter->setBrush(gradient);
-    painter->setPen(QPen(m_borderColor, 0));
+    m_borderColor.setAlpha(m_colorAlpha);
+    painter->setPen(QPen(m_borderColor));
 }
 
 void Node::setBorderColor(const QColor &color)
@@ -248,8 +249,10 @@ QColor Node::borderColor()
 void Node::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *)
 {
     // draw the shadow elipse
+    QColor shadowColor(Qt::gray);
+    shadowColor.setAlpha(m_colorAlpha);
     painter->setPen(Qt::NoPen);
-    painter->setBrush(Qt::gray);
+    painter->setBrush(shadowColor);
     painter->drawEllipse(-7, -7, 20, 20);
 
     // draw the data bubble
@@ -272,9 +275,16 @@ void Node::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWid
 
 
     if (m_nodeName.length() > 0) {
+        // draw the shadow elipse
+
         QFont font = painter->font();
         font.setPointSize(6);
         painter->setFont(font);
+
+        QColor penColor(Qt::black);
+        penColor.setAlpha(m_colorAlpha);
+        painter->setPen(QPen(penColor));
+
         painter->drawText(QRectF(-10, -5, 20, 20), m_nodeName);
     }
 }
