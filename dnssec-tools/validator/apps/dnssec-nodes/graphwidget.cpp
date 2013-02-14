@@ -398,8 +398,7 @@ void GraphWidget::layoutInCircles() {
     m_layoutType = circleLayout;
     QRectF rect = sceneRect;
     Node *startingNode = m_nodeList->node(m_startingNode);
-    layoutCircleNode(startingNode, qreal(rect.left() + (rect.right() - rect.left())/2),
-                     qreal(rect.top() + (rect.top() - rect.bottom())/2), 0, 2*3.1415, sceneRect, startingNode);
+    layoutCircleNode(startingNode, 0, 0, 0, 2*3.1415, sceneRect, startingNode);
     sceneRect.setBottom(sceneRect.bottom() + childSize);
     sceneRect.setTop(sceneRect.top() - childSize);
     sceneRect.setLeft(sceneRect.left() - childSize);
