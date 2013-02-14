@@ -14,6 +14,7 @@ void NameFilter::setSearchName(QString searchName)
 {
     m_searchName = searchName.toLower();
     setRegExp();
+    emit filterChanged();
 }
 
 QString NameFilter::searchName() const
@@ -29,7 +30,9 @@ void NameFilter::setRegExp()
 
 bool NameFilter::matches(Node *node)
 {
-    if (m_regexp.isEmpty() || m_regexp.indexIn(node->fqdn()) != -1)
+    if (m_regexp.isEmpty())
+        return false;
+    if (m_regexp.indexIn(node->fqdn()) != -1)
         return true;
     return false;
 }
