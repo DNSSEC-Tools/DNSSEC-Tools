@@ -17,8 +17,8 @@ use Getopt::Long qw(:config no_ignore_case_always);
 # Version information.
 #
 my $NAME   = "makezones";
-my $VERS   = "$NAME version: 1.9.1";
-my $DTVERS = "DNSSEC-Tools Version: 1.9";
+my $VERS   = "$NAME version: 1.14.1";
+my $DTVERS = "DNSSEC-Tools Version: 1.14";
 
 #######################################################################
 
@@ -50,10 +50,8 @@ my $outfile;				# Output file option value.
 
 #######################################################################
 
-my $ret;				# Return code from main().
-
-$ret = main();
-exit($ret);
+main();
+exit(0);
 
 #-----------------------------------------------------------------------------
 # Routine:	main()
@@ -74,9 +72,16 @@ sub main
 	open(RRF,"> demo.rollrec");
 
 	#
+	# Create the info rollrec.
+	#
+	print RRF "
+skip \"info rollrec\"
+        version         \"2\"
+";
+
+	#
 	# Create the new zone file and update the rollrec file.
 	#
-	print "\n";
 	print "zonecnt - <$zonecnt>\n";
 	for(my $ind=1; $ind <= $zonecnt; $ind++)
 	{
@@ -175,7 +180,7 @@ sub optsandargs
 	if($zsargs =~ /\-zsklife/)
 	{
 		print STDERR "do not include -zsklife in -zsargs\n";
-		exit(1);
+		exit(2);
 	}
 }
 
