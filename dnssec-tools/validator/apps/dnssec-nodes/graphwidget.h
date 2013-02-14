@@ -95,7 +95,7 @@ public:
     bool isLocked() { return m_lockNodes; }
 
     int layoutTreeNode(Node *node, int minX, int minY);
-    void layoutCircleNode(Node *node, qreal startX, qreal startY, qreal startingDegrees, qreal maxDegrees, Node *upwardFromThis = 0);
+    void layoutCircleNode(Node *node, qreal startX, qreal startY, qreal startingDegrees, qreal maxDegrees, QRectF &sceneRect, Node *upwardFromThis = 0);
 
     LayoutType layoutType() { return m_layoutType; }
     void setLayoutType(LayoutType layoutType);
