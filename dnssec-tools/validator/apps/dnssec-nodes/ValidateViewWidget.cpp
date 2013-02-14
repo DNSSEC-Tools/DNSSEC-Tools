@@ -582,6 +582,13 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
         }
     }
 
+    // add text hint
+    text = new QGraphicsSimpleTextItem("Click on a box to highlight it's arrows");
+    text->setPen(QPen(Qt::gray));
+    text->setPos(5, spot + 3*boxHeight/2);
+    text->setScale(2.0);
+    myScene->addItem(text);
+
     myScene->setSceneRect(0, spot + boxHeight, maxWidth, -spot + boxHeight);
     if (rect)
         ensureVisible(rect);
