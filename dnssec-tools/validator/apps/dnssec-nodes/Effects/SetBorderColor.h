@@ -2,6 +2,7 @@
 #define SETBorderColor_H
 
 #include <QColor>
+#include <QLabel>
 
 #include "Effect.h"
 
@@ -11,14 +12,19 @@ class SetBorderColor : public Effect
 {
     Q_OBJECT
 public:
-    SetBorderColor(QColor borderColor, QObject *parent = 0);
+    SetBorderColor(QColor borderColor = Qt::red, QObject *parent = 0);
 
     virtual void    applyToNode(Node *node);
     virtual void    resetNode(Node *node);
     virtual QString name() { return "Change the Border Color"; }
     void configWidgets(QHBoxLayout *hbox);
+    void updateLabelColor();
+
+public slots:
+    void            selectNewColor();
 
 private:
+    QLabel *m_currentColor;
     QTAUTO_GET_SET_SIGNAL(QColor, borderColor);
 
     // QTAUTO_HERE
