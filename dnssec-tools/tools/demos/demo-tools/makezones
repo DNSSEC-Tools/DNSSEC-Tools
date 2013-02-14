@@ -439,6 +439,14 @@ sub makezones
 	open(RRF,"> $rrffile");
 
 	#
+	# Create the info rollrec.
+	#
+	print RRF "
+skip \"info rollrec\"
+	version		\"2\"
+";
+
+	#
 	# Create the new zone file and update the rollrec file.
 	#
 	for(my $ind=0; $ind < $zonecnt; $ind++)
