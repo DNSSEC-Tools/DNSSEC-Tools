@@ -7,7 +7,7 @@ class NameFilter : public Filter
 {
     Q_OBJECT
 public:
-    NameFilter(const QString &searchName);
+    NameFilter(const QString &searchName = "", QObject *parent = 0);
 
     QString searchName() const;
 

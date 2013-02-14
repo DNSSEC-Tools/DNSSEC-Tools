@@ -60,7 +60,7 @@ public:
 
     void   addFilterAndEffect(Filter *filter, Effect *effect);
     void   setupFilterBox(Filter *filter = 0);
-    void   clearLayout(QLayout *layout);
+    static void   clearLayout(QLayout *layout);
     QList< FilterEffectPair *> filtersAndEffects() { return m_filtersAndEffects; }
 
     Effect *createDefaultEffect();
@@ -81,7 +81,7 @@ public slots:
     void filterBadToTop();
     void filterByDataType();
     void filterByName();
-    void filterNone();
+    void clearAllFiltersAndEffects();
     void filterEditor();
     void closeEditor();
 

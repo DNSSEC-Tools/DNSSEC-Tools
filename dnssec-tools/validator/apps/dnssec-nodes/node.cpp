@@ -384,6 +384,7 @@ void Node::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 
 void Node::hoverEnterEvent(QGraphicsSceneHoverEvent *event)
 {
+    Q_UNUSED(event);
     graph->setInfo(this);
 }
 

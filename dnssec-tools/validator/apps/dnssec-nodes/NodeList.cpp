@@ -258,7 +258,7 @@ void NodeList::reApplyFiltersTo(Node *node) {
     filterNode(node);
 }
 
-void NodeList::filterNone()
+void NodeList::clearAllFiltersAndEffects()
 {
     deleteFiltersAndEffects();
     setupFilterBox(0);
@@ -362,6 +362,7 @@ void NodeList::addFilterAndEffect(Filter *filter, Effect *effect)
 {
     m_filtersAndEffects.push_back(new FilterEffectPair(filter, effect));
     connect(filter, SIGNAL(filterChanged()), this, SLOT(applyFilters()));
+    connect(effect, SIGNAL(effectChanged()), this, SLOT(applyFilters()));
 }
 
 void NodeList::clearLayout(QLayout *layout) {

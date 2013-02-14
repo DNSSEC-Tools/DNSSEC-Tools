@@ -3,10 +3,13 @@
 
 #include "Effect.h"
 
+#include <QPushButton>
+
 class MultiEffect : public Effect
 {
+    Q_OBJECT
 public:
-    MultiEffect();
+    MultiEffect(QObject *parent = 0);
     ~MultiEffect();
 
     virtual void    applyToNode(Node *node);
@@ -16,9 +19,14 @@ public:
     virtual void    addEffect(Effect *effect);
     virtual void    clear();
 
+    virtual void    configWidgets(QHBoxLayout *hbox);
+
+public slots:
+    virtual void    addNewEffect();
+
 private:
     QList<Effect *> m_effects;
-
+    QPushButton *m_addButton;
 };
 
 #endif // MULTIEFFECT_H

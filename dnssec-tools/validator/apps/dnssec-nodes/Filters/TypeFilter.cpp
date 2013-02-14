@@ -5,8 +5,8 @@
 
 #include <qdebug.h>
 
-TypeFilter::TypeFilter(QString type)
-    : Filter(), m_type(type), m_menuButton(0), m_mapper(this), m_typeMenu(0)
+TypeFilter::TypeFilter(QString type, QObject *parent)
+    : Filter(parent), m_type(type), m_menuButton(0), m_mapper(this), m_typeMenu(0)
 {
 }
 
@@ -25,7 +25,8 @@ bool TypeFilter::matches(Node *node)
 
 void TypeFilter::configWidgets(QHBoxLayout *hbox)
 {
-    QLabel *filterLabel = new QLabel("Highlight Nodes That This Record Type:");
+    QLabel *filterLabel = new QLabel("Nodes with Record Type:");
+    filterLabel->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Minimum);
     hbox->addWidget(filterLabel);
 
     m_menuButton = new QPushButton(m_type);
