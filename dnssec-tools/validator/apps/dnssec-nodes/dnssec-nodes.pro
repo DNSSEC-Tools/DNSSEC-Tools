@@ -20,7 +20,7 @@ HEADERS += \
     TypeMenu.h \
     LogFilePicker.h \
     Legend.h \
-    Effects/SetBorderColor.h \
+    Effects/SetNodeColoring.h \
     ValidateViewWidget.h \
     MainWindow.h \
     qtauto_properties.h \
@@ -53,7 +53,7 @@ SOURCES += \
     TypeMenu.cpp \
     LogFilePicker.cpp \
     Legend.cpp \
-    Effects/SetBorderColor.cpp \
+    Effects/SetNodeColoring.cpp \
     ValidateViewWidget.cpp \
     MainWindow.cpp \
     DNSResources.cpp \

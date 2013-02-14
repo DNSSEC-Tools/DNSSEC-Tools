@@ -9,7 +9,7 @@
 
 #include "Effects/SetAlphaEffect.h"
 #include "Effects/SetZValue.h"
-#include "Effects/SetBorderColor.h"
+#include "Effects/SetNodeColoring.h"
 #include "Effects/MultiEffect.h"
 
 #endif // FILTERSANDEFFECTS_H

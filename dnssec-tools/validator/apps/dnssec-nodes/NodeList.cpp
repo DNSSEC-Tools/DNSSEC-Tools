@@ -282,7 +282,7 @@ Effect *NodeList::createDefaultEffect() {
     MultiEffect *effect = new MultiEffect();
     effect->addEffect(new SetZValue(-5));
     effect->addEffect(new SetAlphaEffect(64));
-    effect->addEffect(new SetBorderColor(Qt::gray));
+    effect->addEffect(new SetNodeColoring(Qt::gray));
     return effect;
 }
 

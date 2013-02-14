@@ -8,11 +8,11 @@
 
 #include "qtauto_properties.h"
 
-class SetBorderColor : public Effect
+class SetNodeColoring : public Effect
 {
     Q_OBJECT
 public:
-    SetBorderColor(QColor borderColor = Qt::red, QColor nodeColor = QColor(), QObject *parent = 0);
+    SetNodeColoring(QColor borderColor = Qt::red, QColor nodeColor = QColor(), QObject *parent = 0);
 
     virtual void    applyToNode(Node *node);
     virtual void    resetNode(Node *node);

@@ -22,7 +22,7 @@ Effect *Effect::getNewEffectFromMenu(QPoint where) {
     if (menuChoice == tr("Set Alpha Effect")) {
         return new SetAlphaEffect(128);
     } else if (menuChoice == tr("Set Node Coloring")) {
-        return new SetBorderColor(Qt::green);
+        return new SetNodeColoring(Qt::green);
     } else if (menuChoice == tr("Set Z Value")) {
         return new SetZValue(0);
     }
