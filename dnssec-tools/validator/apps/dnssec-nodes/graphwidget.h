@@ -90,7 +90,6 @@ public:
     void removeItem(QGraphicsItem *removeThis);
 
     void parseLogMessage(QString logMessage);
-    void parseLogFile(const QString &file = "");
 
     qreal nodeScale() { return m_nodeScale; }
     bool isLocked() { return m_lockNodes; }

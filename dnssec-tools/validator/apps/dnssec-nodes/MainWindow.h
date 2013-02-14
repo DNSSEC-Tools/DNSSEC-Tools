@@ -15,6 +15,8 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 public:
     explicit MainWindow(const QString &fileName = "", QWidget *parent = 0);
+
+    GraphWidget *graphWidget() { return m_graphWidget; }
     
 signals:
     
@@ -23,6 +25,7 @@ public slots:
 
 private:
     QTabWidget *tabs;
+    GraphWidget *m_graphWidget;
     
 };
 
