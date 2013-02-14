@@ -130,7 +130,7 @@ ValidateViewWidget::ValidateViewWidget(QString nodeName, QString recordType, Gra
 
     scaleView(.4);
 
-    m_graphWidget->window()->setCursor(Qt::WaitCursor);
+    viewport()->setCursor(Qt::WaitCursor);
     QTimer::singleShot(1, this, SLOT(validateDefault()));
 
     // XXX: these don't work - somewhere there is a missing piece
@@ -261,7 +261,7 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
                                 &results);
     if (ret != 0 || !results) {
         qWarning() << "failed to get results..."; // XXX: display SOMETHING!
-        m_graphWidget->window()->setCursor(Qt::ArrowCursor);
+        viewport()->setCursor(Qt::ArrowCursor);
         return;
     }
 
@@ -586,7 +586,7 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
     if (rect)
         ensureVisible(rect);
 
-    m_graphWidget->window()->setCursor(Qt::ArrowCursor);
+    viewport()->setCursor(Qt::ArrowCursor);
 }
 
 void ValidateViewWidget::wheelEvent(QWheelEvent *event)

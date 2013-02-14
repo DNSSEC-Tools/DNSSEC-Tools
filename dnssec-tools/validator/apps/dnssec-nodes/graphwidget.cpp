@@ -510,11 +510,12 @@ void GraphWidget::setShowNSEC3Records(bool newVal) {
 }
 
 void GraphWidget::unbusy() {
-    setCursor(Qt::ArrowCursor);
+    viewport()->setCursor(Qt::ArrowCursor);
 }
 
 void GraphWidget::busy() {
-    setCursor(Qt::WaitCursor);
+    viewport()->setCursor(Qt::WaitCursor);
+    repaint();
 }
 
 void GraphWidget::setLockedNodes(bool newVal) {
