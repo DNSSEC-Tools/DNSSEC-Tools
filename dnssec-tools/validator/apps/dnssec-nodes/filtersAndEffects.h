@@ -4,6 +4,7 @@
 #include "Filters/DNSSECStatusFilter.h"
 #include "Filters/NameFilter.h"
 #include "Filters/NotFilter.h"
+#include "Filters/LogicalAndOr.h"
 #include "Filters/TypeFilter.h"
 
 #include "Effects/SetAlphaEffect.h"
