@@ -1,4 +1,4 @@
-#include "SetBorderColor.h"
+#include "SetNodeColoring.h"
 
 #include "node.h"
 #include <qdebug.h>
@@ -7,25 +7,25 @@
 #include <QColorDialog>
 #include <QPushButton>
 
-SetBorderColor::SetBorderColor(QColor borderColor, QColor nodeColor, QObject *parent)
+SetNodeColoring::SetNodeColoring(QColor borderColor, QColor nodeColor, QObject *parent)
     : Effect(parent), m_borderColor(borderColor), m_nodeColor(nodeColor)
 {
     connect(this, SIGNAL(borderColorChanged()), this, SIGNAL(effectChanged()));
 }
 
-void SetBorderColor::applyToNode(Node *node)
+void SetNodeColoring::applyToNode(Node *node)
 {
     node->setBorderColor(m_borderColor);
     node->setNodeColor(m_nodeColor);
 }
 
-void SetBorderColor::resetNode(Node *node)
+void SetNodeColoring::resetNode(Node *node)
 {
     node->setBorderColor(Qt::black);
     node->setNodeColor(QColor());
 }
 
-void SetBorderColor::configWidgets(QHBoxLayout *hbox)
+void SetNodeColoring::configWidgets(QHBoxLayout *hbox)
 {
     QVBoxLayout *vbox = new QVBoxLayout();
     hbox->addLayout(vbox)
@@ -53,12 +53,12 @@ void SetBorderColor::configWidgets(QHBoxLayout *hbox)
     updateLabelColor();
 }
 
-void SetBorderColor::updateLabelColor() {
+void SetNodeColoring::updateLabelColor() {
     m_currentNodeColor->setText(tr("Current Node Color: %1").arg(m_nodeColor.name()));
     m_currentBorderColor->setText(tr("Current Border Color: %1").arg(m_borderColor.name()));
 }
 
-void SetBorderColor::selectNewBorderColor()
+void SetNodeColoring::selectNewBorderColor()
 {
     QColorDialog cDialog;
     QColor color = cDialog.getColor();
@@ -68,7 +68,7 @@ void SetBorderColor::selectNewBorderColor()
     emit effectChanged();
 }
 
-void SetBorderColor::selectNewNodeColor()
+void SetNodeColoring::selectNewNodeColor()
 {
     QColorDialog cDialog;
     QColor color = cDialog.getColor();

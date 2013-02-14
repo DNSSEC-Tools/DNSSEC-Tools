@@ -56,10 +56,8 @@ void LogicalAndOr::configWidgets(QHBoxLayout *hbox)
 void LogicalAndOr::showAddFilterMenu()
 {
     Filter *newFilter = getNewFilterFromMenu(m_addFilterButton->mapToGlobal(QPoint(0,0)));
-    if (newFilter) {
-        m_filters.push_back(newFilter);
-        emit filterAdded();
-    }
+    if (newFilter)
+        addFilter(newFilter);
 }
 
 
