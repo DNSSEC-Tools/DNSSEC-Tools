@@ -171,8 +171,8 @@ dnssecstatusUpdater.prototype = {
             if (this.browsertabs[i] == cur_browser) {
                 opstr += "Untrusted links:" + "(" + this.statuscts[i][1] + "):\n" 
                          + this.get_hash_elements(this.linkinfo[i][1]);
-                opstr += "\n\nError links:" + "(" + this.statuscts[i][2] + "):\n" 
-                         + this.get_hash_elements(this.linkinfo[i][2]);
+//                opstr += "\n\nError links:" + "(" + this.statuscts[i][2] + "):\n" 
+//                         + this.get_hash_elements(this.linkinfo[i][2]);
                 opstr += "\n\nTrusted links:" + "(" + this.statuscts[i][0] + "):\n" 
                          + this.get_hash_elements(this.linkinfo[i][0]);
                 return opstr;
