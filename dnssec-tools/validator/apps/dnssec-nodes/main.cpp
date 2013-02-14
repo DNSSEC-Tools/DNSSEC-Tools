@@ -44,19 +44,64 @@
 #include "TypeMenu.h"
 #include "MainWindow.h"
 #include "DNSData.h"
+#include "PcapWatcher.h"
 
 int main(int argc, char **argv)
 {
     QApplication app(argc, argv);
-    QString fileName;
-    if (app.arguments().count() > 1)
-        fileName = app.arguments().last();
+    QString argument;
+    QStringList startNames;
+    QStringList startLogs;
+    QStringList startDumps;
+    QStringList arguments = app.arguments();
+
+    QString helpText =
+            "dnssec-debug [--pcapfile file] [--logfile file] [--help] [domainnames...]";
+
     qsrand(QTime(0,0,0).secsTo(QTime::currentTime()));
+
+    while (arguments.count() > 0) {
+        argument = arguments.takeFirst();
+        if (argument == "--pcapfile") {
+            startDumps.push_back(arguments.takeFirst());
+        } else if (argument == "--logfile") {
+            startLogs.push_back(arguments.takeFirst());
+        } else if (argument == "--help") {
+            qWarning() << helpText;
+            exit(0);
+        } else {
+            // must be a domainname to start with
+            startNames.push_back(argument);
+        }
+    }
 
     qRegisterMetaType<DNSData>("DNSData");
 
     MainWindow w;
     w.show();
+    w.repaint();
+
+    GraphWidget *graph = w.graphWidget();
+    if (startNames.count() > 0) {
+        foreach(QString name, startNames) {
+            graph->doLookup(name);
+            w.repaint();
+        }
+    }
+
+    if (startLogs.count() > 0) {
+        foreach(QString name, startLogs) {
+            graph->openThisLogFile(name);
+            w.repaint();
+        }
+    }
+
+    if (startDumps.count() > 0) {
+        foreach(QString name, startDumps) {
+            graph->pcapWatcher()->openFile(name);
+            w.repaint();
+        }
+    }
 
     return app.exec();
 }

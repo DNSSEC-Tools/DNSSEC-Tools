@@ -43,7 +43,7 @@ MainWindow::MainWindow(const QString &fileName, QWidget *parent) :
 
 
     // Main GraphWidget object
-    GraphWidget *graphWidget = new GraphWidget(0, editBox, tabs, fileName, infoBox);
+    m_graphWidget = new GraphWidget(0, editBox, tabs, fileName, infoBox);
 
     // Edit box at the bottom
     QPushButton *lookupTypeButton = new QPushButton("A");
@@ -52,11 +52,11 @@ MainWindow::MainWindow(const QString &fileName, QWidget *parent) :
     nodeGraphWidgetHBox->addWidget(editBox);
     editBox->setText("www.dnssec-tools.org");
     QPushButton *sendButton = new QPushButton("Send");
-    sendButton->connect(sendButton, SIGNAL(clicked()), graphWidget, SLOT(doLookupFromLineEdit()));
+    sendButton->connect(sendButton, SIGNAL(clicked()), m_graphWidget, SLOT(doLookupFromLineEdit()));
     nodeGraphWidgetHBox->addWidget(sendButton);
     nodeGraphWidgetHBox->addWidget(new QLabel("For Type:"));
     nodeGraphWidgetHBox->addWidget(lookupTypeButton);
-    lookupType->connect(lookupType, SIGNAL(typeSet(int)), graphWidget, SLOT(setLookupType(int)));
+    lookupType->connect(lookupType, SIGNAL(typeSet(int)), m_graphWidget, SLOT(setLookupType(int)));
 
     mainWidget->setLayout(nodeGraphLayout);
     setCentralWidget(mainWidget);
@@ -65,17 +65,17 @@ MainWindow::MainWindow(const QString &fileName, QWidget *parent) :
     nodeGraphWidgetHBox->addWidget(new QLabel("Zoom Layout: "));
     QPushButton *button;
     nodeGraphWidgetHBox->addWidget(button = new QPushButton("+"));
-    button->connect(button, SIGNAL(clicked()), graphWidget, SLOT(zoomIn()));
+    button->connect(button, SIGNAL(clicked()), m_graphWidget, SLOT(zoomIn()));
 
     nodeGraphWidgetHBox->addWidget(button = new QPushButton("-"));
-    button->connect(button, SIGNAL(clicked()), graphWidget, SLOT(zoomOut()));
+    button->connect(button, SIGNAL(clicked()), m_graphWidget, SLOT(zoomOut()));
 
 #ifdef ANDROID
     /* put the edit line on the top because the slide out keyboard covers it otherwise */
     nodeGraphLayout->addLayout(hbox);
     nodeGraphLayout->addWidget(graphWidget);
 #else
-    nodeGraphLayout->addWidget(graphWidget);
+    nodeGraphLayout->addWidget(m_graphWidget);
     nodeGraphLayout->addLayout(nodeGraphWidgetHBox);
 #endif
 
@@ -90,21 +90,21 @@ MainWindow::MainWindow(const QString &fileName, QWidget *parent) :
     menu->addSeparator();
 
     QAction *action = menu->addAction("&Clear Nodes");
-    action->connect(action, SIGNAL(triggered()), graphWidget->nodeList(), SLOT(clear()));
+    action->connect(action, SIGNAL(triggered()), m_graphWidget->nodeList(), SLOT(clear()));
 
     menu->addSeparator();
 
     action = menu->addAction("&Open and Watch A Log File");
-    action->connect(action, SIGNAL(triggered()), graphWidget, SLOT(openLogFile()));
+    action->connect(action, SIGNAL(triggered()), m_graphWidget, SLOT(openLogFile()));
 
     action = menu->addAction("&ReRead All Log Files");
-    action->connect(action, SIGNAL(triggered()), graphWidget->logWatcher(), SLOT(reReadLogFile()));
+    action->connect(action, SIGNAL(triggered()), m_graphWidget->logWatcher(), SLOT(reReadLogFile()));
 
     QMenu *previousMenu = menu->addMenu("Previous Logs");
-    graphWidget->setPreviousFileList(previousMenu);
+    m_graphWidget->setPreviousFileList(previousMenu);
 
 #ifdef WITH_PCAP
-    graphWidget->pcapWatcher()->setupDeviceMenu(menu);
+    m_graphWidget->pcapWatcher()->setupDeviceMenu(menu);
 #endif
 
     menu->addSeparator();
@@ -117,37 +117,37 @@ MainWindow::MainWindow(const QString &fileName, QWidget *parent) :
 
     action = menu->addAction("Lock Nodes");
     action->setCheckable(true);
-    action->connect(action, SIGNAL(triggered(bool)), graphWidget, SLOT(setLockedNodes(bool)));
+    action->connect(action, SIGNAL(triggered(bool)), m_graphWidget, SLOT(setLockedNodes(bool)));
 
     action = menu->addAction("Show NSEC3 Records");
     action->setCheckable(true);
-    action->connect(action, SIGNAL(triggered(bool)), graphWidget, SLOT(setShowNSEC3Records(bool)));
+    action->connect(action, SIGNAL(triggered(bool)), m_graphWidget, SLOT(setShowNSEC3Records(bool)));
 
     action = menu->addAction("Animate Node Movemets");
     action->setCheckable(true);
-    action->setChecked(graphWidget->animateNodeMovements());
-    action->connect(action, SIGNAL(toggled(bool)), graphWidget, SLOT(setAnimateNodeMovements(bool)));
+    action->setChecked(m_graphWidget->animateNodeMovements());
+    action->connect(action, SIGNAL(toggled(bool)), m_graphWidget, SLOT(setAnimateNodeMovements(bool)));
 
     action = menu->addAction("Always Update Lookup Editor on Node Click");
     action->setCheckable(true);
-    action->setChecked(graphWidget->updateLineEditAlways());
-    action->connect(action, SIGNAL(toggled(bool)), graphWidget, SLOT(setUpdateLineEditAlways(bool)));
+    action->setChecked(m_graphWidget->updateLineEditAlways());
+    action->connect(action, SIGNAL(toggled(bool)), m_graphWidget, SLOT(setUpdateLineEditAlways(bool)));
 
     action = menu->addAction("Additionally validate packets with SERVFAIL set");
     action->setCheckable(true);
-    action->setChecked(graphWidget->autoValidateServFails());
-    action->connect(action, SIGNAL(toggled(bool)), graphWidget, SLOT(setAutoValidateServFails(bool)));
+    action->setChecked(m_graphWidget->autoValidateServFails());
+    action->connect(action, SIGNAL(toggled(bool)), m_graphWidget, SLOT(setAutoValidateServFails(bool)));
 
     action = menu->addAction("Use straight lines for the validation diagrams");
     action->setCheckable(true);
-    action->setChecked(graphWidget->useStraightValidationLines());
-    action->connect(action, SIGNAL(toggled(bool)), graphWidget, SLOT(setUseStraightValidationLines(bool)));
+    action->setChecked(m_graphWidget->useStraightValidationLines());
+    action->connect(action, SIGNAL(toggled(bool)), m_graphWidget, SLOT(setUseStraightValidationLines(bool)));
 
     QMenu *layoutMenu = menu->addMenu("Layout");
     action = layoutMenu->addAction("tree");
-    action->connect(action, SIGNAL(triggered()), graphWidget, SLOT(switchToTree()));
+    action->connect(action, SIGNAL(triggered()), m_graphWidget, SLOT(switchToTree()));
     action = layoutMenu->addAction("circle");
-    action->connect(action, SIGNAL(triggered()), graphWidget, SLOT(switchToCircles()));
+    action->connect(action, SIGNAL(triggered()), m_graphWidget, SLOT(switchToCircles()));
 
     //
     // Filter menu
@@ -155,49 +155,49 @@ MainWindow::MainWindow(const QString &fileName, QWidget *parent) :
     QActionGroup *filterActions = new QActionGroup(this);
     QMenu *filterMenu = menu->addMenu("Filter");
     action = filterMenu->addAction("Do Not Filter");
-    action->connect(action, SIGNAL(triggered()), graphWidget->nodeList(), SLOT(filterNone()));
+    action->connect(action, SIGNAL(triggered()), m_graphWidget->nodeList(), SLOT(filterNone()));
     action->setCheckable(true);
     action->setChecked(true);
     action->setActionGroup(filterActions);
     filterMenu->addSeparator();
 
     action = filterMenu->addAction("Filter by Data Status");
-    action->connect(action, SIGNAL(triggered()), graphWidget->nodeList(), SLOT(filterBadToTop()));
+    action->connect(action, SIGNAL(triggered()), m_graphWidget->nodeList(), SLOT(filterBadToTop()));
     action->setCheckable(true);
     action->setActionGroup(filterActions);
 
     action = filterMenu->addAction("Filter by Data Type");
-    action->connect(action, SIGNAL(triggered()), graphWidget->nodeList(), SLOT(filterByDataType()));
+    action->connect(action, SIGNAL(triggered()), m_graphWidget->nodeList(), SLOT(filterByDataType()));
     action->setCheckable(true);
     action->setActionGroup(filterActions);
 
     action = filterMenu->addAction("Filter by Name");
-    action->connect(action, SIGNAL(triggered()), graphWidget->nodeList(), SLOT(filterByName()));
+    action->connect(action, SIGNAL(triggered()), m_graphWidget->nodeList(), SLOT(filterByName()));
     action->setCheckable(true);
     action->setActionGroup(filterActions);
-    graphWidget->nodeList()->setFilterBox(filterBox);
+    m_graphWidget->nodeList()->setFilterBox(filterBox);
 
     filterMenu->addSeparator();
 
     action = filterMenu->addAction("Open Filter Editor");
-    action->connect(action, SIGNAL(triggered()), graphWidget->nodeList(), SLOT(filterEditor()));
+    action->connect(action, SIGNAL(triggered()), m_graphWidget->nodeList(), SLOT(filterEditor()));
     menu->addSeparator();
 
     action = menu->addAction("Preferences");
-    action->connect(action, SIGNAL(triggered()), graphWidget, SLOT(showPrefs()));
+    action->connect(action, SIGNAL(triggered()), m_graphWidget, SLOT(showPrefs()));
 
     //
     // Help Menu
     //
     menu = menubar->addMenu("&Help");
     action = menu->addAction("&About DNSSEC-Nodes");
-    action->connect(action, SIGNAL(triggered()), graphWidget, SLOT(about()));
+    action->connect(action, SIGNAL(triggered()), m_graphWidget, SLOT(about()));
 
     action = menu->addAction("&Legend");
-    action->connect(action, SIGNAL(triggered()), graphWidget, SLOT(legend()));
+    action->connect(action, SIGNAL(triggered()), m_graphWidget, SLOT(legend()));
 
     action = menu->addAction("&Help");
-    action->connect(action, SIGNAL(triggered()), graphWidget, SLOT(help()));
+    action->connect(action, SIGNAL(triggered()), m_graphWidget, SLOT(help()));
 
 #if defined(Q_OS_SYMBIAN) || defined(Q_WS_MAEMO_5)
     menuBar()->addAction("Zoom In", graphWidget, SLOT(zoomIn()));
