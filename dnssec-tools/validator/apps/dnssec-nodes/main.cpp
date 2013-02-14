@@ -79,12 +79,14 @@ int main(int argc, char **argv)
 
     MainWindow w;
     w.show();
+    w.setCursor(Qt::WaitCursor);
     w.repaint();
 
     GraphWidget *graph = w.graphWidget();
     if (startNames.count() > 0) {
         foreach(QString name, startNames) {
             graph->doLookup(name);
+            graph->repaint();
             w.repaint();
         }
     }
@@ -102,6 +104,8 @@ int main(int argc, char **argv)
             w.repaint();
         }
     }
+
+    w.setCursor(Qt::ArrowCursor);
 
     return app.exec();
 }
