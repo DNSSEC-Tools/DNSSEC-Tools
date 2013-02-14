@@ -555,13 +555,14 @@ endless_loop(void)
     val_free_validator_state();
 }
 
-void 
+int 
 one_test(val_context_t *context, char *name, int class_h, 
         int type_h, u_int32_t flags, int retvals[], int doprint)
 {
+    int rc;
     struct val_response resp;
     memset(&resp, 0, sizeof(struct val_response));
-    sendquery(context, "Result", name, class_h, type_h, flags, retvals, 1, &resp);
+    rc = sendquery(context, "Result", name, class_h, type_h, flags, retvals, 1, &resp);
     fprintf(stderr, "\n");
 
     // If the print option is present, perform query and validation
@@ -572,6 +573,8 @@ one_test(val_context_t *context, char *name, int class_h,
 
     if (resp.vr_response)
         FREE(resp.vr_response);
+
+    return rc;
 }
 
 #if defined(HAVE_PTHREAD_H) && !defined(VAL_NO_THREADS)
@@ -939,7 +942,7 @@ main(int argc, char *argv[])
     } else {
 #endif /* VAL_NO_THREADS */
         do { /* endless loop */
-            one_test(context, domain_name, class_h, type_h, flags, retvals,
+            rc = one_test(context, domain_name, class_h, type_h, flags, retvals,
                      doprint);
 
             if (wait)
