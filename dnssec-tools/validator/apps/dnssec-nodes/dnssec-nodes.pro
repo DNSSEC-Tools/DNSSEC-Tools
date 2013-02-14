@@ -28,7 +28,8 @@ HEADERS += \
     ValidateViewWidgetHolder.h \
     ValidateViewBox.h \
     FilterEditorWindow.h \
-    filtersAndEffects.h
+    filtersAndEffects.h \
+    Filters/LogicalAndOr.h
 
 SOURCES += \
         edge.cpp \
@@ -58,7 +59,8 @@ SOURCES += \
     DNSResources.cpp \
     ValidateViewWidgetHolder.cpp \
     ValidateViewBox.cpp \
-    FilterEditorWindow.cpp
+    FilterEditorWindow.cpp \
+    Filters/LogicalAndOr.cpp
 
 BINDIR = $$PREFIX/bin
 DATADIR =$$PREFIX/share
