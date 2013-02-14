@@ -58,7 +58,7 @@
 Node::Node(GraphWidget *graphWidget, const QString &nodeName, const QString &fqdn, int depth)
     : m_parent(0), graph(graphWidget), m_nodeName(nodeName.toLower()), m_fqdn(fqdn.toLower()), m_depth(depth),
       m_subData(), m_accessCount(0), m_accessTime(0), m_resultCache(0), m_colorAlpha(255), m_borderColor(Qt::black),
-      m_detailsViewer(0)
+      m_nodeColor(), m_detailsViewer(0)
 {
     setFlag(ItemIsMovable);
     setFlag(ItemSendsGeometryChanges);
@@ -217,7 +217,9 @@ QColor Node::getColorForStatus(int status) {
 }
 
 void Node::setupPainting(int status, const QStyleOptionGraphicsItem *option, QPainter *painter) {
-    QColor color = getColorForStatus(status);
+    QColor color = m_nodeColor;
+    if (! m_nodeColor.isValid()) // normally the case; only if they chose specific color via a filter
+        color = getColorForStatus(status);
 
     QRadialGradient gradient(-3, -3, 10);
     if (option && option->state & QStyle::State_Sunken) {
@@ -244,6 +246,17 @@ void Node::setBorderColor(const QColor &color)
 QColor Node::borderColor()
 {
     return m_borderColor;
+}
+
+void Node::setNodeColor(const QColor &color)
+{
+    m_nodeColor = color;
+    update();
+}
+
+QColor Node::nodeColor()
+{
+    return m_nodeColor;
 }
 
 void Node::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *)
