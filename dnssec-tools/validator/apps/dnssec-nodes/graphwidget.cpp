@@ -515,7 +515,7 @@ void GraphWidget::unbusy() {
 
 void GraphWidget::busy() {
     viewport()->setCursor(Qt::WaitCursor);
-    repaint();
+    viewport()->repaint();
 }
 
 void GraphWidget::setLockedNodes(bool newVal) {
