@@ -10,7 +10,7 @@ Effect *Effect::getNewEffectFromMenu(QPoint where) {
     QMenu *menu = new QMenu();
 
     menu->addAction(tr("Set Alpha Effect"));
-    menu->addAction(tr("Set Border Color"));
+    menu->addAction(tr("Set Node Coloring"));
     menu->addAction(tr("Set Z Value"));
 
     QAction *action = menu->exec(where);
@@ -21,7 +21,7 @@ Effect *Effect::getNewEffectFromMenu(QPoint where) {
     QString menuChoice = action->text();
     if (menuChoice == tr("Set Alpha Effect")) {
         return new SetAlphaEffect(128);
-    } else if (menuChoice == tr("Set Border Color")) {
+    } else if (menuChoice == tr("Set Node Coloring")) {
         return new SetBorderColor(Qt::green);
     } else if (menuChoice == tr("Set Z Value")) {
         return new SetZValue(0);
