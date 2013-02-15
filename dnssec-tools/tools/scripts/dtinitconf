@@ -21,7 +21,7 @@ use Net::DNS::SEC::Tools::BootStrap;
 # Version information.
 #
 my $NAME   = "dtinitconf";
-my $VERS   = "$NAME version: 1.13.0";
+my $VERS   = "$NAME version: 1.15.0";
 my $DTVERS = "DNSSEC-Tools Version: 1.14";
 
 #
@@ -74,6 +74,7 @@ my @BINDPROGS =
 );
 
 my $DEFAULT_EDITOR = "vi";
+my $DEFZFPARSER = dnssec_tools_default("zoneparser");
 
 my $ROOTHINTS = 'http://www.internic.net/zones/named.root';
 
@@ -94,6 +95,7 @@ my @opts =
 	"maxlife=i",			# Maximum key lifespan.
 	"minlife=i",			# Minimum key lifespan.
 
+	"zoneparser=s",			# Zone-file parser
 	"usegui",			# Use option GUI.
 	"noentropy_msg",		# Don't give entropy message.
 	"nosavekeys",			# Don't save old keys.
@@ -141,6 +143,7 @@ my $nsec3optout;			# Default to NSEC3 optout
 my $zskcnt;				# Count of ZSK keys.
 my $zsklen;				# The ZSK size.
 my $zsklife;				# Lifespan of the ZSK.
+my $zoneparser;				# Parser module for zone files.
 
 my $admin;				# Administrator's email address.
 my $entmsg;				# Display entropy message.
@@ -418,7 +421,8 @@ sub optsandargs
 	$savekeys  = 0  if(defined($opts{'nosavekeys'}));
 	$usegui	   = 0  if(defined($opts{'nousegui'}));
 
-	$admin	   = $opts{'admin'}	|| dnssec_tools_default("admin");
+	$admin	    = $opts{'admin'}	  || dnssec_tools_default("admin");
+	$zoneparser = $opts{'zoneparser'} || dnssec_tools_default("zoneparser");
 
 	$binddir   = $opts{'binddir'};
 	$dtdir	   = $opts{'dtdir'};
@@ -567,6 +571,7 @@ sub writeconf()
 		print "\troll-sleep            - \"$rsleep\"\n\n";
 		print "\troll-logtz            - \"$rlogtz\"\n";
 		print "\tzoneerrs              - \"$zoneerrs\"\n\n";
+		print "\tzone-file parser      - \"$zoneparser\"\n\n";
 
 		print "\tgenkrf     - \"$genkrf\"\n";
 		print "\tkeyarch    - \"$keyarch\"\n";
@@ -625,7 +630,19 @@ rndc		$rndc
 zonecheck	$zonecheck
 zonesign	$zonesign
 
+#
+# The name of the Perl module that will be used to parse zone files.
+# Net::DNS::ZoneFile::Fast is the default and isn't required to be set.
+#
 ";
+	if($zoneparser ne $DEFZFPARSER)
+	{
+		print DTCONF "zonefile-parser       $zoneparser\n";
+	}
+	else
+	{
+		print DTCONF "# zonefile-parser	$DEFZFPARSER\n";
+	}
 
 	if(($kgopts ne "") || ($zcopts ne "") || ($zsopts ne ""))
 	{
@@ -769,6 +786,12 @@ sub writetemplate()
 # keygen-opts		$kgopts
 # zonecheck-opts	$zcopts
 # zonesign-opts		$zsopts
+
+#
+# The name of the Perl module that will be used to parse zone files.
+# Net::DNS::ZoneFile::Fast is the default and isn't required to be set.
+#
+# zonefile-parser       Net::DNS::ZoneFile::Fast
 
 #
 # Key-related values.
@@ -1446,6 +1469,7 @@ sub get_dt_opts()
 	$kgopts = getval("Key-Generation Options","");
 	$zcopts = getval("Zone-Checking Options","-i local");
 	$zsopts = getval("Zone-Signing Options","");
+	$zoneparser = getval("Zone-File Parser",$DEFZFPARSER);
 	print "\n";
 
 	$autosign  = getval("Rollerd's Auto-signing Flag",$autosign,"boolean");
@@ -1782,6 +1806,7 @@ sub usage()
 	print STDERR "\t\t-binddir <directory>\n";
 	print STDERR "\t\t-entropy_msg | -noentropy_msg\n";
 	print STDERR "\t\t-savekeys | -nosavekeys\n\n";
+	print STDERR "\t\t-zoneparser <parser module>\n";
 
 	print STDERR "\t\t-usegui | -nousegui\n\n";
 
@@ -2118,6 +2143,11 @@ A flag indicating that the GUI for specifying command options may be used.
 
 A flag indicating that the GUI for specifying command options should not be
 used.
+
+=item B<-zoneparser parser-module>
+
+B<parser-module> is the name of the Perl module that will be used to parse
+zone files.  The default is specified in I<dnssec_tools_default()>.
 
 =back
 
