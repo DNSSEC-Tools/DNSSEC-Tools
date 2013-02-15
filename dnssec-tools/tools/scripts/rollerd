@@ -59,8 +59,6 @@ use Net::DNS::SEC::Tools::timetrans;
 use Net::DNS::SEC::Tools::tooloptions;
 use Net::DNS::SEC::Tools::BootStrap;
 
-use Net::DNS::ZoneFile::Fast;
-
 use POSIX qw(setsid);
 use POSIX qw(setuid);
 
@@ -1499,7 +1497,7 @@ sub queue_maxttl
 	#
 	# Get the zone's resource record collection.
 	#
-	$rrsref = Net::DNS::ZoneFile::Fast::parse(file => $signdb);
+	$rrsref = dt_parse_zonefile(file => $signdb);
 
 	#
 	# Get the number of resource records in the zone.
@@ -2828,7 +2826,7 @@ sub maxttl
 	#
 	# Get the zone's resource record collection.
 	#
-	$rrsref = Net::DNS::ZoneFile::Fast::parse(file => $signdb);
+	$rrsref = dt_parse_zonefile(file => $signdb);
 
 	#
 	# Get the number of resource records in the zone.
@@ -3005,8 +3003,7 @@ sub holddownexpire
 	# is required for validators to use as a add-hold-time (RFC5011).
 	# (Ideally this should be longer and can be set by the user if needed.)
 	#
-	$holddowntime =
-	    Net::DNS::ZoneFile::Fast::ttl_fromtext($rr{'holddowntime'});
+	$holddowntime = dt_parse_duration($rr{'holddowntime'});
 
 	#
 	# Default to 60 days.
