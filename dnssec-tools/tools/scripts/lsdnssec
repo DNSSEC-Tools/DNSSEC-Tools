@@ -11,6 +11,7 @@ use Getopt::Long qw(:config no_ignore_case_always);
 use Net::DNS::SEC::Tools::BootStrap;
 use Net::DNS::SEC::Tools::conf;
 use Net::DNS::SEC::Tools::defaults;
+use Net::DNS::SEC::Tools::dnssectools;
 use Net::DNS::SEC::Tools::keyrec;
 use Net::DNS::SEC::Tools::rollrec;
 use Net::DNS::SEC::Tools::rollmgr;
@@ -261,8 +262,7 @@ sub get_ksk_phase3_length {
 	# we should do a proper RFC5011 waiting period
 	# use either their defined value or a default of 60 days
 	# The 60 days comes from the rollerd 60 day default
-	my $addtime = 
-	  Net::DNS::ZoneFile::Fast::ttl_fromtext($rollrec->{'holddowntime'});
+	my $addtime = dt_parse_duration($rollrec->{'holddowntime'});
 	
 	$addtime ||= (2*30*24*60*60);
 
