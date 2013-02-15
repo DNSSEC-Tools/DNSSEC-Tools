@@ -4,15 +4,13 @@ details.
 
 2.0
  - New Features
-    - OWL           - A brand new DNS monitoring system:
-		      The Owl Monitoring System uses timed Domain Name
-		      System (DNS) queries to monitor basic network
-		      functionality.  The system consists of a manager
-		      host and a set of sensor hosts.  The Owl sensors
-		      perform periodic DNS queries and report to the
-		      Owl manager the time taken for each query.  Over
-		      time, this shows the responsiveness of the DNS
-		      infrastructure.
+    - OWL           - The Owl Monitoring System uses timed DNS queries
+		      to monitor basic network functionality.  The system
+		      consists of a manager host and a set of sensor hosts.
+		      The Owl sensors perform periodic DNS queries and
+		      report to the Owl manager the time taken for each
+		      query.  Over time, this shows the responsiveness of
+		      the DNS infrastructure.
     - dnssec-nodes  - Many new features have been added:
                     - The validation tree now supports clicking on
                       boxes to highlight it and the arrows that derive
@@ -41,13 +39,31 @@ details.
                       address family (ipv4 or ipv6) 
                     - fine tune res_io source management
     - dnssec-check  - dnssec-check now checks DNAME support
+    - rollerd	    - A new set of steps for KSK rollover has been
+		      implemented.  A cache-expiration wait phase has
+		      been moved after the publication of DS records in
+		      order to allow name caches to reflect the changes.
+		      In addition to rollerd, supporting program have
+		      been modified to recognize this change.
+    - rollrec files - A new "information rollrec" has been added to the
+		      rollrec files.  This will allow infomration to be
+		      specified for the collection of rollrecs.  At this
+		      time, the only information stored in this rollrec 
+		      is the version number of the rollrec file.
+		      In addition to the rollrec.pm Perl module, programs
+		      which use this module have been modified to recognize
+		      this change.
+		      If you use the rollrec.pm module, you should test
+		      to see if your code is affected.  The modifications
+		      for the info rollrec have been made to minimize
+		      affected programs.  If you parse the rollrec files
+		      yourself, you will have to account for this change.
     - Multiple      - The perl tools can now use either the
                       ZoneFile::Fast or the Net::DNS zone file parser,
-                      thanks to a patch from Sebastian
+                      thanks to a patch from Sebastian Schmidt (yath@yath.de).
 
  - Bug Fixes
     - zonesigner    - Fixed SOA parsing and serial number update issues
-    - rollerd       - Fixed issue with KSK roll.
     - libval        - Properly initialize memory in sockaddr structures
                       before use.
 
