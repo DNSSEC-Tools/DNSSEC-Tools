@@ -140,9 +140,7 @@ stow_info(struct rrset_rec **unchecked_info, struct rrset_rec **new_info, struct
                 /*
                  * old and new are competitors 
                  */
-                if (!(old->rrs_cred < new_rr->rrs_cred ||
-                      (old->rrs_cred == new_rr->rrs_cred &&
-                       old->rrs_section <= new_rr->rrs_section))) {
+                if (old->rrs_cred >= new_rr->rrs_cred) {
                     /*
                      * exchange the two -
                      * copy from new to old: cred, status, section, ans_kind
