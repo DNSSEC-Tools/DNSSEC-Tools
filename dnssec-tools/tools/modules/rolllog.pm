@@ -21,7 +21,7 @@ use Net::DNS::SEC::Tools::conf;
 use Net::DNS::SEC::Tools::defaults;
 
 our $VERSION = "1.14";
-our $MODULE_VERSION = "1.14.0";
+our $MODULE_VERSION = "1.15.0";
 
 our @ISA = qw(Exporter);
 

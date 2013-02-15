@@ -60,7 +60,7 @@ use Net::DNS::SEC::Tools::conf;
 use Fcntl qw(:DEFAULT :flock);
 
 our $VERSION = "1.14";
-our $MODULE_VERSION = "1.14.0";
+our $MODULE_VERSION = "1.15.0";
 
 #--------------------------------------------------------------------------
 

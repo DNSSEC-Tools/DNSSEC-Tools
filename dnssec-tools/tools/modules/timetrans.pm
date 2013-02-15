@@ -22,7 +22,7 @@ our @ISA = qw(Exporter);
 our @EXPORT = qw(timetrans fuzzytimetrans timetrans_weeks);
 
 our $VERSION = "1.14";
-our $MODULE_VERSION = "1.14.0";
+our $MODULE_VERSION = "1.15.0";
 
 
 #######################################################################

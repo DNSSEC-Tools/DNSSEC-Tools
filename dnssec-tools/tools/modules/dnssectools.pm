@@ -23,7 +23,7 @@ use Net::DNS::SEC::Tools::keyrec;
 use Net::DNS::SEC::Tools::rollrec;
 
 our $VERSION = "1.14";
-our $MODULE_VERSION = "1.14.0";
+our $MODULE_VERSION = "1.15.0";
 
 our @ISA = qw(Exporter);
 
