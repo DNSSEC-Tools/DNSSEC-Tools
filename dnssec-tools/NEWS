@@ -4,8 +4,32 @@ details.
 
 2.0
  - New Features
-    - OWL
-    - dnssec-nodes
+    - OWL           - A brand new DNS monitoring system:
+		      The Owl Monitoring System uses timed Domain Name
+		      System (DNS) queries to monitor basic network
+		      functionality.  The system consists of a manager
+		      host and a set of sensor hosts.  The Owl sensors
+		      perform periodic DNS queries and report to the
+		      Owl manager the time taken for each query.  Over
+		      time, this shows the responsiveness of the DNS
+		      infrastructure.
+    - dnssec-nodes  - Many new features have been added:
+                    - The validation tree now supports clicking on
+                      boxes to highlight it and the arrows that derive
+                      from it.  Great for use when teaching about
+                      DNSSEC.
+                    - An extensive filter/effect editor now lets you
+                      tailor the look of a graph to color-code, set
+                      the alpha levels, etc of nodes based on their
+                      names, status, data types, etc.
+                    - Right clicking on a node lets you center the
+                      graph on that node.
+                    - More data types are collected and shown in the
+                      data view.
+                    - Many other bug fixes
+    - Multiple      - The perl tools can now use either the
+                      ZoneFile::Fast or the Net::DNS zone file parser,
+                      thanks to a patch from Sebastian
 
  - Bug Fixes
     - zonesigner    - Fixed SOA parsing and serial number update issues
