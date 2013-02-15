@@ -71,8 +71,6 @@ use Net::DNS::SEC::Tools::rollmgr;
 use Net::DNS::SEC::Tools::keyrec;
 use Net::DNS::SEC::Tools::tooloptions;
 
-use Net::DNS::ZoneFile::Fast;
-
 #
 # Version information.
 #
@@ -883,7 +881,7 @@ sub getrr
 	#
 	# Parse the zone for its resource records.
 	#
-	$rref = Net::DNS::ZoneFile::Fast::parse(file => $zf);
+	$rref = dt_parse_zonefile(file => $zf);
 	@rrs = @$rref;
 
 	#
