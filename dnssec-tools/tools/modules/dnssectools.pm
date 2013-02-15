@@ -31,7 +31,11 @@ our @EXPORT = qw(
 			dt_adminmail
 			dt_cmdpath
 			dt_filetype
+			dt_parse_duration
+			dt_parse_zonefile
 		);
+
+our $ZONEFILE_PARSER;
 
 #
 # List of valid DNSSEC-Tools commands.  Used by dt_cmdpath().
@@ -251,6 +255,208 @@ sub dt_filetype
 	return("unknown");
 }
 
+#-----------------------------------------------------------------------------
+# Routine:	dt_parse_duration()
+#
+# Purpose:	This routine translates a duration given in "1w2d3h4m5s" format
+#		and returns the equivalent number of seconds, or undef if the
+#		duration has an invalid format.
+#
+sub dt_parse_duration
+{
+	my ($duration) = @_;
+	my %duration;
+
+	#
+	# Ensure the duration is properly formatted.
+	#
+	return(undef) unless $duration =~ /^(?:\d+[WDHMS]?)+$/i;
+
+	#
+	# Initialize the duration hash elements to zero.
+	#
+	%duration = map { $_=>0 } qw(W D H M S);
+
+	#
+	# Build the duration hash.
+	#
+	while($duration =~ /(\d+)([WDHMS]?)/gi)
+	{
+		my $mod = $2 || "S";
+		$duration{uc $mod} += $1;
+	}
+
+	#
+	# Calculate the duration in seconds and return that value.
+	#
+	return($duration{S} +
+		60 * ($duration{M} +
+		60 * ($duration{H} +
+		24 * ($duration{D} +
+		 7 *  $duration{W}))));
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	_normalize_rrtype()
+#
+# Purpose:	This routine normalizes a string, returned by the accessor
+#		passed, to a normal form of RR names.  If an RR name changed,
+#		the accessor is called to set the new value.
+#
+sub _normalize_rrtype
+{
+	my $attr = shift;					# Accessor.
+
+	my $old = &$attr;
+	my $new = $old;
+
+	#
+	# Translate every TYPExxx known to typesbyval() to its mnemonic.
+	#
+	$new =~ s/\bTYPE(\d+)/Net::DNS::typesbyval($1)/ge;
+
+	#
+	# Translate every mnemonic not known to typesbyval() back to TYPExxx.
+	#
+	$new = join(" ", map
+			{
+				my $type = $_;
+				eval { Net::DNS::typesbyname($type) };
+
+				if($@)
+				{		# unknown
+					eval
+					{
+						require Net::DNS::Parameters;
+						$type = "TYPE".Net::DNS::Parameters::typebyname($type);
+					};
+
+					warn "$@ - things may not validate correctly" if($@);
+				}
+				$type
+			} split(/\s+/, $new));
+
+	&$attr($new) if($new ne $old);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	dt_parse_zonefile()
+#
+# Purpose:	This routine parses a given zone file using the configured
+#		zone-file parser and returns an array reference containing
+# 		the RRs.
+#
+sub dt_parse_zonefile
+{
+	my %options = @_;
+	my $ret;
+
+	if(!defined($ZONEFILE_PARSER))
+	{
+		my $default_parser = dnssec_tools_default("zonefile-parser");
+		my %conf = parseconfig();
+		my $parser = $conf{"zonefile-parser"} || $default_parser;
+
+		eval "require $parser";
+
+		if($@ && ($parser ne $default_parser))
+		{
+			warn "zonefile parser $parser not usable; using default parser $default_parser";
+
+			eval "require $default_parser";
+
+			die $@ if($@);
+
+			$ZONEFILE_PARSER = $default_parser;
+		}
+		elsif($@)
+		{
+			die $@;			# Default parser not loadable.
+		}
+		else
+		{
+			$ZONEFILE_PARSER = $parser;
+		}
+	}
+
+	if($ZONEFILE_PARSER->isa("Net::DNS::ZoneFile::Fast"))
+	{
+		$ret = Net::DNS::ZoneFile::Fast::parse(%options);
+	}
+	else
+	{
+		#
+		# Assume Net::DNS::ZoneFile calling convention.
+		#
+		my @args = ($options{file});
+		push(@args, $options{origin}) if($options{origin});
+		my $parser;
+		$ret = eval {
+				$parser = $ZONEFILE_PARSER->new(@args);
+				return([ $parser->read ]);
+			    };
+
+		if($@)
+		{
+			my $line = $parser ? $parser->line : 0;
+			my $err = (split(/\n/, $@))[0];
+
+			die $@ unless $options{soft_errors};
+
+			if(my $handler = $options{on_error})
+			{
+				&{$handler}($line, $err);
+			}
+			else
+			{
+				warn "Parse error at line $line: $err\n" unless $options{quiet};
+			}
+
+			return;
+		}
+	}
+
+	if($ret && (ref($ret) eq "ARRAY"))
+	{
+		#
+		# Normalize all RRs.
+		#
+		foreach my $rr (@$ret)
+		{
+			#
+			# Type and typelist attributes provide an accessor.
+			#
+			foreach my $attr (qw(type typelist))
+			{
+				if($rr->can($attr))
+				{
+					_normalize_rrtype(sub{
+								$rr->$attr(@_) ;
+							     });
+				}
+			}
+
+			#
+			# SIG and RRSIG provide no accessor (except read-only
+			# via AUTOLOAD) so we need to manipulate the hashref
+			# ourself.
+			#
+			if($rr->isa("Net::DNS::RR::SIG")	||
+			   $rr->isa("Net::DNS::RR::RRSIG"))
+			{
+				#
+				# SIG and RRSIG provide no accessors
+				#
+				_normalize_rrtype(sub {
+							$_[0] ? ($rr->{typecovered} = $_[0]) : $rr->{typecovered}
+						      });
+			}
+		}
+	}
+
+	return($ret);
+}
+
 1;
 
 #############################################################################
@@ -270,6 +476,10 @@ Net::DNS::SEC::Tools::dnssectools - General routines for the DNSSEC-Tools packag
   $zspath = dt_cmdpath('zonesigner');
 
   $ftype = dt_findtype($path);
+
+  $seconds = dt_parse_duration("0w3d1h10m20s")
+
+  $rrset = dt_parse_zonefile(file => 'example.com');
 
 =head1 DESCRIPTION
 
@@ -315,7 +525,7 @@ The email address that the mail should come from.
 =item I<mailer-type>
 
 Should be one of: I<sendmail, smtp, qmail>.  This option is not
-required and will default to trying sendmail and qmail to deliever the
+required and will default to trying sendmail and qmail to deliver the
 mail.  If I<mailer-server> is set to a defined value but I<mailer-type> is not, then I<mailer-type> will default to 
 
 =item I<mailer-server>
@@ -357,6 +567,22 @@ Return values:
 
         "nofile"  - The specified file does not exist.
 
+=item I<dt_parse_duration(string)>
+
+This routine translates a duration given in "1w2d3h4m5s" format and returns
+the equivalent number of seconds, or undef if the duration has an invalid
+format.
+
+=item I<dt_parse_zonefile(options)>
+
+This routine parses a given zone file using the configured zone file parser
+and returns an array reference containing the RRs. The options hash is the
+same as for B<Net::DNS::ZoneFile::Fast>.
+
+The zone parser to be used depends on the setting of the I<zonefile-parser>
+configuration value.  If this is not set, then the B<Net::DNS::ZoneFile::Fast>
+zone parser will be used.
+
 =back
 
 =head1 COPYRIGHT
@@ -367,6 +593,9 @@ See the COPYING file included with the DNSSEC-Tools package for details.
 =head1 AUTHOR
 
 Wayne Morrison, tewok@tislabs.com
+
+Sebastian Schmidt, yath@yath.de, provided the code for I<dt_parse_duration()>,
+I<dt_parse_zonefile()>, and I<_normalize_rrtype()>.
 
 =head1 SEE ALSO
 
