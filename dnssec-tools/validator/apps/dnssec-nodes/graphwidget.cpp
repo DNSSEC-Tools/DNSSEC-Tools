@@ -104,7 +104,7 @@ GraphWidget::GraphWidget(QWidget *parent, QLineEdit *editor, QTabWidget *tabs, c
       m_updateLineEditAlways(false), m_autoValidateServFails(false),
       m_infoBox(infoBox), m_infoLabel(0), m_infoMoreButton(0), m_nodeInfoLabel(0), m_previousFileMenu(0), m_mapper(),
       m_nodeList(new NodeList(this)), m_logWatcher(new LogWatcher(this)), m_legend(0), m_tabs(tabs), m_useStraightValidationLines(false),
-      m_startingNode(ROOT_NODE_NAME)
+      m_useToggledValidationBoxes(false), m_startingNode(ROOT_NODE_NAME)
 #ifdef WITH_PCAP
     , m_pcapWatcher(new PcapWatcher())
 #endif
@@ -141,6 +141,7 @@ GraphWidget::GraphWidget(QWidget *parent, QLineEdit *editor, QTabWidget *tabs, c
     connect(m_nodeList, SIGNAL(dataChanged()), this, SLOT(reLayout()));
 
     connect(this, SIGNAL(useStraightValidationLinesChanged()), this, SLOT(saveUseStraightValidationLinesPref()));
+    connect(this, SIGNAL(useToggledValidationBoxesChanged()), this, SLOT(saveUseToggledValidationBoxes()));
 
     val_log_add_cb(NULL, 99, &val_collect_logs);
 
@@ -709,11 +710,17 @@ void GraphWidget::setPrefs()
     m_updateLineEditAlways = settings.value("updateLineEdit", false).toBool();
 
     setUseStraightValidationLines(settings.value("useStraightValidationLines", false).toBool());
+    setUseToggledValidationBoxes(settings.value("useToggledValidationBoxes", false).toBool());
 }
 
 void GraphWidget::saveUseStraightValidationLinesPref() {
     QSettings settings("DNSSEC-Tools", "dnssec-nodes");
     settings.setValue("useStraightValidationLines", useStraightValidationLines());
+}
+
+void GraphWidget::saveUseToggledValidationBoxes() {
+    QSettings settings("DNSSEC-Tools", "dnssec-nodes");
+    settings.setValue("useToggledValidationBoxes", useToggledValidationBoxes());
 }
 
 void GraphWidget::setAnimateNodeMovements(bool newValue) {

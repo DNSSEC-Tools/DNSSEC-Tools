@@ -156,6 +156,7 @@ public slots:
     void maybeSetLineEditValue(const QString &value);
 
     void saveUseStraightValidationLinesPref();
+    void saveUseToggledValidationBoxes();
 
     bool showNsec3() { return m_shownsec3; }
 
@@ -215,10 +216,12 @@ private:
     QTabWidget  *m_tabs;
 
     QTAUTO_GET_SET_SIGNAL(bool, useStraightValidationLines);
+    QTAUTO_GET_SET_SIGNAL(bool, useToggledValidationBoxes);
     QTAUTO_GET_SET_SIGNAL(QString, startingNode);
 
     // QTAUTO_HERE
     /* AGST */ Q_PROPERTY(bool useStraightValidationLines READ useStraightValidationLines WRITE setUseStraightValidationLines NOTIFY useStraightValidationLinesChanged) public: const bool &useStraightValidationLines() const { return m_useStraightValidationLines; } signals: void useStraightValidationLinesChanged(); void useStraightValidationLinesChanged(bool); public slots: void setUseStraightValidationLines(const bool &newval) { if (newval != m_useStraightValidationLines) { QTAUTO_DEBUG("setting new value for " << QTAUTO_STRING(useStraightValidationLines) << " " << m_useStraightValidationLines << " => " << newval); m_useStraightValidationLines = newval; emit useStraightValidationLinesChanged(); emit useStraightValidationLinesChanged(newval); } } private: bool m_useStraightValidationLines;
+    /* AGST */ Q_PROPERTY(bool useToggledValidationBoxes READ useToggledValidationBoxes WRITE setUseToggledValidationBoxes NOTIFY useToggledValidationBoxesChanged) public: const bool &useToggledValidationBoxes() const { return m_useToggledValidationBoxes; } signals: void useToggledValidationBoxesChanged(); void useToggledValidationBoxesChanged(bool); public slots: void setUseToggledValidationBoxes(const bool &newval) { if (newval != m_useToggledValidationBoxes) { QTAUTO_DEBUG("setting new value for " << QTAUTO_STRING(useToggledValidationBoxes) << " " << m_useToggledValidationBoxes << " => " << newval); m_useToggledValidationBoxes = newval; emit useToggledValidationBoxesChanged(); emit useToggledValidationBoxesChanged(newval); } } private: bool m_useToggledValidationBoxes;
     /* AGST */ Q_PROPERTY(QString startingNode READ startingNode WRITE setStartingNode NOTIFY startingNodeChanged) public: const QString &startingNode() const { return m_startingNode; } signals: void startingNodeChanged(); void startingNodeChanged(QString); public slots: void setStartingNode(const QString &newval) { if (newval != m_startingNode) { QTAUTO_DEBUG("setting new value for " << QTAUTO_STRING(startingNode) << " " << m_startingNode << " => " << newval); m_startingNode = newval; emit startingNodeChanged(); emit startingNodeChanged(newval); } } private: QString m_startingNode;
 
 #ifdef WITH_PCAP

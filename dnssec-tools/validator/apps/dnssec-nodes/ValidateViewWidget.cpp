@@ -329,7 +329,7 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
             rdata = rrrec->rr_rdata;
 
             // draw the bounding box of the record
-            rect = new ValidateViewBox(horizontalSpot, spot+boxTopMargin, boxWidth, boxHeight);
+            rect = new ValidateViewBox(horizontalSpot, spot+boxTopMargin, boxWidth, boxHeight, m_graphWidget);
             myScene->addItem(rect);
 
             //
