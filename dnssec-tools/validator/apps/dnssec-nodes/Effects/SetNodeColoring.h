@@ -12,7 +12,7 @@ class SetNodeColoring : public Effect
 {
     Q_OBJECT
 public:
-    SetNodeColoring(QColor borderColor = Qt::red, QColor nodeColor = QColor(), QObject *parent = 0);
+    SetNodeColoring(QColor borderColor = QColor(), QColor nodeColor = QColor(), QObject *parent = 0);
 
     virtual void    applyToNode(Node *node);
     virtual void    resetNode(Node *node);

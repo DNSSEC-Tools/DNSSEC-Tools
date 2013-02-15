@@ -54,8 +54,8 @@ void SetNodeColoring::configWidgets(QHBoxLayout *hbox)
 }
 
 void SetNodeColoring::updateLabelColor() {
-    m_currentNodeColor->setText(tr("Current Node Color: %1").arg(m_nodeColor.name()));
-    m_currentBorderColor->setText(tr("Current Border Color: %1").arg(m_borderColor.name()));
+    m_currentNodeColor->setText(tr("Current Node Color: %1").arg((m_nodeColor.isValid() ? m_nodeColor.name() : "Not Set")));
+    m_currentBorderColor->setText(tr("Current Border Color: %1").arg(m_borderColor.isValid() ? m_borderColor.name() : "Not Set"));
 }
 
 void SetNodeColoring::selectNewBorderColor()
