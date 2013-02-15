@@ -12,6 +12,7 @@ Effect *Effect::getNewEffectFromMenu(QPoint where) {
     menu->addAction(tr("Set Alpha Effect"));
     menu->addAction(tr("Set Node Coloring"));
     menu->addAction(tr("Set Z Value"));
+    menu->addAction(tr("Set Node Size"));
 
     QAction *action = menu->exec(where);
 
@@ -25,6 +26,8 @@ Effect *Effect::getNewEffectFromMenu(QPoint where) {
         return new SetNodeColoring();
     } else if (menuChoice == tr("Set Z Value")) {
         return new SetZValue(0);
+    } else if (menuChoice == tr("Set Node Size")) {
+        return new SetSize(20);
     }
 
     qWarning() << "unknown effect passed to create node!";

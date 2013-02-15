@@ -58,7 +58,7 @@
 Node::Node(GraphWidget *graphWidget, const QString &nodeName, const QString &fqdn, int depth)
     : m_parent(0), graph(graphWidget), m_nodeName(nodeName.toLower()), m_fqdn(fqdn.toLower()), m_depth(depth),
       m_subData(), m_accessCount(0), m_accessTime(0), m_resultCache(0), m_colorAlpha(255), m_borderColor(Qt::black),
-      m_nodeColor(), m_detailsViewer(0)
+      m_nodeColor(), m_nodeSize(20), m_detailsViewer(0)
 {
     setFlag(ItemIsMovable);
     setFlag(ItemSendsGeometryChanges);
@@ -164,11 +164,11 @@ QRectF Node::boundingRect() const
     // Add some extra space around the circle for easier touching with finger
     qreal adjust = 30;
     return QRectF( -10 - adjust, -10 - adjust,
-                  20 + adjust * 2, 20 + adjust * 2);
+                  m_nodeSize + adjust * 2, m_nodeSize + adjust * 2);
 #else
     qreal adjust = 2;
     return QRectF( -10 - adjust, -10 - adjust,
-                  23 + adjust, 23 + adjust);
+                  m_nodeSize + 3 + adjust, m_nodeSize + 3 + adjust);
 #endif
 }
 
@@ -259,6 +259,16 @@ QColor Node::nodeColor()
     return m_nodeColor;
 }
 
+void Node::setNodeSize(const unsigned int nodeSize)
+{
+    m_nodeSize = nodeSize;
+    update();
+}
+
+unsigned int Node::nodeSize() {
+    return m_nodeSize;
+}
+
 void Node::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *)
 {
     // draw the shadow elipse
@@ -266,7 +276,7 @@ void Node::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWid
     shadowColor.setAlpha(m_colorAlpha);
     painter->setPen(Qt::NoPen);
     painter->setBrush(shadowColor);
-    painter->drawEllipse(-7, -7, 20, 20);
+    painter->drawEllipse(-7, -7, m_nodeSize, m_nodeSize);
 
     // draw the data bubble
     if (m_subData.count() > 1) {
@@ -276,14 +286,14 @@ void Node::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWid
         foreach (DNSData *data, m_subData) {
             setupPainting(data->DNSSECStatus(), option, painter);
 
-            painter->drawPie(QRectF(-10, -10, 20, 20), count * angleSegment, angleSegment);
+            painter->drawPie(QRectF(-10, -10, m_nodeSize, m_nodeSize), count * angleSegment, angleSegment);
 
             count++;
         }
     } else {
         setupPainting(m_resultCache, option, painter);
 
-        painter->drawEllipse(-10, -10, 20, 20);
+        painter->drawEllipse(-10, -10, m_nodeSize, m_nodeSize);
     }
 
 
@@ -298,7 +308,7 @@ void Node::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWid
         penColor.setAlpha(m_colorAlpha);
         painter->setPen(QPen(penColor));
 
-        painter->drawText(QRectF(-10, -5, 20, 20), m_nodeName);
+        painter->drawText(QRectF(-10, -5, m_nodeSize, m_nodeSize), m_nodeName);
     }
 }
 
