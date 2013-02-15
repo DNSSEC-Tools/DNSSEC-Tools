@@ -15,10 +15,10 @@ BEGIN {
 
 
 
-use Net::DNS::ZoneFile::Fast;
 use Net::DNS::SEC::Tools::QWPrimitives;
 use Net::DNS::SEC::Tools::BootStrap;
 use Net::DNS::SEC::Tools::conf;
+use Net::DNS::SEC::Tools::dnssectools;
 use Data::Dumper;
 use strict;
 
@@ -278,10 +278,10 @@ while ($#ARGV > -1) {
     #
     # Parse the file into an array
     #
-    my $rrset = Net::DNS::ZoneFile::Fast::parse(file => $zfile,
-						origin => "$dname.",
-						soft_errors => 1,
-						on_error => \&my_err);
+    my $rrset = dt_parse_zonefile(file => $zfile,
+				  origin => "$dname.",
+				  soft_errors => 1,
+				  on_error => \&my_err);
 #    print "loaded file $zfile\n";
 
     #
