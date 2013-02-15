@@ -224,6 +224,7 @@ create_nsaddr_array(int num_addrs)
             FREE(ns_address);
             return NULL;
         }
+        memset(ns_address[i], 0, sizeof(struct sockaddr_storage));
     }
     return ns_address;
 }
