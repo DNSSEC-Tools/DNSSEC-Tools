@@ -24,7 +24,7 @@ use Log::Dispatch::FileRotate;
 # Version information.
 #
 my $NAME   = 'owlutils.pm';
-my $VERS   = "$NAME version: 1.0";
+my $VERS   = "$NAME version: 2.0";
 
 our @ISA = qw(Exporter);
 

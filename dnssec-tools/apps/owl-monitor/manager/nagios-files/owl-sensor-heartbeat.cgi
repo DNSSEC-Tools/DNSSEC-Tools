@@ -20,8 +20,8 @@ use strict;
 # Version information.
 #
 my $NAME   = 'owl-sensor-heartbeat.cgi';
-my $VERS   = "$NAME version: 1.14.0";
-my $DTVERS = "DNSSEC-Tools version: 1.14";
+my $VERS   = "$NAME version: 2.0.0";
+my $DTVERS = "DNSSEC-Tools version: 2.0";
 
 #------------------------------------------------------------------------
 # Defaults and some constants.
