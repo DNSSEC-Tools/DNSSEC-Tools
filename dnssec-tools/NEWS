@@ -27,6 +27,19 @@ details.
                     - More data types are collected and shown in the
                       data view.
                     - Many other bug fixes
+    - DNSSEC-enabled browser 
+                    - Added support for validation of SSL certificates
+                      using the DANE protocol.
+    - curl          - Added support for validation of SSL certificates
+                      using the DANE protocol.
+    - libval        - Added support for local DANE validation
+                    - Extended the dt-danechk commandline tool to check
+                      the X509 cert provided over the SSL connection
+                      against the TLSA record. 
+                    - Optimized glue record lookup when the only ip
+                      addresses configured for the host are for a single
+                      address family (ipv4 or ipv6) 
+                    - fine tune res_io source management
     - dnssec-check  - dnssec-check now checks DNAME support
     - Multiple      - The perl tools can now use either the
                       ZoneFile::Fast or the Net::DNS zone file parser,
@@ -34,6 +47,9 @@ details.
 
  - Bug Fixes
     - zonesigner    - Fixed SOA parsing and serial number update issues
+    - rollerd       - Fixed issue with KSK roll.
+    - libval        - Properly initialize memory in sockaddr structures
+                      before use.
 
 1.14
  - New Features
