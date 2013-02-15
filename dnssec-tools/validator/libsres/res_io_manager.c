@@ -89,6 +89,8 @@ bind_to_random_source(int af, SOCKET s)
 
     u_int16_t next_port, start_port;
 
+    memset(&ea_source, 0, sizeof(struct sockaddr_storage));
+
     if (af == AF_INET) {
         sa4->sin_family = AF_INET;
         sa4->sin_addr.s_addr = htonl(INADDR_ANY);
@@ -1352,6 +1354,9 @@ res_io_read_udp(struct expected_arrival *arrival)
     arrival->ea_response = (u_char *) MALLOC(bytes_waiting * sizeof(u_char));
     if (NULL == arrival->ea_response)
         return SR_IO_MEMORY_ERROR;
+    memset(arrival->ea_response, 0, bytes_waiting * sizeof(u_char));
+
+    memset(&from, 0, sizeof(from));
 
 #ifdef MSG_DONTWAIT
     flags = MSG_DONTWAIT;

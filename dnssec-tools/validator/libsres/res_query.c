@@ -302,6 +302,9 @@ clone_ns(struct name_server **cloned_ns, struct name_server *ns)
             }
             FREE((*cloned_ns)->ns_address);
             (*cloned_ns)->ns_address = NULL;
+        } else {
+            memset((*cloned_ns)->ns_address[i], 0, 
+                    sizeof(struct sockaddr_storage));
         }
     }
 
