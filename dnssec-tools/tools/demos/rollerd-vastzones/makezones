@@ -3,10 +3,10 @@
 # Copyright 2011-2013 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details.
 #
-#
 # makezones
 #
-#	This script creates a bunch of demo zones.
+#	This script creates a bunch of demo zones, a rollrec file, and a
+#	script with which to run a demo of the DNSSEC-Tools rollerd daemon.
 #
 
 use strict;
@@ -17,13 +17,22 @@ use Getopt::Long qw(:config no_ignore_case_always);
 # Version information.
 #
 my $NAME   = "makezones";
-my $VERS   = "$NAME version: 1.14.1";
-my $DTVERS = "DNSSEC-Tools Version: 1.14";
+my $VERS   = "$NAME version: 2.0.0";
+my $DTVERS = "DNSSEC-Tools Version: 2.0";
 
 #######################################################################
 
-my $DEFAULT_ZONECOUNT =	50;		# Default number of zones to create.
+my $DEFAULT_ZONECOUNT =	10;		# Default number of zones to create.
 my $MINNUM = 5;				# Number of minutes to vary zones by.
+
+my $DEFAULT_MINLIFE = 600;		# Min. number of seconds for key life.
+my $DEFAULT_MAXLIFE = 1800;		# Added to minlife for max key life.
+
+my $DEFAULT_TTL	    = "ttl";		# Default TTL for zones.
+
+my $DEFAULT_DISPLAY = "system(\"lights -int 15s -rrf DEMOFILE \&\");";
+					# Default display script.
+
 
 #######################################################################
 #
@@ -33,25 +42,58 @@ my $MINNUM = 5;				# Number of minutes to vary zones by.
 my %options = ();			# Filled option array.
 my @opts =
 (
+	"start=i",			# Starting index of zones to create.
 	"count=i",			# Count of zones to create.
+	"init=s",			# Initial rollover state.
+	"max=s",			# Minimum seconds for key life.
+	"min=s",			# Added to minlife for max key life.
+	"ttl=s",			# TTL for zones.
 	"zs=s",				# Zonesigner arguments.
-	"out=s",			# Output file.
+
+	"rrf=s",			# Rollrec file to be created.
+	"demo=s",			# Demo script to be created.
+
+	"blinkenlights",		# Use the blinkenlights display script.
+	"bubbles",			# Use the bubbles display script.
+	"lights",			# Use the lights display script.
+	"nodisplay",			# Use the lights display script.
+
 	"Version",			# Display the version number.
+	"verbose",			# Verbose output.
 	"help",				# Give a usage message and exit.
 );
 
 #
 # Flag values for the various options.
 #
-my $zonecnt = $DEFAULT_ZONECOUNT;	# Zones to create.
+my $zonecnt  = $DEFAULT_ZONECOUNT;	# Zones to create.
+my $startind = 1;			# Starting index for zones to create.
+my $initstate;				# Initial rollover state.
+my $ttl;				# TTL for zones.
 my $zsargs;				# Zone name option value.
 
-my $outfile;				# Output file option value.
+my $minlife = $DEFAULT_MINLIFE;		# Minimum seconds for key life.
+my $maxlife = $DEFAULT_MAXLIFE;		# Added to minlife for max key life.
+
+my $kskstate = 0;			# KSK rollover initial state.
+my $zskstate = 0;			# ZSK rollover initial state.
+
+my $DEFAULT_ROLLREC = "demo.rollrec";	# Default name of rollrec file.
+my $DEFAULT_DEMOSCR = "rundemo";	# Default name of demo script.
+
+my $MZLOG = "makezones.log";		# Name of the makezone logfile.
+
+my $rrffile;				# Rollrec file option value.
+my $tmplate;				# Name of zone template.
+my $demoscript;				# Name of demo script.
+my $dispscript = '';			# Name of display script.
 
 #######################################################################
 
-main();
-exit(0);
+my $ret;				# Return code from main().
+
+$ret = main();
+exit($ret);
 
 #-----------------------------------------------------------------------------
 # Routine:	main()
@@ -60,59 +102,390 @@ exit(0);
 #
 sub main
 {
-	my $cntlen;				# Length of zone count.
-
+	mzlogger();
 	optsandargs();
+
+	#
+	# Arrange for clean-up on aisle 0 and 1.
+	#
+	$SIG{'HUP'} = \&cleaner;
+	$SIG{'INT'} = \&cleaner;
+
+	#
+	# Create a template zone from which all others will be but
+	# a pale comparison.
+	#
+	$tmplate = maketemplate();
+
+	#
+	# Create a script for running the demo.
+	#
+	makescript();
+
+	#
+	# Create the zones and rollrec.
+	#
+	makezones($tmplate);
+
+	#
+	# Delete the zone template file.
+	#
+	unlink($tmplate);
+
+	print "\n" if(defined($options{'verbose'}));
+	print "rollrec file - $rrffile\n";
+	print "demo script  - $demoscript\n";
+
+	print LOG "rollrec file - $rrffile\n";
+	print LOG "demo script  - $demoscript\n";
+	close(LOG);
+
+	return(0);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	mzlogger()
+#
+# Purpose:	This routine creates an execution log file showing how the
+#		demo files were created.
+#
+sub mzlogger
+{
+	my $argstr = join(' ', @ARGV);
+
+	open(LOG,"> $MZLOG");
+	print LOG "
+This file contains the command line and arguments used to create the demo
+files in the most recent makezones execution.
+
+  \$ makezones $argstr 
+
+";
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	optsandargs()
+#
+# Purpose:	This routine shakes and bakes our command line options.
+#		A bunch of option variables are set according to the specified
+#		options.  Then a little massaging is done to make sure that
+#		the proper actions are taken.
+#
+sub optsandargs
+{
+	my $dispcnt = 0;			# Count of display options.
+
+	#
+	# Force the user to give some arguments.
+	#
+	usage() if(@ARGV == 0);
+
+	#
+	# Parse the options.
+	#
+	GetOptions(\%options,@opts) || usage();
+
+	#
+	# Check some immediate commands.
+	#
+	version() if(defined($options{'Version'}));
+	usage() if(defined($options{'help'}));
+
+	#
+	# Set our option variables based on the parsed options.
+	#
+	$zonecnt    = $options{'count'}	|| $DEFAULT_ZONECOUNT;
+	$initstate  = $options{'init'}	|| 'normal';
+	$maxlife    = $options{'max'}	|| $DEFAULT_MAXLIFE;
+	$minlife    = $options{'min'}	|| $DEFAULT_MINLIFE;
+	$ttl	    = $options{'ttl'}	|| $DEFAULT_TTL;
+	$zsargs	    = $options{'zs'}	|| "-genkeys";
+	$rrffile    = $options{'rrf'}	|| $DEFAULT_ROLLREC;
+	$demoscript = $options{'demo'}	|| $DEFAULT_DEMOSCR;
+
+	if(! defined($options{'start'}))
+	{
+		$startind = 1;
+	}
+	else
+	{
+		$startind   = $options{'start'};
+	}
+
+	#
+	# Set our option variables based on the parsed options.
+	#
+	if($zsargs =~ /\-ksklife/)
+	{
+		print STDERR "do not include -ksklife in -zsargs\n";
+		exit(1);
+	}
+	if($zsargs =~ /\-zsklife/)
+	{
+		print STDERR "do not include -zsklife in -zsargs\n";
+		exit(1);
+	}
+
+	#
+	# Validate the -init argument.
+	#
+	if($initstate =~ /^normal$/i)
+	{
+		$kskstate = 1;
+		$zskstate = 1;
+	}
+	elsif($initstate =~ /^ksk$/i)
+	{
+		$kskstate = 1;
+	}
+	elsif($initstate =~ /^zsk$/i)
+	{
+		$zskstate = 1;
+	}
+	else
+	{
+		print STDERR "-init must be given one of normal, ksk, or zsk\n";
+		exit(1);
+	}
+
+	#
+	# If need be, translate non-seconds maxlife into seconds.
+	#
+	if($maxlife =~ /(\d+)(\p{IsAlpha})$/)
+	{
+		my $val = $1;				# Time value.
+		my $tu = $2;				# Time unit.
+
+		$maxlife = `timetrans -$tu $val`;
+		chomp $maxlife;
+	}
+
+	#
+	# If need be, translate non-seconds minlife into seconds.
+	#
+	if($minlife =~ /(\d+)(\p{IsAlpha})$/)
+	{
+		my $val = $1;				# Time value.
+		my $tu = $2;				# Time unit.
+
+		$minlife = `timetrans -$tu $val`;
+		chomp $minlife;
+	}
+
+	#
+	# Check for the display-script options.
+	#
+	if(defined($options{'blinkenlights'}))
+	{
+		$dispscript = "system(\"rollctl -display \& \");";
+		$dispcnt++;
+	}
+	if(defined($options{'bubbles'}))
+	{
+		$dispscript = "system(\"bubbles -int 15s DEMOFILE \& \");";
+		$dispcnt++;
+	}
+	if(defined($options{'lights'}))
+	{
+		$dispscript = "system(\"lights -int 15s -rrf DEMOFILE \& \");";
+		$dispcnt++;
+	}
+	if(defined($options{'nodisplay'}))
+	{
+		$dispscript = ' ';
+		if($dispcnt > 0)
+		{
+			print STDERR "-nodisplay may not be used with -blinkenlights, -bubbles, or -lights\n";
+			exit(1);
+		}
+	}
+
+	#
+	# Check for the display-script options.  If none was given, we'll
+	# use the default.
+	#
+	if($dispcnt > 1)
+	{
+		print STDERR "only one of -blinkenlights, -bubbles, and -lights may be used\n";
+		exit(1);
+	}
+	if($dispscript eq '')
+	{
+		$dispscript =  $DEFAULT_DISPLAY;
+	}
+
+	#
+	# Verbose option shows the various parameters.
+	#
+	if(defined($options{'verbose'}))
+	{
+		print "\n";
+		print "making $zonecnt zones\n";
+		print "starting index     - $startind\n";
+		print "initial state      - $initstate\n";
+		print "minlife            - $minlife seconds\n";
+		print "maxlife            - $maxlife seconds\n";
+		print "zone TTL           - $ttl\n";
+		print "zonesigner args    - $zsargs\n";
+		print "display script     - $dispscript\n";
+		print "\n";
+	}
+
+	print LOG "making $zonecnt zones\n";
+	print LOG "starting index     - $startind\n";
+	print LOG "initial state      - $initstate\n";
+	print LOG "minlife            - $minlife seconds\n";
+	print LOG "maxlife            - $maxlife seconds\n";
+	print LOG "zone TTL           - $ttl\n";
+	print LOG "zonesigner args    - $zsargs\n";
+	print LOG "display script     - $dispscript\n";
+	print LOG "\n";
+
+}
+
+#----------------------------------------------------------------------
+# Routine:	maketemplate()
+#
+# Purpose:	Make a template zone from which all others will be built.
+#
+sub maketemplate
+{
+	my $fn;					# Name of template zone.
+
+	$fn = "template-example.com-" . time;
+
+	open(TMPL,"> $fn");
+
+	print TMPL "
+\$TTL	$ttl
+
+@	IN	SOA	example.com.	dtadmin.leodhas.example.com. (
+					0	; serial
+					3h		; refresh
+					$ttl		; retry
+					$ttl		; expire
+					$ttl )		; minimum
+
+@		IN  	NS 	leodhas.example.com.
+
+		IN	MX 10	leodhas.example.com.
+
+
+mull			IN	A	10.20.40.21
+iona			IN	A	10.20.40.22
+leodhas			IN	A	10.20.40.23
+harris			IN	A	10.20.40.24
+barra			IN	A	10.20.40.25
+skye			IN	A	10.20.40.26
+uist			IN	A	10.20.40.27
+staffa			IN	A	10.20.40.28
+arran			IN	A	10.20.40.29
+bernera			IN	A	10.20.40.99
+
+";
+
+	close(TMPL);
+	chmod 0644, $fn;
+	return($fn);
+}
+
+#----------------------------------------------------------------------
+# Routine:	makescript()
+#
+# Purpose:	Make a demo script for running the demo.
+#
+sub makescript
+{
+	my @lines = ();				# Lines for demo script.
+	my $script;				# Joined-up script lines.
+
+	#
+	# Build the script contents.
+	#
+	@lines = <DATA>;
+	$script = join('', @lines);
+
+	#
+	# Build the script contents.  (Order is important here.)
+	#
+	$script =~ s/DISPLAYCMD/$dispscript/g;
+	$script =~ s/DEMOFILE/$rrffile/g;
+	$script =~ s/DEMOSCRIPT/$demoscript/g;
+
+	#
+	# Write the script file.
+	#
+	open(DSCR,"> $demoscript");
+	print DSCR "$script";
+	close(DSCR);
+	chmod 0755, $demoscript;
+}
+
+#----------------------------------------------------------------------
+# Routine:	makezones()
+#
+# Purpose:	Create and sign zones, and build rollrec file.
+#
+sub makezones
+{
+	my $tmplfile = shift;			# Zone template.
+	my $cntlen;				# Length of zone count.
 
 	$cntlen = length("a" . $zonecnt) - 1;
 
 	#
 	# Create the rollrec file.
 	#
-	open(RRF,"> demo.rollrec");
+	open(RRF,"> $rrffile");
 
 	#
 	# Create the info rollrec.
 	#
 	print RRF "
 skip \"info rollrec\"
-        version         \"2\"
+	version		\"2\"
 ";
 
 	#
 	# Create the new zone file and update the rollrec file.
 	#
-	print "zonecnt - <$zonecnt>\n";
-	for(my $ind=1; $ind <= $zonecnt; $ind++)
+	for(my $ind=0; $ind < $zonecnt; $ind++)
 	{
 		my $zone;			# New zone's name.
+		my $zind;			# Zone index number.
 		my $tempus;			# Time for zone.
 		my $min;			# Minutes adjustment value.
 		my $lifespan;			# Key lifespan.
+		my $rollinfo = '';		# Info about rollover state.
+
+		$zind = $startind + $ind;
 
 		#
 		# Build the new zone's name.
 		#
-		$zone = sprintf "example-%0*d.com", $cntlen, $ind;
+		$zone = sprintf "example-%0*d.com", $cntlen, $zind;
+
+		print "creating $zone\n" if(defined($options{'verbose'}));
 
 		#
 		# Calculate a lifespan for the keys.
 		#
-		$lifespan = 30 + int(rand(30));
+		$lifespan = $minlife + int(rand($maxlife));
 
 		#
 		# Create and sign the new zone file.
 		#
-		system("cp save-example.com $zone");
-		system("perl -pi -e 's/TTL	30/TTL	$lifespan/' $zone");
-		system("zonesigner -ksklife $lifespan -zsklife $lifespan $zsargs $zone");
+		system("cp $tmplfile $zone");
+		system("perl -pi -e 's/ttl/$lifespan/' $zone");
+#		system("zonesigner -ksklife $lifespan -zsklife $lifespan $zsargs $zone");
+		system("zonesigner -ksklife $lifespan -zsklife $lifespan $zsargs $zone > /dev/null");
 
 		#
-		# Get the current time and drop it back a few minutes..
+		# Get the current time and bump it up.
 		#
 		$tempus = time;
-		$min = int(rand($MINNUM)) * 60;
-		$tempus -= $min;
+		$min = $lifespan * 0.75;
+		$tempus += $min;
 
 		#
 		# Get the the text time.
@@ -130,58 +503,74 @@ roll \"$zone\"
 	keyrec          \"$zone.krf\"
 	maxttl          \"60\"
 	display         \"1\"
-	phasestart	\"$tempus\"
+	kskphase	\"0\"
+	zskphase	\"0\"
+	phasestart	\"$tempus\"";
 
-";
+		
+		#
+		# Set up the appropriate values for *sk_rollsecs and
+		# *sk_rolldate.
+		#
+		if($kskstate)
+		{
+			my $zrs;			# zsk_rollsecs field.
+			my $zrd;			# zsk_rolldate field.
+
+			$zrs = time - $lifespan - 5;
+$zrs = time;
+			$zrd = gmtime $zrs;
+			chomp $zrd;
+
+			$rollinfo =
+"
+	zsk_rollsecs	\"$zrs\"
+	zsk_rolldate	\"$zrd\"";
+		}
+		if($zskstate)
+		{
+			my $krs;			# ksk_rollsecs field.
+			my $krd;			# ksk_rolldate field.
+
+			$krs = time - $lifespan - 5;
+$krs = time;
+			$krd = gmtime $krs;
+			chomp $krd;
+
+
+			$rollinfo .=
+"
+	ksk_rollsecs	\"$krs\"
+	ksk_rolldate	\"$krd\"";
+		}
+
+		#
+		# Add an entry to the rollrec file for this zone.
+		#
+		print RRF "$rollinfo\n";
+
 	}
 
 	#
 	# Close the rollrec file.
 	#
+	print RRF "\n";
 	close(RRF);
 }
 
 #-----------------------------------------------------------------------------
-# Routine:	optsandargs()
+# Routine:	cleaner()
 #
-# Purpose:	This routine shakes and bakes our command line options.
-#		A bunch of option variables are set according to the specified
-#		options.  Then a little massaging is done to make sure that
-#		the proper actions are taken.
+# Purpose:	Dump the template file if we get interrupted.  Also exit.
 #
-sub optsandargs
+sub cleaner
 {
 	#
-	# Parse the options.
+	# Delete the zone template file.
 	#
-	GetOptions(\%options,@opts) || usage();
+	unlink($tmplate);
 
-	#
-	# Check some immediate commands.
-	#
-	version() if(defined($options{'Version'}));
-	usage() if(defined($options{'help'}));
-
-	#
-	# Set our option variables based on the parsed options.
-	#
-	$zonecnt = $options{'count'}	  || $DEFAULT_ZONECOUNT;
-	$zsargs	  = $options{'zs'}	  || "-genkeys";
-	$outfile  = $options{'out'}       || "demo.rollrec";
-
-	#
-	# Set our option variables based on the parsed options.
-	#
-	if($zsargs =~ /\-ksklife/)
-	{
-		print STDERR "do not include -ksklife in -zsargs\n";
-		exit(1);
-	}
-	if($zsargs =~ /\-zsklife/)
-	{
-		print STDERR "do not include -zsklife in -zsargs\n";
-		exit(2);
-	}
+	exit(1);
 }
 
 
@@ -203,11 +592,22 @@ sub version
 sub usage
 {
 	print STDERR "usage:  makezones [options]\n";
-	print STDERR "\t-count		count of zones to generate\n";
-	print STDERR "\t-out		output file\n";
-	print STDERR "\t-zs		options for zonesigner\n";
-	print STDERR "\t-Version	display version number\n";
-	print STDERR "\t-help		help message \n";
+	print STDERR "\t-start          starting index of zones to generate\n";
+	print STDERR "\t-count          count of zones to generate\n";
+	print STDERR "\t-init           initial rollover state\n";
+	print STDERR "\t-max            added to minlife for max key life\n";
+	print STDERR "\t-min            minimum seconds for key life\n";
+	print STDERR "\t-ttl            TTL for zones\n";
+	print STDERR "\t-zs             options for zonesigner\n";
+	print STDERR "\t-demo           demo script to be created\n";
+	print STDERR "\t-rrf            rollrec file to be created\n";
+	print STDERR "\t-blinkenlights  start blinkenlights GUI\n";
+	print STDERR "\t-bubbles        start bubbles GUI\n";
+	print STDERR "\t-lights         start lights GUI\n";
+	print STDERR "\t-nodisplay      do not start a GUI\n";
+	print STDERR "\t-verbose        give verbose output\n";
+        print STDERR "\t-Version        display version number\n";
+	print STDERR "\t-help           help message \n";
 	exit(0);
 }
 
@@ -229,24 +629,38 @@ makezones - Creates and signs a large set of zones for a demo.
 =head1 DESCRIPTION
 
 B<makezones> creates the files required for a DNSSEC-Tools zone.  A large
-number of zones is created and signed (using B<zonesigner>.) A I<rollrec>
+number of zones is created and signed (using B<zonesigner>.)  A I<rollrec>
 file is created that will allow B<rollerd> to manage the rollover process
 for all these zones.
 
-Each generated zone will be given a TTL of from 30 to 60 seconds.  This 
-TTL value is also passed to B<zonesigner> as the value for the I<-ksklife>
-and I<-zsklife> options.  Other arguments may be passed to B<zonesigner>
-by using the I<-zs> argument to B<makezones>.
+Each generated zone will be given a TTL ranging from a minimum key lifespan
+to a maximum key lifespan.  By default, the minimum is one minute and the
+maximum is four minutes.  This TTL value is also passed to B<zonesigner> as
+the value for the B<-ksklife> and B<-zsklife> options.  The minimum may be
+specified to B<makezones> with the B<-min> option.  A maximum I<range> may be
+specified with the B<-max> option.  The B<-max> option value is added to the
+minimum key lifespan to give the maximum key lifespan.
 
-The number of zones may be specified using the I<-count> option.  The zones
-will be created using a template named B<save-example.com>.  The zones are
+The number of zones may be specified using the B<-count> option.  The zones
+will be created using a template created by B<makezones>.  The zones are
 essentially the same and the actual zone data is all for the zone
 I<example.com>.  The DNSSEC-Tools commands don't manipulate the contents
 of the zone files, so the similarity of zone data is not an issue.
 
+Other arguments may be passed to B<zonesigner> by using the I<-zs> argument
+to B<makezones>.
+
 The I<rollrec> file created to manage this large collection of zones
-may be specified by the I<-out> option.  If this isn't given, then the
+may be specified by the I<-rrf> option.  If this isn't given, then the
 I<rollrec> entries will be written to B<demo.rollrec>.
+
+A demo script will be created to run the demo.  The default script name
+is B<rundemo>, but this may be changed with the I<-demo> option.  Use of
+the demo script is described in its own POD.
+
+A logfile of creation parameters will be written to the file B<makezone.log>.
+This will show, after the fact, how B<makezone> was executed to create the
+files.
 
 =head1 OPTIONS
 
@@ -254,16 +668,39 @@ B<makezones> may be given the following options:
 
 =over 4
 
+=item B<-start startindex>
+
+This specifies the starting index of zones that will be created.  This is
+the number from which zone names will start.  If this isn't specified, then
+a default index of 1 zones will be used.
+
 =item B<-count zonecount>
 
 This specifies the number of zones that will be created.  If this isn't
 specified, then a default number of 50 zones will be created.
 
-=item B<-out rollrec-file>
+=item B<-init state>
 
-This specifies the name of the I<rollrec> file.  The file will be created if
-it does not exist, and it will be truncated if it does exist.  If this isn't
-specified, then B<demo.rollrec> will be used.
+This specifies the initial rollover state for all the zones.  The state value
+may be I<normal>, I<ksk>, or I<zsk>.  If this option isn't specified, then
+the I<normal> state will be used.
+
+=item B<-max maxval>
+
+This indicates the maximum key lifetime in seconds.  This value is not the
+actual maximum key lifetime; rather, it is added to the minimum key lifetime.
+If this option isn't specified, then 1800 (three minutes) will be used.
+
+=item B<-min minval>
+
+This specifies the minimum key lifetime in seconds.  This value is the actual
+minimum key lifetime.  If this option isn't specified, then 600 (one minute)
+will be used.
+
+=item B<-ttl zone-ttl>
+
+This specifies the TTL value for the new zones.  If it is not given, a
+default value of "30s" is used.
 
 =item B<-zs zonesigner-opts>
 
@@ -271,13 +708,56 @@ This specifies options that will be passed to B<zonesigner>.  The I<-ksklife>
 and I<-zsklife> options should not be included.  If this option is not
 specified, then the I<-genkeys> option will be passed to B<zonesigner>.
 
-=item B<-help>
+=item B<-demo demo-script>
 
-Display a usage message.
+This specifies the name of the demo script.  The file will be created if
+it does not exist, and it will be truncated if it does exist.  If this isn't
+specified, then B<rundemo> will be used.
+
+=item B<-rrf rollrec-file>
+
+This specifies the name of the I<rollrec> file.  The file will be created if
+it does not exist, and it will be truncated if it does exist.  If this isn't
+specified, then B<demo.rollrec> will be used.
+
+=item B<-blinkenlights>
+
+This specifies that B<rundemo> should start the B<blinkenlights> GUI to
+monitor the demo.
+This option may not be used with the B<-bubbles>, B<-lights>, and
+B<-nodisplay> options.
+
+=item B<-bubbles>
+
+This specifies that B<rundemo> should start the B<bubbles> GUI to
+monitor the demo.
+This option may not be used with the B<-blinkenlights>, B<-lights>, and
+B<-nodisplay> options.
+
+=item B<-lights>
+
+This specifies that B<rundemo> should start the B<lights> GUI to
+monitor the demo.
+This option may not be used with the B<-blinkenlights>, B<-bubbles>,
+and B<-nodisplay> options.
+
+=item B<-nodisplay>
+
+This specifies that B<rundemo> should not start a GUI monitor.
+This option may not be used with the B<-blinkenlights>, B<-bubbles>,
+and B<-lights> options.
 
 =item B<-Version>
 
 Display version information for B<makezones> and DNSSEC-Tools.
+
+=item B<-verbose>
+
+Give verbose output.
+
+=item B<-help>
+
+Display a usage message.
 
 =back
 
@@ -294,6 +774,261 @@ Wayne Morrison, tewok@tislabs.com
 
 B<rollerd(8)>,
 B<zonesigner(8)>
+
+B<rollrec(5)>
+
+=cut
+
+##############################################################################
+
+__DATA__
+#!/usr/bin/perl
+#
+# Copyright 2006-2013 SPARTA, Inc.  All rights reserved.
+# See the COPYING file included with the DNSSEC-Tools package for details.
+#
+# DEMOSCRIPT
+#
+#	This script was automatically generated by the makezones script.
+#	It is used to run a demo of the DNSSEC-Tools rollerd daemon.
+#
+
+use strict;
+
+use Getopt::Long qw(:config no_ignore_case_always);
+use Net::DNS::SEC::Tools::rollrec;
+
+my %options = ();				# Filled option array.
+my @opts =
+(
+	"autods",				# Auto-pub DS records.
+	"reload",				# Reload zones.
+	"loglevel=n",				# Logging level.
+	"help",					# Display help message.
+);
+
+my $cmd;					# Demo command to execute.
+my $dir;					# Current-directory argument.
+my $log;					# Log-file argument.
+my $lvl;					# Log-level argument.
+my $rrf;					# Rollrec-file argument.
+my $slp;					# Sleep-time argument.
+
+my $curdir    = ".";
+my $logfile   = "log.demo";
+my $loglvl    = "phase";
+my $noload    = "-noreload";
+my $sleeptime = "15";
+my $rrfile    = "DEMOFILE";
+
+my $autods    = 0;				# Auto-DS'ing flag.
+my $cpid      = 0;				# autods child pid.
+
+main();
+exit();
+
+#------------------------------------------------------------------------------
+# Routine:	main()
+#
+sub main
+{
+	#
+	# Set the log level, maybe using a command-line argument.
+	#
+	opts();
+	print "\nusing a loglevel of \"$loglvl\"\n\n";
+
+	#
+	# Set our remaining arguments.
+	#
+	$dir	= "-dir $curdir";
+	$log	= "-logfile $logfile";
+	$lvl	= "-loglevel $loglvl";
+	$slp	= "-sleep $sleeptime";
+	$rrf	= "$rrfile";
+
+	#
+	# Build our demo command.
+	#
+	$cmd = "rollerd $dir $log $lvl $noload $slp -rrf $rrf";
+
+	#
+	# Ensure rollerd is not running and zap the demo log file.
+	#
+	system("rollctl -halt >/dev/null 2>&1 &");
+#	system("rollctl -halt");
+	system("cp /dev/null $logfile");
+
+	#
+	# Set up automatic DS handling.  (maybe)
+	autods();
+
+	#
+	# Start the demo and peek at the log file.
+	#
+	system("$cmd &");
+#	system("tail -f $logfile");
+
+	#
+	# Start a GUI to keep track of what's happening.
+	#
+	sleep(2);
+	DISPLAYCMD
+}
+
+#------------------------------------------------------------------------------
+# Routine:	opts()
+#
+sub opts
+{
+	GetOptions(\%options,@opts) || usage();
+	usage() if($options{'help'});
+
+	$loglvl	= $options{'loglvl'} if(defined($options{'loglvl'}));
+
+	$autods = defined($options{'autods'});
+
+	$noload = "" if(defined($options{'reload'}));
+}
+
+#------------------------------------------------------------------------------
+# Routine:	autods()
+#
+sub autods
+{
+	my $nap = $sleeptime * 2;			# autods sleep-time.
+
+	#
+	# Only set up autods childproc if -autods was given.
+	#
+	return if(!$autods);
+	print "\nstarting auto-DS checking\n\n";
+	$SIG{CHLD} = "IGNORE";
+
+	#
+	# Spawn a child and let the parent return.
+	#
+	$cpid = fork();
+	return if($cpid != 0);
+
+	#
+	# Whenever a zone hits KSK rollover phase 6, tell rollerd that
+	# the parent has published the new DS record.
+	#
+	while(42)
+	{
+		sleep($nap);
+
+		rollrec_read($rrfile);
+		foreach my $zone (sort(rollrec_names()))
+		{
+			my $kphase = rollrec_recval($zone,'kskphase');
+
+			if($kphase == 6)
+			{
+				system("rollctl -dspub $zone > /dev/null");
+			}
+		}
+		rollrec_close();
+	}
+}
+
+#------------------------------------------------------------------------------
+# Routine:	usage()
+#
+sub usage
+{
+	print STDERR "usage:  DEMOSCRIPT [-autods | -loglevel lvl | -reload]\n";
+	exit(0);
+}
+
+##############################################################################
+#
+
+=pod
+
+=head1 NAME
+
+DEMOSCRIPT - Runs a demo of rollerd, the DNSSEC-Tools rollover daemon.
+
+=head1 SYNOPSIS
+
+  DEMOSCRIPT [options]
+
+=head1 DESCRIPTION
+
+B<DEMOSCRIPT> runs a demo of B<rollerd>, the DNSSEC-Tools rollover daemon.
+Other DNSSEC-Tools, such as B<zonesigner> and B<blinkenlights> are also
+be used in the demo.
+
+This is a generic script that can be used with any number of zone
+configurations.  The script was created by the B<makezones> script, which
+creates and signs the required zones files, and makes the B<rollrec> file
+used to control B<rollerd>.  It may be used for other B<rollerd>-based tests
+and demos whose data are not created by B<makezones>.
+
+B<DEMOSCRIPT> starts with initializing the environment by using B<rollctl>
+to halt any running B<rollerd> and clearing the B<rollerd> log file.  It
+will then start automatic DS-watching, if required, and execute B<rollerd>.
+Finally, a display GUI will then be started to show the demo's progress.
+This display program may be B<blinkenlights>, B<lights>, or B<bubbles>.
+B<blinkenlights> is started by default, but any collection of these GUI
+programs may be started by editing the B<DEMOSCRIPT> script.
+
+=head1 OPTIONS
+
+B<DEMOSCRIPT> may be given the following options:
+
+=over 4
+
+=item B<-autods>
+
+This specifies that B<DEMOSCRIPT> will watch the demo's B<rollrec> file
+for zones entering KSK rollover phase 6.  When such a zone is found,
+B<DEMOSCRIPT> will tell B<rollerd> that the parent has published the
+zone's DS record and the zone can continue to KSK phase 7.
+
+Caveat:  Occasionally, a timing issue strikes and the demo will not start
+until a B<DEMOSCRIPT> has been given a Control-C.  In this case, the
+B<autods> script should be used.
+
+=item B<-loglevel level>
+
+This specifies the logging level that will be used by B<rollerd>.
+
+=item B<-reload>
+
+By default, B<DEMOSCRIPT> will run B<rollerd> with the B<-noreload> option
+to prevent it from informing the DNS daemon that zones should reloaded.
+This option specifies that B<rollerd> should not be executed with B<-noreload>,
+thus allowing the DNS daemon to reload its zones.
+
+=item B<-help>
+
+Display a usage message.
+
+=back
+
+=head1 COPYRIGHT
+
+Copyright 2011-2013 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@tislabs.com
+
+=head1 SEE ALSO
+
+B<blinkenlights(8)>,
+B<bubbles(8)>,
+B<lights(8)>,
+B<rollctl(8)>,
+B<rollerd(8)>>,
+B<zonesigner(8)>>
+
+B<autods>(1)>,
+B<makezones>(1)>
 
 B<rollrec(5)>
 
