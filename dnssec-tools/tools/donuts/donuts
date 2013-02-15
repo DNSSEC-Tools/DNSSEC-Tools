@@ -14,11 +14,11 @@ BEGIN {
 
 
 use Net::DNS;
-use Net::DNS::ZoneFile::Fast;
 use Net::DNS::SEC::Tools::Donuts::Rule;
 use Net::DNS::SEC::Tools::QWPrimitives;
 use Net::DNS::SEC::Tools::BootStrap;
 use Net::DNS::SEC::Tools::conf;
+use Net::DNS::SEC::Tools::dnssectools;
 
 ######################################################################
 # detect needed perl module requirements
@@ -332,7 +332,7 @@ while ($#ARGV > -1) {
     # Parse the file into an array
     #
     $parseerror = 0;
-    my $rrset = Net::DNS::ZoneFile::Fast::parse(file => $current_zone_file,
+    my $rrset = dt_parse_zonefile(file => $current_zone_file,
 						origin => "$current_domain.",
 						soft_errors => 1,
 						on_error =>\&print_parse_error);
