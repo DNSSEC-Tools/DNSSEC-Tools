@@ -143,6 +143,11 @@ MainWindow::MainWindow(const QString &fileName, QWidget *parent) :
     action->setChecked(m_graphWidget->useStraightValidationLines());
     action->connect(action, SIGNAL(toggled(bool)), m_graphWidget, SLOT(setUseStraightValidationLines(bool)));
 
+    action = menu->addAction("Validation boxes stay lit on a click");
+    action->setCheckable(true);
+    action->setChecked(m_graphWidget->useToggledValidationBoxes());
+    action->connect(action, SIGNAL(toggled(bool)), m_graphWidget, SLOT(setUseToggledValidationBoxes(bool)));
+
     QMenu *layoutMenu = menu->addMenu("Layout");
     action = layoutMenu->addAction("tree");
     action->connect(action, SIGNAL(triggered()), m_graphWidget, SLOT(switchToTree()));
