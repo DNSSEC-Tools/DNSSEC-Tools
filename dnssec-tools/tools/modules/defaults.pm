@@ -80,6 +80,7 @@ my %defaults =
 	'zone_errors'	   => 5,
 	'zonecheck'	   => getprefixdir() . "/sbin/named-checkzone",
 	'zonecheck-opts'   => "-i local",	# Options for zone checker.
+	'zonefile-parser'  => "Net::DNS::ZoneFile::Fast",
 	'zonesign'	   => getprefixdir() . "/sbin/dnssec-signzone",
 	'zonesign-opts'	   => "",		# Options for zone signer.
 	'zskcount'	   => 1,		# Number of Current ZSK keys.
@@ -403,6 +404,11 @@ This default hold a set of options for the zone-verification program.
 
 This default is set to "-i local".  This value has been found to greatly
 improve the amount of time it takes B<named-checkzone> to run.
+
+=item B<zonefile-parser>
+
+This default specifies the parser that will be used to parse zone files.
+The default value is to use the B<Net::DNS::ZoneFile::Fast> module.
 
 =item B<zonesign>
 
