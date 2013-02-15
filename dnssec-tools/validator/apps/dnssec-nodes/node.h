@@ -113,6 +113,10 @@ public:
 
     void setNodeColor(const QColor &color);
     QColor nodeColor();
+
+    void setNodeSize(const unsigned int nodeSize);
+    unsigned int nodeSize();
+
 public slots:
     void displayDetailsMenu(QPoint where = QPoint());
 
@@ -144,6 +148,7 @@ private:
     int            m_colorAlpha;
     QColor         m_borderColor;
     QColor         m_nodeColor;
+    unsigned int   m_nodeSize;
     DetailsViewer *m_detailsViewer;
 };
 //! [0]

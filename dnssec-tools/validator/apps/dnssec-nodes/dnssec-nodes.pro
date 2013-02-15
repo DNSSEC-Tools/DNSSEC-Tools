@@ -29,7 +29,8 @@ HEADERS += \
     ValidateViewBox.h \
     FilterEditorWindow.h \
     filtersAndEffects.h \
-    Filters/LogicalAndOr.h
+    Filters/LogicalAndOr.h \
+    Effects/SetSize.h
 
 SOURCES += \
         edge.cpp \
@@ -60,7 +61,8 @@ SOURCES += \
     ValidateViewWidgetHolder.cpp \
     ValidateViewBox.cpp \
     FilterEditorWindow.cpp \
-    Filters/LogicalAndOr.cpp
+    Filters/LogicalAndOr.cpp \
+    Effects/SetSize.cpp
 
 BINDIR = $$PREFIX/bin
 DATADIR =$$PREFIX/share
