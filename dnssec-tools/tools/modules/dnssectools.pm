@@ -594,9 +594,6 @@ See the COPYING file included with the DNSSEC-Tools package for details.
 
 Wayne Morrison, tewok@tislabs.com
 
-Sebastian Schmidt, yath@yath.de, provided the code for I<dt_parse_duration()>,
-I<dt_parse_zonefile()>, and I<_normalize_rrtype()>.
-
 =head1 SEE ALSO
 
 B<Mail::Send.pm(3)>,
