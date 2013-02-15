@@ -24,6 +24,9 @@ details.
                       graph on that node.
                     - More data types are collected and shown in the
                       data view.
+                    - Support for arguments on the command line for
+                      parsing log files, pcap files and domain names.
+                    - The validation view has received a visual clean-up
                     - Many other bug fixes
     - DNSSEC-enabled browser 
                     - Added support for validation of SSL certificates
@@ -58,9 +61,12 @@ details.
                       for the info rollrec have been made to minimize
                       affected programs.  If you parse the rollrec files
                       yourself, you will have to account for this change.
-    - Multiple      - The perl tools can now use either the
+    - multiple      - The perl-based tools can now use either the
                       ZoneFile::Fast or the Net::DNS zone file parser,
                       thanks to a patch from Sebastian Schmidt (yath@yath.de).
+    - ZoneFile:Fast - Support for TLSA
+                    - Made it compatible with newer Net::DNS releases
+    - Qt5           - A patch to support DNSSEC checks in Qt5 DNS lookups
 
  - Bug Fixes
     - zonesigner    - Fixed SOA parsing and serial number update issues
