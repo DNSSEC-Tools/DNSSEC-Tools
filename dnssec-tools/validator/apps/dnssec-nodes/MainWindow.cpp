@@ -115,56 +115,64 @@ MainWindow::MainWindow(const QString &fileName, QWidget *parent) :
 
     menu = menubar->addMenu("&Options");
 
-    action = menu->addAction("Lock Nodes");
-    action->setCheckable(true);
-    action->connect(action, SIGNAL(triggered(bool)), m_graphWidget, SLOT(setLockedNodes(bool)));
+    QMenu *graphmenu = menu->addMenu("&Node Graph Options");
 
-    action = menu->addAction("Show NSEC3 Records");
+    action = graphmenu->addAction("Show NSEC3 Records in the Graph");
     action->setCheckable(true);
     action->connect(action, SIGNAL(triggered(bool)), m_graphWidget, SLOT(setShowNSEC3Records(bool)));
 
-    action = menu->addAction("Animate Node Movemets");
+    action = graphmenu->addAction("Animate Node Movemets");
     action->setCheckable(true);
     action->setChecked(m_graphWidget->animateNodeMovements());
     action->connect(action, SIGNAL(toggled(bool)), m_graphWidget, SLOT(setAnimateNodeMovements(bool)));
 
-    action = menu->addAction("Always Update Lookup Editor on Node Click");
+    action = graphmenu->addAction("Always Update Lookup Editor on Node Click");
     action->setCheckable(true);
     action->setChecked(m_graphWidget->updateLineEditAlways());
     action->connect(action, SIGNAL(toggled(bool)), m_graphWidget, SLOT(setUpdateLineEditAlways(bool)));
 
-    action = menu->addAction("Additionally validate packets with SERVFAIL set");
+    action = graphmenu->addAction("Additionally validate packets with SERVFAIL set");
     action->setCheckable(true);
     action->setChecked(m_graphWidget->autoValidateServFails());
     action->connect(action, SIGNAL(toggled(bool)), m_graphWidget, SLOT(setAutoValidateServFails(bool)));
 
-    action = menu->addAction("Use straight lines for the validation diagrams");
+    QMenu *layoutMenu = menu->addMenu("Graph Layout Options");
+    action = layoutMenu->addAction("Lock Nodes");
     action->setCheckable(true);
-    action->setChecked(m_graphWidget->useStraightValidationLines());
-    action->connect(action, SIGNAL(toggled(bool)), m_graphWidget, SLOT(setUseStraightValidationLines(bool)));
-
-    action = menu->addAction("Validation boxes stay lit on a click");
-    action->setCheckable(true);
-    action->setChecked(m_graphWidget->useToggledValidationBoxes());
-    action->connect(action, SIGNAL(toggled(bool)), m_graphWidget, SLOT(setUseToggledValidationBoxes(bool)));
-
-    QMenu *layoutMenu = menu->addMenu("Layout");
+    action->connect(action, SIGNAL(triggered(bool)), m_graphWidget, SLOT(setLockedNodes(bool)));
     action = layoutMenu->addAction("tree");
     action->connect(action, SIGNAL(triggered()), m_graphWidget, SLOT(switchToTree()));
     action = layoutMenu->addAction("circle");
     action->connect(action, SIGNAL(triggered()), m_graphWidget, SLOT(switchToCircles()));
 
+    QMenu *valmenu = menu->addMenu("&Validation Tree Options");
+
+    action = valmenu->addAction("Use straight lines for the validation diagrams");
+    action->setCheckable(true);
+    action->setChecked(m_graphWidget->useStraightValidationLines());
+    action->connect(action, SIGNAL(toggled(bool)), m_graphWidget, SLOT(setUseStraightValidationLines(bool)));
+
+    action = valmenu->addAction("Validation boxes stay lit on a click");
+    action->setCheckable(true);
+    action->setChecked(m_graphWidget->useToggledValidationBoxes());
+    action->connect(action, SIGNAL(toggled(bool)), m_graphWidget, SLOT(setUseToggledValidationBoxes(bool)));
+
     //
     // Filter menu
     //
     QActionGroup *filterActions = new QActionGroup(this);
-    QMenu *filterMenu = menu->addMenu("&Filter");
-    action = filterMenu->addAction("&Do Not Filter");
-    action->connect(action, SIGNAL(triggered()), m_graphWidget->nodeList(), SLOT(filterNone()));
+    QMenu *filterMenu = menu->addMenu("&Filters");
+
+    action = filterMenu->addAction("&Open Filter Editor");
+    action->setShortcut(Qt::CTRL | Qt::Key_F);
+    action->connect(action, SIGNAL(triggered()), m_graphWidget->nodeList(), SLOT(filterEditor()));
+    filterMenu->addSeparator();
+
+    action = filterMenu->addAction("&Do Not Filter (erase all filters)");
+    action->connect(action, SIGNAL(triggered()), m_graphWidget->nodeList(), SLOT(deleteFiltersAndEffects()));
     action->setCheckable(true);
     action->setChecked(true);
     action->setActionGroup(filterActions);
-    filterMenu->addSeparator();
 
     action = filterMenu->addAction("Filter by Data &Status");
     action->connect(action, SIGNAL(triggered()), m_graphWidget->nodeList(), SLOT(filterBadToTop()));
@@ -183,11 +191,6 @@ MainWindow::MainWindow(const QString &fileName, QWidget *parent) :
     m_graphWidget->nodeList()->setFilterBox(filterBox);
 
     filterMenu->addSeparator();
-
-    action = filterMenu->addAction("&Open Filter Editor");
-    action->setShortcut(Qt::CTRL | Qt::Key_F);
-    action->connect(action, SIGNAL(triggered()), m_graphWidget->nodeList(), SLOT(filterEditor()));
-    menu->addSeparator();
 
     action = menu->addAction("Preferences");
     action->connect(action, SIGNAL(triggered()), m_graphWidget, SLOT(showPrefs()));
