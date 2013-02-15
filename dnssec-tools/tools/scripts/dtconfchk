@@ -833,6 +833,7 @@ sub check_misc
 {
 	my $admin;				# Administrator's email address.
 	my $savekeys;				# Save-old-keys flag.
+	my $zparser;				# Parser module for zone files.
 
 	#
 	# Check some boolean flags.
@@ -895,6 +896,26 @@ sub check_misc
 			$errs++;
 		}
 	}
+
+	#
+	# If zonefile-parser is set, check that the module is require-able.
+	#
+	if(defined($dtconf{'zonefile-parser'}))
+	{
+		$zparser = $dtconf{'zonefile-parser'};
+		eval "require $zparser";
+
+		if($@)
+		{
+			prt(0,"zonefile parser $zparser not usable");
+			$errs++;
+		}
+		else
+		{
+			prt(1,"zonefile parser $zparser is usable");
+		}
+	}
+
 }
 
 #-----------------------------------------------------------------------------
@@ -1539,6 +1560,11 @@ If this flag is set to 1, then the I<archivedir> field will also be checked.
 =item I<usegui>
 
 Ensure that the I<usegui> flag is a valid boolean.
+
+=item I<zonefile-parser>
+
+Ensure that the I<zonefile-parser> flag is a valid Perl module.  This is
+checked by using the Perl "require" facility to load the specified module.
 
 =back
 
