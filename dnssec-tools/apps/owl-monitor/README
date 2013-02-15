@@ -1,0 +1,30 @@
+---------
+ABOUT OWL
+---------
+
+The Owl Monitoring System uses timed Domain Name System (DNS) queries
+to monitor basic network functionality.  The system consists of a
+manager host and a set of sensor hosts.  The Owl sensors perform
+periodic DNS queries and report to the Owl manager the time taken for
+each query.  Over time, this shows the responsiveness of the DNS
+infrastructure.
+
+The Owl Monitoring System was designed such that the Owl sensor hosts need
+not be under the same administrative control as the Owl manager host.  In
+fact, each sensor in a set of Owl sensors may be under administrative control
+of different organizations and still report to a single Owl manager.
+
+------------------
+DIRECTORY CONTENTS
+------------------
+
+  manager:  Files needed only for the main manager system
+  sensor:   Files needed by sensor stations
+  common:   Common files needed by both the manager and the sensor
+  docs:	    Documentation for both the manager and the sensors
+
+---------------
+GETTING STARTED
+---------------
+
+To get started, please see the "docs/install-guide.html" file.
