@@ -28,7 +28,7 @@ use Net::DNS::SEC::Tools::conf;
 use Net::DNS::SEC::Tools::keyrec;
 
 our $VERSION = "1.14";
-our $MODULE_VERSION = "1.14.0";
+our $MODULE_VERSION = "1.15.0";
 
 our @ISA = qw(Exporter);
 

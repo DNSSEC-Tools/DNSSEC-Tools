@@ -26,7 +26,7 @@ our @EXPORT = qw(
 		);
 
 our $VERSION = "1.14";
-our $MODULE_VERSION = "1.14.0";
+our $MODULE_VERSION = "1.15.0";
 
 my $installdir = getprefixdir() . "/bin"; # DNSSEC-Tools installation directory.
 
