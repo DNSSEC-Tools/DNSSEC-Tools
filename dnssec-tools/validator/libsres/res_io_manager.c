@@ -1253,11 +1253,15 @@ complete_read(SOCKET sock, u_char *field, size_t length)
 {
     ssize_t             bytes;
     size_t             bytes_read = 0;
+#if 0
 #ifdef MSG_DONTWAIT
     int                flags = MSG_DONTWAIT;
 #else
     int                flags =0;
 #endif
+#endif
+    int                flags =0;/* XXX For now don't enable MSG_DONTWAIT */
+
     memset(field, '\0', length);
 
     do {
