@@ -33,7 +33,7 @@ Group:          System Environment/Libraries
 BuildRoot:      %{_tmppath}/%{name}-%{version}-root
 Conflicts:      filesystem < 3
 Requires:       dnssec-tools-libs
-BuildRequires:  dnssec-tools-libs-devel openssl-devel autoconf213
+BuildRequires:  dnssec-tools-libs-devel openssl-static autoconf213
 
 
 # Sources available at ftp://ftp.mozilla.org/pub/mozilla.org/nspr/releases/
@@ -44,14 +44,16 @@ Source0:        nspr-%{version}.tar.bz2
 Patch1:         nspr-config-pc.patch
 
 # DNSSEC-Tools
-Patch1001:     nspr-0001-getaddr-patch-for-mozilla-bug-699055.patch
-Patch1002:     nspr-0002-add-NSPR-log-module-for-DNS.patch
-Patch1003:     nspr-0003-add-dnssec-options-flags-to-configure-and-makefiles.patch
-Patch1004:     nspr-0004-add-DNSSEC-error-codes-and-text.patch
-Patch1005:     nspr-0005-factor-out-common-code-from-PR_GetAddrInfoByName.patch
-Patch1006:     nspr-0006-header-definitions-for-Extended-DNSSEC-and-asynchron.patch
-Patch1007:     nspr-0007-add-dnssec-validation-to-prnetdb.patch
-Patch1008:     nspr-0008-update-getai-to-test-async-disable-validation.patch
+Patch1001:     dt-nspr-0001-getaddr-patch-for-mozilla-bug-699055.patch
+Patch1002:     dt-nspr-0002-add-NSPR-log-module-for-DNS.patch
+Patch1003:     dt-nspr-0003-add-dnssec-options-flags-to-configure-and-makefiles.patch
+Patch1004:     dt-nspr-0004-add-DNSSEC-error-codes-and-text.patch
+Patch1005:     dt-nspr-0005-factor-out-common-code-from-PR_GetAddrInfoByName.patch
+Patch1006:     dt-nspr-0006-header-definitions-for-Extended-DNSSEC-and-asynchron.patch
+Patch1007:     dt-nspr-0007-add-dnssec-validation-to-prnetdb.patch
+Patch1008:     dt-nspr-0008-update-getai-to-test-async-disable-validation.patch
+Patch1009:     dt-nspr-0009-use-full-path-to-static-openssl-libssl.patch
+Patch1099:     dt-nspr-redhat-fix-pkg-config.patch
 
 
 %description
@@ -94,6 +96,8 @@ cp ./mozilla/nsprpub/config/nspr-config.in ./mozilla/nsprpub/config/nspr-config-
 %patch1006 -p1 -d mozilla -b .dnssec
 %patch1007 -p1 -d mozilla -b .dnssec
 %patch1008 -p1 -d mozilla -b .dnssec
+%patch1009 -p1 -d mozilla -b .dnssec
+%patch1099 -p1 -d mozilla -b .dnssec
 # rebuild configure(s) due to dnssec patches
 (cd mozilla/nsprpub/; /bin/rm -f ./configure; /usr/bin/autoconf-2.13)
 # end dnssec related patches
