@@ -21,6 +21,9 @@
 %define _usr                %{_prefix}/usr
 %define _usrsrc             %{_prefix}/usr/src
 
+# use dtsvn libval?
+%define dtsvn             1
+
 # Use system nspr/nss?
 %define system_nss        1
 
@@ -135,7 +138,11 @@ Patch2015:     dt-xulrunner-0015-add-DNSSEC-preferences-to-browser.patch
 
 %if %{?system_nss}
 BuildRequires:  dt-nspr-devel >= %{nspr_version}
+%if %{dtsvn}
+BuildRequires:  dtsvn-dnsval-libs-devel
+%else
 BuildRequires:  dnssec-tools-libs-devel
+%endif
 BuildRequires:  nss-devel >= %{nss_version}
 BuildRequires:  nss-static >= %{nss_version}
 %endif
@@ -143,6 +150,9 @@ BuildRequires:  nss-static >= %{nss_version}
 BuildRequires:  cairo-devel >= %{cairo_version}
 %endif
 BuildRequires:  autoconf213 openssl-devel
+%if %{dtsvn}
+BuildRequires:  openssl-static
+%endif
 BuildRequires:  libpng-devel
 BuildRequires:  libjpeg-devel
 BuildRequires:  zip
@@ -347,7 +357,11 @@ echo "ac_add_options --disable-tracejit" >> .mozconfig
 echo "ac_add_options --disable-webrtc" >> .mozconfig
 %endif
 
+%if %{dtsvn}
+echo "ac_add_options --with-system-val=/usr/local/dtsvn" >> .mozconfig
+%else
 echo "ac_add_options --with-system-val=%{_prefix}" >> .mozconfig
+%endif
 
 #---------------------------------------------------------------------
 
@@ -405,7 +419,11 @@ MOZ_SMP_FLAGS=-j1
 
 # use dt-nspr
 export PATH=%{_bindir}:%{_sbindir}:$PATH
-export LDFLAGS="$LDFLAGS -Wl,-rpath,%{mozappdir} -Wl,-rpath,%{_libdir} -L%{_libdir}"
+LDFLAGS+=" -Wl,-rpath,%{mozappdir} -Wl,-rpath,%{_libdir} -L%{_libdir}"
+%if %{dtsvn}
+LDFLAGS+=" -Wl,-rpath,/usr/local/dtsvn/%{_lib} -L/usr/local/dtsvn/%{_lib}"
+%endif
+export LDFLAGS
 
 make -f client.mk build STRIP="/bin/true" MOZ_MAKE_FLAGS="$MOZ_SMP_FLAGS" MOZ_SERVICES_SYNC="1"
 
