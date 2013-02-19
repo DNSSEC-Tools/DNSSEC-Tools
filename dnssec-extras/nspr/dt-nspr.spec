@@ -25,8 +25,8 @@
 
 Summary:        Netscape Portable Runtime
 Name:           dt-nspr
-Version:        4.9.1
-Release:        2%{?dist}
+Version:        4.9.2
+Release:        1%{?dist}
 License:        MPLv2.0
 URL:            http://www.mozilla.org/projects/nspr/
 Group:          System Environment/Libraries
@@ -120,6 +120,7 @@ export LDFLAGS
                  --disable-debug
 
 make
+make -C pr/tests getai
 
 %check
 
@@ -155,6 +156,8 @@ NSPR_VERSION=`./config/nspr-config --version`
    $RPM_BUILD_ROOT/%{_datadir}/aclocal/nspr.m4 \
    $RPM_BUILD_ROOT/%{_includedir}/nspr4/md
 
+%{__cp} -a pr/tests/getai $RPM_BUILD_ROOT/%{_bindir}/
+
 %clean
 %{__rm} -Rf $RPM_BUILD_ROOT
 
@@ -164,6 +167,7 @@ NSPR_VERSION=`./config/nspr-config --version`
 
 %files
 %defattr(-,root,root)
+%{_bindir}/getai
 %{_libdir}/libnspr4.so
 %{_libdir}/libplc4.so
 %{_libdir}/libplds4.so
@@ -175,6 +179,9 @@ NSPR_VERSION=`./config/nspr-config --version`
 %{_bindir}/nspr-config
 
 %changelog
+* Wed Aug 29 2012 Elio Maldonado <emaldona@redhat.com> - 4.9.2-1
+- Update to NSPR_4_9_2_RTM
+
 * Wed Jul 11 2012 Elio Maldonado <emaldona@redhat.com> - 4.9.1-2
 - Updated License: to MPLv2.0 per upstream
 
