@@ -1,0 +1,696 @@
+From 96850048c18065cfd4130a5b123f9dd3d03a1f6f Mon Sep 17 00:00:00 2001
+From: Robert Story <rstory@localhost>
+Date: Tue, 29 Jan 2013 22:40:30 -0500
+Subject: [PATCH 24/25] BLOODHOUND branding for bloodhound
+
+---
+ browser/app/Makefile.in                            |  2 +-
+ .../testpilot@labs.mozilla.com/modules/setup.js    |  2 +-
+ browser/base/content/overrides/app-license.html    |  8 +++-
+ browser/branding/official/LICENSE                  |  8 ++--
+ browser/branding/official/configure.sh             |  4 +-
+ browser/branding/official/locales/en-US/brand.dtd  |  8 ++--
+ .../official/locales/en-US/brand.properties        |  8 ++--
+ .../components/shell/src/nsWindowsShellService.cpp | 14 +++---
+ browser/confvars.sh                                |  8 ++--
+ browser/installer/windows/app.tag                  |  2 +-
+ browser/installer/windows/nsis/defines.nsi.in      | 10 ++---
+ browser/installer/windows/nsis/installer.nsi       | 34 +++++++-------
+ browser/installer/windows/nsis/uninstaller.nsi     | 52 +++++++++++-----------
+ .../locales/en-US/chrome/browser/aboutDialog.dtd   |  4 +-
+ browser/locales/en-US/chrome/browser/aboutHome.dtd |  4 +-
+ browser/locales/en-US/chrome/browser/syncBrand.dtd |  2 +-
+ .../en-US/chrome/browser/syncSetup.properties      | 10 ++---
+ browser/locales/en-US/feedback/main.dtd            |  4 +-
+ services/sync/locales/en-US/sync.properties        |  4 +-
+ services/sync/modules/service.js                   |  2 +-
+ testing/tps/tps/emailtemplate.py                   |  8 ++--
+ testing/tps/tps/testrunner.py                      |  8 ++--
+ .../en-US/chrome/global/aboutRights.properties     |  2 +-
+ 23 files changed, 105 insertions(+), 103 deletions(-)
+
+diff --git a/browser/app/Makefile.in b/browser/app/Makefile.in
+index e5d01f6..eccdc76 100644
+--- a/browser/app/Makefile.in
++++ b/browser/app/Makefile.in
+@@ -201,7 +201,7 @@ endif
+ else
+ ifdef LIBXUL_SDK
+ libs::
+-	cp $(LIBXUL_DIST)/bin/$(XULRUNNER_STUB_NAME)$(BIN_SUFFIX) $(DIST)/bin/firefox$(BIN_SUFFIX)
++	cp $(LIBXUL_DIST)/bin/$(XULRUNNER_STUB_NAME)$(BIN_SUFFIX) $(DIST)/bin/bloodhound$(BIN_SUFFIX)
+ endif
+ endif
+ 
+diff --git a/browser/app/profile/extensions/testpilot@labs.mozilla.com/modules/setup.js b/browser/app/profile/extensions/testpilot@labs.mozilla.com/modules/setup.js
+index 0a1319f..9ca3bfe 100644
+--- a/browser/app/profile/extensions/testpilot@labs.mozilla.com/modules/setup.js
++++ b/browser/app/profile/extensions/testpilot@labs.mozilla.com/modules/setup.js
+@@ -683,7 +683,7 @@ let TestPilotSetup = {
+       // Minimum firefox version:
+       if (minFxVer && this._isNewerThanFirefox(minFxVer)) {
+         logger.warn("Not loading " + expName);
+-        logger.warn("Because it requires Firefox version " + minFxVer);
++        logger.warn("Because it requires Bloodhound version " + minFxVer);
+         callback(false);
+         return;
+       }
+diff --git a/browser/base/content/overrides/app-license.html b/browser/base/content/overrides/app-license.html
+index e7a158c..09b80ae 100644
+--- a/browser/base/content/overrides/app-license.html
++++ b/browser/base/content/overrides/app-license.html
+@@ -2,5 +2,9 @@
+    - License, v. 2.0. If a copy of the MPL was not distributed with this
+    - file, You can obtain one at http://mozilla.org/MPL/2.0/.  -->
+     <p><b>Binaries</b> of this product have been made available to you by the
+-    <a href="http://www.mozilla.org/">Mozilla Project</a> under the Mozilla
+-    Public License 2.0 (MPL). <a href="about:rights">Know your rights</a>.</p>
++    <a href="http://www.dnssec-tools.org/">DNSSEC-Tools Project</a>. See the
++    LICENSE file distributed with the dnssec-tools distribution for further
++    details. The DNSSEC extensions work was sponsored by The Department of
++    homeland Security Science and Technology Directorate. This product is also
++    covered, in general, by the Mozilla Public License 2.0 (MPL).
++    <a href="about:rights">Know your rights</a>.</p>
+diff --git a/browser/branding/official/LICENSE b/browser/branding/official/LICENSE
+index 32d55b9..0bba70d 100644
+--- a/browser/branding/official/LICENSE
++++ b/browser/branding/official/LICENSE
+@@ -1,9 +1,7 @@
+ These files are under the MPL 2, as below. However, please note that you 
+-are not granted any trademark rights or licenses to the trademarks of the
+-Mozilla Foundation or any party, including without limitation the
+-Firefox name or logo.
+-
+-For more information, see: http://www.mozilla.org/foundation/licensing.html 
++are not granted any trademark rights or licenses to the trademarks of
++DNSSEC-Tools or any party, including without limitation the
++Bloodhound name or logo.
+ 
+ This Source Code Form is subject to the terms of the Mozilla Public
+ License, v. 2.0. If a copy of the MPL was not distributed with this
+diff --git a/browser/branding/official/configure.sh b/browser/branding/official/configure.sh
+index 55f3f18..1ba3082 100644
+--- a/browser/branding/official/configure.sh
++++ b/browser/branding/official/configure.sh
+@@ -2,5 +2,5 @@
+ # License, v. 2.0. If a copy of the MPL was not distributed with this
+ # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ 
+-MOZ_APP_DISPLAYNAME=Firefox
+-MOZ_UA_BUILDID=20100101
++MOZ_APP_DISPLAYNAME=Bloodhound
++MOZ_UA_BUILDID=20130123
+diff --git a/browser/branding/official/locales/en-US/brand.dtd b/browser/branding/official/locales/en-US/brand.dtd
+index 8e7f6c9..5d40255 100644
+--- a/browser/branding/official/locales/en-US/brand.dtd
++++ b/browser/branding/official/locales/en-US/brand.dtd
+@@ -2,7 +2,7 @@
+    - License, v. 2.0. If a copy of the MPL was not distributed with this
+    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+ 
+-<!ENTITY  brandShortName        "Firefox">
+-<!ENTITY  brandFullName         "Mozilla Firefox">
+-<!ENTITY  vendorShortName       "Mozilla">
+-<!ENTITY  trademarkInfo.part1   "Firefox and the Firefox logos are trademarks of the Mozilla Foundation.">
++<!ENTITY  brandShortName        "Bloodhound">
++<!ENTITY  brandFullName         "DNSSEC-Tools Bloodhound">
++<!ENTITY  vendorShortName       "DNSSEC-Tools">
++<!ENTITY  trademarkInfo.part1   "The Bloodhound logo is in the public domain, and was borrowed from openclipart.org.">
+diff --git a/browser/branding/official/locales/en-US/brand.properties b/browser/branding/official/locales/en-US/brand.properties
+index 4a67c55..78913b9 100644
+--- a/browser/branding/official/locales/en-US/brand.properties
++++ b/browser/branding/official/locales/en-US/brand.properties
+@@ -2,11 +2,11 @@
+ # License, v. 2.0. If a copy of the MPL was not distributed with this
+ # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ 
+-brandShortName=Firefox
+-brandFullName=Mozilla Firefox
+-vendorShortName=Mozilla
++brandShortName=Bloodhound
++brandFullName=DNSSEC-Tools Bloodhound
++vendorShortName=DNSSEC-Tools
+ 
+-homePageSingleStartMain=Firefox Start, a fast home page with built-in search
++homePageSingleStartMain=Bloodhound Start, a fast home page with built-in search
+ homePageImport=Import your home page from %S
+ 
+ homePageMigrationPageTitle=Home Page Selection
+diff --git a/browser/components/shell/src/nsWindowsShellService.cpp b/browser/components/shell/src/nsWindowsShellService.cpp
+index 528f5b0..05a052b 100644
+--- a/browser/components/shell/src/nsWindowsShellService.cpp
++++ b/browser/components/shell/src/nsWindowsShellService.cpp
+@@ -139,7 +139,7 @@ typedef struct {
+   char* oldValueData;
+ } SETTING;
+ 
+-#define APP_REG_NAME L"Firefox"
++#define APP_REG_NAME L"Bloodhound"
+ #define VAL_FILE_ICON "%APPPATH%,1"
+ #define VAL_OPEN "\"%APPPATH%\" -osint -url \"%1\""
+ #define OLD_VAL_OPEN "\"%APPPATH%\" -requestPending -osint -url \"%1\""
+@@ -161,10 +161,10 @@ typedef struct {
+ // default HTTP and HTTPS handler.
+ static SETTING gSettings[] = {
+   // File Handler Class
+-  { MAKE_KEY_NAME1("FirefoxHTML", SOC), VAL_OPEN, OLD_VAL_OPEN },
++  { MAKE_KEY_NAME1("BloodhoundHTML", SOC), VAL_OPEN, OLD_VAL_OPEN },
+ 
+   // Protocol Handler Class - for Vista and above
+-  { MAKE_KEY_NAME1("FirefoxURL", SOC), VAL_OPEN, OLD_VAL_OPEN },
++  { MAKE_KEY_NAME1("BloodhoundURL", SOC), VAL_OPEN, OLD_VAL_OPEN },
+ 
+   // Protocol Handlers
+   { MAKE_KEY_NAME1("HTTP", DI), VAL_FILE_ICON },
+@@ -178,10 +178,10 @@ static SETTING gSettings[] = {
+ // are incorrect they are fixed without notifying the user.
+ static SETTING gDDESettings[] = {
+   // File Handler Class
+-  { MAKE_KEY_NAME1("Software\\Classes\\FirefoxHTML", SOD) },
++  { MAKE_KEY_NAME1("Software\\Classes\\BloodhoundHTML", SOD) },
+ 
+   // Protocol Handler Class - for Vista and above
+-  { MAKE_KEY_NAME1("Software\\Classes\\FirefoxURL", SOD) },
++  { MAKE_KEY_NAME1("Software\\Classes\\BloodhoundURL", SOD) },
+ 
+   // Protocol Handlers
+   { MAKE_KEY_NAME1("Software\\Classes\\FTP", SOD) },
+@@ -328,7 +328,7 @@ IsAARDefaultHTTP(IApplicationAssociationRegistration* pAAR,
+   HRESULT hr = pAAR->QueryCurrentDefault(L"http", AT_URLPROTOCOL, AL_EFFECTIVE,
+                                          &registeredApp);
+   if (SUCCEEDED(hr)) {
+-    LPCWSTR firefoxHTTPProgID = L"FirefoxURL";
++    LPCWSTR firefoxHTTPProgID = L"BloodhoundURL";
+     *aIsDefaultBrowser = !wcsicmp(registeredApp, firefoxHTTPProgID);
+     CoTaskMemFree(registeredApp);
+   } else {
+@@ -345,7 +345,7 @@ IsAARDefaultHTML(IApplicationAssociationRegistration* pAAR,
+   HRESULT hr = pAAR->QueryCurrentDefault(L".html", AT_FILEEXTENSION, AL_EFFECTIVE,
+                                          &registeredApp);
+   if (SUCCEEDED(hr)) {
+-    LPCWSTR firefoxHTMLProgID = L"FirefoxHTML";
++    LPCWSTR firefoxHTMLProgID = L"BloodhoundHTML";
+     *aIsDefaultBrowser = !wcsicmp(registeredApp, firefoxHTMLProgID);
+     CoTaskMemFree(registeredApp);
+   } else {
+diff --git a/browser/confvars.sh b/browser/confvars.sh
+index 3ef087e..7a3d1be 100755
+--- a/browser/confvars.sh
++++ b/browser/confvars.sh
+@@ -3,8 +3,8 @@
+ # License, v. 2.0. If a copy of the MPL was not distributed with this
+ # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ 
+-MOZ_APP_BASENAME=Firefox
+-MOZ_APP_VENDOR=Mozilla
++MOZ_APP_BASENAME=Bloodhound
++MOZ_APP_VENDOR=DNSSEC-Tools
+ MOZ_UPDATER=1
+ MOZ_PHOENIX=1
+ 
+@@ -40,9 +40,9 @@ MOZ_APP_ID={ec8030f7-c20a-464f-9b0e-13a3a9e97384}
+ # This should usually be the same as the value MAR_CHANNEL_ID.
+ # If more than one ID is needed, then you should use a comma separated list
+ # of values.
+-ACCEPTED_MAR_CHANNEL_IDS=firefox-mozilla-release
++ACCEPTED_MAR_CHANNEL_IDS=bloodhound-dnssec-tools-release
+ # The MAR_CHANNEL_ID must not contain the following 3 characters: ",\t "
+-MAR_CHANNEL_ID=firefox-mozilla-release
++MAR_CHANNEL_ID=bloodhound-dnssec-tools-release
+ MOZ_PROFILE_MIGRATOR=1
+ MOZ_EXTENSION_MANAGER=1
+ MOZ_APP_STATIC_INI=1
+diff --git a/browser/installer/windows/app.tag b/browser/installer/windows/app.tag
+index 479d9f7..af622f2 100644
+--- a/browser/installer/windows/app.tag
++++ b/browser/installer/windows/app.tag
+@@ -1,4 +1,4 @@
+ ;!@Install@!UTF-8!
+-Title="Mozilla Firefox"
++Title="DNSSEC-Tools Bloodhound"
+ RunProgram="setup.exe"
+ ;!@InstallEnd@!
+\ No newline at end of file
+diff --git a/browser/installer/windows/nsis/defines.nsi.in b/browser/installer/windows/nsis/defines.nsi.in
+index 63425dc..d79977a 100644
+--- a/browser/installer/windows/nsis/defines.nsi.in
++++ b/browser/installer/windows/nsis/defines.nsi.in
+@@ -4,15 +4,15 @@
+ # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ 
+ # These defines should match application.ini settings
+-!define AppName               "Firefox"
++!define AppName               "Bloodhound"
+ !define AppVersion            "@APP_VERSION@"
+ !define GREVersion            @MOZILLA_VERSION@
+ !define AB_CD                 "@AB_CD@"
+ 
+ !define FileMainEXE           "@MOZ_APP_NAME@.exe"
+-!define WindowClass           "FirefoxMessageWindow"
+-!define DDEApplication        "Firefox"
+-!define AppRegName            "Firefox"
++!define WindowClass           "BloodhoundMessageWindow"
++!define DDEApplication        "Bloodhound"
++!define AppRegName            "Bloodhound"
+ 
+ !define BrandShortName        "@MOZ_APP_DISPLAYNAME@"
+ !define PreReleaseSuffix      "@PRE_RELEASE_SUFFIX@"
+@@ -70,7 +70,7 @@ VIProductVersion "1.0.0.0"
+ VIAddVersionKey "ProductName"     "${BrandShortName}"
+ VIAddVersionKey "CompanyName"     "${CompanyName}"
+ #ifdef MOZ_OFFICIAL_BRANDING
+-VIAddVersionKey "LegalTrademarks" "${BrandShortName} is a Trademark of The Mozilla Foundation."
++VIAddVersionKey "LegalTrademarks" "${BrandShortName} is a Trademark of DNSSEC-Tools."
+ #endif
+ VIAddVersionKey "LegalCopyright"  "${CompanyName}"
+ VIAddVersionKey "FileVersion"     "${AppVersion}"
+diff --git a/browser/installer/windows/nsis/installer.nsi b/browser/installer/windows/nsis/installer.nsi
+index 7e44910..5a71064 100755
+--- a/browser/installer/windows/nsis/installer.nsi
++++ b/browser/installer/windows/nsis/installer.nsi
+@@ -208,7 +208,7 @@ Section "-InstallStartCleanup"
+   ${EndIf}
+ 
+   ; Remove the updates directory for Vista and above
+-  ${CleanUpdatesDir} "Mozilla\Firefox"
++  ${CleanUpdatesDir} "DNSSEC-Tools\Bloodhound"
+ 
+   ${RemoveDeprecatedFiles}
+ 
+@@ -281,30 +281,30 @@ Section "-Application" APP_IDX
+ 
+   ${LogHeader} "Adding Registry Entries"
+   SetShellVarContext current  ; Set SHCTX to HKCU
+-  ${RegCleanMain} "Software\Mozilla"
++  ${RegCleanMain} "Software\DNSSEC-Tools"
+   ${RegCleanUninstall}
+   ${UpdateProtocolHandlers}
+ 
+   ClearErrors
+-  WriteRegStr HKLM "Software\Mozilla" "${BrandShortName}InstallerTest" "Write Test"
++  WriteRegStr HKLM "Software\DNSSEC-Tools" "${BrandShortName}InstallerTest" "Write Test"
+   ${If} ${Errors}
+     StrCpy $TmpVal "HKCU" ; used primarily for logging
+   ${Else}
+     SetShellVarContext all  ; Set SHCTX to HKLM
+-    DeleteRegValue HKLM "Software\Mozilla" "${BrandShortName}InstallerTest"
++    DeleteRegValue HKLM "Software\DNSSEC-Tools" "${BrandShortName}InstallerTest"
+     StrCpy $TmpVal "HKLM" ; used primarily for logging
+-    ${RegCleanMain} "Software\Mozilla"
++    ${RegCleanMain} "Software\DNSSEC-Tools"
+     ${RegCleanUninstall}
+     ${UpdateProtocolHandlers}
+ 
+-    ReadRegStr $0 HKLM "Software\mozilla.org\Mozilla" "CurrentVersion"
++    ReadRegStr $0 HKLM "Software\dnssec-tools.org\DNSSEC-Tools" "CurrentVersion"
+     ${If} "$0" != "${GREVersion}"
+-      WriteRegStr HKLM "Software\mozilla.org\Mozilla" "CurrentVersion" "${GREVersion}"
++      WriteRegStr HKLM "Software\dnssec-tools.org\DNSSEC-Tools" "CurrentVersion" "${GREVersion}"
+     ${EndIf}
+   ${EndIf}
+ 
+   ; setup the application model id registration value
+-  ${InitHashAppModelId} "$INSTDIR" "Software\Mozilla\${AppName}\TaskBarIDs"
++  ${InitHashAppModelId} "$INSTDIR" "Software\DNSSEC-Tools\${AppName}\TaskBarIDs"
+ 
+   ${RemoveDeprecatedKeys}
+ 
+@@ -332,9 +332,9 @@ Section "-Application" APP_IDX
+ 
+   ; In Win8, the delegate execute handler picks up the value in FirefoxURL and
+   ; FirefoxHTML to launch the desktop browser when it needs to.
+-  ${AddDisabledDDEHandlerValues} "FirefoxHTML" "$2" "$8,1" \
++  ${AddDisabledDDEHandlerValues} "BloodhoundHTML" "$2" "$8,1" \
+                                  "${AppRegName} Document" ""
+-  ${AddDisabledDDEHandlerValues} "FirefoxURL" "$2" "$8,1" "${AppRegName} URL" \
++  ${AddDisabledDDEHandlerValues} "BloodhoundURL" "$2" "$8,1" "${AppRegName} URL" \
+                                  "true"
+   ${If} ${AtLeastWin8}
+ !ifdef MOZ_METRO
+@@ -342,8 +342,8 @@ Section "-Application" APP_IDX
+     ${AddMetroBrowserHandlerValues} ${DELEGATE_EXECUTE_HANDLER_ID} \
+                                     "$INSTDIR\CommandExecuteHandler.exe" \
+                                     $AppUserModelID \
+-                                    "FirefoxURL" \
+-                                    "FirefoxHTML"
++                                    "BloodhoundURL" \
++                                    "BloodhoundHTML"
+ !endif
+     ; Set the Start Menu Internet and Vista Registered App HKCU registry keys.
+     ${SetStartMenuInternet} "HKCU"
+@@ -846,7 +846,7 @@ FunctionEnd
+ !ifdef MOZ_MAINTENANCE_SERVICE
+ Function preComponents
+   ; If the service already exists, don't show this page
+-  ServicesHelper::IsInstalled "MozillaMaintenance"
++  ServicesHelper::IsInstalled "DNSSEC-ToolsMaintenance"
+   Pop $R9
+   ${If} $R9 == 1
+     ; The service already exists so don't show this page.
+@@ -868,13 +868,13 @@ Function preComponents
+ 
+   ; Only show the maintenance service page if we have write access to HKLM
+   ClearErrors
+-  WriteRegStr HKLM "Software\Mozilla" \
++  WriteRegStr HKLM "Software\DNSSEC-Tools" \
+               "${BrandShortName}InstallerTest" "Write Test"
+   ${If} ${Errors}
+     ClearErrors
+     Abort
+   ${Else}
+-    DeleteRegValue HKLM "Software\Mozilla" "${BrandShortName}InstallerTest"
++    DeleteRegValue HKLM "Software\DNSSEC-Tools" "${BrandShortName}InstallerTest"
+   ${EndIf}
+ 
+   StrCpy $PageName "Components"
+@@ -940,9 +940,9 @@ Function preSummary
+ 
+   ; Check if it is possible to write to HKLM
+   ClearErrors
+-  WriteRegStr HKLM "Software\Mozilla" "${BrandShortName}InstallerTest" "Write Test"
++  WriteRegStr HKLM "Software\DNSSEC-Tools" "${BrandShortName}InstallerTest" "Write Test"
+   ${Unless} ${Errors}
+-    DeleteRegValue HKLM "Software\Mozilla" "${BrandShortName}InstallerTest"
++    DeleteRegValue HKLM "Software\DNSSEC-Tools" "${BrandShortName}InstallerTest"
+     ; Check if Firefox is the http handler for this user.
+     SetShellVarContext current ; Set SHCTX to the current user
+     ${IsHandlerForInstallDir} "http" $R9
+diff --git a/browser/installer/windows/nsis/uninstaller.nsi b/browser/installer/windows/nsis/uninstaller.nsi
+index aade33f..c394f5f 100755
+--- a/browser/installer/windows/nsis/uninstaller.nsi
++++ b/browser/installer/windows/nsis/uninstaller.nsi
+@@ -29,7 +29,7 @@ RequestExecutionLevel user
+ !define NO_LOG
+ 
+ !define MaintUninstallKey \
+- "Software\Microsoft\Windows\CurrentVersion\Uninstall\MozillaMaintenanceService"
++ "Software\Microsoft\Windows\CurrentVersion\Uninstall\DNSSEC-ToolsMaintenanceService"
+ 
+ Var TmpVal
+ Var MaintCertKey
+@@ -195,7 +195,7 @@ Function un.UninstallServiceIfNotUsed
+   ; Figure out the number of subkeys
+   StrCpy $0 0
+ loop:
+-  EnumRegKey $1 HKLM "Software\Mozilla\MaintenanceService" $0
++  EnumRegKey $1 HKLM "Software\DNSSEC-Tools\MaintenanceService" $0
+   StrCmp $1 "" doneCount
+   IntOp $0 $0 + 1
+   goto loop
+@@ -250,17 +250,17 @@ Section "Uninstall"
+ 
+   ${MUI_INSTALLOPTIONS_READ} $0 "unconfirm.ini" "Field 3" "State"
+   ${If} "$0" == "1"
+-    ${un.DeleteRelativeProfiles} "Mozilla\Firefox"
+-    RmDir "$APPDATA\Mozilla\Extensions\{ec8030f7-c20a-464f-9b0e-13a3a9e97384}"
+-    RmDir "$APPDATA\Mozilla\Extensions"
+-    RmDir "$APPDATA\Mozilla"
++    ${un.DeleteRelativeProfiles} "DNSSEC-Tools\Bloodhound"
++    RmDir "$APPDATA\DNSSEC-Tools\Extensions\{ec8030f7-c20a-464f-9b0e-13a3a9e97384}"
++    RmDir "$APPDATA\DNSSEC-Tools\Extensions"
++    RmDir "$APPDATA\DNSSEC-Tools"
+   ${EndIf}
+ 
+   ; setup the application model id registration value
+-  ${un.InitHashAppModelId} "$INSTDIR" "Software\Mozilla\${AppName}\TaskBarIDs"
++  ${un.InitHashAppModelId} "$INSTDIR" "Software\DNSSEC-Tools\${AppName}\TaskBarIDs"
+ 
+   SetShellVarContext current  ; Set SHCTX to HKCU
+-  ${un.RegCleanMain} "Software\Mozilla"
++  ${un.RegCleanMain} "Software\DNSSEC-Tools"
+   ${un.RegCleanUninstall}
+   ${un.DeleteShortcuts}
+ 
+@@ -271,18 +271,18 @@ Section "Uninstall"
+   ${EndIf}
+ 
+   ; Remove any app model id's stored in the registry for this install path
+-  DeleteRegValue HKCU "Software\Mozilla\${AppName}\TaskBarIDs" "$INSTDIR"
+-  DeleteRegValue HKLM "Software\Mozilla\${AppName}\TaskBarIDs" "$INSTDIR"
++  DeleteRegValue HKCU "Software\DNSSEC-Tools\${AppName}\TaskBarIDs" "$INSTDIR"
++  DeleteRegValue HKLM "Software\DNSSEC-Tools\${AppName}\TaskBarIDs" "$INSTDIR"
+ 
+   ClearErrors
+-  WriteRegStr HKLM "Software\Mozilla" "${BrandShortName}InstallerTest" "Write Test"
++  WriteRegStr HKLM "Software\DNSSEC-Tools" "${BrandShortName}InstallerTest" "Write Test"
+   ${If} ${Errors}
+     StrCpy $TmpVal "HKCU" ; used primarily for logging
+   ${Else}
+     SetShellVarContext all  ; Set SHCTX to HKLM
+-    DeleteRegValue HKLM "Software\Mozilla" "${BrandShortName}InstallerTest"
++    DeleteRegValue HKLM "Software\DNSSEC-Tools" "${BrandShortName}InstallerTest"
+     StrCpy $TmpVal "HKLM" ; used primarily for logging
+-    ${un.RegCleanMain} "Software\Mozilla"
++    ${un.RegCleanMain} "Software\DNSSEC-Tools"
+     ${un.RegCleanUninstall}
+     ${un.DeleteShortcuts}
+     ${un.SetAppLSPCategories}
+@@ -294,30 +294,30 @@ Section "Uninstall"
+   ${EndIf}
+ !endif
+ 
+-  ${un.RegCleanAppHandler} "FirefoxURL"
+-  ${un.RegCleanAppHandler} "FirefoxHTML"
++  ${un.RegCleanAppHandler} "BloodhoundURL"
++  ${un.RegCleanAppHandler} "BloodhoundHTML"
+   ${un.RegCleanProtocolHandler} "ftp"
+   ${un.RegCleanProtocolHandler} "http"
+   ${un.RegCleanProtocolHandler} "https"
+ 
+   ClearErrors
+-  ReadRegStr $R9 HKCR "FirefoxHTML" ""
++  ReadRegStr $R9 HKCR "BloodhoundHTML" ""
+   ; Don't clean up the file handlers if the FirefoxHTML key still exists since
+   ; there should be a second installation that may be the default file handler
+   ${If} ${Errors}
+-    ${un.RegCleanFileHandler}  ".htm"   "FirefoxHTML"
+-    ${un.RegCleanFileHandler}  ".html"  "FirefoxHTML"
+-    ${un.RegCleanFileHandler}  ".shtml" "FirefoxHTML"
+-    ${un.RegCleanFileHandler}  ".xht"   "FirefoxHTML"
+-    ${un.RegCleanFileHandler}  ".xhtml" "FirefoxHTML"
+-    ${un.RegCleanFileHandler}  ".webm"  "FirefoxHTML"
++    ${un.RegCleanFileHandler}  ".htm"   "BloodhoundHTML"
++    ${un.RegCleanFileHandler}  ".html"  "BloodhoundHTML"
++    ${un.RegCleanFileHandler}  ".shtml" "BloodhoundHTML"
++    ${un.RegCleanFileHandler}  ".xht"   "BloodhoundHTML"
++    ${un.RegCleanFileHandler}  ".xhtml" "BloodhoundHTML"
++    ${un.RegCleanFileHandler}  ".webm"  "BloodhoundHTML"
+   ${EndIf}
+ 
+   SetShellVarContext all  ; Set SHCTX to HKLM
+-  ${un.GetSecondInstallPath} "Software\Mozilla" $R9
++  ${un.GetSecondInstallPath} "Software\DNSSEC-Tools" $R9
+   ${If} $R9 == "false"
+     SetShellVarContext current  ; Set SHCTX to HKCU
+-    ${un.GetSecondInstallPath} "Software\Mozilla" $R9
++    ${un.GetSecondInstallPath} "Software\DNSSEC-Tools" $R9
+   ${EndIf}
+ 
+   StrCpy $0 "Software\Clients\StartMenuInternet\${FileMainEXE}\shell\open\command"
+@@ -363,7 +363,7 @@ Section "Uninstall"
+     StrCpy $0 "Software\Microsoft\MediaPlayer\ShimInclusionList\plugin-container.exe"
+     DeleteRegKey HKLM "$0"
+     DeleteRegKey HKCU "$0"
+-    StrCpy $0 "Software\Classes\MIME\Database\Content Type\application/x-xpinstall;app=firefox"
++    StrCpy $0 "Software\Classes\MIME\Database\Content Type\application/x-xpinstall;app=bloodhound"
+     DeleteRegKey HKLM "$0"
+     DeleteRegKey HKCU "$0"
+   ${Else}
+@@ -396,7 +396,7 @@ Section "Uninstall"
+   ${EndIf}
+ 
+   ; Remove the updates directory for Vista and above
+-  ${un.CleanUpdatesDir} "Mozilla\Firefox"
++  ${un.CleanUpdatesDir} "DNSSEC-Tools\Bloodhound"
+ 
+   ; Remove files that may be left behind by the application in the
+   ; VirtualStore directory.
+diff --git a/browser/locales/en-US/chrome/browser/aboutDialog.dtd b/browser/locales/en-US/chrome/browser/aboutDialog.dtd
+index da65118..229aeec 100644
+--- a/browser/locales/en-US/chrome/browser/aboutDialog.dtd
++++ b/browser/locales/en-US/chrome/browser/aboutDialog.dtd
+@@ -15,7 +15,7 @@
+ <!ENTITY community.exp.middle       " is a ">
+ <!-- LOCALIZATION NOTE (community.exp.creditslink): This is a link title that links to about:credits. -->
+ <!ENTITY community.exp.creditsLink  "global community">
+-<!ENTITY community.exp.end          " working together to keep the Web open, public and accessible to all.">
++<!ENTITY community.exp.end          " make the Internet more secure by using DNSSEC.">
+ 
+ <!ENTITY community.start2           "&brandShortName; is designed by ">
+ <!-- LOCALIZATION NOTE (community.mozillaLink): This is a link title that links to http://www.mozilla.org/. -->
+@@ -23,7 +23,7 @@
+ <!ENTITY community.middle2          ", a ">
+ <!-- LOCALIZATION NOTE (community.creditsLink): This is a link title that links to about:credits. -->
+ <!ENTITY community.creditsLink      "global community">
+-<!ENTITY community.end3             " working together to keep the Web open, public and accessible to all.">
++<!ENTITY community.end3             " make the Internet more secure by using DNSSEC.">
+ 
+ <!ENTITY contribute.start           "Sound interesting? ">
+ <!-- LOCALIZATION NOTE (contribute.getInvolvedLink): This is a link title that links to http://www.mozilla.org/contribute/. -->
+diff --git a/browser/locales/en-US/chrome/browser/aboutHome.dtd b/browser/locales/en-US/chrome/browser/aboutHome.dtd
+index 693021c..0452b75 100644
+--- a/browser/locales/en-US/chrome/browser/aboutHome.dtd
++++ b/browser/locales/en-US/chrome/browser/aboutHome.dtd
+@@ -16,11 +16,11 @@
+ <!-- LOCALIZATION NOTE (abouthome.defaultSnippet1.v1):
+      text in <a/> will be linked to the Firefox features page on mozilla.com
+ -->
+-<!ENTITY abouthome.defaultSnippet1.v1 "Thanks for choosing Firefox! To get the most out of your browser, learn more about the <a>latest features</a>.">
++<!ENTITY abouthome.defaultSnippet1.v1 "Thanks for choosing Bloodhound! To get the most out of your browser, learn more about the <a>latest features</a>.">
+ <!-- LOCALIZATION NOTE (abouthome.defaultSnippet2.v1):
+      text in <a/> will be linked to the featured add-ons on addons.mozilla.org
+ -->
+-<!ENTITY abouthome.defaultSnippet2.v1 "It's easy to customize your Firefox exactly the way you want it. <a>Choose from thousands of add-ons</a>.">
++<!ENTITY abouthome.defaultSnippet2.v1 "It's easy to customize your Bloodhound exactly the way you want it. <a>Choose from thousands of add-ons</a>.">
+ 
+ <!ENTITY abouthome.bookmarksButton.label "Bookmarks">
+ <!ENTITY abouthome.historyButton.label   "History">
+diff --git a/browser/locales/en-US/chrome/browser/syncBrand.dtd b/browser/locales/en-US/chrome/browser/syncBrand.dtd
+index 8b8fe64..275f0dc 100644
+--- a/browser/locales/en-US/chrome/browser/syncBrand.dtd
++++ b/browser/locales/en-US/chrome/browser/syncBrand.dtd
+@@ -3,4 +3,4 @@
+    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+ 
+ <!ENTITY syncBrand.shortName.label  "Sync">
+-<!ENTITY syncBrand.fullName.label   "Firefox Sync">
++<!ENTITY syncBrand.fullName.label   "Bloodhound Sync">
+diff --git a/browser/locales/en-US/chrome/browser/syncSetup.properties b/browser/locales/en-US/chrome/browser/syncSetup.properties
+index 12ea781..bf1488c 100644
+--- a/browser/locales/en-US/chrome/browser/syncSetup.properties
++++ b/browser/locales/en-US/chrome/browser/syncSetup.properties
+@@ -37,13 +37,13 @@ passwordsCount.label        = #1 password;#1 passwords
+ addonsCount.label        = #1 addon;#1 addons
+ 
+ save.recoverykey.title = Save Recovery Key
+-save.recoverykey.defaultfilename = Firefox Recovery Key.html
++save.recoverykey.defaultfilename = Bloodhound Recovery Key.html
+ 
+-newAccount.action.label = Firefox Sync is now set up to automatically sync all of your browser data.
++newAccount.action.label = Bloodhound Sync is now set up to automatically sync all of your browser data.
+ newAccount.change.label = You can choose exactly what to sync by selecting Sync Options below.
+-resetClient.change2.label = Firefox Sync will now merge all this device's browser data into your Sync account.
+-wipeClient.change2.label = Firefox Sync will now replace all of the browser data on this device with the data in your Sync account.
+-wipeRemote.change2.label = Firefox Sync will now replace all of the browser data in your Sync account with the data on this device.
++resetClient.change2.label = Bloodhound Sync will now merge all this device's browser data into your Sync account.
++wipeClient.change2.label = Bloodhound Sync will now replace all of the browser data on this device with the data in your Sync account.
++wipeRemote.change2.label = Bloodhound Sync will now replace all of the browser data in your Sync account with the data on this device.
+ existingAccount.change.label = You can change this preference by selecting Sync Options below.
+ 
+ # Several other strings are used (via Weave.Status.login), but they come from
+diff --git a/browser/locales/en-US/feedback/main.dtd b/browser/locales/en-US/feedback/main.dtd
+index 1c861830..f733f78 100644
+--- a/browser/locales/en-US/feedback/main.dtd
++++ b/browser/locales/en-US/feedback/main.dtd
+@@ -31,7 +31,7 @@
+ <!-- Firefox 4 beta version UI -->
+ <!ENTITY testpilot.enable.label                        "Turn On User Studies">
+ <!ENTITY testpilot.feedbackbutton.label                "Feedback">
+-<!ENTITY testpilot.happy.label        "Firefox Made Me Happy Because…">
+-<!ENTITY testpilot.sad.label          "Firefox Made Me Sad Because…">
++<!ENTITY testpilot.happy.label        "Bloodhound Made Me Happy Because…">
++<!ENTITY testpilot.sad.label          "Bloodhound Made Me Sad Because…">
+ <!ENTITY testpilot.broken.label      "Report this website as broken…">
+ <!ENTITY testpilot.idea.label        "Give us a suggestion…">
+diff --git a/services/sync/locales/en-US/sync.properties b/services/sync/locales/en-US/sync.properties
+index 2c2c0fa..c6b7b3b 100644
+--- a/services/sync/locales/en-US/sync.properties
++++ b/services/sync/locales/en-US/sync.properties
+@@ -29,8 +29,8 @@ error.sync.no_node_found = The Sync server is a little busy right now, but you d
+ error.sync.no_node_found.title = Sync Delay
+ error.sync.serverStatusButton.label = Server Status
+ error.sync.serverStatusButton.accesskey = V
+-error.sync.needUpdate.description = You need to update Firefox Sync to continue syncing your data.
+-error.sync.needUpdate.label = Update Firefox Sync
++error.sync.needUpdate.description = You need to update Bloodhound Sync to continue syncing your data.
++error.sync.needUpdate.label = Update Bloodhound Sync
+ error.sync.needUpdate.accesskey = U
+ error.sync.tryAgainButton.label = Sync Now
+ error.sync.tryAgainButton.accesskey = S
+diff --git a/services/sync/modules/service.js b/services/sync/modules/service.js
+index bff04be..6a0f158 100644
+--- a/services/sync/modules/service.js
++++ b/services/sync/modules/service.js
+@@ -314,7 +314,7 @@ WeaveSvc.prototype = {
+     SyncScheduler.init();
+ 
+     if (!this.enabled) {
+-      this._log.info("Firefox Sync disabled.");
++      this._log.info("Bloodhound Sync disabled.");
+     }
+ 
+     this._updateCachedURLs();
+diff --git a/testing/tps/tps/emailtemplate.py b/testing/tps/tps/emailtemplate.py
+index 7f3556f..c8554d0 100644
+--- a/testing/tps/tps/emailtemplate.py
++++ b/testing/tps/tps/emailtemplate.py
+@@ -73,21 +73,21 @@ def GenerateEmailBody(data, numpassed, numfailed, serverUrl, buildUrl):
+ 
+ </tr>
+ <tr>
+-  <td class="rightgray">Firefox Version</td>
++  <td class="rightgray">Bloodhound Version</td>
+   <td>{firefox_version}</td>
+ </tr>
+ <tr>
+-  <td class="rightgray">Firefox Build Date</td>
++  <td class="rightgray">Bloodhound Build Date</td>
+   <td>{firefox_date}</td>
+ </tr>
+ 
+ <tr>
+-  <td class="rightgray">Firefox Sync Version / Type</td>
++  <td class="rightgray">Bloodhound Sync Version / Type</td>
+   <td>{sync_version} / {sync_type}
+   </td>
+ </tr>
+ <tr>
+-  <td class="rightgray">Firefox Sync Changeset</td>
++  <td class="rightgray">Bloodhound Sync Changeset</td>
+   <td>
+ 
+     <a href="{repository}/rev/{changeset}">
+diff --git a/testing/tps/tps/testrunner.py b/testing/tps/tps/testrunner.py
+index 57723c9..e104854 100644
+--- a/testing/tps/tps/testrunner.py
++++ b/testing/tps/tps/testrunner.py
+@@ -82,9 +82,9 @@ class TPSTestRunner(object):
+   syncVerRe = re.compile(
+       r"Sync version: (?P<syncversion>.*)\n")
+   ffVerRe = re.compile(
+-      r"Firefox version: (?P<ffver>.*)\n")
++      r"Bloodhound version: (?P<ffver>.*)\n")
+   ffDateRe = re.compile(
+-      r"Firefox builddate: (?P<ffdate>.*)\n")
++      r"Bloodhound builddate: (?P<ffdate>.*)\n")
+ 
+   def __init__(self, extensionDir, emailresults=False, testfile="sync.test",
+                binary=None, config=None, rlock=None, mobile=False,
+@@ -264,12 +264,12 @@ class TPSTestRunner(object):
+     resultdata = ({ "productversion": { "version": firefox_version,
+                                         "buildid": firefox_builddate,
+                                         "builddate": firefox_builddate[0:8],
+-                                        "product": "Firefox",
++                                        "product": "Bloodhound",
+                                         "repository": apprepo,
+                                         "changeset": appchangeset,
+                                       },
+                     "addonversion": { "version": sync_version,
+-                                      "product": "Firefox Sync" },
++                                      "product": "Bloodhound Sync" },
+                     "name": testname,
+                     "message": result[1],
+                     "state": result[0],
+diff --git a/toolkit/locales/en-US/chrome/global/aboutRights.properties b/toolkit/locales/en-US/chrome/global/aboutRights.properties
+index 377bf7a..60f61e5 100644
+--- a/toolkit/locales/en-US/chrome/global/aboutRights.properties
++++ b/toolkit/locales/en-US/chrome/global/aboutRights.properties
+@@ -4,4 +4,4 @@
+ 
+ buttonLabel = Know your rights…
+ buttonAccessKey = K
+-notifyRightsText = %S is free and open source software from the non-profit Mozilla Foundation.
++notifyRightsText = %S is free and open source software from the DNSSEC-Tools project.
+-- 
+1.7.11.7
+
