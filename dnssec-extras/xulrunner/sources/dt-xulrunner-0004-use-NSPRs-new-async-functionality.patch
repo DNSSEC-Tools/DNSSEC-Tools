@@ -1,7 +1,7 @@
-From 0b5f8cffe6608c81d6e03ccf7a1e0416edc20440 Mon Sep 17 00:00:00 2001
+From af58d40d500a3e60ca1d3d96ba4d4f300beb394e Mon Sep 17 00:00:00 2001
 From: Robert Story <rstory@localhost>
 Date: Tue, 16 Oct 2012 23:23:53 -0400
-Subject: [PATCH 12/15] XULRUNNER use NSPRs new async functionality
+Subject: [PATCH 18/25] XULRUNNER use NSPRs new async functionality
 
 ---
  netwerk/dns/nsHostResolver.cpp | 223 +++++++++++++++++++++++++++++++++++++++++
@@ -9,10 +9,10 @@ Subject: [PATCH 12/15] XULRUNNER use NSPRs new async functionality
  2 files changed, 242 insertions(+)
 
 diff --git a/netwerk/dns/nsHostResolver.cpp b/netwerk/dns/nsHostResolver.cpp
-index 308292b..6d599c2 100644
+index b96d97f..8643abd 100644
 --- a/netwerk/dns/nsHostResolver.cpp
 +++ b/netwerk/dns/nsHostResolver.cpp
-@@ -170,6 +170,9 @@ nsHostRecord::nsHostRecord(const nsHostKey *key)
+@@ -169,6 +169,9 @@ nsHostRecord::nsHostRecord(const nsHostKey *key)
  #ifdef MOZ_DNSSEC
      saved_status = NS_OK;
      security_status_flags = 0;
@@ -22,7 +22,7 @@ index 308292b..6d599c2 100644
  #endif
  
      expiration = NowInMinutes();
-@@ -719,7 +722,11 @@ nsHostResolver::ConditionallyCreateThread(nsHostRecord *rec)
+@@ -720,7 +723,11 @@ nsHostResolver::ConditionallyCreateThread(nsHostRecord *rec)
  
          mThreadCount++;
          PRThread *thr = PR_CreateThread(PR_SYSTEM_THREAD,
@@ -34,7 +34,7 @@ index 308292b..6d599c2 100644
                                          this,
                                          PR_PRIORITY_NORMAL,
                                          PR_GLOBAL_THREAD,
-@@ -1034,6 +1041,222 @@ _ns_translate_dnssec_error(PRErrorCode err)
+@@ -1035,6 +1042,222 @@ _ns_translate_dnssec_error(PRErrorCode err)
      return NS_ERROR_UNKNOWN_HOST;
  }
  
@@ -258,7 +258,7 @@ index 308292b..6d599c2 100644
  
  //----------------------------------------------------------------------------
 diff --git a/netwerk/dns/nsHostResolver.h b/netwerk/dns/nsHostResolver.h
-index 794ac5c..0197cc2 100644
+index 408be4b..07f33e8 100644
 --- a/netwerk/dns/nsHostResolver.h
 +++ b/netwerk/dns/nsHostResolver.h
 @@ -108,6 +108,10 @@ private:
@@ -287,7 +287,7 @@ index 794ac5c..0197cc2 100644
  class nsHostResolver
  {
      typedef mozilla::CondVar CondVar;
-@@ -269,6 +281,13 @@ private:
+@@ -271,6 +283,13 @@ private:
      static void  MoveQueue(nsHostRecord *aRec, PRCList &aDestQ);
      
      static void ThreadFunc(void *);

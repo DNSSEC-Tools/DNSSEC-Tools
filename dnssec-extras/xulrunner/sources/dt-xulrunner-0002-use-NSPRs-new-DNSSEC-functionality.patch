@@ -1,7 +1,7 @@
-From 561ad7a6f8bbb803eed5a81e0c6d191e6badf7d0 Mon Sep 17 00:00:00 2001
+From 2b4e34be37c64fefab5952064fa587d4c221e7d7 Mon Sep 17 00:00:00 2001
 From: Robert Story <rstory@localhost>
 Date: Tue, 16 Oct 2012 23:33:24 -0400
-Subject: [PATCH 10/15] XULRUNNER use NSPRs new DNSSEC functionality
+Subject: [PATCH 16/25] XULRUNNER use NSPRs new DNSSEC functionality
 
 ---
  netwerk/dns/nsDNSService2.cpp  | 25 ++++++++++++
@@ -11,10 +11,10 @@ Subject: [PATCH 10/15] XULRUNNER use NSPRs new DNSSEC functionality
  4 files changed, 138 insertions(+), 8 deletions(-)
 
 diff --git a/netwerk/dns/nsDNSService2.cpp b/netwerk/dns/nsDNSService2.cpp
-index 114af2e..757f500 100644
+index 3bc5b5e..5a1f11c 100644
 --- a/netwerk/dns/nsDNSService2.cpp
 +++ b/netwerk/dns/nsDNSService2.cpp
-@@ -347,6 +347,12 @@ nsDNSSyncRequest::EqualsAsyncListener(nsIDNSListener *aListener)
+@@ -346,6 +346,12 @@ nsDNSSyncRequest::EqualsAsyncListener(nsIDNSListener *aListener)
  
  //-----------------------------------------------------------------------------
  
@@ -76,10 +76,10 @@ index 114af2e..757f500 100644
  }
  
 diff --git a/netwerk/dns/nsDNSService2.h b/netwerk/dns/nsDNSService2.h
-index 26d0939..d2fb648 100644
+index 6126dd2..1500ebc 100644
 --- a/netwerk/dns/nsDNSService2.h
 +++ b/netwerk/dns/nsDNSService2.h
-@@ -34,6 +34,10 @@ private:
+@@ -37,6 +37,10 @@ private:
      // mLock protects access to mResolver and mIPv4OnlyDomains
      mozilla::Mutex            mLock;
  
@@ -91,7 +91,7 @@ index 26d0939..d2fb648 100644
      // IPv4 DNS lookups are performed. This allows the user to disable IPv6 on
      // a per-domain basis and work around broken DNS servers. See bug 68796.
 diff --git a/netwerk/dns/nsHostResolver.cpp b/netwerk/dns/nsHostResolver.cpp
-index 53993bb..76038f4 100644
+index db99b46..4a66b2d 100644
 --- a/netwerk/dns/nsHostResolver.cpp
 +++ b/netwerk/dns/nsHostResolver.cpp
 @@ -24,6 +24,7 @@
@@ -102,7 +102,7 @@ index 53993bb..76038f4 100644
  #include "prerror.h"
  #include "prtime.h"
  #include "prlong.h"
-@@ -146,7 +147,11 @@ private:
+@@ -145,7 +146,11 @@ private:
  // this macro filters out any flags that are not used when constructing the
  // host key.  the significant flags are those that would affect the resulting
  // host record (i.e., the flags that are passed down to PR_GetAddrInfoByName).
@@ -114,7 +114,7 @@ index 53993bb..76038f4 100644
  
  nsHostRecord::nsHostRecord(const nsHostKey *key)
      : addr_info_lock("nsHostRecord.addr_info_lock")
-@@ -162,6 +167,10 @@ nsHostRecord::nsHostRecord(const nsHostKey *key)
+@@ -161,6 +166,10 @@ nsHostRecord::nsHostRecord(const nsHostKey *key)
      memcpy((char *) host, key->host, strlen(key->host) + 1);
      flags = key->flags;
      af = key->af;
@@ -125,7 +125,7 @@ index 53993bb..76038f4 100644
  
      expiration = NowInMinutes();
  
-@@ -336,10 +345,17 @@ HostDB_RemoveEntry(PLDHashTable *table,
+@@ -335,10 +344,17 @@ HostDB_RemoveEntry(PLDHashTable *table,
  
  nsHostResolver::nsHostResolver(uint32_t maxCacheEntries,
                                 uint32_t maxCacheLifetime,
@@ -144,7 +144,7 @@ index 53993bb..76038f4 100644
      , mLock("nsHostResolver.mLock")
      , mIdleThreadCV(mLock, "nsHostResolver.mIdleThreadCV")
      , mNumIdleThreads(0)
-@@ -503,6 +519,10 @@ nsHostResolver::ResolveHost(const char            *host,
+@@ -500,6 +516,10 @@ nsHostResolver::ResolveHost(const char            *host,
      if (!net_IsValidHostName(nsDependentCString(host)))
          return NS_ERROR_UNKNOWN_HOST;
  
@@ -155,7 +155,7 @@ index 53993bb..76038f4 100644
      // if result is set inside the lock, then we need to issue the
      // callback before returning.
      nsRefPtr<nsHostRecord> result;
-@@ -564,7 +584,17 @@ nsHostResolver::ResolveHost(const char            *host,
+@@ -561,7 +581,17 @@ nsHostResolver::ResolveHost(const char            *host,
                      Telemetry::Accumulate(Telemetry::DNS_LOOKUP_METHOD2,
                                            METHOD_NEGATIVE_HIT);
                      status = NS_ERROR_UNKNOWN_HOST;
@@ -173,7 +173,7 @@ index 53993bb..76038f4 100644
              }
              // if the host name is an IP address literal and has been parsed,
              // go ahead and use it.
-@@ -855,6 +885,9 @@ nsHostResolver::OnLookupComplete(nsHostRecord *rec, nsresult status, PRAddrInfo
+@@ -856,6 +886,9 @@ nsHostResolver::OnLookupComplete(nsHostRecord *rec, nsresult status, PRAddrInfo
              rec->expiration += 1;                 /* one minute for negative cache */
              rec->negative = true;
          }
@@ -183,7 +183,7 @@ index 53993bb..76038f4 100644
          rec->resolving = false;
          
          if (rec->usingAnyThread) {
-@@ -945,6 +978,25 @@ nsHostResolver::CancelAsyncRequest(const char            *host,
+@@ -946,6 +979,25 @@ nsHostResolver::CancelAsyncRequest(const char            *host,
          }
      }
  }
@@ -209,7 +209,7 @@ index 53993bb..76038f4 100644
  
  //----------------------------------------------------------------------------
  
-@@ -970,13 +1022,26 @@ nsHostResolver::ThreadFunc(void *arg)
+@@ -971,13 +1023,26 @@ nsHostResolver::ThreadFunc(void *arg)
              flags |= PR_AI_NOCANONNAME;
  
          TimeStamp startTime = TimeStamp::Now();
@@ -240,7 +240,7 @@ index 53993bb..76038f4 100644
          TimeDuration elapsed = TimeStamp::Now() - startTime;
          uint32_t millis = static_cast<uint32_t>(elapsed.ToMilliseconds());
  
-@@ -991,7 +1056,11 @@ nsHostResolver::ThreadFunc(void *arg)
+@@ -992,7 +1057,11 @@ nsHostResolver::ThreadFunc(void *arg)
                                    millis);
          }
          else {
@@ -252,7 +252,7 @@ index 53993bb..76038f4 100644
              Telemetry::Accumulate(Telemetry::DNS_FAILED_LOOKUP_TIME, millis);
          }
          
-@@ -1008,6 +1077,9 @@ nsresult
+@@ -1009,6 +1078,9 @@ nsresult
  nsHostResolver::Create(uint32_t         maxCacheEntries,
                         uint32_t         maxCacheLifetime,
                         uint32_t         lifetimeGracePeriod,
@@ -262,7 +262,7 @@ index 53993bb..76038f4 100644
                         nsHostResolver **result)
  {
  #if defined(PR_LOGGING)
-@@ -1017,7 +1089,11 @@ nsHostResolver::Create(uint32_t         maxCacheEntries,
+@@ -1018,7 +1090,11 @@ nsHostResolver::Create(uint32_t         maxCacheEntries,
  
      nsHostResolver *res = new nsHostResolver(maxCacheEntries,
                                               maxCacheLifetime,
@@ -276,7 +276,7 @@ index 53993bb..76038f4 100644
          return NS_ERROR_OUT_OF_MEMORY;
      NS_ADDREF(res);
 diff --git a/netwerk/dns/nsHostResolver.h b/netwerk/dns/nsHostResolver.h
-index a51ca91..f97ddde 100644
+index 7a592f0..dfa08eb 100644
 --- a/netwerk/dns/nsHostResolver.h
 +++ b/netwerk/dns/nsHostResolver.h
 @@ -11,6 +11,7 @@
@@ -324,10 +324,10 @@ index a51ca91..f97ddde 100644
                             nsHostResolver **resolver);
      
      /**
-@@ -225,11 +240,18 @@ public:
-         RES_PRIORITY_MEDIUM   = 1 << 2,
-         RES_PRIORITY_LOW  = 1 << 3,
-         RES_SPECULATE     = 1 << 4   
+@@ -227,11 +242,18 @@ public:
+         RES_SPECULATE     = 1 << 4,
+         //RES_DISABLE_IPV6 = 1 << 5, // Not used
+         RES_OFFLINE       = 1 << 6
 +#ifdef MOZ_DNSSEC
 +        , RES_EXTENDED_ERRS = 1 << 7
 +#endif
@@ -344,7 +344,7 @@ index a51ca91..f97ddde 100644
     ~nsHostResolver();
  
      nsresult Init();
-@@ -257,6 +279,9 @@ private:
+@@ -259,6 +281,9 @@ private:
      uint32_t      mMaxCacheEntries;
      uint32_t      mMaxCacheLifetime;
      uint32_t      mGracePeriod;

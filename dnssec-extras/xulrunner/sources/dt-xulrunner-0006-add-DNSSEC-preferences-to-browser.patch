@@ -1,7 +1,7 @@
-From 5ba90c784758ea14e46166eebb212df4afd00ef4 Mon Sep 17 00:00:00 2001
+From 08994fba05fae8d257e13fea689423966b8afa08 Mon Sep 17 00:00:00 2001
 From: Robert Story <rstory@localhost>
 Date: Mon, 4 Jun 2012 15:55:16 -0400
-Subject: [PATCH 14/15] XULRUNNER add DNSSEC preferences to browser
+Subject: [PATCH 20/25] XULRUNNER add DNSSEC preferences to browser
 
 ---
  browser/components/preferences/advanced.xul          | 20 ++++++++++++++++++++
@@ -73,10 +73,10 @@ index 5eddbb7..6442f54 100644
 +<!ENTITY allDNSSecure.label             "Require all DNS lookups to be secure">
 +<!ENTITY allDNSSecure.accesskey         "A">
 diff --git a/layout/base/nsPresContext.cpp b/layout/base/nsPresContext.cpp
-index d47460a..a427b5e 100644
+index cfac149..df1fbe5 100644
 --- a/layout/base/nsPresContext.cpp
 +++ b/layout/base/nsPresContext.cpp
-@@ -34,6 +34,8 @@
+@@ -36,6 +36,8 @@
  #include "nsIWeakReferenceUtils.h"
  #include "nsCSSRendering.h"
  #include "prprf.h"
@@ -85,7 +85,7 @@ index d47460a..a427b5e 100644
  #include "nsAutoPtr.h"
  #include "nsEventStateManager.h"
  #include "nsThreadUtils.h"
-@@ -270,6 +272,11 @@ nsPresContext::~nsPresContext()
+@@ -293,6 +295,11 @@ nsPresContext::~nsPresContext()
    Preferences::UnregisterCallback(nsPresContext::PrefChangedCallback,
                                    "image.animation_mode",
                                    this);
@@ -97,7 +97,7 @@ index d47460a..a427b5e 100644
  #ifdef IBMBIDI
    Preferences::UnregisterCallback(nsPresContext::PrefChangedCallback,
                                    "bidi.",
-@@ -760,6 +767,11 @@ nsPresContext::GetUserPreferences()
+@@ -783,6 +790,11 @@ nsPresContext::GetUserPreferences()
    // prescontext or we are being called from UpdateAfterPreferencesChanged()
    // which triggers a reflow anyway.
    SetBidi(bidiOptions, false);
@@ -109,7 +109,7 @@ index d47460a..a427b5e 100644
  }
  
  void
-@@ -958,6 +970,11 @@ nsPresContext::Init(nsDeviceContext* aDeviceContext)
+@@ -981,6 +993,11 @@ nsPresContext::Init(nsDeviceContext* aDeviceContext)
    Preferences::RegisterCallback(nsPresContext::PrefChangedCallback,
                                  "image.animation_mode",
                                  this);
