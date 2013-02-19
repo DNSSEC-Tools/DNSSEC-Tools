@@ -240,7 +240,8 @@ AC_ARG_ENABLE(ssl,,
         AC_MSG_ERROR([ Invalid option. Use --with-openssl/--without-openssl instead ]) )
 
 AC_SEARCH_LIBS(SSL_get_SSL_CTX, [ssl],,
-        AC_MSG_ERROR("OpenSSL ssl library not found. get it from http://www.openssl.org."))
+        AC_MSG_ERROR("OpenSSL ssl library not found. get it from http://www.openssl.org."),
+        [-lcrypto])
 AC_SUBST(LIBS)
 
 AC_SEARCH_LIBS(EVP_md5, [crypto eay32 libeay32 crypt32],,
