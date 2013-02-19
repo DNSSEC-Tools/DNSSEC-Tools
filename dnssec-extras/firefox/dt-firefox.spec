@@ -149,6 +149,7 @@ compliance, performance and portability.
 
 %prep
 %setup -q -c
+export PKG_CONFIG_PATH=%{_libdir}/pkgconfig
 cd %{tarballdir}
 
 # Build patches, can't change backup suffix from default because during build
@@ -223,6 +224,7 @@ echo "ac_add_options --with-system-val" >> .mozconfig
 #---------------------------------------------------------------------
 
 %build
+export PKG_CONFIG_PATH=%{_libdir}/pkgconfig
 cd %{tarballdir}
 
 # Mozilla builds with -Wall with exception of a few warnings which show up
@@ -264,6 +266,7 @@ make buildsymbols
 #---------------------------------------------------------------------
 
 %install
+export PKG_CONFIG_PATH=%{_libdir}/pkgconfig
 cd %{tarballdir}
 
 # set up our prefs and add it to the package manifest file, so it gets pulled in
@@ -301,7 +304,9 @@ desktop-file-install --dir $RPM_BUILD_ROOT%{_datadir}/applications %{SOURCE20}
 # set up the firefox start script
 %{__rm} -rf $RPM_BUILD_ROOT%{_bindir}/firefox
 XULRUNNER_DIR=`pkg-config --variable=libdir libxul | %{__sed} -e "s,%{_libdir},,g"`
-%{__cat} %{SOURCE21} | %{__sed} -e "s,XULRUNNER_DIRECTORY,$XULRUNNER_DIR,g" > \
+%{__cat} %{SOURCE21} | %{__sed} \
+         -e "s,/usr/,%{_prefix}/,g" \
+         -e "s,XULRUNNER_DIRECTORY,$XULRUNNER_DIR,g" > \
   $RPM_BUILD_ROOT%{_bindir}/firefox
 %{__chmod} 755 $RPM_BUILD_ROOT%{_bindir}/firefox
 
