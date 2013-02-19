@@ -43,8 +43,8 @@
 %define default_bookmarks_file /usr/share/bookmarks/default-bookmarks.html
 %define firefox_app_id \{ec8030f7-c20a-464f-9b0e-13a3a9e97384\}
 
-%global xulrunner_version      16.0.1
-%global xulrunner_version_max  16.1
+%global xulrunner_version      17.0.1
+%global xulrunner_version_max  17.1
 %global xulrunner_release      1
 %global alpha_version          0
 %global beta_version           0
@@ -82,14 +82,14 @@
 
 Summary:        Mozilla Firefox Web browser
 Name:           dt-firefox
-Version:        16.0.1
+Version:        17.0.1
 Release:        1%{?pre_tag}%{?dist}
 URL:            http://www.mozilla.org/projects/firefox/
 License:        MPLv1.1 or GPLv2+ or LGPLv2+
 Group:          Applications/Internet
 Source0:        ftp://ftp.mozilla.org/pub/firefox/releases/%{version}%{?pre_version}/source/firefox-%{version}%{?pre_version}.source.tar.bz2
 %if %{build_langpacks}
-Source1:        firefox-langpacks-%{version}%{?pre_version}-20121011.tar.xz
+Source1:        firefox-langpacks-%{version}%{?pre_version}-20121129.tar.xz
 %endif
 Source10:       firefox-mozconfig
 Source11:       firefox-mozconfig-branded
@@ -105,6 +105,7 @@ Patch0:         firefox-install-dir.patch
 # Fedora patches
 Patch14:        firefox-5.0-asciidel.patch
 Patch15:        firefox-15.0-enable-addons.patch
+Patch16:        firefox-duckduckgo.patch
 
 # Upstream patches
 
@@ -157,6 +158,7 @@ cd %{tarballdir}
 # Fedora patches
 %patch14 -p1 -b .asciidel
 %patch15 -p2 -b .addons
+%patch16 -p1 -b .duckduckgo
 
 # Upstream patches
 
@@ -204,6 +206,11 @@ echo "ac_add_options --disable-debug" >> .mozconfig
 echo "ac_add_options --enable-optimize" >> .mozconfig
 %endif
 
+# s390(x) fails to start with jemalloc enabled
+%ifarch s390 s390x
+echo "ac_add_options --disable-jemalloc" >> .mozconfig
+%endif
+
 echo "ac_add_options --with-system-val" >> .mozconfig
 
 #---------------------------------------------------------------------
@@ -218,9 +225,15 @@ cd %{tarballdir}
 # Disable C++ exceptions since Mozilla code is not exception-safe
 #
 MOZ_OPT_FLAGS=$(echo $RPM_OPT_FLAGS | \
-                     %{__sed} -e 's/-Wall//' -e 's/-fexceptions/-fno-exceptions/g')
+                     %{__sed} -e 's/-Wall//')
 %if %{?debug_build}
 MOZ_OPT_FLAGS=$(echo "$MOZ_OPT_FLAGS" | %{__sed} -e 's/-O2//' -e 's/-Wp,-D_FORTIFY_SOURCE=2//')
+%endif
+%ifarch s390
+MOZ_OPT_FLAGS=$(echo "$MOZ_OPT_FLAGS" | %{__sed} -e 's/-g/-g1/')
+%endif
+%ifarch s390 %{arm} ppc
+MOZ_LINK_FLAGS="-Wl,--no-keep-memory -Wl,--reduce-memory-overheads"
 %endif
 export CFLAGS=$MOZ_OPT_FLAGS
 export CXXFLAGS=$MOZ_OPT_FLAGS
@@ -368,6 +381,9 @@ create_default_langpack "zh-TW" "zh"
 # Copy over the LICENSE
 %{__install} -p -c -m 644 LICENSE $RPM_BUILD_ROOT/%{mozappdir}
 
+# Remove tmp files
+find $RPM_BUILD_ROOT/%{mozappdir}/modules -name '.mkdir.done' -exec rm -rf {} \;
+
 # Enable crash reporter for Firefox application
 %if %{include_debuginfo}
 sed -i -e "s/\[Crash Reporter\]/[Crash Reporter]\nEnabled=1/" $RPM_BUILD_ROOT/%{mozappdir}/application.ini
@@ -434,6 +450,7 @@ gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
 %{_datadir}/icons/hicolor/48x48/apps/firefox.png
 %{mozappdir}/xulrunner
 %{mozappdir}/webapprt-stub
+%{mozappdir}/modules/*
 %dir %{mozappdir}/webapprt
 %{mozappdir}/webapprt/omni.ja
 %{mozappdir}/webapprt/webapprt.ini
@@ -447,10 +464,34 @@ gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
 #---------------------------------------------------------------------
 
 %changelog
+* Thu Nov 29 2012 Jan Horak <jhorak@redhat.com> - 17.0.1-1
+- Update to 17.0.1
+
+* Mon Nov 19 2012 Martin Stransky <stransky@redhat.com> - 17.0-1
+- Update to 17.0
+
+* Thu Nov 15 2012 Martin Stransky <stransky@redhat.com> - 17.0-0.1b6
+- Update to 17.0 Beta 6
+
+* Wed Nov  7 2012 Jan Horak <jhorak@redhat.com> - 16.0.2-4
+- Added duckduckgo.com search engine
+
+* Thu Nov  1 2012 Jan Horak <jhorak@redhat.com> - 16.0.2-3
+- Added keywords to desktop file (871900)
+
+* Tue Oct 30 2012 Martin Stransky <stransky@redhat.com> - 16.0.2-2
+- Updated man page (#800234)
+
+* Fri Oct 26 2012 Jan Horak <jhorak@redhat.com> - 16.0.2-1
+- Update to 16.0.2
+
 * Thu Oct 11 2012 Martin Stransky <stransky@redhat.com> - 16.0.1-1
 - Update to 16.0.1
-+
- Mon Oct  8 2012 Jan Horak <jhorak@redhat.com> - 16.0-1
+
+* Thu Oct 11 2012 Martin Stransky <stransky@redhat.com> - 16.0.1-1
+- Update to 16.0.1
+
+* Mon Oct  8 2012 Jan Horak <jhorak@redhat.com> - 16.0-1
 - Update to 16.0
 - Use /var/tmp instead of /tmp (rhbz#860814)
 
