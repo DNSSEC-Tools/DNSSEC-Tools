@@ -21,11 +21,11 @@
 %define _usrsrc             %{_prefix}/usr/src
 
 %define orig_name           dnssec-tools
-%define svn_ver             7071
+%define svn_ver             7143
 
-Summary: C-based libraries for dnssec aware tools
-Name: dtsvn-dnsval-libs
-Version: 1.13
+Summary: A suite of tools for testing/debugging dnssec aware DNS usage
+Name: dtsvn-dnsval
+Version: 1.14
 Release: 1.svn%{svn_ver}%{?dist}
 License: BSD
 Group: System Environment/Libraries
@@ -39,14 +39,24 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires: openssl-devel gzip
 
 %description
+The goal of the DNSSEC-Tools project is to create a set of tools,
+patches, applications, wrappers, extensions, and plugins that will
+help ease the deployment of DNSSEC-related technologies.
+
+%package libs
+Group: System Environment/Libraries
+Summary: C-based libraries for dnssec aware tools
+Requires: openssl
+
+%description libs
 C-based libraries useful for developing dnssec aware tools.
 
-%package devel
+%package libs-devel
 Group: Development/Libraries
 Summary: C-based development libraries for dnssec aware tools
 Requires: dtsvn-dnsval-libs = %{version}-%{release}
 
-%description devel
+%description libs-devel
 C-based libraries useful for developing dnssec aware tools.
 
 %prep
@@ -55,8 +65,6 @@ C-based libraries useful for developing dnssec aware tools.
 %build
 cd validator
 %configure --with-validator-testcases-file=%{_datadir}/dnssec-tools/validator-testcases --with-root-hints=%{_sysconfdir}/dnssec-tools/root.hints --with-resolv-conf=%{_sysconfdir}/dnssec-tools/resolv.conf --disable-static --with-nsec3 --with-ipv6 --with-dlv
-sed -i 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' libtool
-sed -i 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g' libtool
 make %{?_smp_mflags}
 
 %install
@@ -84,9 +92,9 @@ for f in %{buildroot}%{_mandir}/man?/*.?; do
    gzip -9 -n $f
 done
 
-%post -p /sbin/ldconfig
+%post libs -p /sbin/ldconfig
 
-%postun -p /sbin/ldconfig
+%postun libs -p /sbin/ldconfig
 
 %clean
 rm -rf %{buildroot}
@@ -105,6 +113,8 @@ rm -rf %{buildroot}
 %{_bindir}/dt-getrrset
 %{_bindir}/dt-danechk
 
+%files libs
+%defattr(-,root,root)
 %{_libdir}/*.so.*
 %config(noreplace) %{_sysconfdir}/dnssec-tools/dnsval.conf
 %config(noreplace) %{_sysconfdir}/dnssec-tools/root.hints
@@ -119,7 +129,7 @@ rm -rf %{buildroot}
 %{_mandir}/man3/p_ac_status.3.gz
 %{_mandir}/man3/p_val_status.3.gz
 
-%files devel
+%files libs-devel
 %defattr(-,root,root)
 %{_includedir}/validator
 %{_libdir}/*.so
