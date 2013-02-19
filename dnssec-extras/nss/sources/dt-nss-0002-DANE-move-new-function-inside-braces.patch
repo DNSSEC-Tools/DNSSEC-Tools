@@ -1,17 +1,17 @@
-From 7f57ec13b03a92885dd3ad66db01fa3f93e54369 Mon Sep 17 00:00:00 2001
+From a40829e9dd9cadc27780f4bdc0c85a2c135d3d7c Mon Sep 17 00:00:00 2001
 From: Robert Story <rstory@localhost>
 Date: Sat, 22 Dec 2012 17:56:25 -0500
-Subject: [PATCH 2/5] DANE move new function inside braces
+Subject: [PATCH 10/25] NSS DANE move new function inside braces
 
 ---
- security/nss/lib/ssl/ssl.def | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ security/nss/lib/ssl/ssl.def | 1 +
+ 1 file changed, 1 insertion(+)
 
 diff --git a/security/nss/lib/ssl/ssl.def b/security/nss/lib/ssl/ssl.def
-index 31abe90..f134a25 100644
+index 6f24075..b60cf90 100644
 --- a/security/nss/lib/ssl/ssl.def
 +++ b/security/nss/lib/ssl/ssl.def
-@@ -170,7 +170,7 @@ SSL_SetNextProtoCallback;
+@@ -138,6 +138,7 @@ SSL_SetNextProtoCallback;
  SSL_SetNextProtoNego;
  SSL_GetNextProto;
  SSL_AuthCertificateComplete;
@@ -19,7 +19,6 @@ index 31abe90..f134a25 100644
  ;+    local:
  ;+       *;
  ;+};
--SSL_DANECheck
 -- 
 1.7.11.7
 

@@ -1,26 +1,26 @@
-From 837e761037295c325a52209d93314f3e984e3d7b Mon Sep 17 00:00:00 2001
+From 7a7fbf9664008d159113def448e2b5cdcde57009 Mon Sep 17 00:00:00 2001
 From: Robert Story <rstory@localhost>
 Date: Sat, 22 Dec 2012 17:54:41 -0500
-Subject: [PATCH 1/5] DANE initial patch from Suresh; 2012-12-14
+Subject: [PATCH 09/25] NSS DANE patch from Suresh; 2012-12-14
 
 ---
- security/nss/lib/ssl/Makefile                      |   2 +
- security/nss/lib/ssl/config.mk                     |   3 +
- security/nss/lib/ssl/manifest.mn                   |   1 +
- security/nss/lib/ssl/ssl.def                       |   1 +
- security/nss/lib/ssl/ssl.h                         |   4 +
- security/nss/lib/ssl/ssldane.c                     | 185 +++++++++++++++++++++
- security/nss/lib/ssl/sslerr.h                      |   4 +
- security/nss/lib/ssl/sslimpl.h                     |   1 +
- security/nss/lib/ssl/sslsock.c                     |   1 +
- 10 files changed, 212 insertions(+), 1 deletion(-)
+ security/nss/lib/ssl/Makefile    |   2 +
+ security/nss/lib/ssl/config.mk   |   3 +
+ security/nss/lib/ssl/manifest.mn |   1 +
+ security/nss/lib/ssl/ssl.def     |   1 +
+ security/nss/lib/ssl/ssl.h       |   4 +
+ security/nss/lib/ssl/ssldane.c   | 196 +++++++++++++++++++++++++++++++++++++++
+ security/nss/lib/ssl/sslerr.h    |   4 +
+ security/nss/lib/ssl/sslimpl.h   |   1 +
+ security/nss/lib/ssl/sslsock.c   |   1 +
+ 9 files changed, 213 insertions(+)
  create mode 100644 security/nss/lib/ssl/ssldane.c
 
 diff --git a/security/nss/lib/ssl/Makefile b/security/nss/lib/ssl/Makefile
-index a777569..cd4d06e 100644
+index d56cbf2..4196d2d 100644
 --- a/security/nss/lib/ssl/Makefile
 +++ b/security/nss/lib/ssl/Makefile
-@@ -71,6 +71,8 @@ CSRCS	+= unix_err.c
+@@ -39,6 +39,8 @@ CSRCS	+= unix_err.c
  endif
  endif
  
@@ -30,10 +30,10 @@ index a777569..cd4d06e 100644
  # (5) Execute "global" rules. (OPTIONAL)                              #
  #######################################################################
 diff --git a/security/nss/lib/ssl/config.mk b/security/nss/lib/ssl/config.mk
-index c06ba31..09eaa09 100644
+index 1a717fa..21c6f20 100644
 --- a/security/nss/lib/ssl/config.mk
 +++ b/security/nss/lib/ssl/config.mk
-@@ -118,3 +118,6 @@ EXTRA_LIBS += $(ZLIB_LIBS)
+@@ -90,3 +90,6 @@ EXTRA_LIBS += $(ZLIB_LIBS)
  endif
  
  endif
@@ -41,11 +41,11 @@ index c06ba31..09eaa09 100644
 +# DANE
 +OS_LIBS += -L/usr/local/opt/lib -lval-threads -lsres -lcrypto
 diff --git a/security/nss/lib/ssl/manifest.mn b/security/nss/lib/ssl/manifest.mn
-index 0c0370c..dbb00f7 100644
+index 3bb28a2..ac38b5a 100644
 --- a/security/nss/lib/ssl/manifest.mn
 +++ b/security/nss/lib/ssl/manifest.mn
-@@ -76,6 +76,7 @@ CSRCS = \
- 	nsskea.c \
+@@ -44,6 +44,7 @@ CSRCS = \
+ 	cmpcert.c \
  	sslinfo.c \
  	ssl3ecc.c \
 +	ssldane.c \
@@ -53,19 +53,22 @@ index 0c0370c..dbb00f7 100644
  
  LIBRARY_NAME = ssl
 diff --git a/security/nss/lib/ssl/ssl.def b/security/nss/lib/ssl/ssl.def
-index 8d14993..31abe90 100644
+index 0f2cbff..6f24075 100644
 --- a/security/nss/lib/ssl/ssl.def
 +++ b/security/nss/lib/ssl/ssl.def
-@@ -173,3 +173,4 @@ SSL_AuthCertificateComplete;
+@@ -153,6 +153,7 @@ SSL_VersionRangeSet;
+ SSL_VersionRangeSetDefault;
+ SSL_GetSRTPCipher;
+ SSL_SetSRTPCiphers;
++SSL_DANECheck;
  ;+    local:
- ;+       *;
+ ;+*;
  ;+};
-+SSL_DANECheck
 diff --git a/security/nss/lib/ssl/ssl.h b/security/nss/lib/ssl/ssl.h
-index 74da911..29ddd51 100644
+index fff4338..f89a89e 100644
 --- a/security/nss/lib/ssl/ssl.h
 +++ b/security/nss/lib/ssl/ssl.h
-@@ -761,6 +761,10 @@ SSL_IMPORT SECStatus SSL_HandshakeNegotiatedExtension(PRFileDesc * socket,
+@@ -867,6 +867,10 @@ SSL_IMPORT SECStatus DTLS_GetHandshakeTimeout(PRFileDesc *socket,
   */
  extern PRBool NSSSSL_VersionCheck(const char *importedVersion);
  
@@ -78,10 +81,21 @@ index 74da911..29ddd51 100644
   */
 diff --git a/security/nss/lib/ssl/ssldane.c b/security/nss/lib/ssl/ssldane.c
 new file mode 100644
-index 0000000..4b9c0f3
+index 0000000..8b442d4
 --- /dev/null
 +++ b/security/nss/lib/ssl/ssldane.c
-@@ -0,0 +1,185 @@
+@@ -0,0 +1,196 @@
++/*
++ * The DANE implementation originally started out as an extension 
++ * to Matt McCutchen's patch (found at
++ * https://mattmccutchen.net/cryptid/nss-dane-20110413.patch) but has
++ * since diverged significantly from that piece of code.
++ *
++ * DANE support in Bloodhound is enabled through the DNSSEC-Tools dnsval
++ * package, specifically the libval and libsres libraries. Further
++ * details can be found at 
++ * https://www.dnssec-tools.org/wiki/index.php/Firefox 
++ */
 +
 +#define _GNU_SOURCE
 +
@@ -268,25 +282,25 @@ index 0000000..4b9c0f3
 +}
 +
 diff --git a/security/nss/lib/ssl/sslerr.h b/security/nss/lib/ssl/sslerr.h
-index 5e8e00b..e09e668 100644
+index 8d1395d..1f44861 100644
 --- a/security/nss/lib/ssl/sslerr.h
 +++ b/security/nss/lib/ssl/sslerr.h
-@@ -211,6 +211,10 @@ SSL_ERROR_FEATURE_NOT_SUPPORTED_FOR_SSL2 = (SSL_ERROR_BASE + 117),
- SSL_ERROR_FEATURE_NOT_SUPPORTED_FOR_SERVERS = (SSL_ERROR_BASE + 118),
- SSL_ERROR_FEATURE_NOT_SUPPORTED_FOR_CLIENTS = (SSL_ERROR_BASE + 119),
+@@ -188,6 +188,10 @@ SSL_ERROR_RX_UNEXPECTED_HELLO_VERIFY_REQUEST = (SSL_ERROR_BASE + 123),
  
-+SSL_ERROR_DANE_INIT_FAILED  = (SSL_ERROR_BASE + 116),
-+SSL_ERROR_DANE_QUERY_FAILED = (SSL_ERROR_BASE + 117),
-+SSL_ERROR_DANE_UNAUTHORIZED = (SSL_ERROR_BASE + 118),
+ SSL_ERROR_FEATURE_NOT_SUPPORTED_FOR_VERSION = (SSL_ERROR_BASE + 124),
+ 
++SSL_ERROR_DANE_INIT_FAILED  = (SSL_ERROR_BASE + 125),
++SSL_ERROR_DANE_QUERY_FAILED = (SSL_ERROR_BASE + 126),
++SSL_ERROR_DANE_UNAUTHORIZED = (SSL_ERROR_BASE + 127),
 +
  SSL_ERROR_END_OF_LIST	/* let the c compiler determine the value of this. */
  } SSLErrorCodes;
  #endif /* NO_SECURITY_ERROR_ENUM */
 diff --git a/security/nss/lib/ssl/sslimpl.h b/security/nss/lib/ssl/sslimpl.h
-index 123fce81..faba8f9 100644
+index 891d5f4..4673220 100644
 --- a/security/nss/lib/ssl/sslimpl.h
 +++ b/security/nss/lib/ssl/sslimpl.h
-@@ -1588,6 +1588,7 @@ extern void ssl_FreePRSocket(PRFileDesc *fd);
+@@ -1684,6 +1684,7 @@ extern void ssl_FreePRSocket(PRFileDesc *fd);
   * various ciphers */
  extern int ssl3_config_match_init(sslSocket *);
  
@@ -295,10 +309,10 @@ index 123fce81..faba8f9 100644
  /* Create a new ref counted key pair object from two keys. */
  extern ssl3KeyPair * ssl3_NewKeyPair( SECKEYPrivateKey * privKey, 
 diff --git a/security/nss/lib/ssl/sslsock.c b/security/nss/lib/ssl/sslsock.c
-index 0c4d0c7..71f1a4c 100644
+index 5656a37..dd373be 100644
 --- a/security/nss/lib/ssl/sslsock.c
 +++ b/security/nss/lib/ssl/sslsock.c
-@@ -2001,6 +2001,7 @@ ssl_Poll(PRFileDesc *fd, PRInt16 how_flags, PRInt16 *p_out_flags)
+@@ -2324,6 +2324,7 @@ ssl_Poll(PRFileDesc *fd, PRInt16 how_flags, PRInt16 *p_out_flags)
  	    *p_out_flags = lower_out_flags;
  	    new_flags    = lower_new_flags;
  	}
