@@ -25,6 +25,17 @@
 
 %define base_name           firefox
 
+# use dtsvn libval?
+%define dtsvn             1
+%if %{dtsvn}
+%define dt_ver 1.14-1.svn7143
+%else
+%define dt_ver 1.14-1
+%endif
+
+# Use system nss/nspr?
+%define system_nss        1
+
 # Separated plugins are supported on x86(64) only
 %ifarch %{ix86} x86_64
 %define separated_plugins 1
@@ -120,8 +131,9 @@ Patch16:        firefox-duckduckgo.patch
 %endif
 
 # -START- DNSSEC-Tools
-Patch2015:  0015-XULRUNNER-add-DNSSEC-preferences-to-browser.patch
-Patch2016:  0016-BROWSER-update-browser-local-overrides-for-DNSSEC.patch
+Patch2010:  dt-xulrunner-0010-add-dnssec-options-to-configure.patch
+Patch2015:  dt-xulrunner-0015-add-DNSSEC-preferences-to-browser.patch
+Patch2016:  dt-browser-0016-update-browser-local-overrides-for-DNSSEC.patch
 # -END- DNSSEC-Tools
 
 # ---------------------------------------------------
@@ -129,7 +141,15 @@ Patch2016:  0016-BROWSER-update-browser-local-overrides-for-DNSSEC.patch
 BuildRequires:  desktop-file-utils
 BuildRequires:  system-bookmarks
 BuildRequires:  dt-xulrunner-devel%{?_isa} >= %{xulrunner_verrel}
-BuildRequires:  dnssec-tools-libs-devel openssl-devel
+%if %{dtsvn}
+Requires:       dtsvn-dnsval-libs >= %{dt_ver}
+BuildRequires:  dtsvn-dnsval-libs-devel >= %{dt_ver}
+BuildRequires:  openssl-static
+%else
+BuildRequires:  dnssec-tools-libs-devel >= %{dt_ver}
+BuildRequires:  openssl-devel
+%endif
+BuildRequires:  autoconf213
 
 Requires:       dt-xulrunner%{?_isa} >= %{xulrunner_verrel}
 Requires:       system-bookmarks
@@ -171,9 +191,13 @@ cd %{tarballdir}
 
 ###############################
 # DNSSEC-Tools
-# - mozilla-firefox patches
+# - dt-browser patches
+%patch2010 -p1 -b .dnssectools
 %patch2015 -p1 -b .dnssectools
 %patch2016 -p1 -b .dnssectools
+# rebuild configure(s) due to dnssec patches
+%{__rm} -f ./configure
+/usr/bin/autoconf-2.13
 ###############################
 
 
@@ -204,6 +228,14 @@ echo "ac_add_options --disable-optimize" >> .mozconfig
 %else
 echo "ac_add_options --disable-debug" >> .mozconfig
 echo "ac_add_options --enable-optimize" >> .mozconfig
+%endif
+
+%if %{?system_nss}
+echo "ac_add_options --with-system-nspr" >> .mozconfig
+echo "ac_add_options --with-system-nss" >> .mozconfig
+%else
+echo "ac_add_options --without-system-nspr" >> .mozconfig
+echo "ac_add_options --without-system-nss" >> .mozconfig
 %endif
 
 # s390(x) fails to start with jemalloc enabled
@@ -249,10 +281,16 @@ MOZ_SMP_FLAGS=-j1
      RPM_BUILD_NCPUS="`/usr/bin/getconf _NPROCESSORS_ONLN`"
 [ "$RPM_BUILD_NCPUS" -ge 2 ] && MOZ_SMP_FLAGS=-j2
 [ "$RPM_BUILD_NCPUS" -ge 4 ] && MOZ_SMP_FLAGS=-j4
+[ "$RPM_BUILD_NCPUS" -ge 8 ] && MOZ_SMP_FLAGS=-j7
 %endif
 
 export PATH="%{_bindir}:%{_sbindir}:$PATH"
-export LDFLAGS="-Wl,-rpath,%{mozappdir} -Wl,-rpath,%{_libdir} -L%{_libdir}"
+LDFLAGS="-Wl,-rpath,%{mozappdir} -Wl,-rpath,%{_libdir} -L%{_libdir}"
+%if %{dtsvn}
+LDFLAGS+=" -Wl,-rpath,/usr/local/dtsvn/%{_lib} -L/usr/local/dtsvn/%{_lib}"
+%endif
+export LDFLAGS
+
 make -f client.mk build STRIP="/bin/true" MOZ_MAKE_FLAGS="$MOZ_SMP_FLAGS"
 
 # create debuginfo for crash-stats.mozilla.com
