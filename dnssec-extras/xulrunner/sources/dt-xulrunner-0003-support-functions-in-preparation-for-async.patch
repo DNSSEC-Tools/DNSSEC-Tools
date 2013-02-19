@@ -1,7 +1,7 @@
-From a6200d2f17acab26dc844c23b848906d6e677530 Mon Sep 17 00:00:00 2001
+From c60a6a3eb7940a08b029f565cde74dfc19af7ce3 Mon Sep 17 00:00:00 2001
 From: Robert Story <rstory@localhost>
 Date: Mon, 30 Jan 2012 17:40:30 -0500
-Subject: [PATCH 11/15] XULRUNNER support functions in preparation for async
+Subject: [PATCH 17/25] XULRUNNER support functions in preparation for async
  support
 
  - factor out some code from GetHostToLookup into new functions
@@ -13,10 +13,10 @@ Subject: [PATCH 11/15] XULRUNNER support functions in preparation for async
  2 files changed, 86 insertions(+), 44 deletions(-)
 
 diff --git a/netwerk/dns/nsHostResolver.cpp b/netwerk/dns/nsHostResolver.cpp
-index 76038f4..308292b 100644
+index 4a66b2d..b96d97f 100644
 --- a/netwerk/dns/nsHostResolver.cpp
 +++ b/netwerk/dns/nsHostResolver.cpp
-@@ -785,70 +785,108 @@ nsHostResolver::DeQueue(PRCList &aQ, nsHostRecord **aResult)
+@@ -786,70 +786,108 @@ nsHostResolver::DeQueue(PRCList &aQ, nsHostRecord **aResult)
      (*aResult)->onQueue = false;
  }
  
@@ -170,10 +170,10 @@ index 76038f4..308292b 100644
  }
  
 diff --git a/netwerk/dns/nsHostResolver.h b/netwerk/dns/nsHostResolver.h
-index f97ddde..794ac5c 100644
+index dfa08eb..408be4b 100644
 --- a/netwerk/dns/nsHostResolver.h
 +++ b/netwerk/dns/nsHostResolver.h
-@@ -257,6 +257,10 @@ private:
+@@ -259,6 +259,10 @@ private:
      nsresult Init();
      nsresult IssueLookup(nsHostRecord *);
      bool     GetHostToLookup(nsHostRecord **m);

@@ -1,0 +1,73 @@
+From 2ef7e56dfd2787c611e2a98bab9debb77539acd4 Mon Sep 17 00:00:00 2001
+From: Robert Story <rstory@localhost>
+Date: Tue, 8 Jan 2013 00:24:32 -0500
+Subject: [PATCH 21/25] XULRUNNER add DANE checks for SSL certs
+
+---
+ .../en-US/chrome/pipnss/nsserrors.properties       |  3 +++
+ .../manager/ssl/src/SSLServerCertVerification.cpp  | 25 +++++++++++++++++++++-
+ 2 files changed, 27 insertions(+), 1 deletion(-)
+
+diff --git a/security/manager/locales/en-US/chrome/pipnss/nsserrors.properties b/security/manager/locales/en-US/chrome/pipnss/nsserrors.properties
+index 188222a..2c796c0 100644
+--- a/security/manager/locales/en-US/chrome/pipnss/nsserrors.properties
++++ b/security/manager/locales/en-US/chrome/pipnss/nsserrors.properties
+@@ -122,6 +122,9 @@ SSL_ERROR_NEXT_PROTOCOL_DATA_INVALID=SSL received invalid NPN extension data.
+ SSL_ERROR_FEATURE_NOT_SUPPORTED_FOR_SSL2=SSL feature not supported for SSL 2.0 connections.
+ SSL_ERROR_FEATURE_NOT_SUPPORTED_FOR_SERVERS=SSL feature not supported for servers.
+ SSL_ERROR_FEATURE_NOT_SUPPORTED_FOR_CLIENTS=SSL feature not supported for clients.
++SSL_ERROR_DANE_QUERY_FAILED=Could not fetch a DANE record or prove its absence.
++SSL_ERROR_DANE_UNAUTHORIZED=DANE certificate mismatch.
++SSL_ERROR_DANE_INIT_FAILED=SSL DANE Support could not be initialized.
+ SEC_ERROR_IO=An I/O error occurred during security authorization.
+ SEC_ERROR_LIBRARY_FAILURE=security library failure.
+ SEC_ERROR_BAD_DATA=security library: received bad data.
+diff --git a/security/manager/ssl/src/SSLServerCertVerification.cpp b/security/manager/ssl/src/SSLServerCertVerification.cpp
+index 56ac90f..6dab105 100644
+--- a/security/manager/ssl/src/SSLServerCertVerification.cpp
++++ b/security/manager/ssl/src/SSLServerCertVerification.cpp
+@@ -421,6 +421,20 @@ CreateCertErrorRunnable(PRErrorCode defaultErrorCodeToReport,
+     return nullptr;
+   }
+ 
++  // if we have a DANE validation failure don't do anything else
++  if (defaultErrorCodeToReport == SSL_ERROR_DANE_INIT_FAILED) {
++    PR_SetError(SSL_ERROR_DANE_INIT_FAILED, 0);
++    return nullptr;
++  }
++  if (defaultErrorCodeToReport == SSL_ERROR_DANE_QUERY_FAILED) {
++    PR_SetError(SSL_ERROR_DANE_QUERY_FAILED, 0);
++    return nullptr;
++  }
++  if (defaultErrorCodeToReport == SSL_ERROR_DANE_UNAUTHORIZED) {
++    PR_SetError(SSL_ERROR_DANE_UNAUTHORIZED, 0);
++    return nullptr;
++  }
++
+   if (defaultErrorCodeToReport == 0) {
+     NS_ERROR("No error code set during certificate validation failure.");
+     PR_SetError(PR_INVALID_STATE_ERROR, 0);
+@@ -1034,10 +1048,19 @@ SSLServerCertVerificationJob::Run()
+   if (mInfoObject->isAlreadyShutDown()) {
+     error = SEC_ERROR_USER_CANCELLED;
+   } else {
++    SECStatus rv;
++    int do_pathval = 1;
++    int32_t port;
++    mInfoObject->GetPort(&port);
+     // Reset the error code here so we can detect if AuthCertificate fails to
+     // set the error code if/when it fails.
+     PR_SetError(0, 0); 
+-    SECStatus rv = AuthCertificate(mInfoObject, mCert);
++    rv = SSL_DANECheck(mInfoObject, (const char *)(mInfoObject->GetHostName()),
++            port, (CERTCertificate *)mCert, &do_pathval);
++
++    if (rv == SECSuccess && do_pathval) {
++        rv = AuthCertificate(mInfoObject, mCert);
++    }
+     if (rv == SECSuccess) {
+       nsRefPtr<SSLServerCertVerificationResult> restart 
+         = new SSLServerCertVerificationResult(mInfoObject, 0);
+-- 
+1.7.11.7
+

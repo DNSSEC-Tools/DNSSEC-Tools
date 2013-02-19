@@ -1,17 +1,17 @@
-From 2b5d46a76efd82528c93f04b58d1489a3badacad Mon Sep 17 00:00:00 2001
+From bd017f03a870b9f7e1adff895383e3d5fd976435 Mon Sep 17 00:00:00 2001
 From: Robert Story <rstory@localhost>
 Date: Thu, 13 Oct 2011 01:34:28 -0400
-Subject: [PATCH 09/15] XULRUNNER add dnssec options to configure
+Subject: [PATCH 15/25] XULRUNNER add dnssec options to configure
 
 ---
- configure.in | 93 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 93 insertions(+)
+ configure.in | 101 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 101 insertions(+)
 
 diff --git a/configure.in b/configure.in
-index f81e251..06e0334 100644
+index 1de24b9..07b9bc5 100644
 --- a/configure.in
 +++ b/configure.in
-@@ -8183,6 +8183,99 @@ if test "$MOZ_APP_COMPONENT_MODULES"; then
+@@ -8325,6 +8325,107 @@ if test "$MOZ_APP_COMPONENT_MODULES"; then
  fi
  
  dnl ========================================================
@@ -36,14 +36,9 @@ index f81e251..06e0334 100644
 +OPENSSL_LIBS=""
 +MOZ_DNSSEC=""
 +if test "x$with_system_val" != xno; then
-+  if test -n "$HAVE_64BIT_OS"; then
-+     LIBDIR="lib64"
-+  else
-+     LIBDIR="lib"
-+  fi
 +  if test "x$with_system_val" != xyes; then
 +    VAL_CFLAGS="-I${with_system_val}/include"
-+    VAL_LDFLAGS="-L${with_system_val}/$LIBDIR"
++    VAL_LDFLAGS="-L${with_system_val}/lib"
 +  fi
 +  CFLAGS="$CFLAGS $VAL_CFLAGS"
 +  if test -n "$_WIN32_MSVC"; then
@@ -55,20 +50,32 @@ index f81e251..06e0334 100644
 +    if test "x$with_system_openssl" != xno; then
 +        if test "x$with_system_openssl" != xyes; then
 +            CFLAGS="$CFLAGS -I${with_system_openssl}/include"
-+            LDFLAGS="$LDFLAGS -L${with_system_openssl}/$LIBDIR"
-+            OPENSSL_PATH="${with_system_openssl}/$LIBDIR"
++            LDFLAGS="$LDFLAGS -L${with_system_openssl}/lib"
++            OPENSSL_PATH="${with_system_openssl}/lib"
 +        else
-+            OPENSSL_PATH="/usr/$LIBDIR"
++            OPENSSL_PATH="/usr/lib"
 +        fi
 +    else
-+        OPENSSL_PATH="/usr/$LIBDIR"
++        OPENSSL_PATH="/usr/lib"
 +    fi
 +    AC_CHECK_LIB(crypto, EVP_md5, OPENSSL_LIBS="-lcrypto")
 +
 +    dnl because of conflict with nss, we need static version of openssl
-+    AC_CHECK_LIB(ssl, SSL_get_SSL_CTX, OPENSSL_LIBSSL="yes")
-+    if test "x$OPENSSL_LIBSSL" = xyes; then
-+      OPENSSL_LIBS="$OPENSSL_LIBS $OPENSSL_PATH/libssl.a"
++    AC_CHECK_LIB(ssl, SSL_get_SSL_CTX, , [AC_MSG_ERROR(Cannot find OpenSSL libraries.)])
++    if test -n "$HAVE_64BIT_OS"; then
++       if test -e "${OPENSSL_PATH}64/libssl.a"; then
++          OPENSSL_LIBS="$OPENSSL_LIBS ${OPENSSL_PATH}64/libssl.a"
++       elif test -e "${OPENSSL_PATH}/libssl.a"; then
++          OPENSSL_LIBS="$OPENSSL_LIBS $OPENSSL_PATH/libssl.a"
++       else
++          AC_MSG_ERROR("Static SSL library not found.")
++       fi
++    else
++       if test -e "${OPENSSL_PATH}/libssl.a"; then
++          OPENSSL_LIBS="$OPENSSL_LIBS $OPENSSL_PATH/libssl.a"
++       else
++          AC_MSG_ERROR("Static SSL library not found.")
++       fi
 +    fi
 +
 +    dnl with static openssl, apparently we need to pull in libkrb5
@@ -79,7 +86,8 @@ index f81e251..06e0334 100644
 +    AC_CHECK_LIB(val-threads, val_gethostbyname,
 +        [VAL_LIBS="-lval-threads -lsres ${OPENSSL_LIBS} ${_PTHREAD_LDFLAGS}"
 +         MOZ_DNSSEC="1"
-+         AC_DEFINE([MOZ_DNSSEC], [1], [Define if DNSSEC is enabled])], ,
++         AC_DEFINE([MOZ_DNSSEC], [1], [Define if DNSSEC is enabled])],
++        [AC_MSG_ERROR(Can't find val_gethostbyname.)],
 +        -lsres ${OPENSSL_LIBS} ${_PTHREAD_LDFLAGS})
 +  fi
 +  dnl functions added in 1.11
