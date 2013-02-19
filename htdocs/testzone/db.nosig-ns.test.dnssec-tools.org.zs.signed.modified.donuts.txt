@@ -1,3 +1,121 @@
-method 'Net::DNS::RR::new_from_hash' undefined at /usr/lib64/perl5/vendor_perl/Net/DNS/RR.pm line 644
-	Net::DNS::RR::AUTOLOAD('Net::DNS::RR', 'minimum', 600, 'serial', 1361311655, 'ttl', 600, 'mname', 'dns.nosig-ns.test.dnssec-tools.org', ...) called at /usr/local/share/perl5/Net/DNS/ZoneFile/Fast.pm line 201
-	Net::DNS::ZoneFile::Fast::parse('file', 'db.nosig-ns.test.dnssec-tools.org.zs.signed.modified', 'origin', 'nosig-ns.test.dnssec-tools.org.', 'soft_errors', 1, 'on_error', 'CODE(0x157f488)') called at /usr/local/bin/donuts line 338
+nosig-ns.test.dnssec-tools.org:
+  Location:    db.nosig-ns.test.dnssec-tools.org.zs.signed.modified:42
+  Error:       An DNSKEY was generated with a broken version of OpenSSL. 
+	       Upgrade to a new version of bind and generate a new key. 
+	       See this web page for details: 
+	       http://marc.info/?l=bind-announce&m=116253119512445
+
+nosig-ns.test.dnssec-tools.org:
+  Location:    db.nosig-ns.test.dnssec-tools.org.zs.signed.modified:49
+  Error:       An DNSKEY was generated with a broken version of OpenSSL. 
+	       Upgrade to a new version of bind and generate a new key. 
+	       See this web page for details: 
+	       http://marc.info/?l=bind-announce&m=116253119512445
+
+nosig-ns.test.dnssec-tools.org:
+  Location:    db.nosig-ns.test.dnssec-tools.org.zs.signed.modified:56
+  Error:       An DNSKEY was generated with a broken version of OpenSSL. 
+	       Upgrade to a new version of bind and generate a new key. 
+	       See this web page for details: 
+	       http://marc.info/?l=bind-announce&m=116253119512445
+
+pastdate-a.nosig-ns.test.dnssec-tools.org:
+  Location:    db.nosig-ns.test.dnssec-tools.org.zs.signed.modified:368
+  Error:       RRSIG record for pastdate-a.nosig-ns.test.dnssec-tools.org
+	       has expired
+
+pastdate-aaaa.nosig-ns.test.dnssec-tools.org:
+  Location:    db.nosig-ns.test.dnssec-tools.org.zs.signed.modified:383
+  Error:       RRSIG record for
+	       pastdate-aaaa.nosig-ns.test.dnssec-tools.org has expired
+
+reverseddates-a.nosig-ns.test.dnssec-tools.org:
+  Location:    db.nosig-ns.test.dnssec-tools.org.zs.signed.modified:390
+  Error:       RRSIG is nearing its expiration time
+
+reverseddates-aaaa.nosig-ns.test.dnssec-tools.org:
+  Location:    db.nosig-ns.test.dnssec-tools.org.zs.signed.modified:406
+  Error:       RRSIG is nearing its expiration time
+
+reverseddates-aaaa.nosig-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name:
+	       reverseddates-aaaa.nosig-ns.test.dnssec-tools.org type: AAAA
+	       failed to verify: RSA Verification failed
+
+pastdate-aaaa.nosig-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name: pastdate-aaaa.nosig-ns.test.dnssec-tools.org
+	       type: AAAA failed to verify: Signature has expired since:
+	       20130219141136
+
+addedlater-nosig-AAAA.nosig-ns.test.dnssec-tools.org:
+  Error:       name addedlater-nosig-AAAA.nosig-ns.test.dnssec-tools.org
+	       does not have an NSEC record, which is required for secure
+	       domains.
+
+addedlater-nosig-AAAA.nosig-ns.test.dnssec-tools.org:
+  Error:       name addedlater-nosig-AAAA.nosig-ns.test.dnssec-tools.org
+	       does not have a RRSIG record, which is required for secure
+	       domains.
+
+baddata-a.nosig-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name: baddata-a.nosig-ns.test.dnssec-tools.org
+	       type: A failed to verify: RSA Verification failed
+
+futuredate-aaaa.nosig-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name:
+	       futuredate-aaaa.nosig-ns.test.dnssec-tools.org type: AAAA
+	       failed to verify: Signature may only be used in the future;
+	       after 20130420151636
+
+addedlater-withsig-AAAA.nosig-ns.test.dnssec-tools.org:
+  Error:       name addedlater-withsig-AAAA.nosig-ns.test.dnssec-tools.org
+	       does not have an NSEC record, which is required for secure
+	       domains.
+
+pastdate-a.nosig-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name: pastdate-a.nosig-ns.test.dnssec-tools.org
+	       type: A failed to verify: Signature has expired since:
+	       20130219141136
+
+futuredate-a.nosig-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name: futuredate-a.nosig-ns.test.dnssec-tools.org
+	       type: A failed to verify: Signature may only be used in the
+	       future; after 20130420151636
+
+addedlater-nosig-A.nosig-ns.test.dnssec-tools.org:
+  Error:       name addedlater-nosig-A.nosig-ns.test.dnssec-tools.org does
+	       not have an NSEC record, which is required for secure
+	       domains.
+
+addedlater-nosig-A.nosig-ns.test.dnssec-tools.org:
+  Error:       name addedlater-nosig-A.nosig-ns.test.dnssec-tools.org does
+	       not have a RRSIG record, which is required for secure
+	       domains.
+
+addedlater-withsig-A.nosig-ns.test.dnssec-tools.org:
+  Error:       name addedlater-withsig-A.nosig-ns.test.dnssec-tools.org
+	       does not have an NSEC record, which is required for secure
+	       domains.
+
+nsectest.nosig-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name: nsectest.nosig-ns.test.dnssec-tools.org type:
+	       NSEC failed to verify: RSA Verification failed
+
+baddata-aaaa.nosig-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name: baddata-aaaa.nosig-ns.test.dnssec-tools.org
+	       type: AAAA failed to verify: RSA Verification failed
+
+badsign-a.nosig-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name: badsign-a.nosig-ns.test.dnssec-tools.org
+	       type: A failed to verify: RSA Verification failed
+
+badsign-aaaa.nosig-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name: badsign-aaaa.nosig-ns.test.dnssec-tools.org
+	       type: AAAA failed to verify: RSA Verification failed
+
+reverseddates-a.nosig-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name:
+	       reverseddates-a.nosig-ns.test.dnssec-tools.org type: A
+	       failed to verify: RSA Verification failed
+
+24 errors found in db.nosig-ns.test.dnssec-tools.org.zs.signed.modified
