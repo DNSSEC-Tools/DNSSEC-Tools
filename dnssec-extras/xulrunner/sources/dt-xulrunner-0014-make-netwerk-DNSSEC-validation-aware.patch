@@ -1,0 +1,431 @@
+From a5d3f1a40638180f037ed7edb6da4592ef555dd9 Mon Sep 17 00:00:00 2001
+From: Robert Story <rstory@localhost>
+Date: Mon, 4 Jun 2012 15:53:32 -0400
+Subject: [PATCH 14/16] XULRUNNER make netwerk DNSSEC validation aware
+
+---
+ docshell/base/nsDocShell.cpp                   |   22 +++++++++++++++
+ docshell/resources/content/netError.xhtml      |    4 +++
+ dom/locales/en-US/chrome/appstrings.properties |    2 +
+ dom/locales/en-US/chrome/netError.dtd          |   26 +++++++++++++++++
+ netwerk/base/src/nsSocketTransport2.cpp        |   21 +++++++++++++-
+ netwerk/dns/nsDNSService2.cpp                  |   13 +++++++--
+ netwerk/dns/nsHostResolver.cpp                 |   35 +++++++++++++++++++-----
+ netwerk/protocol/http/nsHttpChannel.cpp        |   17 ++++++++++-
+ netwerk/protocol/http/nsHttpHandler.h          |   13 +++++++++
+ 9 files changed, 140 insertions(+), 13 deletions(-)
+
+diff --git a/docshell/base/nsDocShell.cpp b/docshell/base/nsDocShell.cpp
+index 4ab2a44..6a672c6 100644
+--- a/docshell/base/nsDocShell.cpp
++++ b/docshell/base/nsDocShell.cpp
+@@ -3998,6 +3998,26 @@ nsDocShell::DisplayLoadError(nsresult aError, nsIURI *aURI,
+         formatStrCount = 1;
+         error.AssignLiteral("dnsNotFound");
+     }
++    else if (NS_ERROR_DNSSEC_VALIDATION_ERROR == aError) {
++        NS_ENSURE_ARG_POINTER(aURI);
++        // Get the host
++        nsCAutoString host;
++        nsCOMPtr<nsIURI> innermostURI = NS_GetInnermostURI(aURI);
++        innermostURI->GetHost(host);
++        CopyUTF8toUTF16(host, formatStrs[0]);
++        formatStrCount = 1;
++        error.AssignLiteral("dnsDNSSECValidationError");
++    }
++    else if (NS_ERROR_DNSSEC_DNE_ERROR == aError) {
++        NS_ENSURE_ARG_POINTER(aURI);
++        // Get the host
++        nsCAutoString host;
++        nsCOMPtr<nsIURI> innermostURI = NS_GetInnermostURI(aURI);
++        innermostURI->GetHost(host);
++        CopyUTF8toUTF16(host, formatStrs[0]);
++        formatStrCount = 1;
++        error.AssignLiteral("dnsDNSSECDNEError");
++    }
+     else if(NS_ERROR_CONNECTION_REFUSED == aError) {
+         NS_ENSURE_ARG_POINTER(aURI);
+         addHostPort = true;
+@@ -6496,6 +6516,8 @@ nsDocShell::EndPageLoad(nsIWebProgress * aProgress,
+ 
+         // Errors to be shown only on top-level frames
+         if ((aStatus == NS_ERROR_UNKNOWN_HOST || 
++             aStatus == NS_ERROR_DNSSEC_VALIDATION_ERROR ||
++             aStatus == NS_ERROR_DNSSEC_DNE_ERROR ||
+              aStatus == NS_ERROR_CONNECTION_REFUSED ||
+              aStatus == NS_ERROR_UNKNOWN_PROXY_HOST || 
+              aStatus == NS_ERROR_PROXY_CONNECTION_REFUSED) &&
+diff --git a/docshell/resources/content/netError.xhtml b/docshell/resources/content/netError.xhtml
+index 6fa9145..dd60c54 100644
+--- a/docshell/resources/content/netError.xhtml
++++ b/docshell/resources/content/netError.xhtml
+@@ -275,6 +275,8 @@
+     <div id="errorContainer">
+       <div id="errorTitlesContainer">
+         <h1 id="et_generic">&generic.title;</h1>
++        <h1 id="et_dnsDNSSECValidationError">&dnsDNSSECValidationError.title;</h1>
++        <h1 id="et_dnsDNSSECDNEError">&dnsDNSSECDNEError.title;</h1>
+         <h1 id="et_dnsNotFound">&dnsNotFound.title;</h1>
+         <h1 id="et_fileNotFound">&fileNotFound.title;</h1>
+         <h1 id="et_malformedURI">&malformedURI.title;</h1>
+@@ -302,6 +304,8 @@
+       <div id="errorDescriptionsContainer">
+         <div id="ed_generic">&generic.longDesc;</div>
+         <div id="ed_dnsNotFound">&dnsNotFound.longDesc;</div>
++        <div id="ed_dnsDNSSECValidationError">&dnsDNSSECValidationError.longDesc;</div>
++        <div id="ed_dnsDNSSECDNEError">&dnsDNSSECDNEError.longDesc;</div>
+         <div id="ed_fileNotFound">&fileNotFound.longDesc;</div>
+         <div id="ed_malformedURI">&malformedURI.longDesc;</div>
+         <div id="ed_protocolNotFound">&protocolNotFound.longDesc;</div>
+diff --git a/dom/locales/en-US/chrome/appstrings.properties b/dom/locales/en-US/chrome/appstrings.properties
+index f6a00c0..fee2ce4 100644
+--- a/dom/locales/en-US/chrome/appstrings.properties
++++ b/dom/locales/en-US/chrome/appstrings.properties
+@@ -5,6 +5,8 @@
+ malformedURI=The URL is not valid and cannot be loaded.
+ fileNotFound=The file %S cannot be found. Please check the location and try again.
+ dnsNotFound=%S could not be found. Please check the name and try again.
++dnsDNSSECValidationError=The domain name %S failed DNSSEC validation checks.  Please contact a system administrator for help.
++dnsDNSSECDNEError=DNSSEC validation indicates that the domain name %S does not exist.
+ protocolNotFound=%S is not a registered protocol.
+ connectionFailure=The connection was refused when attempting to contact %S.
+ netInterrupt=The connection to %S has terminated unexpectedly. Some data may have been transferred.
+diff --git a/dom/locales/en-US/chrome/netError.dtd b/dom/locales/en-US/chrome/netError.dtd
+index 5ef66ca..a7b0c33 100644
+--- a/dom/locales/en-US/chrome/netError.dtd
++++ b/dom/locales/en-US/chrome/netError.dtd
+@@ -16,6 +16,32 @@
+ <!ENTITY dnsNotFound.title "Address Not Found">
+ <!ENTITY dnsNotFound.longDesc "<p>The browser could not find the host server for the provided address.</p><ul><li>Did you make a mistake when typing the domain? (e.g. <q><strong>ww</strong>.mozilla.org</q> instead of <q><strong>www</strong>.mozilla.org</q>)</li><li>Are you certain this domain address exists?  Its registration may have expired.</li><li>Are you unable to browse other sites?  Check your network connection and DNS server settings.</li><li>Is your computer or network protected by a firewall or proxy?  Incorrect settings can interfere with Web browsing.</li></ul>">
+ 
++<!ENTITY dnsDNSSECValidationError.title "DNSSEC Validation Error">
++<!ENTITY dnsDNSSECValidationError.longDesc "
++<p>The provided domain name failed DNSSEC validation checks.</p>
++<ul>
++  <li>This may be an attempt by a malicious entity to redirect
++    you to a different site than you intended.</li>
++  <li>The browser has canceled the request for your protection
++    and security.</li>
++  <li>This failure may be temporary; clicking on Try Again at a
++    later time may work.</li>
++</ul>
++">
++
++<!ENTITY dnsDNSSECDNEError.title "Domain Name Does Not Exist">
++<!ENTITY dnsDNSSECDNEError.longDesc "
++<p>The browser securely verified that the provided domain name
++  does not exist.</p>
++<ul>
++  <li>Did you make a mistake when typing the domain? (e.g.
++     <q><strong>ww</strong>.mozilla.org</q> instead of
++     <q><strong>www</strong>.mozilla.org</q>)</li>
++  <li>This domain address does not exist.  Are you sure it is supposed to?
++    Maybe it used to but it no longer does?</li>
++</ul>
++">
++
+ <!ENTITY fileNotFound.title "File Not Found">
+ <!ENTITY fileNotFound.longDesc "<ul><li>Could the item have been renamed, removed, or relocated?</li><li>Is there a spelling, capitalization, or other typographical error in the address?</li><li>Do you have sufficient access permissions to the requested item?</li></ul>">
+ 
+diff --git a/netwerk/base/src/nsSocketTransport2.cpp b/netwerk/base/src/nsSocketTransport2.cpp
+index 3ebd94a..34c349c 100644
+--- a/netwerk/base/src/nsSocketTransport2.cpp
++++ b/netwerk/base/src/nsSocketTransport2.cpp
+@@ -33,6 +33,8 @@
+ #include "nsIPipe.h"
+ #include "nsIProgrammingLanguage.h"
+ #include "nsIClassInfoImpl.h"
++#include "nsIDNSService.h"
++#include "nsISupportsPrimitives.h"
+ 
+ #if defined(XP_WIN) || defined(MOZ_PLATFORM_MAEMO)
+ #include "nsNativeConnectionHelper.h"
+@@ -1457,11 +1459,28 @@ nsSocketTransport::OnSocketEvent(PRUint32 type, nsresult status, nsISupports *pa
+             // For SOCKS proxies (mProxyTransparent == true), the socket 
+             // transport resolves the real host here, so there's no fixup 
+             // (see bug 226943).
+-            if ((status == NS_ERROR_UNKNOWN_HOST) && !mProxyTransparent &&
++            if ((status == NS_ERROR_UNKNOWN_HOST ||
++                 status == NS_ERROR_DNSSEC_VALIDATION_ERROR ||
++                 status == NS_ERROR_DNSSEC_DNE_ERROR) && !mProxyTransparent &&
+                 !mProxyHost.IsEmpty())
+                 mCondition = NS_ERROR_UNKNOWN_PROXY_HOST;
+             else
+                 mCondition = status;
++
++            switch (status) {
++            case NS_ERROR_UNKNOWN_HOST:
++                SOCKET_LOG(("NS_ERROR_UNKNOWN_HOST"));
++                break;
++            case NS_ERROR_DNSSEC_DNE_ERROR:
++                SOCKET_LOG(("NS_ERROR_DNSSEC_DNE_ERROR"));
++                break;
++            case NS_ERROR_DNSSEC_VALIDATION_ERROR:
++                SOCKET_LOG(("NS_ERROR_DNSSEC_VALIDATION_ERROR"));
++                break;
++            default:
++                SOCKET_LOG(("NS ERROR UNKNOWN"));
++                break;
++            }
+         }
+         else if (mState == STATE_RESOLVING)
+             mCondition = InitiateSocket();
+diff --git a/netwerk/dns/nsDNSService2.cpp b/netwerk/dns/nsDNSService2.cpp
+index e70820f..854d969 100644
+--- a/netwerk/dns/nsDNSService2.cpp
++++ b/netwerk/dns/nsDNSService2.cpp
+@@ -144,6 +144,7 @@ nsDNSRecord::GetNextAddr(PRUint16 port, PRNetAddr *addr)
+             // Both mHostRecord->addr_info and mHostRecord->addr are null.
+             // This can happen if mHostRecord->addr_info expired and the
+             // attempt to reresolve it failed.
++            mDone = !mIter;
+             return NS_ERROR_NOT_AVAILABLE;
+         }
+         memcpy(addr, mHostRecord->addr, sizeof(PRNetAddr));
+@@ -271,8 +272,14 @@ nsDNSAsyncRequest::OnLookupComplete(nsHostResolver *resolver,
+     // the caller to be able to addref/release multiple times without
+     // destroying the record prematurely.
+     nsCOMPtr<nsIDNSRecord> rec;
+-    if (NS_SUCCEEDED(status)) {
+-        NS_ASSERTION(hostRecord, "no host record");
++#ifndef MOZ_DNSSEC
++     if (NS_SUCCEEDED(status)) {
++         NS_ASSERTION(hostRecord, "no host record");
++#else
++    {
++       // create the instance even if status is not success, since this
++       // might be an error/non-existence condition we want to propagate up 
++#endif
+         rec = new nsDNSRecord(hostRecord);
+         if (!rec)
+             status = NS_ERROR_OUT_OF_MEMORY;
+@@ -486,7 +493,7 @@ NS_IMETHODIMP
+ nsDNSService::Shutdown()
+ {
+ #ifdef MOZ_DNSSEC
+-    val_context *ctx = nsnull;
++    val_context_t *ctx = nsnull;
+ #endif
+     nsRefPtr<nsHostResolver> res;
+     {
+diff --git a/netwerk/dns/nsHostResolver.cpp b/netwerk/dns/nsHostResolver.cpp
+index 8796cf0..7a7248b 100644
+--- a/netwerk/dns/nsHostResolver.cpp
++++ b/netwerk/dns/nsHostResolver.cpp
+@@ -168,8 +168,10 @@ nsHostRecord::nsHostRecord(const nsHostKey *key)
+     flags = key->flags;
+     af = key->af;
+ #ifdef MOZ_DNSSEC
+-    saved_status = NS_OK;
+     security_status_flags = 0;
++    // we should probably define our own error code to mean
++    // that saved_status isn't valid yet.. but we'll re-use this one for now
++    saved_status = NS_ERROR_DOCUMENT_NOT_CACHED;
+ #ifdef HAVE_VAL_GETADDRINFO_SUBMIT
+     asyncStatus = nullptr;
+ #endif
+@@ -411,6 +413,8 @@ nsHostResolver::Init()
+ void
+ nsHostResolver::ClearPendingQueue(PRCList *aPendingQ)
+ {
++    LOG(("nsHostResolver::ClearPendingQueue() %p\n", this));
++
+     // loop through pending queue, erroring out pending lookups.
+     if (!PR_CLIST_IS_EMPTY(aPendingQ)) {
+         PRCList *node = aPendingQ->next;
+@@ -594,9 +598,10 @@ nsHostResolver::ResolveHost(const char            *host,
+                         IssueLookup(he->rec);
+                 }
+ #ifdef MOZ_DNSSEC
+-                else {
+-                    // use the cached status value
++                // use the cached status value if available
++                if (NS_ERROR_DOCUMENT_NOT_CACHED != he->rec->saved_status) {
+                     status = he->rec->saved_status;
++                    LOG(("  using cached status %x", status));
+                 }
+ #endif
+             }
+@@ -681,6 +686,7 @@ nsHostResolver::DetachCallback(const char            *host,
+                                nsResolveHostCallback *callback,
+                                nsresult               status)
+ {
++    LOG(("nsHostResolver::DetachCallback() %p\n", this));
+     nsRefPtr<nsHostRecord> rec;
+     {
+         MutexAutoLock lock(mLock);
+@@ -712,6 +718,8 @@ nsHostResolver::DetachCallback(const char            *host,
+ nsresult
+ nsHostResolver::ConditionallyCreateThread(nsHostRecord *rec)
+ {
++    LOG(("nsHostResolver::%s() %p\n", __FUNCTION__, this));
++
+     if (mNumIdleThreads) {
+         // wake up idle thread to process this lookup
+         mIdleThreadCV.Notify();
+@@ -739,10 +747,8 @@ nsHostResolver::ConditionallyCreateThread(nsHostRecord *rec)
+             return NS_ERROR_OUT_OF_MEMORY;
+         }
+     }
+-#if defined(PR_LOGGING)
+     else
+       LOG(("lookup waiting for thread - %s ...\n", rec->host));
+-#endif
+     return NS_OK;
+ }
+ 
+@@ -750,6 +756,7 @@ nsresult
+ nsHostResolver::IssueLookup(nsHostRecord *rec)
+ {
+     nsresult rv = NS_OK;
++    LOG(("nsHostResolver::%s() %p\n", __FUNCTION__, this));
+     NS_ASSERTION(!rec->resolving, "record is already being resolved"); 
+ 
+     // Add rec to one of the pending queues, possibly removing it from mEvictionQ.
+@@ -901,6 +908,8 @@ nsHostResolver::GetHostToLookup(nsHostRecord **result)
+ void
+ nsHostResolver::OnLookupComplete(nsHostRecord *rec, nsresult status, PRAddrInfo *result)
+ {
++    LOG(("nsHostResolver::%s() %p status %x\n", __FUNCTION__, this, status));
++
+     // get the list of pending callbacks for this lookup, and notify
+     // them that the lookup is complete.
+     PRCList cbs;
+@@ -973,6 +982,7 @@ nsHostResolver::OnLookupComplete(nsHostRecord *rec, nsresult status, PRAddrInfo
+             nsResolveHostCallback *callback =
+                     static_cast<nsResolveHostCallback *>(node);
+             node = node->next;
++            LOG(("  calling OnLookupComplete callback\n"));
+             callback->OnLookupComplete(this, rec, status);
+             // NOTE: callback must not be dereferenced after this point!!
+         }
+@@ -989,6 +999,7 @@ nsHostResolver::CancelAsyncRequest(const char            *host,
+                                    nsresult               status)
+ 
+ {
++    LOG(("nsHostResolver::%s %p\n", __FUNCTION__, this));
+     MutexAutoLock lock(mLock);
+ 
+     // Lookup the host record associated with host, flags & address family
+@@ -1029,6 +1040,8 @@ nsHostResolver::CancelAsyncRequest(const char            *host,
+ static nsresult
+ _ns_translate_dnssec_error(PRErrorCode err)
+ {
++    LOG(("nsHostResolver::%s err %x\n", __FUNCTION__, err));
++
+     switch(err) {
+         case PR_DNSSEC_VALIDATION_ERROR:
+             return NS_ERROR_DNSSEC_VALIDATION_ERROR;
+@@ -1039,6 +1052,7 @@ _ns_translate_dnssec_error(PRErrorCode err)
+             break;
+     }
+ 
++    LOG(("nsHostResolver:translate %x unknown\n", err));
+     return NS_ERROR_UNKNOWN_HOST;
+ }
+ 
+@@ -1078,6 +1092,8 @@ nsHostResolver::async_callback(void *cb_data, int eai_retval,
+     if (NULL == nsHR)
+         return;
+ 
++    LOG(("nsHostResolver::%s\n", __FUNCTION__));
++
+     err = PR_dnssec_result_checks(&nsHR->rec->security_status_flags,
+                                   val_status, ai != NULL);
+     if (err) {
+@@ -1194,7 +1210,11 @@ nsHostResolver::ThreadFuncAsync(void *arg)
+                 (rec->host, rec->af, flags, security_flags,
+                  resolver->mValContext, &_pr_callback, cb_data,
+                  &(rec->asyncStatus));
+-            if (rc || NULL == rec->asyncStatus)
++            if (NULL == rec->asyncStatus) {
++                LOG(("nsHostResolver:Async ERROR for %s (null asyncStatus).\n",
++                 rec->host));
++            }
++            else if (rc)
+                 _pr_callback(cb_data, EAI_SYSTEM, NULL, VAL_AC_UNSET);
+ 
+             cb_data = NULL;
+@@ -1327,7 +1347,7 @@ nsHostResolver::ThreadFunc(void *arg)
+         }
+         
+         resolver->OnLookupComplete(rec, status, ai);
+-        LOG(("lookup complete for %s ...\n", rec->host));
++        LOG(("Lookup completed for host [%s] status %x.\n", rec->host, status));
+     }
+     NS_RELEASE(resolver);
+     LOG(("nsHostResolver::ThreadFunc exiting\n"));
+@@ -1349,6 +1369,7 @@ nsHostResolver::Create(PRUint32         maxCacheEntries,
+         gHostResolverLog = PR_NewLogModule("nsHostResolver");
+ #endif
+ 
++    LOG(("nsHostResolver::%s\n", __FUNCTION__));
+     nsHostResolver *res = new nsHostResolver(maxCacheEntries,
+                                              maxCacheLifetime,
+                                              lifetimeGracePeriod
+diff --git a/netwerk/protocol/http/nsHttpChannel.cpp b/netwerk/protocol/http/nsHttpChannel.cpp
+index a20f2cb..430f7f3 100644
+--- a/netwerk/protocol/http/nsHttpChannel.cpp
++++ b/netwerk/protocol/http/nsHttpChannel.cpp
+@@ -24,6 +24,7 @@
+ #include "nsIOService.h"
+ #include "nsICacheService.h"
+ #include "nsDNSPrefetch.h"
++#include "nsIDNSService.h"
+ #include "nsChannelClassifier.h"
+ #include "nsIRedirectResultListener.h"
+ #include "mozilla/TimeStamp.h"
+@@ -4850,12 +4851,24 @@ NS_IMETHODIMP
+ nsHttpChannel::OnStopRequest(nsIRequest *request, nsISupports *ctxt, nsresult status)
+ {
+     SAMPLE_LABEL("network", "nsHttpChannel::OnStopRequest");
+-    LOG(("nsHttpChannel::OnStopRequest [this=%p request=%p status=%x]\n",
+-        this, request, status));
++    LOG(("nsHttpChannel::OnStopRequest [this=%p request=%p status=%x"
++         "(code %d module %d severity %d)]\n",
++         this, request, status, NS_ERROR_GET_CODE(mStatus),
++         NS_ERROR_GET_MODULE(mStatus), NS_ERROR_GET_SEVERITY(mStatus)));
+ 
+     if (mTimingEnabled && request == mCachePump) {
+         mCacheReadEnd = mozilla::TimeStamp::Now();
+     }
++    if (mStatus == NS_ERROR_DNSSEC_VALIDATION_ERROR) {
++        LOG(("nsHttpChannel::dnssec status validation error\n"));
++        gHttpHandler->OnDNSSECResponseUntrusted(this);
++    } else if (NS_FAILED(mStatus)) {
++        LOG(("nsHttpChannel::dnssec status error\n"));
++        gHttpHandler->OnDNSSECResponseError(this);
++    } else {
++        LOG(("nsHttpChannel::dnssec status trusted\n"));
++        gHttpHandler->OnDNSSECResponseTrusted(this);
++    }
+ 
+      // allow content to be cached if it was loaded successfully (bug #482935)
+      bool contentComplete = NS_SUCCEEDED(status);
+diff --git a/netwerk/protocol/http/nsHttpHandler.h b/netwerk/protocol/http/nsHttpHandler.h
+index 837b58f..c71f0e9 100644
+--- a/netwerk/protocol/http/nsHttpHandler.h
++++ b/netwerk/protocol/http/nsHttpHandler.h
+@@ -196,6 +196,19 @@ public:
+         NotifyObservers(chan, NS_HTTP_ON_EXAMINE_MERGED_RESPONSE_TOPIC);
+     }
+ 
++    void OnDNSSECResponseUntrusted(nsIHttpChannel *chan)
++    {
++        NotifyObservers(chan, "dnssec-status-untrusted");
++    }
++    void OnDNSSECResponseError(nsIHttpChannel *chan)
++    {
++        NotifyObservers(chan, "dnssec-status-error");
++    }
++    void OnDNSSECResponseTrusted(nsIHttpChannel *chan)
++    {
++        NotifyObservers(chan, "dnssec-status-trusted");
++    }
++
+     // Called by channels before a redirect happens. This notifies both the
+     // channel's and the global redirect observers.
+     nsresult AsyncOnChannelRedirect(nsIChannel* oldChan, nsIChannel* newChan,
+-- 
+1.7.7.6
+

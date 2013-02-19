@@ -1,0 +1,80 @@
+From 1f93c3f5258c26d421f8b8e1b6fdd0f8176e1cc1 Mon Sep 17 00:00:00 2001
+From: Robert Story <rstory@localhost>
+Date: Thu, 13 Oct 2011 01:34:28 -0400
+Subject: [PATCH 10/16] XULRUNNER add dnssec options to configure
+
+---
+ configure.in |   57 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 57 insertions(+), 0 deletions(-)
+
+diff --git a/configure.in b/configure.in
+index e731a93..1ae81f1 100644
+--- a/configure.in
++++ b/configure.in
+@@ -8244,6 +8244,63 @@ if test "$MOZ_APP_COMPONENT_MODULES"; then
+ fi
+ 
+ dnl ========================================================
++dnl = Add DNSSEC support
++dnl ========================================================
++
++AC_ARG_WITH(system-val,
++[  --with-system-val[=PFX]
++                  Use system DNSSEC validator [installed at prefix PFX]],
++   ,
++   [with_system_val=no])
++
++AC_ARG_WITH(system-openssl,
++[  --with-system-openssl[=PFX]
++                  Use system openssl libraries [installed at prefix PFX]],
++   ,
++   [with_system_openssl=no])
++
++VAL_LIBS=""
++OPENSSL_LIBS=""
++if test "x$with_system_val" != xno; then
++  CFLAGS="$CFLAGS -I${with_system_val}/include"
++  if test -n "$_WIN32_MSVC"; then
++    VAL_LIBS="${with_system_val}/lib/libval-threads.a ${with_system_val}/lib/libsres.a ${with_system_val}/lib/libcrypto.a ${with_system_val}/lib/libpthread.dll.a ${with_system_val}/lib/libgcc.a user32.lib gdi32.lib Ws2_32.lib"
++    AC_DEFINE(MOZ_DNSSEC)
++  else
++    LDFLAGS="$LDFLAGS -L${with_system_val}/lib"
++    if test "x$with_system_openssl" != xno; then
++        CFLAGS="$CFLAGS -I${with_system_openssl}/include"
++        LDFLAGS="$LDFLAGS -L${with_system_openssl}/lib"
++    fi
++    AC_CHECK_LIB(crypto, EVP_md5, OPENSSL_LIBS="-lcrypto")
++    AC_CHECK_LIB(val-threads, val_gethostbyname,
++        [VAL_LIBS="-lval-threads -lsres ${OPENSSL_LIBS} ${_PTHREAD_LDFLAGS}"
++         AC_DEFINE(MOZ_DNSSEC)], ,
++        -lsres ${OPENSSL_LIBS} ${_PTHREAD_LDFLAGS})
++  fi
++  dnl functions added in 1.11
++  AC_CHECK_LIB(val-threads, val_getaddrinfo_submit,
++                AC_DEFINE(HAVE_VAL_GETADDRINFO_SUBMIT), ,
++                -lsres ${OPENSSL_LIBS} ${_PTHREAD_LDFLAGS} ${OS_LDFLAGS})
++  dnl functions added in 1.12
++  AC_CHECK_LIB(val-threads, val_context_setqflags,
++                AC_DEFINE(HAVE_VAL_CONTEXT_SETQFLAGS), ,
++                -lsres ${OPENSSL_LIBS} ${_PTHREAD_LDFLAGS} ${OS_LDFLAGS})
++
++  dnl functions added in 1.13
++  AC_CHECK_LIB(val-threads, val_freeaddrinfo,
++                AC_DEFINE(HAVE_VAL_FREEADDRINFO), ,
++                -lsres ${OPENSSL_LIBS} ${_PTHREAD_LDFLAGS} ${OS_LDFLAGS})
++  AC_CHECK_LIB(val-threads, val_getaddrinfo_cancel,
++                AC_DEFINE(HAVE_VAL_GETADDRINFO_CANCEL), ,
++                -lsres ${OPENSSL_LIBS} ${_PTHREAD_LDFLAGS} ${OS_LDFLAGS})
++fi
++LIBS="$LIBS $VAL_LIBS"
++NSPR_LIBS="$NSPR_LIBS $VAL_LIBS"
++AC_SUBST(VAL_LIBS)
++AC_SUBST(MOZ_DNSSEC)
++
++dnl ========================================================
+ dnl =
+ dnl = Maintainer debug option (no --enable equivalent)
+ dnl =
+-- 
+1.7.7.6
+

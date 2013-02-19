@@ -1,0 +1,306 @@
+From f7705f5b61a4aed59958d73cbfd7098aaeec2ee6 Mon Sep 17 00:00:00 2001
+From: Robert Story <rstory@localhost>
+Date: Tue, 16 Oct 2012 23:23:53 -0400
+Subject: [PATCH 13/16] XULRUNNER use NSPRs new async functionality
+
+---
+ netwerk/dns/nsHostResolver.cpp |  223 ++++++++++++++++++++++++++++++++++++++++
+ netwerk/dns/nsHostResolver.h   |   19 ++++
+ 2 files changed, 242 insertions(+), 0 deletions(-)
+
+diff --git a/netwerk/dns/nsHostResolver.cpp b/netwerk/dns/nsHostResolver.cpp
+index 4ffe4f8..8796cf0 100644
+--- a/netwerk/dns/nsHostResolver.cpp
++++ b/netwerk/dns/nsHostResolver.cpp
+@@ -170,6 +170,9 @@ nsHostRecord::nsHostRecord(const nsHostKey *key)
+ #ifdef MOZ_DNSSEC
+     saved_status = NS_OK;
+     security_status_flags = 0;
++#ifdef HAVE_VAL_GETADDRINFO_SUBMIT
++    asyncStatus = nullptr;
++#endif
+ #endif
+ 
+     expiration = NowInMinutes();
+@@ -720,7 +723,11 @@ nsHostResolver::ConditionallyCreateThread(nsHostRecord *rec)
+ 
+         mThreadCount++;
+         PRThread *thr = PR_CreateThread(PR_SYSTEM_THREAD,
++#if defined(MOZ_DNSSEC) && defined(HAVE_VAL_GETADDRINFO_SUBMIT)
++                                        ThreadFuncAsync,
++#else
+                                         ThreadFunc,
++#endif
+                                         this,
+                                         PR_PRIORITY_NORMAL,
+                                         PR_GLOBAL_THREAD,
+@@ -1035,6 +1042,222 @@ _ns_translate_dnssec_error(PRErrorCode err)
+     return NS_ERROR_UNKNOWN_HOST;
+ }
+ 
++#ifdef HAVE_VAL_GETADDRINFO_SUBMIT
++struct nsHR_s {
++    nsHostResolver *resolver;
++    nsHostRecord   *rec;
++    uint16_t       *asyncPending;
++
++    uint32_t        ret_val;
++
++    val_status_t   *vstatus;
++};
++
++/** simple wrapper which calls nsHostResolver::async_callback */
++int 
++_pr_callback(void *callback_data, int eai_retval, struct addrinfo *res,
++             val_status_t val_status)
++{
++    struct nsHR_s *cbd = (struct nsHR_s*)callback_data;
++
++    if (cbd && cbd->resolver)
++        cbd->resolver->async_callback(cbd, eai_retval, res, val_status);
++
++    return 0; /* OK */
++}
++
++void
++nsHostResolver::async_callback(void *cb_data, int eai_retval,
++                               struct addrinfo *res, val_status_t val_status)
++{
++    struct nsHR_s *nsHR = (struct nsHR_s *)cb_data;
++    PRErrorCode err;
++    PRAddrInfo *ai = (PRAddrInfo *)res;
++    nsresult status;
++
++    if (NULL == nsHR)
++        return;
++
++    err = PR_dnssec_result_checks(&nsHR->rec->security_status_flags,
++                                  val_status, ai != NULL);
++    if (err) {
++        LOG(("nsHostResolver:Async error %d for %s\n", err, nsHR->rec->host));
++        if (ai) {
++            PR_FreeAddrInfo(ai);
++            ai = nullptr;
++        }
++    }
++
++    PRIntervalTime now = PR_IntervalNow();
++    PRIntervalTime dif = (PRIntervalTime)now - nsHR->rec->start;
++    LOG(("%s lookup completed in %u ticks %u s, s %u n %u...\n",
++         nsHR->rec->host, dif, PR_IntervalToSeconds(dif),
++         nsHR->rec->start, now));
++
++    // convert error code to nsresult.
++    if (!ai) {
++        status = _ns_translate_dnssec_error(PR_GetError());
++        Telemetry::Accumulate(Telemetry::DNS_FAILED_LOOKUP_TIME, dif);
++    } else {
++        status = NS_OK;
++        Telemetry::Accumulate(!nsHR->rec->addr_info_gencnt ?
++                              Telemetry::DNS_LOOKUP_TIME :
++                              Telemetry::DNS_RENEWAL_TIME,
++                              dif);
++    }
++
++    OnLookupComplete(nsHR->rec, status, ai);
++    --(*nsHR->asyncPending);
++    LOG(("nsHostResolver:Async lookup complete for %s ... %d/%d async/ns pending\n",
++                 nsHR->rec->host, *nsHR->asyncPending, mPendingCount));
++
++    free(nsHR);
++}
++
++void
++nsHostResolver::ThreadFuncAsync(void *arg)
++{
++    LOG(("nsHostResolver::ThreadFuncAsync entering\n"));
++    nsHostResolver *resolver = (nsHostResolver *)arg;
++    nsHostRecord *rec;
++    uint16_t asyncPending = 0, asyncPendingMax = 15, *security_flags;
++    bool timedOut = false, gotOne, advertiseIdle = true;
++    PRIntervalTime epoch, timeout, maxTimeout = 8000,
++        qstart = 0, now, total = 0, diff;
++    struct nsHR_s *cb_data = NULL;
++    {
++        MutexAutoLock lock(resolver->mLock);
++        resolver->GetHostLookupTimeout(timeout);
++        ++resolver->mNumIdleThreads; /* we're always ready! */
++    }
++    {
++        static int log = 0;
++        if (!log) {
++            log = 1;
++            val_log_add_optarg("7:stderr", 1);
++        }
++    }
++    qstart = epoch = PR_IntervalNow();
++    while (1) {
++        PRIntn rc;
++
++        // make sure we can allocate a cb struct before we get a record
++        if (NULL == cb_data) {
++            cb_data = (struct nsHR_s *)calloc(1,sizeof(struct nsHR_s));
++            if (NULL == cb_data)
++                break;
++        }
++        if (asyncPending) {
++            MutexAutoLock lock(resolver->mLock);
++            gotOne = resolver->GetHostToLookupNoWaiting(&rec);
++            if (resolver->mShutdown) {
++                --resolver->mThreadCount;
++                if (advertiseIdle) {
++                    advertiseIdle = false;
++                    --resolver->mNumIdleThreads;
++                }
++                break;
++            }
++        } else {
++            now = PR_IntervalNow();
++            diff = now - qstart;
++            total += diff;
++            LOG(("nsHostResolver:Async work completed in %u ticks (%u total)...\n",
++                         diff, total));
++
++            // if nothing asyncPending, sleep and wait for a record
++            gotOne = resolver->GetHostToLookup(&rec);
++            if (!gotOne)
++                break; /* thread count already decremented */
++            qstart = PR_IntervalNow();
++        }
++        // check for new requests we can submit
++        if (gotOne) {
++            LOG(("nsHostResolver:Async submitting %s for resolution...\n",
++                 rec->host));
++            ++asyncPending;
++
++            cb_data->resolver = resolver;
++            cb_data->rec = rec;
++            cb_data->asyncPending = &asyncPending;
++
++            PRIntn flags = PR_AI_ADDRCONFIG;
++            if (!(rec->flags & RES_CANON_NAME))
++                flags |= PR_AI_NOCANONNAME;
++
++            rec->start = PR_IntervalNow();
++            if (rec->flags & RES_EXTENDED_ERRS)
++                security_flags = &(rec->security_status_flags);
++            else
++                security_flags = NULL;
++            rc = PR_AsyncSubmit_GetAddrInfoByNameExtended
++                (rec->host, rec->af, flags, security_flags,
++                 resolver->mValContext, &_pr_callback, cb_data,
++                 &(rec->asyncStatus));
++            if (rc || NULL == rec->asyncStatus)
++                _pr_callback(cb_data, EAI_SYSTEM, NULL, VAL_AC_UNSET);
++
++            cb_data = NULL;
++            continue; // try and submit another one
++        }
++
++        if (asyncPending) {
++            // if more than asyncPendingMax are pending, stop advertising
++            // as idle. When there are less than asyncPendingMax, start
++            // advertising again.
++            if ((asyncPending > asyncPendingMax) && advertiseIdle) {
++                MutexAutoLock lock(resolver->mLock);
++                --resolver->mNumIdleThreads;
++                advertiseIdle = false;
++            } else if (!advertiseIdle && (asyncPending < asyncPendingMax)) {
++                MutexAutoLock lock(resolver->mLock);
++                ++resolver->mNumIdleThreads;
++                advertiseIdle = true;
++            }
++
++            now = PR_IntervalNow();
++            if (timeout > maxTimeout)
++                timeout = maxTimeout;
++            LOG(("nsHostResolver:Async %d asyncPending, e %u n %u t %u\n",
++                         asyncPending, epoch, now, timeout));
++            rc = PR_AsyncDNS_Idle(resolver->mValContext, &timeout);
++            LOG(("nsHostResolver:Async idle rc %d, %d asyncPending...\n", rc,
++                 asyncPending));
++            if (rc <= 0 && asyncPending) {
++                timedOut = true;
++
++                LOG(("nsHostResolver:Async bail: rc %d, %d asyncPending\n",
++                             rc, asyncPending));
++
++                // XXXXXXXXXXXXXXXXX call callbacks XXXXXXXXXXXXXXXXXXXXXXXXX
++
++                asyncPending = 0;
++            }
++        }
++        else { // bail if there is nothing to do
++            LOG(("nsHostResolver:Async no asyncPending requests...\n"));
++
++            MutexAutoLock lock(resolver->mLock);
++            if (timedOut || resolver->mShutdown) {
++                --resolver->mThreadCount;
++                if (advertiseIdle) {
++                    advertiseIdle = false;
++                    --resolver->mNumIdleThreads;
++                }
++                break;
++            }
++            else
++                resolver->GetHostLookupIdleWait(timeout, epoch, timedOut);
++        }
++
++    }
++    // free unused cb_data
++    if ((NULL != cb_data) && (NULL == cb_data->rec))
++        free(cb_data);
++    NS_RELEASE(resolver);
++    LOG(("nsHostResolver::ThreadFuncAsync exiting\n"));
++}
++#endif // HAVE_VAL_GETADDRINFO_SUBMIT
+ #endif // MOZ_DNSSEC
+ 
+ //----------------------------------------------------------------------------
+diff --git a/netwerk/dns/nsHostResolver.h b/netwerk/dns/nsHostResolver.h
+index 35c980b..bf717ec 100644
+--- a/netwerk/dns/nsHostResolver.h
++++ b/netwerk/dns/nsHostResolver.h
+@@ -107,6 +107,10 @@ private:
+     bool    onQueue;  /* true if pending and on the queue (not yet given to getaddrinfo())*/
+     bool    usingAnyThread; /* true if off queue and contributing to mActiveAnyThreadCount */
+ 
++#if defined(MOZ_DNSSEC) && defined(HAVE_VAL_GETADDRINFO_SUBMIT)
++    val_gai_status *asyncStatus;
++#endif
++
+     // a list of addresses associated with this record that have been reported
+     // as unusable. the list is kept as a set of strings to make it independent
+     // of gencnt.
+@@ -162,6 +166,14 @@ public:
+ /**
+  * nsHostResolver - an asynchronous host name resolver.
+  */
++
++#if defined(MOZ_DNSSEC) && defined(HAVE_VAL_GETADDRINFO_SUBMIT)
++extern "C" {
++    int _pr_callback(void *callback_data, int eai_retval, struct addrinfo *res,
++                     val_status_t val_status);
++}
++#endif
++
+ class nsHostResolver
+ {
+     typedef mozilla::CondVar CondVar;
+@@ -268,6 +280,13 @@ private:
+     static void  MoveQueue(nsHostRecord *aRec, PRCList &aDestQ);
+     
+     static void ThreadFunc(void *);
++#if defined(MOZ_DNSSEC) && defined(HAVE_VAL_GETADDRINFO_SUBMIT)
++    static void ThreadFuncAsync(void *);
++    void async_callback(void *cb_data, int eai_retval, struct addrinfo *res,
++                        val_status_t val_status);
++    friend  int _pr_callback(void *callback_data, int eai_retval,
++                             struct addrinfo *res, val_status_t val_status);
++#endif
+ 
+     enum {
+         METHOD_HIT = 1,
+-- 
+1.7.7.6
+
