@@ -374,7 +374,8 @@ cd %{tarballdir}
 # Disable C++ exceptions since Mozilla code is not exception-safe
 #
 MOZ_OPT_FLAGS=$(echo "$RPM_OPT_FLAGS -fpermissive" | \
-                      %{__sed} -e 's/-Wall//' -e 's/-fexceptions/-fno-exceptions/g')
+                      %{__sed} -e 's/-Wall//' -e 's/-fexceptions/-fno-exceptions/g' \
+                               -e 's/i386/i486/g')
 %if %{?debug_build}
 MOZ_OPT_FLAGS=$(echo "$MOZ_OPT_FLAGS" | %{__sed} -e 's/-O2//' -e 's/-Wp,-D_FORTIFY_SOURCE=2//')
 %endif
