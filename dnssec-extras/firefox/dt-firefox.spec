@@ -43,7 +43,8 @@
 %define default_bookmarks_file /usr/share/bookmarks/default-bookmarks.html
 %define firefox_app_id \{ec8030f7-c20a-464f-9b0e-13a3a9e97384\}
 
-%global xulrunner_version      15.0
+%global xulrunner_version      16.0.1
+%global xulrunner_version_max  16.1
 %global xulrunner_release      1
 %global alpha_version          0
 %global beta_version           0
@@ -81,14 +82,14 @@
 
 Summary:        Mozilla Firefox Web browser
 Name:           dt-firefox
-Version:        15.0
+Version:        16.0.1
 Release:        1%{?pre_tag}%{?dist}
 URL:            http://www.mozilla.org/projects/firefox/
 License:        MPLv1.1 or GPLv2+ or LGPLv2+
 Group:          Applications/Internet
 Source0:        ftp://ftp.mozilla.org/pub/firefox/releases/%{version}%{?pre_version}/source/firefox-%{version}%{?pre_version}.source.tar.bz2
 %if %{build_langpacks}
-Source1:        firefox-langpacks-%{version}%{?pre_version}-20120827.tar.xz
+Source1:        firefox-langpacks-%{version}%{?pre_version}-20121011.tar.xz
 %endif
 Source10:       firefox-mozconfig
 Source11:       firefox-mozconfig-branded
@@ -139,7 +140,7 @@ Requires:       dt-xulrunner%{?_isa} >= %{xulrunner_verrel}
 Requires:       system-bookmarks
 Obsoletes:      mozilla <= 37:1.7.13
 Provides:       webclient
-Conflicts:      dt-firefox-aio
+Conflicts:      xulrunner%{?_isa} > %{xulrunner_version_max}
 
 %description
 Mozilla Firefox is an open-source web browser, designed for standards
@@ -155,7 +156,7 @@ cd %{tarballdir}
 # Build patches, can't change backup suffix from default because during build
 # there is a compare of config and js/config directories and .orig suffix is 
 # ignored during this compare.
-%patch0 -p2 -b .orig
+%patch0 -p1
 
 # For branding specific patches.
 
@@ -448,7 +449,10 @@ gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
 %{_datadir}/icons/hicolor/32x32/apps/firefox.png
 %{_datadir}/icons/hicolor/48x48/apps/firefox.png
 %{mozappdir}/xulrunner
-
+%{mozappdir}/webapprt-stub
+%dir %{mozappdir}/webapprt
+%{mozappdir}/webapprt/omni.ja
+%{mozappdir}/webapprt/webapprt.ini
 %if %{include_debuginfo}
 #%{mozappdir}/crashreporter
 %{mozappdir}/crashreporter-override.ini
@@ -459,6 +463,19 @@ gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
 #---------------------------------------------------------------------
 
 %changelog
+* Thu Oct 11 2012 Martin Stransky <stransky@redhat.com> - 16.0.1-1
+- Update to 16.0.1
++
+ Mon Oct  8 2012 Jan Horak <jhorak@redhat.com> - 16.0-1
+- Update to 16.0
+- Use /var/tmp instead of /tmp (rhbz#860814)
+
+* Tue Sep 11 2012 Jan Horak <jhorak@redhat.com> - 15.0.1-1
+- Update to 15.0.1
+
+* Tue Aug 28 2012 Martin Stransky <stransky@redhat.com> - 15.0-2
+- Added fix for rhbz#851722 - conflict with incompatible xulrunner
+
 * Mon Aug 27 2012 Martin Stransky <stransky@redhat.com> - 15.0-1
 - Update to 15.0
 
