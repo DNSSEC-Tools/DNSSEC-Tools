@@ -1,22 +1,56 @@
-%global nspr_version 4.9.2
+# DNSSEC-Tools
+%define _default_patch_fuzz 2
+#
+%define _prefix /usr/local/opt
+%define __exec_prefix       %{_prefix}
+%define _sysconfdir         %{_prefix}/etc
+%define _libexecdir         %{_prefix}/libexec
+%define _datadir            %{_prefix}/share
+%define _localstatedir      %{_prefix}/%{_var}
+%define _sharedstatedir     %{_prefix}/%{_var}/lib
+%define _libexecdir         %{_prefix}/%{_lib}/security
+%define _unitdir            %{_prefix}/%{_lib}/systemd/system
+%define _bindir             %{_exec_prefix}/bin
+%define _libdir             %{_exec_prefix}/%{_lib}
+%define _libexecdir         %{_exec_prefix}/libexec
+%define _sbindir            %{_exec_prefix}/sbin
+%define _datarootdir        %{_prefix}/share
+%define _datadir            %{_datarootdir}
+%define _docdir             %{_datadir}/doc
+%define _infodir            %{_prefix}/share/info
+%define _mandir             %{_prefix}/share/man
+%define _initddir           %{_sysconfdir}/rc.d/init.d
+%define _usr                %{_prefix}/usr
+%define _usrsrc             %{_prefix}/usr/src
+
+%define base_name           nss-util
+
+%define dtsvn 1
+%if %{dtsvn}
+%define dt_ver 1.14-1.svn7457
+%else
+%define dt_ver 1.14-1
+%endif
+
+%global nspr_version 4.9.4
 
 Summary:          Network Security Services Utilities Library
-Name:             nss-util
-Version:          3.14
+Name:             dt-nss-util
+Version:          3.14.1
 Release:          1%{?dist}
 License:          MPLv2.0
 URL:              http://www.mozilla.org/projects/security/pki/nss/
 Group:            System Environment/Libraries
-Requires:         nspr >= %{nspr_version}
-BuildRoot:        %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildRequires:    nspr-devel >= %{nspr_version}
+Requires:         dt-nspr >= %{nspr_version}
+BuildRoot:        %{_tmppath}/%{base_name}-%{version}-%{release}-root-%(%{__id_u} -n)
+BuildRequires:    dt-nspr-devel >= %{nspr_version}
 BuildRequires:    zlib-devel
 BuildRequires:    pkgconfig
 BuildRequires:    gawk
 BuildRequires:    psmisc
 BuildRequires:    perl
 
-Source0:          %{name}-%{version}.tar.bz2
+Source0:          %{base_name}-%{version}.tar.bz2
 # The nss-util tar ball is a subset of nss-{version}-stripped.tar.bz2.
 # We use the nss-split-util.sh script for keeping only what we need.
 # We first produce the full source archive from from the upstream,
@@ -39,6 +73,8 @@ Source2:          nss-split-util.sh
 Source3:          nss-util.pc.in
 Source4:          nss-util-config.in
 
+Patch1: build-nss-util-only.patch
+
 %description
 Utilities for Network Security Services and the Softoken module
 
@@ -48,12 +84,12 @@ Utilities for Network Security Services and the Softoken module
 %package devel
 Summary:          Development libraries for Network Security Services Utilities
 Group:            Development/Libraries
-Requires:         nss-util = %{version}-%{release}
-Requires:         nspr-devel >= %{nspr_version}
+Requires:         dt-nss-util = %{version}-%{release}
+Requires:         dt-nspr-devel >= %{nspr_version}
 Requires:         pkgconfig
 
 # Uncomment this if nededed to prevent install/update conflict with
-# unstalled nss-softoken as nss-util-devel now provides hasht.h
+# installed nss-softoken as nss-util-devel now provides hasht.h
 # which prior to the update to 3.14 was provided by nss-softokn-devel.
 Conflicts:        nss-util-devel <= 3.13.6-2
 Obsoletes:        nss-util-devel <= 3.13.6-2
@@ -67,18 +103,27 @@ Header and library files for doing development with Network Security Services.
 
 
 %prep
-%setup -q
+%setup -q -n %{base_name}-%{version}
+%patch1 -p0 -b .utilonly
 
 
 %build
+export PATH=%{_prefix}/bin:%{_prefix}/sbin:$PATH
+LDFLAGS+=" -Wl,-rpath,%{_libdir}"
+CFLAGS="-I%{_prefix}/include "
+export CFLAGS
+export LDFLAGS
+
+PKG_CONFIG_PATH=%{_libdir}/pkgconfig
+export PKG_CONFIG_PATH
 
 # Enable compiler optimizations and disable debugging code
 BUILD_OPT=1
 export BUILD_OPT
 
 # Uncomment to disable optimizations
-#RPM_OPT_FLAGS=`echo $RPM_OPT_FLAGS | sed -e 's/-O2/-O0/g'`
-#export RPM_OPT_FLAGS
+RPM_OPT_FLAGS=`echo $RPM_OPT_FLAGS | sed -e 's/-O2/-O0/g'`
+export RPM_OPT_FLAGS
 
 # Generate symbolic info for debuggers
 XCFLAGS=$RPM_OPT_FLAGS
@@ -98,6 +143,9 @@ export NSPR_LIB_DIR
 
 NSS_USE_SYSTEM_SQLITE=1
 export NSS_USE_SYSTEM_SQLITE
+
+NSS_BUILD_NSSUTIL=1
+export NSS_BUILD_NSSUTIL
 
 %ifarch x86_64 ppc64 ia64 s390x sparc64
 USE_64=1
@@ -223,6 +271,9 @@ done
 %{_includedir}/nss3/utilrename.h
 
 %changelog
+* Mon Dec 17 2012 Elio Maldonado <emaldona@redhat.com> - 3.14.1-1
+- Update to NSS_3_14_1_RTM
+
 * Sat Oct 27 2012 Elio Maldonado <emaldona@redhat.com> - 3.14-1
 - Update to NSS_3_14_RTM
 - Update the license to MPLv2.0

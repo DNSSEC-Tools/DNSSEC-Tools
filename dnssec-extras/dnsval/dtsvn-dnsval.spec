@@ -21,7 +21,7 @@
 %define _usrsrc             %{_prefix}/usr/src
 
 %define orig_name           dnssec-tools
-%define svn_ver             7143
+%define svn_ver             7457
 
 Summary: A suite of tools for testing/debugging dnssec aware DNS usage
 Name: dtsvn-dnsval
@@ -172,5 +172,8 @@ rm -rf %{buildroot}
 %{_mandir}/man3/val_freeaddrinfo.3.gz
 
 %changelog
+* Thu Jan 31 2013 Robert Story <rstory@tislabs.com> - 1.14-7378
+- 1.14 svn
+
 * Thu Jun 21 2012 Wes Hardaker <wjhns174@hardakers.net> - 1.13-1
 - New 1.13 upstream release

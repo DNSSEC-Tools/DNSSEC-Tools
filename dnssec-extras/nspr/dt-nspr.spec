@@ -25,14 +25,14 @@
 
 %define dtsvn 1
 %if %{dtsvn}
-%define dt_ver 1.14-1.svn7143
+%define dt_ver 1.14-1.svn7457
 %else
 %define dt_ver 1.14-1
 %endif
 
 Summary:        Netscape Portable Runtime
 Name:           dt-nspr
-Version:        4.9.2
+Version:        4.9.4
 Release:        1%{?dist}
 License:        MPLv2.0
 URL:            http://www.mozilla.org/projects/nspr/
@@ -203,6 +203,9 @@ NSPR_VERSION=`./config/nspr-config --version`
 %{_bindir}/nspr-config
 
 %changelog
+* Mon Dec 17 2012 Elio Maldonado <emaldona@redhat.com> - 4.9.4-1
+- Update to NSPR_4_9_4_RTM
+
 * Wed Aug 29 2012 Elio Maldonado <emaldona@redhat.com> - 4.9.2-1
 - Update to NSPR_4_9_2_RTM
 
