@@ -44,12 +44,14 @@
 %global libvpx_version 1.0.0
 
 %if %{?system_nss}
-%global nspr_version 4.9
-%global nss_version 3.13.3
+%global nspr_version 4.9.2
+%global nspr_build_version %(pkg-config --silence-errors --modversion nspr 2>/dev/null || echo 65536)
+%global nss_version 3.13.5
+%global nss_build_version %(pkg-config --silence-errors --modversion nss 2>/dev/null || echo 65536)
 %endif
 
 %if %{?system_sqlite}
-%global sqlite_version 3.7.7.1
+%global sqlite_version 3.7.13
 # The actual sqlite version (see #480989):
 %global sqlite_build_version %(pkg-config --silence-errors --modversion sqlite3 2>/dev/null || echo 65536)
 %endif
@@ -96,7 +98,7 @@
 
 Summary:        XUL Runtime for Gecko Applications
 Name:           dt-xulrunner
-Version:        16.0.1
+Version:        17.0.1
 Release:        1%{?pre_tag}%{?dist}
 URL:            http://developer.mozilla.org/En/XULRunner
 License:        MPLv1.1 or GPLv2+ or LGPLv2+
@@ -108,8 +110,8 @@ Source12:       %{base_name}-redhat-default-prefs.js
 Source21:       %{base_name}.sh.in
 
 # build patches
-Patch1:         mozilla-build.patch
-Patch2:         xulrunner-install-dir.patch
+Patch1:         xulrunner-install-dir.patch
+Patch2:         mozilla-build.patch
 Patch14:        xulrunner-2.0-chromium-types.patch
 Patch17:        xulrunner-15.0-gcc47.patch
 # https://bugzilla.redhat.com/show_bug.cgi?id=814879#c3
@@ -120,16 +122,14 @@ Patch20:        mozilla-193-pkgconfig.patch
 
 # Upstream patches
 Patch49:        mozilla-746112.patch
-Patch51:        mozilla-709732-gfx-icc-profile-fix.patch
-Patch52:        rhbz-855919.patch
 
 # dnssec-tools patches
-Patch2010:     0010-XULRUNNER-add-dnssec-options-to-configure.patch
-Patch2011:     0011-XULRUNNER-use-NSPRs-new-DNSSEC-functionality.patch
-Patch2012:     0012-XULRUNNER-support-functions-in-preparation-for-async.patch
-Patch2013:     0013-XULRUNNER-use-NSPRs-new-async-functionality.patch
-Patch2014:     0014-XULRUNNER-make-netwerk-DNSSEC-validation-aware.patch
-Patch2015:     0015-XULRUNNER-add-DNSSEC-preferences-to-browser.patch
+Patch2010:     dt-xulrunner-0010-add-dnssec-options-to-configure.patch
+Patch2011:     dt-xulrunner-0011-use-NSPRs-new-DNSSEC-functionality.patch
+Patch2012:     dt-xulrunner-0012-support-functions-in-preparation-for-async.patch
+Patch2013:     dt-xulrunner-0013-use-NSPRs-new-async-functionality.patch
+Patch2014:     dt-xulrunner-0014-make-netwerk-DNSSEC-validation-aware.patch
+Patch2015:     dt-xulrunner-0015-add-DNSSEC-preferences-to-browser.patch
 
 # ---------------------------------------------------
 
@@ -255,19 +255,15 @@ export PKG_CONFIG_PATH=%{_libdir}/pkgconfig
 %setup -q -c
 cd %{tarballdir}
 
-%patch1  -p1 -b .build
-%patch2  -p1
-%patch14 -p1 -b .chromium-types
+%patch1  -p1
+%patch2  -p1 -b .build
+%patch14 -p2 -b .chromium-types
 %patch17 -p2 -b .gcc47
 %patch18 -p2 -b .jemalloc-ppc
 
 %patch20 -p2 -b .pk
 
-%ifarch ppc ppc64
 %patch49 -p2 -b .746112
-%patch52 -p1 -b .855919
-%endif
-%patch51 -p1 -b .709732
 
 ###############################
 # DNSSEC-Tools
@@ -347,6 +343,10 @@ echo "ac_add_options --disable-polyic" >> .mozconfig
 echo "ac_add_options --disable-tracejit" >> .mozconfig
 %endif
 
+%ifnarch %{ix86} x86_64 %{arm}
+echo "ac_add_options --disable-webrtc" >> .mozconfig
+%endif
+
 echo "ac_add_options --with-system-val=%{_prefix}" >> .mozconfig
 
 #---------------------------------------------------------------------
@@ -374,13 +374,12 @@ cd %{tarballdir}
 # Disable C++ exceptions since Mozilla code is not exception-safe
 #
 MOZ_OPT_FLAGS=$(echo "$RPM_OPT_FLAGS -fpermissive" | \
-                      %{__sed} -e 's/-Wall//' -e 's/-fexceptions/-fno-exceptions/g' \
-                               -e 's/i386/i486/g')
+                      %{__sed} -e 's/-Wall//' -e 's/i386/i486/g')
 %if %{?debug_build}
 MOZ_OPT_FLAGS=$(echo "$MOZ_OPT_FLAGS" | %{__sed} -e 's/-O2//' -e 's/-Wp,-D_FORTIFY_SOURCE=2//')
 %endif
 %ifarch s390
-MOZ_OPT_FLAGS=$(echo "$RPM_OPT_FLAGS" | %{__sed} -e 's/-g/-g1')
+MOZ_OPT_FLAGS=$(echo "$MOZ_OPT_FLAGS" | %{__sed} -e 's/-g/-g1/')
 %endif
 %ifarch s390 %{arm} ppc
 MOZ_LINK_FLAGS="-Wl,--no-keep-memory -Wl,--reduce-memory-overheads"
@@ -548,6 +547,9 @@ fi
 %{mozappdir}/crashreporter.ini
 %{mozappdir}/Throbber-small.gif
 %endif
+%exclude %{mozappdir}/components/.mkdir.done
+%exclude %{mozappdir}/defaults/pref/.mkdir.done
+%exclude %{mozappdir}/modules/.mkdir.done
 
 %files devel
 %defattr(-,root,root,-)
@@ -561,6 +563,40 @@ fi
 #---------------------------------------------------------------------
 
 %changelog
+* Thu Nov 29 2012 Jan Horak <jhorak@redhat.com> - 17.0.1-1
+- Update to 17.0.1
+
+* Tue Nov 27 2012 Jan Horak <jhorak@redhat.com> - 17.0-4
+- Rebuild agains older NSS
+
+* Mon Nov 19 2012 Martin Stransky <stransky@redhat.com> - 17.0-3
+- Updated second arch patches
+
+* Mon Nov 19 2012 Dan Horák <dan[at]danny.cz> - 17.0-2
+- webrtc is available only on selected arches
+
+* Mon Nov 19 2012 Martin Stransky <stransky@redhat.com> - 17.0-1
+- Update to 17.0
+
+* Wed Nov 14 2012 Martin Stransky <stransky@redhat.com> - 17.0-0.2b6
+- Update to 17.0 Beta 6
+
+* Tue Nov 13 2012 Martin Stransky <stransky@redhat.com> - 17.0-0.1b5
+- Update to 17.0 Beta 5
+
+* Tue Nov 6 2012 Martin Stransky <stransky@redhat.com> - 16.0.2-2
+- Added fix for rhbz#872752
+
+* Wed Oct 31 2012 Martin Stransky <stransky@redhat.com> - 16.0.2-1
+- Updated mozilla-746112.patch for second arches
+- Removed unused one (rhbz#855919)
+
+* Fri Oct 26 2012 Jan Horak <jhorak@redhat.com> - 16.0.2-1
+- Update to 16.0.2
+
+* Tue Oct 16 2012 Jan Horak <jhorak@redhat.com> - 16.0.1-2
+- Fixed required nss and nspr version
+
 * Thu Oct 11 2012 Martin Stransky <stransky@redhat.com> - 16.0.1-1
 - Update to 16.0.1
 
