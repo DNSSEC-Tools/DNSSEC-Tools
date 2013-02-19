@@ -23,6 +23,13 @@
 %define _usr                %{_prefix}/usr
 %define _usrsrc             %{_prefix}/usr/src
 
+%define dtsvn 1
+%if %{dtsvn}
+%define dt_ver 1.14-1.svn7143
+%else
+%define dt_ver 1.14-1
+%endif
+
 Summary:        Netscape Portable Runtime
 Name:           dt-nspr
 Version:        4.9.2
@@ -32,8 +39,15 @@ URL:            http://www.mozilla.org/projects/nspr/
 Group:          System Environment/Libraries
 BuildRoot:      %{_tmppath}/%{name}-%{version}-root
 Conflicts:      filesystem < 3
-Requires:       dnssec-tools-libs
-BuildRequires:  dnssec-tools-libs-devel openssl-static autoconf213
+%if %{dtsvn}
+Requires:       dtsvn-dnsval-libs >= %{dt_ver}
+BuildRequires:  dtsvn-dnsval-libs-devel >= %{dt_ver}
+BuildRequires:  openssl-static
+%else
+Requires:       dnssec-tools-libs >= %{dt_ver}
+BuildRequires:  dnssec-tools-libs-devel >= %{dt_ver}
+%endif
+BuildRequires:  openssl-devel autoconf213
 
 
 # Sources available at ftp://ftp.mozilla.org/pub/mozilla.org/nspr/releases/
@@ -48,11 +62,10 @@ Patch1001:     dt-nspr-0001-getaddr-patch-for-mozilla-bug-699055.patch
 Patch1002:     dt-nspr-0002-add-NSPR-log-module-for-DNS.patch
 Patch1003:     dt-nspr-0003-add-dnssec-options-flags-to-configure-and-makefiles.patch
 Patch1004:     dt-nspr-0004-add-DNSSEC-error-codes-and-text.patch
-Patch1005:     dt-nspr-0005-factor-out-common-code-from-PR_GetAddrInfoByName.patch
-Patch1006:     dt-nspr-0006-header-definitions-for-Extended-DNSSEC-and-asynchron.patch
+Patch1005:     dt-nspr-0005-factor-out-common-code-from-PR_GetAddrInfoByNam.patch
+Patch1006:     dt-nspr-0006-header-definitions-for-new-APIs.patch
 Patch1007:     dt-nspr-0007-add-dnssec-validation-to-prnetdb.patch
-Patch1008:     dt-nspr-0008-update-getai-to-test-async-disable-validation.patch
-Patch1009:     dt-nspr-0009-use-full-path-to-static-openssl-libssl.patch
+Patch1008:     dt-nspr-0008-update-getai-to-test-async-validation.patch
 Patch1099:     dt-nspr-redhat-fix-pkg-config.patch
 
 
@@ -96,7 +109,6 @@ cp ./mozilla/nsprpub/config/nspr-config.in ./mozilla/nsprpub/config/nspr-config-
 %patch1006 -p1 -d mozilla -b .dnssec
 %patch1007 -p1 -d mozilla -b .dnssec
 %patch1008 -p1 -d mozilla -b .dnssec
-%patch1009 -p1 -d mozilla -b .dnssec
 %patch1099 -p1 -d mozilla -b .dnssec
 # rebuild configure(s) due to dnssec patches
 (cd mozilla/nsprpub/; /bin/rm -f ./configure; /usr/bin/autoconf-2.13)
@@ -107,6 +119,10 @@ cp ./mozilla/nsprpub/config/nspr-config.in ./mozilla/nsprpub/config/nspr-config-
 
 # partial RELRO support as a security enhancement
 LDFLAGS+=-Wl,-z,relro
+LDFLAGS+=" -Wl,-rpath,%{_libdir}"
+%if %{dtsvn}
+LDFLAGS+=" -Wl,-rpath,/usr/local/dtsvn/%{_lib}"
+%endif
 export LDFLAGS
 
 ./mozilla/nsprpub/configure \
@@ -120,7 +136,11 @@ export LDFLAGS
                  --enable-thumb2 \
 %endif
                  --enable-optimize="$RPM_OPT_FLAGS" \
+%if %{dtsvn}
+                 --with-system-val=/usr/local/dtsvn \
+%else
                  --with-system-val \
+%endif
                  --disable-debug
 
 make
