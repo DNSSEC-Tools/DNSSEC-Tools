@@ -1,17 +1,17 @@
-From 1f93c3f5258c26d421f8b8e1b6fdd0f8176e1cc1 Mon Sep 17 00:00:00 2001
+From 2b5d46a76efd82528c93f04b58d1489a3badacad Mon Sep 17 00:00:00 2001
 From: Robert Story <rstory@localhost>
 Date: Thu, 13 Oct 2011 01:34:28 -0400
-Subject: [PATCH 10/16] XULRUNNER add dnssec options to configure
+Subject: [PATCH 09/15] XULRUNNER add dnssec options to configure
 
 ---
- configure.in |   57 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 57 insertions(+), 0 deletions(-)
+ configure.in | 93 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 93 insertions(+)
 
 diff --git a/configure.in b/configure.in
-index e731a93..1ae81f1 100644
+index f81e251..06e0334 100644
 --- a/configure.in
 +++ b/configure.in
-@@ -8244,6 +8244,63 @@ if test "$MOZ_APP_COMPONENT_MODULES"; then
+@@ -8183,6 +8183,99 @@ if test "$MOZ_APP_COMPONENT_MODULES"; then
  fi
  
  dnl ========================================================
@@ -31,22 +31,55 @@ index e731a93..1ae81f1 100644
 +   [with_system_openssl=no])
 +
 +VAL_LIBS=""
++VAL_CFLAGS=""
++VAL_LDFLAGS=""
 +OPENSSL_LIBS=""
++MOZ_DNSSEC=""
 +if test "x$with_system_val" != xno; then
-+  CFLAGS="$CFLAGS -I${with_system_val}/include"
++  if test -n "$HAVE_64BIT_OS"; then
++     LIBDIR="lib64"
++  else
++     LIBDIR="lib"
++  fi
++  if test "x$with_system_val" != xyes; then
++    VAL_CFLAGS="-I${with_system_val}/include"
++    VAL_LDFLAGS="-L${with_system_val}/$LIBDIR"
++  fi
++  CFLAGS="$CFLAGS $VAL_CFLAGS"
 +  if test -n "$_WIN32_MSVC"; then
 +    VAL_LIBS="${with_system_val}/lib/libval-threads.a ${with_system_val}/lib/libsres.a ${with_system_val}/lib/libcrypto.a ${with_system_val}/lib/libpthread.dll.a ${with_system_val}/lib/libgcc.a user32.lib gdi32.lib Ws2_32.lib"
-+    AC_DEFINE(MOZ_DNSSEC)
++    AC_DEFINE([MOZ_DNSSEC], [1], [Define if DNSSEC is enabled])
 +  else
-+    LDFLAGS="$LDFLAGS -L${with_system_val}/lib"
++    LDFLAGS="$LDFLAGS $VAL_LDFLAGS"
++    dnl echo "with_system_openssl='"$with_system_openssl"'"
 +    if test "x$with_system_openssl" != xno; then
-+        CFLAGS="$CFLAGS -I${with_system_openssl}/include"
-+        LDFLAGS="$LDFLAGS -L${with_system_openssl}/lib"
++        if test "x$with_system_openssl" != xyes; then
++            CFLAGS="$CFLAGS -I${with_system_openssl}/include"
++            LDFLAGS="$LDFLAGS -L${with_system_openssl}/$LIBDIR"
++            OPENSSL_PATH="${with_system_openssl}/$LIBDIR"
++        else
++            OPENSSL_PATH="/usr/$LIBDIR"
++        fi
++    else
++        OPENSSL_PATH="/usr/$LIBDIR"
 +    fi
 +    AC_CHECK_LIB(crypto, EVP_md5, OPENSSL_LIBS="-lcrypto")
++
++    dnl because of conflict with nss, we need static version of openssl
++    AC_CHECK_LIB(ssl, SSL_get_SSL_CTX, OPENSSL_LIBSSL="yes")
++    if test "x$OPENSSL_LIBSSL" = xyes; then
++      OPENSSL_LIBS="$OPENSSL_LIBS $OPENSSL_PATH/libssl.a"
++    fi
++
++    dnl with static openssl, apparently we need to pull in libkrb5
++    AC_CHECK_LIB(krb5, krb5_init_context, OPENSSL_LIBS="$OPENSSL_LIBS -lkrb5")
++    AC_CHECK_LIB(k5crypto, krb5_checksum_size, OPENSSL_LIBS="$OPENSSL_LIBS -lk5crypto")
++
++    dnl val-threads check
 +    AC_CHECK_LIB(val-threads, val_gethostbyname,
 +        [VAL_LIBS="-lval-threads -lsres ${OPENSSL_LIBS} ${_PTHREAD_LDFLAGS}"
-+         AC_DEFINE(MOZ_DNSSEC)], ,
++         MOZ_DNSSEC="1"
++         AC_DEFINE([MOZ_DNSSEC], [1], [Define if DNSSEC is enabled])], ,
 +        -lsres ${OPENSSL_LIBS} ${_PTHREAD_LDFLAGS})
 +  fi
 +  dnl functions added in 1.11
@@ -67,8 +100,11 @@ index e731a93..1ae81f1 100644
 +                -lsres ${OPENSSL_LIBS} ${_PTHREAD_LDFLAGS} ${OS_LDFLAGS})
 +fi
 +LIBS="$LIBS $VAL_LIBS"
-+NSPR_LIBS="$NSPR_LIBS $VAL_LIBS"
++NSPR_LIBS="$NSPR_LIBS $VAL_LDFLAGS $VAL_LIBS"
++NSPR_CFLAGS="$NSPR_CFLAGS $VAL_CFLAGS"
 +AC_SUBST(VAL_LIBS)
++AC_SUBST(VAL_CFLAGS)
++AC_SUBST(VAL_LDFLAGS)
 +AC_SUBST(MOZ_DNSSEC)
 +
 +dnl ========================================================
@@ -76,5 +112,5 @@ index e731a93..1ae81f1 100644
  dnl = Maintainer debug option (no --enable equivalent)
  dnl =
 -- 
-1.7.7.6
+1.7.11.7
 
