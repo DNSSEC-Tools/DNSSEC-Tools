@@ -1,21 +1,21 @@
-From ce4e27e4f7cc36294baaeb673d1e849feea85559 Mon Sep 17 00:00:00 2001
+From 9512316b01c9011dcf3132c61ced7d3d2f62e31b Mon Sep 17 00:00:00 2001
 From: Robert Story <rstory@localhost>
 Date: Thu, 23 Feb 2012 12:08:51 -0500
-Subject: [PATCH 5/8] factor out common code from PR_GetAddrInfoByName
+Subject: [PATCH 06/18] NSPR factor out common code from PR_GetAddrInfoByName
 
 - not common to anything yet, but will be in the
    following DNSSEC patch. Should be easy to see that
    this doesn't change functionality. This was less
    apparent when mixed in with the DNSSEC changes.
 ---
- nsprpub/pr/src/misc/prnetdb.c |  117 ++++++++++++++++++++++++-----------------
- 1 files changed, 69 insertions(+), 48 deletions(-)
+ nsprpub/pr/src/misc/prnetdb.c | 117 +++++++++++++++++++++++++-----------------
+ 1 file changed, 69 insertions(+), 48 deletions(-)
 
 diff --git a/nsprpub/pr/src/misc/prnetdb.c b/nsprpub/pr/src/misc/prnetdb.c
-index 567126a..b92e611 100644
+index 0387e7b..4863bec 100644
 --- a/nsprpub/pr/src/misc/prnetdb.c
 +++ b/nsprpub/pr/src/misc/prnetdb.c
-@@ -2134,6 +2134,73 @@ pr_GetAddrInfoByNameFB(const char  *hostname,
+@@ -2102,6 +2102,73 @@ pr_GetAddrInfoByNameFB(const char  *hostname,
  }
  #endif /* PRNETDB_CHECK_FALLBACK */
  
@@ -51,11 +51,11 @@ index 567126a..b92e611 100644
 +    if (!(flags & PR_AI_NOCANONNAME))
 +        hints->ai_flags |= AI_CANONNAME;
 +#ifdef AI_ADDRCONFIG
-+    /* 
++    /*
 +     * Propagate AI_ADDRCONFIG to the GETADDRINFO call if PR_AI_ADDRCONFIG
 +     * is set.
-+     * 
-+     * Need a workaround for loopback host addresses:         
++     *
++     * Need a workaround for loopback host addresses:
 +     * The problem is that in glibc and Windows, AI_ADDRCONFIG applies the
 +     * existence of an outgoing network interface to IP addresses of the
 +     * loopback interface, due to a strict interpretation of the
@@ -89,7 +89,7 @@ index 567126a..b92e611 100644
  PR_IMPLEMENT(PRAddrInfo *) PR_GetAddrInfoByName(const char  *hostname,
                                                  PRUint16     af,
                                                  PRIntn       flags)
-@@ -2141,11 +2208,7 @@ PR_IMPLEMENT(PRAddrInfo *) PR_GetAddrInfoByName(const char  *hostname,
+@@ -2109,11 +2176,7 @@ PR_IMPLEMENT(PRAddrInfo *) PR_GetAddrInfoByName(const char  *hostname,
      if (!_pr_netdb_initialized) _pr_netdb_init();
      PR_LOG(_pr_dns_lm, PR_LOG_DEBUG, ("%s input=%s\n", __FUNCTION__, hostname));
  
@@ -102,7 +102,7 @@ index 567126a..b92e611 100644
          return NULL;
      }
  
-@@ -2159,49 +2222,7 @@ PR_IMPLEMENT(PRAddrInfo *) PR_GetAddrInfoByName(const char  *hostname,
+@@ -2127,49 +2190,7 @@ PR_IMPLEMENT(PRAddrInfo *) PR_GetAddrInfoByName(const char  *hostname,
          PRADDRINFO *res, hints;
          PRStatus rv;
  
@@ -154,5 +154,5 @@ index 567126a..b92e611 100644
          rv = GETADDRINFO(hostname, NULL, &hints, &res);
  #ifdef AI_ADDRCONFIG
 -- 
-1.7.7.6
+1.7.11.7
 

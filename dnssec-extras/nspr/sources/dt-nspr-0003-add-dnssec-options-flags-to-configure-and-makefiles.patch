@@ -1,22 +1,21 @@
-From f4a6e1803c23b2bf767ec66b47ea217c1b856ddd Mon Sep 17 00:00:00 2001
+From b122bfb14543ad9903360f25612409468f9435da Mon Sep 17 00:00:00 2001
 From: Robert Story <rstory@localhost>
 Date: Wed, 11 Apr 2012 14:13:53 -0400
-Subject: [PATCH 3/8] add dnssec options/flags to configure and makefiles
+Subject: [PATCH 03/18] NSPR dnssec options/flags to configure/makefiles
 
 ---
- nsprpub/config/autoconf.mk.in |   12 +-
- nsprpub/config/config.mk      |    5 +
- nsprpub/config/nspr-config.in |    2 +-
- nsprpub/configure             |  602 ++++++++++++++++++++++++++++++++---------
- nsprpub/configure.in          |   71 +++++
- nsprpub/pr/tests/Makefile.in  |    6 +
- 6 files changed, 569 insertions(+), 129 deletions(-)
+ nsprpub/config/autoconf.mk.in | 12 +++++---
+ nsprpub/config/config.mk      |  5 +++
+ nsprpub/config/nspr-config.in |  4 +--
+ nsprpub/configure.in          | 72 +++++++++++++++++++++++++++++++++++++++++++
+ nsprpub/pr/tests/Makefile.in  |  6 ++++
+ 5 files changed, 93 insertions(+), 6 deletions(-)
 
 diff --git a/nsprpub/config/autoconf.mk.in b/nsprpub/config/autoconf.mk.in
-index 77b6394..6b308a4 100644
+index 5f093c4..547287b 100644
 --- a/nsprpub/config/autoconf.mk.in
 +++ b/nsprpub/config/autoconf.mk.in
-@@ -76,10 +76,10 @@ CYGWIN_WRAPPER	= @CYGWIN_WRAPPER@
+@@ -80,10 +80,10 @@ CYGWIN_WRAPPER	= @CYGWIN_WRAPPER@
  MT		= @MT@
  
  OS_CPPFLAGS	= @CPPFLAGS@
@@ -31,7 +30,7 @@ index 77b6394..6b308a4 100644
  OS_DLLFLAGS	= @OS_DLLFLAGS@
  DLLFLAGS	= @DLLFLAGS@
  EXEFLAGS  = @EXEFLAGS@
-@@ -95,6 +95,10 @@ WRAP_LDFLAGS	= @WRAP_LDFLAGS@
+@@ -99,6 +99,10 @@ WRAP_LDFLAGS	= @WRAP_LDFLAGS@
  DSO_CFLAGS	= @DSO_CFLAGS@
  DSO_LDOPTS	= @DSO_LDOPTS@
  
@@ -43,10 +42,10 @@ index 77b6394..6b308a4 100644
  
  HOST_CC		= @HOST_CC@
 diff --git a/nsprpub/config/config.mk b/nsprpub/config/config.mk
-index 384d6c0..8bdf496 100644
+index 05db076..9807860 100644
 --- a/nsprpub/config/config.mk
 +++ b/nsprpub/config/config.mk
-@@ -95,6 +95,11 @@ endif
+@@ -63,6 +63,11 @@ endif
  endif # MOZ_PROFILE_USE
  endif # NO_PROFILE_GUIDED_OPTIMIZE
  
@@ -58,27 +57,27 @@ index 384d6c0..8bdf496 100644
  define MAKE_OBJDIR
  if test ! -d $(@D); then rm -rf $(@D); $(NSINSTALL) -D $(@D); fi
  endef
-diff -u mozilla/nsprpub/config/nspr.pc.in.orig mozilla/nsprpub/config/nspr.pc.in
---- mozilla/nsprpub/config/nspr.pc.in.orig      2012-09-07 11:34:04.754417882 -0400
-+++ mozilla/nsprpub/config/nspr.pc.in   2012-09-07 11:34:17.604316386 -0400
-@@ -6,5 +6,5 @@
- Name: NSPR
- Description: The Netscape Portable Runtime
- Version: @MOD_MAJOR_VERSION@.@MOD_MINOR_VERSION@.@MOD_PATCH_VERSION@
--Libs: -L@libdir@ -lplds@MOD_MAJOR_VERSION@ -lplc@MOD_MAJOR_VERSION@ -lnspr@MOD_MAJOR_VERSION@ @OS_LIBS@
-+Libs: -L@libdir@ -lplds@MOD_MAJOR_VERSION@ -lplc@MOD_MAJOR_VERSION@ -lnspr@MOD_MAJOR_VERSION@ @OS_LIBS@ @VAL_LIBS@
- Cflags: -I@includedir@
---- mozilla/nsprpub/configure.in.dnssec	2012-05-19 12:52:03.000000000 -0400
-+++ mozilla/nsprpub/configure.in	2012-10-02 15:11:12.985016033 -0400
-@@ -3196,6 +3196,77 @@
+diff --git a/nsprpub/configure.in b/nsprpub/configure.in
+index da7961c..e9fde78 100644
+--- a/nsprpub/configure.in
++++ b/nsprpub/configure.in
+@@ -2678,6 +2678,7 @@ dnl AC_HEADER_STDC
+ dnl AC_HEADER_SYS_WAIT
+ dnl AC_CHECK_HEADERS(fcntl.h limits.h sys/file.h sys/ioctl.h sys/time.h unistd.h)
+ 
++
+ dnl ========================================================
+ dnl Check for typedefs and structs
+ dnl ========================================================
+@@ -3196,6 +3197,77 @@ AC_ARG_WITH(wrap-malloc,
      WRAP_LDFLAGS="${WRAP_LDFLAGS} $withval")
  
  dnl ========================================================
-+dnl = Add DNSSEC support 
++dnl = Add DNSSEC support
 +dnl ========================================================
 +
 +AC_ARG_WITH(system-val,
-+[  --with-system-val[=PFX] 
++[  --with-system-val[=PFX]
 +                  Use system DNSSEC validator [installed at prefix PFX]],
 +   ,
 +   [with_system_val=no])
@@ -103,18 +102,18 @@ diff -u mozilla/nsprpub/config/nspr.pc.in.orig mozilla/nsprpub/config/nspr.pc.in
 +    if test "x$with_system_openssl" != xno; then
 +        if test -n "$with_system_openssl"; then
 +            VAL_CFLAGS="$VAL_CFLAGS -I${with_system_openssl}/include"
-+            VAL_LDFLAGS="$VAL_LDFLAGS -L${with_system_openssl}/lib" 
++            VAL_LDFLAGS="$VAL_LDFLAGS -L${with_system_openssl}/lib"
 +        fi
 +    fi
 +    LDFLAGS="$LDFLAGS $VAL_LDFLAGS"
 +    CFLAGS="$CFLAGS $VAL_CFLAGS"
 +    AC_CHECK_LIB(crypto, EVP_md5, OPENSSL_LIBS="-lcrypto")
++    AC_CHECK_LIB(ssl, SSL_get_SSL_CTX, OPENSSL_LIBS="$OPENSSL_LIBS -lssl")
 +    AC_CHECK_LIB(val-threads, val_gethostbyname,
 +        [VAL_LIBS="-lval-threads -lsres ${OPENSSL_LIBS} ${_PTHREAD_LDFLAGS}"
 +         AC_DEFINE(MOZ_DNSSEC)], ,
 +        -lsres ${OPENSSL_LIBS} ${_PTHREAD_LDFLAGS})
 +  fi
-+  AC_CHECK_HEADER(arpa/nameser.h, AC_DEFINE(HAVE_ARPA_NAMESER_H))
 +  dnl functions added in 1.11
 +  AC_CHECK_LIB(val-threads, val_getaddrinfo_submit,
 +                AC_DEFINE(HAVE_VAL_GETADDRINFO_SUBMIT), ,
@@ -149,10 +148,10 @@ diff -u mozilla/nsprpub/config/nspr.pc.in.orig mozilla/nsprpub/config/nspr.pc.in
  dnl ========================================================
  AC_SUBST(SHELL_OVERRIDE)
 diff --git a/nsprpub/pr/tests/Makefile.in b/nsprpub/pr/tests/Makefile.in
-index 6d41984..09bf9a8 100644
+index 122ef1c..6cd7842 100644
 --- a/nsprpub/pr/tests/Makefile.in
 +++ b/nsprpub/pr/tests/Makefile.in
-@@ -455,6 +455,10 @@ LIBPTHREAD =
+@@ -423,6 +423,10 @@ LIBPTHREAD =
  XCFLAGS = $(OS_CFLAGS)
  endif
  
@@ -163,7 +162,7 @@ index 6d41984..09bf9a8 100644
  #####################################################
  #
  # The rules
-@@ -536,6 +540,8 @@ $(OBJDIR)/socket: $(OBJDIR)/socket.o
+@@ -504,6 +508,8 @@ $(OBJDIR)/socket: $(OBJDIR)/socket.o
  	$(PURE) $(CC) $(XCFLAGS) $< $(LDOPTS) $(LIBPLC) $(LIBNSPR) $(LIBPTHREAD) $(EXTRA_LIBS) -o $@
  $(OBJDIR)/testfile: $(OBJDIR)/testfile.o
  	$(PURE) $(CC) $(XCFLAGS) $< $(LDOPTS) $(LIBPLC) $(LIBNSPR) $(LIBPTHREAD) $(EXTRA_LIBS) -o $@
@@ -173,5 +172,5 @@ index 6d41984..09bf9a8 100644
  
  #
 -- 
-1.7.7.6
+1.7.11.7
 
