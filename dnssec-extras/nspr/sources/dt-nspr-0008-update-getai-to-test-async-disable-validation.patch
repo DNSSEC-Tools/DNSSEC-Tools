@@ -1,17 +1,17 @@
-From d7bec5eb656b578ca1ac12a66895eebe718e01f9 Mon Sep 17 00:00:00 2001
+From 0dfb5df460039eba60a6bf217950c22326c3210d Mon Sep 17 00:00:00 2001
 From: Robert Story <rstory@localhost>
 Date: Thu, 23 Feb 2012 12:35:22 -0500
-Subject: [PATCH 8/8] update getai to test async, disable validation
+Subject: [PATCH 09/18] NSPR update getai to test async/validation
 
 ---
- nsprpub/pr/tests/getai.c |  276 ++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 269 insertions(+), 7 deletions(-)
+ nsprpub/pr/tests/getai.c | 268 +++++++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 261 insertions(+), 7 deletions(-)
 
 diff --git a/nsprpub/pr/tests/getai.c b/nsprpub/pr/tests/getai.c
-index eaa41d4..d88c838 100644
+index f398ca3..4aa165a 100644
 --- a/nsprpub/pr/tests/getai.c
 +++ b/nsprpub/pr/tests/getai.c
-@@ -39,26 +39,288 @@
+@@ -7,26 +7,280 @@
  
  #include <stdio.h>
  #include <stdlib.h>
@@ -78,7 +78,7 @@ index eaa41d4..d88c838 100644
 +
 +static int pending = 0;
 +
-+static int 
++static int
 +_callback(void *callback_data, int eai_retval, struct addrinfo *res,
 +          val_status_t val_status)
 +{
@@ -96,8 +96,6 @@ index eaa41d4..d88c838 100644
 +    if (debug)
 +        printf("gai: callback for %s, took %d ticks, %d requests remain\n",
 +               canon, cbd->end - cbd->start, pending);
-+    else
-+        printf("%s\n", cbd->host);
 +
 +    if (VAL_AS_EVENT_CANCELED == eai_retval) {
 +        if (debug)
@@ -125,7 +123,7 @@ index eaa41d4..d88c838 100644
 +#if defined(HAVE_VAL_GETADDRINFO_CANCEL) && defined (DEBUG_rstory)
 +    PRIntn           submitted;
 +#endif
-+   
++
 +    while (arg_idx < argc && argv[arg_idx]) {
 +      cb_data = PR_Malloc(sizeof(*cb_data));
 +      if (NULL == cb_data) {
@@ -162,7 +160,7 @@ index eaa41d4..d88c838 100644
 +      if (debug)
 +          printf("pending %d\n", pending);
 +
-+#if defined(HAVE_VAL_GETADDRINFO_CANCEL) && defined (DEBUG_rstory_cancel)
++#if defined(HAVE_VAL_GETADDRINFO_CANCEL) && defined (DEBUG_rstory)
 +      /* if more than 3 request, cancel the last one */
 +      if (submitted > 3 && NULL != vgs) {
 +        printf("cancelling one\n");
@@ -182,21 +180,6 @@ index eaa41d4..d88c838 100644
 +#endif /* HAVE_VAL_GETADDRINFO_SUBMIT */
 +
 +#endif /* MOZ_DNSSEC */
-+
-+PRAddrInfo * _getai_result(char *name, int type, int flags)
-+{
-+    PRAddrInfo      *ai = NULL;
-+
-+    printf("%s\n", name);
-+#ifdef MOZ_DNSSEC
-+    ai = PR_GetAddrInfoByNameExtended(name, type, flags, NULL);
-+#else
-+    ai = PR_GetAddrInfoByName(name, type, flags);
-+#endif /* MOZ_DNSSEC */
-+
-+    process_results(ai);
-+    return ai;
-+}
 +
 +void process_results(PRAddrInfo *ai)
  {
@@ -284,7 +267,7 @@ index eaa41d4..d88c838 100644
 +     */
 +    val_create_context("getai", &context);
 +    if (context == NULL)
-+        return 1;
++        return NULL;
 +
 +    if (!validate) {
 +        printf("disabling validation...\n");
@@ -301,12 +284,21 @@ index eaa41d4..d88c838 100644
 +                               PR_AI_ADDRCONFIG);
 +    else
 +#endif
-+#endif /* MOZ_DNSSEC */
-+        for (; arg_index < argc && argv[arg_index]; ++arg_index) {
-+          ai = _getai_result(argv[arg_index], PR_AF_UNSPEC, PR_AI_ADDRCONFIG);
++        {
++          ai = PR_GetAddrInfoByNameExtended(argv[arg_index], PR_AF_UNSPEC,
++                                            PR_AI_ADDRCONFIG, NULL);
++          process_results(ai);
 +        }
++#else
++        {
++          ai = PR_GetAddrInfoByName(argv[arg_index], PR_AF_UNSPEC,
++                                    PR_AI_ADDRCONFIG);
++          process_results(ai);
++        }
++#endif /* MOZ_DNSSEC */
++
      return 0;
  }
 -- 
-1.7.7.6
+1.7.11.7
 

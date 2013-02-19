@@ -1,0 +1,49 @@
+From 86bab7d6070c495558854043a026383bf4c88712 Mon Sep 17 00:00:00 2001
+From: Robert Story <rstory@localhost>
+Date: Sat, 22 Dec 2012 22:50:19 -0500
+Subject: [PATCH 10/18] NSPR use full path to static openssl libssl
+
+- because nss creates its own libssl and we need both
+---
+ nsprpub/configure.in | 20 ++++++++++++++++++--
+ 1 file changed, 18 insertions(+), 2 deletions(-)
+
+diff --git a/nsprpub/configure.in b/nsprpub/configure.in
+index e9fde78..d8f0bde 100644
+--- a/nsprpub/configure.in
++++ b/nsprpub/configure.in
+@@ -3226,13 +3226,29 @@ if test "x$with_system_val" != xno; then
+     if test "x$with_system_openssl" != xno; then
+         if test -n "$with_system_openssl"; then
+             VAL_CFLAGS="$VAL_CFLAGS -I${with_system_openssl}/include"
+-            VAL_LDFLAGS="$VAL_LDFLAGS -L${with_system_openssl}/lib"
++            dnl VAL_LDFLAGS="$VAL_LDFLAGS -L${with_system_openssl}/lib"
++            OPENSSL_PATH="${with_system_openssl}"
++        else
++            OPENSSL_PATH="/usr/lib"
+         fi
++    else
++        OPENSSL_PATH="/usr/lib"
+     fi
+     LDFLAGS="$LDFLAGS $VAL_LDFLAGS"
+     CFLAGS="$CFLAGS $VAL_CFLAGS"
+     AC_CHECK_LIB(crypto, EVP_md5, OPENSSL_LIBS="-lcrypto")
+-    AC_CHECK_LIB(ssl, SSL_get_SSL_CTX, OPENSSL_LIBS="$OPENSSL_LIBS -lssl")
++    AC_CHECK_LIB(ssl, SSL_get_SSL_CTX, OPENSSL_LIBSSL="yes")
++    if test -n "$OPENSSL_LIBSSL"; then
++      if test -n "$USE_64=1"; then
++         OPENSSL_LIBS="$OPENSSL_LIBS ${OPENSSL_PATH}64/libssl.a"
++      else
++         OPENSSL_LIBS="$OPENSSL_LIBS $OPENSSL_PATH/libssl.a"
++      fi
++    fi
++    dnl with static openssl, apparently we need to pull in libkrb5
++    AC_CHECK_LIB(krb5, krb5_init_context, OPENSSL_LIBS="$OPENSSL_LIBS -lkrb5")
++    AC_CHECK_LIB(k5crypto, krb5_checksum_size, OPENSSL_LIBS="$OPENSSL_LIBS -lk5crypto")
++    dnl val-threads check
+     AC_CHECK_LIB(val-threads, val_gethostbyname,
+         [VAL_LIBS="-lval-threads -lsres ${OPENSSL_LIBS} ${_PTHREAD_LDFLAGS}"
+          AC_DEFINE(MOZ_DNSSEC)], ,
+-- 
+1.7.11.7
+
