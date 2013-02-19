@@ -318,7 +318,7 @@ p_fqname(const u_char * cp, const u_char * msg, FILE * file)
  * And, for once, solaris has a better header than the rest, and has const
  * char ptrs in res_sym.
  */
-#if (defined(__APPLE__) || defined(sun) || defined(__CYGWIN__) || defined(linux)) && !defined(ANDROID)
+#if (defined(__APPLE__) || defined(sun) || defined(__CYGWIN__) || defined(linux) || defined(__OpenBSD__)) && !defined(ANDROID)
 #define RES_SYM_TYPE res_sym
 #else
 struct res_sym_const {
@@ -474,8 +474,13 @@ const struct RES_SYM_TYPE __p_rcode_syms[] = {
     {0, NULL, NULL}
 };
 
+#if defined(__OpenBSD__)
+int
+sym_ston(const struct RES_SYM_TYPE *syms, char *name, int *success)
+#else
 int
 sym_ston(const struct RES_SYM_TYPE *syms, const char *name, int *success)
+#endif
 {
     size_t namelen = 0;
     if (name)
@@ -1078,8 +1083,13 @@ loc_ntoa(const u_char *binary, char *ascii)
 /*
  * Return the number of DNS hierarchy levels in the name. 
  */
+#if defined(__OpenBSD__)
+int
+dn_count_labels(char *name)
+#else
 int
 dn_count_labels(const char *name)
+#endif
 {
     int             i, len, count;
 

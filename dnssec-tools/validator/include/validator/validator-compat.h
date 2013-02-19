@@ -474,7 +474,7 @@ typedef struct {
 
 #endif
 
-#if !defined(HAVE_RESOLV_H) || defined(eabi) || defined(ANDROID) || defined(__OpenBSD__)
+#if !defined(HAVE_RESOLV_H) || defined(eabi) || defined(ANDROID) 
 #define RES_INIT        0x00000001      /* address initialized */
 #define RES_DEBUG       0x00000002      /* print debug messages */
 #define RES_AAONLY      0x00000004      /* authoritative answers only (!IMPL)*/
