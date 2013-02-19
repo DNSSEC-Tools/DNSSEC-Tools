@@ -12,11 +12,16 @@
 #define P_SECSTODATE_ARG_TYPE  u_long
 #endif
 
-const char     *
-loc_ntoa(const u_char *binary, char *ascii);
-
+#if defined(__OpenBSD__)
+int
+dn_count_labels(char *name);
+#else
 int
 dn_count_labels(const char *name);
+#endif
+
+const char     *
+loc_ntoa(const u_char *binary, char *ascii);
 
 char           *
 p_secstodate(P_SECSTODATE_ARG_TYPE secs);
