@@ -58,8 +58,6 @@ index 384d6c0..8bdf496 100644
  define MAKE_OBJDIR
  if test ! -d $(@D); then rm -rf $(@D); $(NSINSTALL) -D $(@D); fi
  endef
-diff --git a/nsprpub/config/nspr-config.in b/nsprpub/config/nspr-config.in
-index a7d2b4f..9d58135 100755
 diff -u mozilla/nsprpub/config/nspr.pc.in.orig mozilla/nsprpub/config/nspr.pc.in
 --- mozilla/nsprpub/config/nspr.pc.in.orig      2012-09-07 11:34:04.754417882 -0400
 +++ mozilla/nsprpub/config/nspr.pc.in   2012-09-07 11:34:17.604316386 -0400
@@ -70,19 +68,9 @@ diff -u mozilla/nsprpub/config/nspr.pc.in.orig mozilla/nsprpub/config/nspr.pc.in
 -Libs: -L@libdir@ -lplds@MOD_MAJOR_VERSION@ -lplc@MOD_MAJOR_VERSION@ -lnspr@MOD_MAJOR_VERSION@ @OS_LIBS@
 +Libs: -L@libdir@ -lplds@MOD_MAJOR_VERSION@ -lplc@MOD_MAJOR_VERSION@ -lnspr@MOD_MAJOR_VERSION@ @OS_LIBS@ @VAL_LIBS@
  Cflags: -I@includedir@
-diff --git a/nsprpub/configure.in b/nsprpub/configure.in
-index 112ddd2..fd46449 100644
---- a/nsprpub/configure.in
-+++ b/nsprpub/configure.in
-@@ -2722,6 +2722,7 @@ dnl AC_HEADER_STDC
- dnl AC_HEADER_SYS_WAIT
- dnl AC_CHECK_HEADERS(fcntl.h limits.h sys/file.h sys/ioctl.h sys/time.h unistd.h)
- 
-+
- dnl ========================================================
- dnl Check for typedefs and structs
- dnl ========================================================
-@@ -3241,6 +3242,76 @@ AC_ARG_WITH(wrap-malloc,
+--- mozilla/nsprpub/configure.in.dnssec	2012-05-19 12:52:03.000000000 -0400
++++ mozilla/nsprpub/configure.in	2012-10-02 15:11:12.985016033 -0400
+@@ -3196,6 +3196,76 @@
      WRAP_LDFLAGS="${WRAP_LDFLAGS} $withval")
  
  dnl ========================================================
