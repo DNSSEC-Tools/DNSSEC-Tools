@@ -58,13 +58,13 @@
 # alpha_version should be set to the alpha number if using an alpha, 0 otherwise
 # beta_version  should be set to the beta number if using a beta, 0 otherwise
 # rc_version    should be set to the RC number if using an RC, 0 otherwise
-%global gecko_dir_ver 2
+%global gecko_dir_ver %{version}
 %global alpha_version 0
 %global beta_version  0
 %global rc_version    0
 
 %define base_name     xulrunner
-%global mozappdir     %{_libdir}/%{base_name}-%{gecko_dir_ver}
+%global mozappdir     %{_libdir}/%{base_name}
 %global tarballdir    mozilla-release
 
 # crash reporter work only on x86/x86_64
@@ -96,8 +96,8 @@
 
 Summary:        XUL Runtime for Gecko Applications
 Name:           dtsvn-xulrunner
-Version:        15.0
-Release:        2%{?pre_tag}%{?dist}
+Version:        16.0.1
+Release:        1%{?pre_tag}%{?dist}
 URL:            http://developer.mozilla.org/En/XULRunner
 License:        MPLv1.1 or GPLv2+ or LGPLv2+
 Group:          Applications/Internet
