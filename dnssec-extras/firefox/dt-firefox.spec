@@ -119,14 +119,8 @@ Patch15:        firefox-15.0-enable-addons.patch
 %endif
 
 # -START- DNSSEC-Tools
-# - mozilla-base patches
-Patch1011:     moz-base-0001-take-advantage-of-new-DNSSEC-functionality-in-NSPR.patch
-Patch1012:     moz-base-0002-support-functions-in-preparation-for-async-support.patch
-Patch1013:     moz-base-0003-take-advantage-of-new-async-functionality-in-NSPR.patch
-Patch1014:     moz-base-0004-make-netwerk-DNSSEC-validation-aware.patch
-# - mozilla-browser patches
-Patch1101:     moz-firefox-0001-update-browser-local-overrides-for-DNSSEC.patch
-Patch1102:     moz-firefox-0002-add-DNSSEC-preferences-to-browser.patch
+Patch2015:  0015-XULRUNNER-add-DNSSEC-preferences-to-browser.patch
+Patch2016:  0016-BROWSER-update-browser-local-overrides-for-DNSSEC.patch
 # -END- DNSSEC-Tools
 
 # ---------------------------------------------------
@@ -134,7 +128,7 @@ Patch1102:     moz-firefox-0002-add-DNSSEC-preferences-to-browser.patch
 BuildRequires:  desktop-file-utils
 BuildRequires:  system-bookmarks
 BuildRequires:  dt-xulrunner-devel%{?_isa} >= %{xulrunner_verrel}
-BuildRequires:  dnssec-tools-libs-devel openssl-devel autoconf213
+BuildRequires:  dnssec-tools-libs-devel openssl-devel
 
 Requires:       dt-xulrunner%{?_isa} >= %{xulrunner_verrel}
 Requires:       system-bookmarks
@@ -175,19 +169,9 @@ cd %{tarballdir}
 
 ###############################
 # DNSSEC-Tools
-# - mozilla-base patches
-%patch1011 -p1 -b .dnssec-moz-base
-%patch1012 -p1 -b .dnssec-moz-base
-%patch1013 -p1 -b .dnssec-moz-base
-%patch1014 -p1 -b .dnssec-moz-base
 # - mozilla-firefox patches
-%patch1101 -p1 -b .dnssec-moz-firefox
-%patch1102 -p1 -b .dnssec-moz-firefox
-
-# rebuild configure(s) due to dnssec patches
-/bin/rm -f ./configure
-/usr/bin/autoconf-2.13
-# end dnssec related patches
+%patch2015 -p1 -b .dnssectools
+%patch2016 -p1 -b .dnssectools
 ###############################
 
 
@@ -254,8 +238,8 @@ MOZ_SMP_FLAGS=-j1
 [ "$RPM_BUILD_NCPUS" -ge 4 ] && MOZ_SMP_FLAGS=-j4
 %endif
 
-export PATH="/usr/local/opt/bin:/usr/local/opt/sbin:$PATH"
-export LDFLAGS="-Wl,-rpath,%{mozappdir} -Wl,-rpath,%{_libdir}"
+export PATH="%{_bindir}:%{_sbindir}:$PATH"
+export LDFLAGS="-Wl,-rpath,%{mozappdir} -Wl,-rpath,%{_libdir} -L%{_libdir}"
 make -f client.mk build STRIP="/bin/true" MOZ_MAKE_FLAGS="$MOZ_SMP_FLAGS"
 
 # create debuginfo for crash-stats.mozilla.com
