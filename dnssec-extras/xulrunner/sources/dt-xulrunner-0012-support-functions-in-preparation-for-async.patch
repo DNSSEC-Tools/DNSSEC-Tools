@@ -1,22 +1,22 @@
-From b0799d4bb3e4b811a530de576b22519593edb70e Mon Sep 17 00:00:00 2001
+From a6200d2f17acab26dc844c23b848906d6e677530 Mon Sep 17 00:00:00 2001
 From: Robert Story <rstory@localhost>
 Date: Mon, 30 Jan 2012 17:40:30 -0500
-Subject: [PATCH 12/16] XULRUNNER support functions in preparation for async
+Subject: [PATCH 11/15] XULRUNNER support functions in preparation for async
  support
 
  - factor out some code from GetHostToLookup into new functions
    GetHostToLookupNoWaiting(), GetHostLookupTimeout() and
    GetHostLookupIdleWait().
 ---
- netwerk/dns/nsHostResolver.cpp |  126 ++++++++++++++++++++++++++--------------
- netwerk/dns/nsHostResolver.h   |    4 +
+ netwerk/dns/nsHostResolver.cpp | 126 +++++++++++++++++++++++++++--------------
+ netwerk/dns/nsHostResolver.h   |   4 ++
  2 files changed, 86 insertions(+), 44 deletions(-)
 
 diff --git a/netwerk/dns/nsHostResolver.cpp b/netwerk/dns/nsHostResolver.cpp
-index bbd8725..4ffe4f8 100644
+index 76038f4..308292b 100644
 --- a/netwerk/dns/nsHostResolver.cpp
 +++ b/netwerk/dns/nsHostResolver.cpp
-@@ -786,70 +786,108 @@ nsHostResolver::DeQueue(PRCList &aQ, nsHostRecord **aResult)
+@@ -785,70 +785,108 @@ nsHostResolver::DeQueue(PRCList &aQ, nsHostRecord **aResult)
      (*aResult)->onQueue = false;
  }
  
@@ -25,7 +25,7 @@ index bbd8725..4ffe4f8 100644
 +{
 +    mLock.AssertCurrentThreadOwns();
 +
-+    timeout = (mNumIdleThreads >= HighThreadThreshold) ? 
++    timeout = (mNumIdleThreads >= HighThreadThreshold) ?
 +        mShortIdleTimeout : mLongIdleTimeout;
 +}
 +
@@ -39,7 +39,7 @@ index bbd8725..4ffe4f8 100644
 +
 +    // remove next record from Q; hand over owning reference.
 +    // Check high, then med, then low
-+        
++
 +    if (!PR_CLIST_IS_EMPTY(&mHighQ)) {
 +        DeQueue (mHighQ, result);
 +        return true;
@@ -52,7 +52,7 @@ index bbd8725..4ffe4f8 100644
 +            (*result)->usingAnyThread = true;
 +            return true;
 +        }
-+            
++
 +        if (!PR_CLIST_IS_EMPTY(&mLowQ)) {
 +            DeQueue (mLowQ, result);
 +            mActiveAnyThreadCount++;
@@ -76,13 +76,13 @@ index bbd8725..4ffe4f8 100644
 +    //  (1) the pending queue has a host record to process
 +    //  (2) the shutdown flag has been set
 +    //  (3) the thread has been idle for too long
-+    
++
 +    mNumIdleThreads++;
 +    mIdleThreadCV.Wait(timeout);
 +    mNumIdleThreads--;
-+        
++
 +    now = PR_IntervalNow();
-+        
++
 +    if ((PRIntervalTime)(now - epoch) >= timeout)
 +        timedOut = true;
 +    else {
@@ -170,10 +170,10 @@ index bbd8725..4ffe4f8 100644
  }
  
 diff --git a/netwerk/dns/nsHostResolver.h b/netwerk/dns/nsHostResolver.h
-index 3173e08..35c980b 100644
+index f97ddde..794ac5c 100644
 --- a/netwerk/dns/nsHostResolver.h
 +++ b/netwerk/dns/nsHostResolver.h
-@@ -256,6 +256,10 @@ private:
+@@ -257,6 +257,10 @@ private:
      nsresult Init();
      nsresult IssueLookup(nsHostRecord *);
      bool     GetHostToLookup(nsHostRecord **m);
@@ -185,5 +185,5 @@ index 3173e08..35c980b 100644
      void     DeQueue(PRCList &aQ, nsHostRecord **aResult);
      void     ClearPendingQueue(PRCList *aPendingQueue);
 -- 
-1.7.7.6
+1.7.11.7
 

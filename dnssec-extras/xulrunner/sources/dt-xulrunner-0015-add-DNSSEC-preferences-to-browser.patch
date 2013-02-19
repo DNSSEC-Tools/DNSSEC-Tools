@@ -1,13 +1,13 @@
-From aada574eaaa104efa4181104c80204b5cef18e3c Mon Sep 17 00:00:00 2001
+From 5ba90c784758ea14e46166eebb212df4afd00ef4 Mon Sep 17 00:00:00 2001
 From: Robert Story <rstory@localhost>
 Date: Mon, 4 Jun 2012 15:55:16 -0400
-Subject: [PATCH 15/16] XULRUNNER add DNSSEC preferences to browser
+Subject: [PATCH 14/15] XULRUNNER add DNSSEC preferences to browser
 
 ---
- browser/components/preferences/advanced.xul        |   20 ++++++++++++++++++++
- .../en-US/chrome/browser/preferences/advanced.dtd  |   10 ++++++++++
- layout/base/nsPresContext.cpp                      |   17 +++++++++++++++++
- 3 files changed, 47 insertions(+), 0 deletions(-)
+ browser/components/preferences/advanced.xul          | 20 ++++++++++++++++++++
+ .../en-US/chrome/browser/preferences/advanced.dtd    | 10 ++++++++++
+ layout/base/nsPresContext.cpp                        | 17 +++++++++++++++++
+ 3 files changed, 47 insertions(+)
 
 diff --git a/browser/components/preferences/advanced.xul b/browser/components/preferences/advanced.xul
 index ad07e28..af8f3ec 100644
@@ -73,10 +73,10 @@ index 5eddbb7..6442f54 100644
 +<!ENTITY allDNSSecure.label             "Require all DNS lookups to be secure">
 +<!ENTITY allDNSSecure.accesskey         "A">
 diff --git a/layout/base/nsPresContext.cpp b/layout/base/nsPresContext.cpp
-index 09f03a2..4a4d9db 100644
+index d47460a..a427b5e 100644
 --- a/layout/base/nsPresContext.cpp
 +++ b/layout/base/nsPresContext.cpp
-@@ -33,6 +33,8 @@
+@@ -34,6 +34,8 @@
  #include "nsIWeakReferenceUtils.h"
  #include "nsCSSRendering.h"
  #include "prprf.h"
@@ -85,7 +85,7 @@ index 09f03a2..4a4d9db 100644
  #include "nsAutoPtr.h"
  #include "nsEventStateManager.h"
  #include "nsThreadUtils.h"
-@@ -278,6 +280,11 @@ nsPresContext::~nsPresContext()
+@@ -270,6 +272,11 @@ nsPresContext::~nsPresContext()
    Preferences::UnregisterCallback(nsPresContext::PrefChangedCallback,
                                    "image.animation_mode",
                                    this);
@@ -97,7 +97,7 @@ index 09f03a2..4a4d9db 100644
  #ifdef IBMBIDI
    Preferences::UnregisterCallback(nsPresContext::PrefChangedCallback,
                                    "bidi.",
-@@ -788,6 +795,11 @@ nsPresContext::GetUserPreferences()
+@@ -760,6 +767,11 @@ nsPresContext::GetUserPreferences()
    // prescontext or we are being called from UpdateAfterPreferencesChanged()
    // which triggers a reflow anyway.
    SetBidi(bidiOptions, false);
@@ -109,7 +109,7 @@ index 09f03a2..4a4d9db 100644
  }
  
  void
-@@ -992,6 +1004,11 @@ nsPresContext::Init(nsDeviceContext* aDeviceContext)
+@@ -958,6 +970,11 @@ nsPresContext::Init(nsDeviceContext* aDeviceContext)
    Preferences::RegisterCallback(nsPresContext::PrefChangedCallback,
                                  "image.animation_mode",
                                  this);
@@ -122,5 +122,5 @@ index 09f03a2..4a4d9db 100644
    Preferences::RegisterCallback(nsPresContext::PrefChangedCallback,
                                  "bidi.",
 -- 
-1.7.7.6
+1.7.11.7
 

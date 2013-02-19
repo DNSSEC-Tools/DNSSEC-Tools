@@ -1,15 +1,15 @@
-From f7705f5b61a4aed59958d73cbfd7098aaeec2ee6 Mon Sep 17 00:00:00 2001
+From 0b5f8cffe6608c81d6e03ccf7a1e0416edc20440 Mon Sep 17 00:00:00 2001
 From: Robert Story <rstory@localhost>
 Date: Tue, 16 Oct 2012 23:23:53 -0400
-Subject: [PATCH 13/16] XULRUNNER use NSPRs new async functionality
+Subject: [PATCH 12/15] XULRUNNER use NSPRs new async functionality
 
 ---
- netwerk/dns/nsHostResolver.cpp |  223 ++++++++++++++++++++++++++++++++++++++++
- netwerk/dns/nsHostResolver.h   |   19 ++++
- 2 files changed, 242 insertions(+), 0 deletions(-)
+ netwerk/dns/nsHostResolver.cpp | 223 +++++++++++++++++++++++++++++++++++++++++
+ netwerk/dns/nsHostResolver.h   |  19 ++++
+ 2 files changed, 242 insertions(+)
 
 diff --git a/netwerk/dns/nsHostResolver.cpp b/netwerk/dns/nsHostResolver.cpp
-index 4ffe4f8..8796cf0 100644
+index 308292b..6d599c2 100644
 --- a/netwerk/dns/nsHostResolver.cpp
 +++ b/netwerk/dns/nsHostResolver.cpp
 @@ -170,6 +170,9 @@ nsHostRecord::nsHostRecord(const nsHostKey *key)
@@ -22,7 +22,7 @@ index 4ffe4f8..8796cf0 100644
  #endif
  
      expiration = NowInMinutes();
-@@ -720,7 +723,11 @@ nsHostResolver::ConditionallyCreateThread(nsHostRecord *rec)
+@@ -719,7 +722,11 @@ nsHostResolver::ConditionallyCreateThread(nsHostRecord *rec)
  
          mThreadCount++;
          PRThread *thr = PR_CreateThread(PR_SYSTEM_THREAD,
@@ -34,7 +34,7 @@ index 4ffe4f8..8796cf0 100644
                                          this,
                                          PR_PRIORITY_NORMAL,
                                          PR_GLOBAL_THREAD,
-@@ -1035,6 +1042,222 @@ _ns_translate_dnssec_error(PRErrorCode err)
+@@ -1034,6 +1041,222 @@ _ns_translate_dnssec_error(PRErrorCode err)
      return NS_ERROR_UNKNOWN_HOST;
  }
  
@@ -50,7 +50,7 @@ index 4ffe4f8..8796cf0 100644
 +};
 +
 +/** simple wrapper which calls nsHostResolver::async_callback */
-+int 
++int
 +_pr_callback(void *callback_data, int eai_retval, struct addrinfo *res,
 +             val_status_t val_status)
 +{
@@ -258,10 +258,10 @@ index 4ffe4f8..8796cf0 100644
  
  //----------------------------------------------------------------------------
 diff --git a/netwerk/dns/nsHostResolver.h b/netwerk/dns/nsHostResolver.h
-index 35c980b..bf717ec 100644
+index 794ac5c..0197cc2 100644
 --- a/netwerk/dns/nsHostResolver.h
 +++ b/netwerk/dns/nsHostResolver.h
-@@ -107,6 +107,10 @@ private:
+@@ -108,6 +108,10 @@ private:
      bool    onQueue;  /* true if pending and on the queue (not yet given to getaddrinfo())*/
      bool    usingAnyThread; /* true if off queue and contributing to mActiveAnyThreadCount */
  
@@ -272,7 +272,7 @@ index 35c980b..bf717ec 100644
      // a list of addresses associated with this record that have been reported
      // as unusable. the list is kept as a set of strings to make it independent
      // of gencnt.
-@@ -162,6 +166,14 @@ public:
+@@ -163,6 +167,14 @@ public:
  /**
   * nsHostResolver - an asynchronous host name resolver.
   */
@@ -287,7 +287,7 @@ index 35c980b..bf717ec 100644
  class nsHostResolver
  {
      typedef mozilla::CondVar CondVar;
-@@ -268,6 +280,13 @@ private:
+@@ -269,6 +281,13 @@ private:
      static void  MoveQueue(nsHostRecord *aRec, PRCList &aDestQ);
      
      static void ThreadFunc(void *);
@@ -302,5 +302,5 @@ index 35c980b..bf717ec 100644
      enum {
          METHOD_HIT = 1,
 -- 
-1.7.7.6
+1.7.11.7
 
