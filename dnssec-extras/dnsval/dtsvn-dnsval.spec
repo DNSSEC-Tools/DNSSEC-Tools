@@ -1,4 +1,4 @@
-%define _prefix /opt/dt-dnsval
+%define _prefix /usr/local/dtsvn
 %define __exec_prefix       %{_prefix}
 %define _sysconfdir         %{_prefix}/etc
 %define _libexecdir         %{_prefix}/libexec
@@ -21,15 +21,17 @@
 %define _usrsrc             %{_prefix}/usr/src
 
 %define orig_name           dnssec-tools
+%define svn_ver             7071
 
 Summary: C-based libraries for dnssec aware tools
-Name: dt-dnsval-libs
+Name: dtsvn-dnsval-libs
 Version: 1.13
-Release: 1%{?dist}
+Release: 1.svn%{svn_ver}%{?dist}
 License: BSD
 Group: System Environment/Libraries
 URL: http://www.dnssec-tools.org/
-Source0: https://www.dnssec-tools.org/downloads/%{orig_name}-%{version}.tar.gz
+#Source0: https://www.dnssec-tools.org/downloads/%{orig_name}-%{version}.tar.gz
+Source0: dnssec-tools-svn%{svn_ver}.tar.gz
 Source1: dnssec-tools-dnsval.conf
 Source2: libval-config
 Requires: openssl
@@ -42,13 +44,13 @@ C-based libraries useful for developing dnssec aware tools.
 %package devel
 Group: Development/Libraries
 Summary: C-based development libraries for dnssec aware tools
-Requires: dt-dnsval-libs = %{version}-%{release}
+Requires: dtsvn-dnsval-libs = %{version}-%{release}
 
 %description devel
 C-based libraries useful for developing dnssec aware tools.
 
 %prep
-%setup -q -n %{orig_name}-%{version}
+%setup -q -n %{orig_name}-svn%{svn_ver}
 
 %build
 cd validator
@@ -101,6 +103,7 @@ rm -rf %{buildroot}
 %{_bindir}/dt-getname
 %{_bindir}/dt-getquery
 %{_bindir}/dt-getrrset
+%{_bindir}/dt-danechk
 
 %{_libdir}/*.so.*
 %config(noreplace) %{_sysconfdir}/dnssec-tools/dnsval.conf
