@@ -26,20 +26,6 @@ index 8ed6581..28a1a97 100644
  
  extern PRFileDesc *_pr_stdin;
  extern PRFileDesc *_pr_stdout;
-diff --git a/nsprpub/pr/include/prnetdb.h b/nsprpub/pr/include/prnetdb.h
-index 4aedd8d..e2382b4 100644
---- a/nsprpub/pr/include/prnetdb.h
-+++ b/nsprpub/pr/include/prnetdb.h
-@@ -506,6 +506,9 @@ NSPR_API(PRUint64) PR_htonll(PRUint64);
-  ***********************************************************************/
- #ifdef MOZ_DNSSEC
- 
-+#ifdef WIN32
-+#include <winsock2.h>
-+#endif
- #include <validator/validator.h>
- 
- /* libval defines log levels that conflict with mozilla/system definitions. */
 diff --git a/nsprpub/pr/src/io/pripv6.c b/nsprpub/pr/src/io/pripv6.c
 index e4af39c..ad9e7b3 100644
 --- a/nsprpub/pr/src/io/pripv6.c

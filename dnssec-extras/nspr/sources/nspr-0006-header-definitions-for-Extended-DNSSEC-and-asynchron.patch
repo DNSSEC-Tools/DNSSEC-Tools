@@ -26,7 +26,7 @@ index f1b7ddc..4aedd8d 100644
  #include "prio.h"
  
  PR_BEGIN_EXTERN_C
-@@ -494,6 +496,295 @@ NSPR_API(PRUint16) PR_htons(PRUint16);
+@@ -494,6 +496,301 @@ NSPR_API(PRUint16) PR_htons(PRUint16);
  NSPR_API(PRUint32) PR_htonl(PRUint32);
  NSPR_API(PRUint64) PR_htonll(PRUint64);
  
@@ -40,6 +40,12 @@ index f1b7ddc..4aedd8d 100644
 + ***********************************************************************/
 +#ifdef MOZ_DNSSEC
 +
++#ifdef WIN32
++#include <winsock2.h>
++#endif
++#ifdef HAVE_ARPA_NAMESER_H
++#include <arpa/nameser.h>
++#endif
 +#include <validator/validator.h>
 +
 +/* libval defines log levels that conflict with mozilla/system definitions. */
