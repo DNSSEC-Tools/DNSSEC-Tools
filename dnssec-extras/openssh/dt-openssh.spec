@@ -297,7 +297,6 @@ Requires: fipscheck-lib%{_isa} >= 1.3.0
 %package server
 Summary: An open source SSH server daemon
 Group: System Environment/Daemons
-Conflicts: openssh-server
 Requires: dt-openssh = %{version}-%{release}
 Requires(pre): /usr/sbin/useradd
 Requires: pam >= 1.0.1-3
