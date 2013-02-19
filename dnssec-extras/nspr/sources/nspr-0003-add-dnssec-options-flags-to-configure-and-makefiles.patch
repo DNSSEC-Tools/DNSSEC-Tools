@@ -70,7 +70,7 @@ diff -u mozilla/nsprpub/config/nspr.pc.in.orig mozilla/nsprpub/config/nspr.pc.in
  Cflags: -I@includedir@
 --- mozilla/nsprpub/configure.in.dnssec	2012-05-19 12:52:03.000000000 -0400
 +++ mozilla/nsprpub/configure.in	2012-10-02 15:11:12.985016033 -0400
-@@ -3196,6 +3196,76 @@
+@@ -3196,6 +3196,77 @@
      WRAP_LDFLAGS="${WRAP_LDFLAGS} $withval")
  
  dnl ========================================================
@@ -114,6 +114,7 @@ diff -u mozilla/nsprpub/config/nspr.pc.in.orig mozilla/nsprpub/config/nspr.pc.in
 +         AC_DEFINE(MOZ_DNSSEC)], ,
 +        -lsres ${OPENSSL_LIBS} ${_PTHREAD_LDFLAGS})
 +  fi
++  AC_CHECK_HEADER(arpa/nameser.h, AC_DEFINE(HAVE_ARPA_NAMESER_H))
 +  dnl functions added in 1.11
 +  AC_CHECK_LIB(val-threads, val_getaddrinfo_submit,
 +                AC_DEFINE(HAVE_VAL_GETADDRINFO_SUBMIT), ,
