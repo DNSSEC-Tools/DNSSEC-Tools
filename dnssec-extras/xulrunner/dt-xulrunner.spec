@@ -123,16 +123,26 @@ Patch49:        mozilla-746112.patch
 Patch51:        mozilla-709732-gfx-icc-profile-fix.patch
 Patch52:        rhbz-855919.patch
 
+# dnssec-tools patches
+Patch2010:     0010-XULRUNNER-add-dnssec-options-to-configure.patch
+Patch2011:     0011-XULRUNNER-use-NSPRs-new-DNSSEC-functionality.patch
+Patch2012:     0012-XULRUNNER-support-functions-in-preparation-for-async.patch
+Patch2013:     0013-XULRUNNER-use-NSPRs-new-async-functionality.patch
+Patch2014:     0014-XULRUNNER-make-netwerk-DNSSEC-validation-aware.patch
+Patch2015:     0015-XULRUNNER-add-DNSSEC-preferences-to-browser.patch
+
 # ---------------------------------------------------
 
 %if %{?system_nss}
 BuildRequires:  dt-nspr-devel >= %{nspr_version}
+BuildRequires:  dnssec-tools-libs-devel
 BuildRequires:  nss-devel >= %{nss_version}
 BuildRequires:  nss-static >= %{nss_version}
 %endif
 %if %{?system_cairo}
 BuildRequires:  cairo-devel >= %{cairo_version}
 %endif
+BuildRequires:  autoconf213 openssl-devel
 BuildRequires:  libpng-devel
 BuildRequires:  libjpeg-devel
 BuildRequires:  zip
@@ -158,6 +168,7 @@ Requires:       mozilla-filesystem
 Requires:       dt-nspr >= %{nspr_version}
 Requires:       nss >= %{nss_version}
 %endif
+Requires:       openssl
 Provides:       gecko-libs = %{gecko_verrel}
 Provides:       gecko-libs%{?_isa} = %{gecko_verrel}
 Conflicts:      firefox < 3.6
@@ -240,6 +251,7 @@ debug %{base_name}, you want to install %{base_name}-debuginfo instead.
 #---------------------------------------------------------------------
 
 %prep
+export PKG_CONFIG_PATH=%{_libdir}/pkgconfig
 %setup -q -c
 cd %{tarballdir}
 
@@ -256,6 +268,20 @@ cd %{tarballdir}
 %patch52 -p1 -b .855919
 %endif
 %patch51 -p1 -b .709732
+
+###############################
+# DNSSEC-Tools
+%patch2010 -p1 -b .dnssec-tools
+%patch2011 -p1 -b .dnssec-tools
+%patch2012 -p1 -b .dnssec-tools
+%patch2013 -p1 -b .dnssec-tools
+%patch2014 -p1 -b .dnssec-tools
+%patch2015 -p1 -b .dnssec-tools
+# rebuild configure(s) due to dnssec patches
+/bin/rm -f ./configure
+/usr/bin/autoconf-2.13
+# end dnssec related patches
+###############################
 
 %{__rm} -f .mozconfig
 %{__cp} %{SOURCE10} .mozconfig
@@ -321,9 +347,12 @@ echo "ac_add_options --disable-polyic" >> .mozconfig
 echo "ac_add_options --disable-tracejit" >> .mozconfig
 %endif
 
+echo "ac_add_options --with-system-val=%{_prefix}" >> .mozconfig
+
 #---------------------------------------------------------------------
 
 %build
+export PKG_CONFIG_PATH=%{_libdir}/pkgconfig
 %if %{?system_sqlite}
 # Do not proceed with build if the sqlite require would be broken:
 # make sure the minimum requirement is non-empty, ...
@@ -337,11 +366,6 @@ esac
 
 cd %{tarballdir}
 
-# use dt-nspr
-export PATH=/usr/local/opt/bin:/usr/local/opt/sbin:$PATH
-export LDFLAGS="-Wl,-rpath,%{mozappdir} -Wl,-rpath,%{_libdir}"
-
-
 # -fpermissive is needed to build with gcc 4.6+ which has become stricter
 # 
 # Mozilla builds with -Wall with exception of a few warnings which show up
@@ -352,7 +376,7 @@ export LDFLAGS="-Wl,-rpath,%{mozappdir} -Wl,-rpath,%{_libdir}"
 MOZ_OPT_FLAGS=$(echo "$RPM_OPT_FLAGS -fpermissive" | \
                       %{__sed} -e 's/-Wall//' -e 's/-fexceptions/-fno-exceptions/g')
 %if %{?debug_build}
-MOZ_OPT_FLAGS=$(echo "$MOZ_OPT_FLAGS" | %{__sed} -e 's/-O2//')
+MOZ_OPT_FLAGS=$(echo "$MOZ_OPT_FLAGS" | %{__sed} -e 's/-O2//' -e 's/-Wp,-D_FORTIFY_SOURCE=2//')
 %endif
 %ifarch s390
 MOZ_OPT_FLAGS=$(echo "$RPM_OPT_FLAGS" | %{__sed} -e 's/-g/-g1')
@@ -379,6 +403,10 @@ MOZ_SMP_FLAGS=-j1
 [ "$RPM_BUILD_NCPUS" -ge 8 ] && MOZ_SMP_FLAGS=-j8
 %endif
 
+# use dt-nspr
+export PATH=%{_bindir}:%{_sbindir}:$PATH
+export LDFLAGS="$LDFLAGS -Wl,-rpath,%{mozappdir} -Wl,-rpath,%{_libdir} -L%{_libdir}"
+
 make -f client.mk build STRIP="/bin/true" MOZ_MAKE_FLAGS="$MOZ_SMP_FLAGS" MOZ_SERVICES_SYNC="1"
 
 # create debuginfo for crash-stats.mozilla.com
@@ -390,6 +418,7 @@ make -C objdir buildsymbols
 #---------------------------------------------------------------------
 
 %install
+export PKG_CONFIG_PATH=%{_libdir}/pkgconfig
 cd %{tarballdir}
 
 # set up our prefs before install, so it gets pulled in to omni.jar
