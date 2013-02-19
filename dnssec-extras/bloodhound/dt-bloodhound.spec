@@ -23,7 +23,20 @@
 %define _usr                %{_prefix}/usr
 %define _usrsrc             %{_prefix}/usr/src
 
-%define base_name           firefox
+%define base_name           bloodhound
+
+# use dtsvn libval?
+%define dtnss             1
+%define dtsvn             1
+
+%if %{dtsvn}
+%define dt_ver 1.14-1.svn7378
+%else
+%define dt_ver 1.14-1
+%endif
+
+# Use system nss/nspr?
+%define system_nss        1
 
 # Separated plugins are supported on x86(64) only
 %ifarch %{ix86} x86_64
@@ -43,7 +56,8 @@
 %define default_bookmarks_file /usr/share/bookmarks/default-bookmarks.html
 %define firefox_app_id \{ec8030f7-c20a-464f-9b0e-13a3a9e97384\}
 
-%global xulrunner_version      15.0
+%global xulrunner_version      18.0
+%global xulrunner_version_max  18.1
 %global xulrunner_release      1
 %global alpha_version          0
 %global beta_version           0
@@ -54,7 +68,7 @@
 %global tarballdir    mozilla-release
 
 %define official_branding       1
-%define build_langpacks         1
+%define build_langpacks         0
 %define include_debuginfo       0
 
 %if %{alpha_version} > 0
@@ -80,15 +94,19 @@
 %endif
 
 Summary:        Mozilla Firefox Web browser
-Name:           dt-firefox
-Version:        15.0
+%if %{dtnss}
+Name:           dt-bloodhound-nss
+%else
+Name:           dt-bloodhound
+%endif
+Version:        18.0
 Release:        1%{?pre_tag}%{?dist}
 URL:            http://www.mozilla.org/projects/firefox/
 License:        MPLv1.1 or GPLv2+ or LGPLv2+
 Group:          Applications/Internet
 Source0:        ftp://ftp.mozilla.org/pub/firefox/releases/%{version}%{?pre_version}/source/firefox-%{version}%{?pre_version}.source.tar.bz2
 %if %{build_langpacks}
-Source1:        firefox-langpacks-%{version}%{?pre_version}-20120827.tar.xz
+Source1:        firefox-langpacks-%{version}%{?pre_version}-20130109.tar.xz
 %endif
 Source10:       firefox-mozconfig
 Source11:       firefox-mozconfig-branded
@@ -104,6 +122,7 @@ Patch0:         firefox-install-dir.patch
 # Fedora patches
 Patch14:        firefox-5.0-asciidel.patch
 Patch15:        firefox-15.0-enable-addons.patch
+Patch16:        firefox-duckduckgo.patch
 
 # Upstream patches
 
@@ -118,49 +137,70 @@ Patch15:        firefox-15.0-enable-addons.patch
 %endif
 
 # -START- DNSSEC-Tools
-# - mozilla-base patches
-Patch1011:     moz-base-0001-take-advantage-of-new-DNSSEC-functionality-in-NSPR.patch
-Patch1012:     moz-base-0002-support-functions-in-preparation-for-async-support.patch
-Patch1013:     moz-base-0003-take-advantage-of-new-async-functionality-in-NSPR.patch
-Patch1014:     moz-base-0004-make-netwerk-DNSSEC-validation-aware.patch
-# - mozilla-browser patches
-Patch1101:     moz-firefox-0001-update-browser-local-overrides-for-DNSSEC.patch
-Patch1102:     moz-firefox-0002-add-DNSSEC-preferences-to-browser.patch
+Patch2106:  dt-xulrunner-0006-add-DNSSEC-preferences-to-browser.patch
+Patch2110:  dt-xulrunner-0010-add-dnssec-options-to-configure.patch
+Patch2201:  dt-browser-0001-update-browser-local-overrides-for-DNSSEC.patch
+Patch2301:  dt-bloodhound-0001-replace-mozilla-URLs.patch
+Patch2302:  dt-bloodhound-0002-branding-for-bloodhound.patch
+Patch2303:  dt-bloodhound-0003-update-bookmarks.patch
 # -END- DNSSEC-Tools
 
 # ---------------------------------------------------
 
 BuildRequires:  desktop-file-utils
 BuildRequires:  system-bookmarks
+%if %{dtnss}
+BuildRequires:  dt-xulrunner-nss-devel >= %{xulrunner_verrel}
+%else
 BuildRequires:  dt-xulrunner-devel%{?_isa} >= %{xulrunner_verrel}
-BuildRequires:  dnssec-tools-libs-devel openssl-devel autoconf213
+%endif
+%if %{dtsvn}
+Requires:       dtsvn-dnsval-libs >= %{dt_ver}
+BuildRequires:  dtsvn-dnsval-libs-devel >= %{dt_ver}
+BuildRequires:  openssl-static
+%else
+BuildRequires:  dnssec-tools-libs-devel >= %{dt_ver}
+BuildRequires:  openssl-devel
+%endif
+BuildRequires:  autoconf213
 
+%if %{dtnss}
+Requires:       dt-xulrunner-nss >= %{xulrunner_verrel}
+%else
 Requires:       dt-xulrunner%{?_isa} >= %{xulrunner_verrel}
+%endif
 Requires:       system-bookmarks
 Obsoletes:      mozilla <= 37:1.7.13
 Provides:       webclient
-Conflicts:      dt-firefox-aio
+%if %{dtnss}
+Conflicts:      xulrunner-nss > %{xulrunner_version_max}
+%else
+Conflicts:      xulrunner%{?_isa} > %{xulrunner_version_max}
+%endif
 
 %description
-Mozilla Firefox is an open-source web browser, designed for standards
-compliance, performance and portability.
+%{base_name} is an open-source web browser, designed for standards
+compliance, performance and portability with enhancements for
+DNSSEC Security (including local validation and DANE support).
 
 #---------------------------------------------------------------------
 
 %prep
 %setup -q -c
+export PKG_CONFIG_PATH=%{_libdir}/pkgconfig
 cd %{tarballdir}
 
 # Build patches, can't change backup suffix from default because during build
 # there is a compare of config and js/config directories and .orig suffix is 
 # ignored during this compare.
-%patch0 -p2 -b .orig
+%patch0 -p1
 
 # For branding specific patches.
 
 # Fedora patches
 %patch14 -p1 -b .asciidel
 %patch15 -p2 -b .addons
+%patch16 -p1 -b .duckduckgo
 
 # Upstream patches
 
@@ -173,19 +213,16 @@ cd %{tarballdir}
 
 ###############################
 # DNSSEC-Tools
-# - mozilla-base patches
-%patch1011 -p1 -b .dnssec-moz-base
-%patch1012 -p1 -b .dnssec-moz-base
-%patch1013 -p1 -b .dnssec-moz-base
-%patch1014 -p1 -b .dnssec-moz-base
-# - mozilla-firefox patches
-%patch1101 -p1 -b .dnssec-moz-firefox
-%patch1102 -p1 -b .dnssec-moz-firefox
-
+# - dt-browser patches
+%patch2106 -p1 -b .dt-xulrunner
+%patch2110 -p1 -b .dt-xulrunner
+%patch2201 -p1 -b .dt-browser
+%patch2301 -p1 -b .dt-bloodhound
+%patch2302 -p1 -b .dt-bloodhound
+%patch2303 -p1 -b .dt-bloodhound
 # rebuild configure(s) due to dnssec patches
-/bin/rm -f ./configure
+%{__rm} -f ./configure
 /usr/bin/autoconf-2.13
-# end dnssec related patches
 ###############################
 
 
@@ -218,11 +255,26 @@ echo "ac_add_options --disable-debug" >> .mozconfig
 echo "ac_add_options --enable-optimize" >> .mozconfig
 %endif
 
+%if %{?system_nss}
+echo "ac_add_options --with-system-nspr" >> .mozconfig
+echo "ac_add_options --with-system-nss" >> .mozconfig
+%else
+echo "ac_add_options --without-system-nspr" >> .mozconfig
+echo "ac_add_options --without-system-nss" >> .mozconfig
+%endif
+
+# s390(x) fails to start with jemalloc enabled
+%ifarch s390 s390x
+echo "ac_add_options --disable-jemalloc" >> .mozconfig
+%endif
+
 echo "ac_add_options --with-system-val" >> .mozconfig
+echo "ac_add_options --with-app-basename=Bloodhound" >> .mozconfig
 
 #---------------------------------------------------------------------
 
 %build
+export PKG_CONFIG_PATH=%{_libdir}/pkgconfig
 cd %{tarballdir}
 
 # Mozilla builds with -Wall with exception of a few warnings which show up
@@ -231,9 +283,15 @@ cd %{tarballdir}
 # Disable C++ exceptions since Mozilla code is not exception-safe
 #
 MOZ_OPT_FLAGS=$(echo $RPM_OPT_FLAGS | \
-                     %{__sed} -e 's/-Wall//' -e 's/-fexceptions/-fno-exceptions/g')
+                     %{__sed} -e 's/-Wall//')
 %if %{?debug_build}
 MOZ_OPT_FLAGS=$(echo "$MOZ_OPT_FLAGS" | %{__sed} -e 's/-O2//' -e 's/-Wp,-D_FORTIFY_SOURCE=2//')
+%endif
+%ifarch s390
+MOZ_OPT_FLAGS=$(echo "$MOZ_OPT_FLAGS" | %{__sed} -e 's/-g/-g1/')
+%endif
+%ifarch s390 %{arm} ppc
+MOZ_LINK_FLAGS="-Wl,--no-keep-memory -Wl,--reduce-memory-overheads"
 %endif
 export CFLAGS=$MOZ_OPT_FLAGS
 export CXXFLAGS=$MOZ_OPT_FLAGS
@@ -249,10 +307,16 @@ MOZ_SMP_FLAGS=-j1
      RPM_BUILD_NCPUS="`/usr/bin/getconf _NPROCESSORS_ONLN`"
 [ "$RPM_BUILD_NCPUS" -ge 2 ] && MOZ_SMP_FLAGS=-j2
 [ "$RPM_BUILD_NCPUS" -ge 4 ] && MOZ_SMP_FLAGS=-j4
+[ "$RPM_BUILD_NCPUS" -ge 8 ] && MOZ_SMP_FLAGS=-j7
 %endif
 
-export PATH="/usr/local/opt/bin:/usr/local/opt/sbin:$PATH"
-export LDFLAGS="-Wl,-rpath,%{mozappdir} -Wl,-rpath,%{_libdir}"
+export PATH="%{_bindir}:%{_sbindir}:$PATH"
+LDFLAGS="-Wl,-rpath,%{mozappdir} -Wl,-rpath,%{_libdir} -L%{_libdir}"
+%if %{dtsvn}
+LDFLAGS+=" -Wl,-rpath,/usr/local/dtsvn/%{_lib} -L/usr/local/dtsvn/%{_lib}"
+%endif
+export LDFLAGS
+
 make -f client.mk build STRIP="/bin/true" MOZ_MAKE_FLAGS="$MOZ_SMP_FLAGS"
 
 # create debuginfo for crash-stats.mozilla.com
@@ -264,6 +328,7 @@ make buildsymbols
 #---------------------------------------------------------------------
 
 %install
+export PKG_CONFIG_PATH=%{_libdir}/pkgconfig
 cd %{tarballdir}
 
 # set up our prefs and add it to the package manifest file, so it gets pulled in
@@ -299,18 +364,21 @@ desktop-file-install --dir $RPM_BUILD_ROOT%{_datadir}/applications %{SOURCE20}
 %endif
 
 # set up the firefox start script
-%{__rm} -rf $RPM_BUILD_ROOT%{_bindir}/firefox
+%{__rm} -rf $RPM_BUILD_ROOT%{_bindir}/%{base_name}
 XULRUNNER_DIR=`pkg-config --variable=libdir libxul | %{__sed} -e "s,%{_libdir},,g"`
-%{__cat} %{SOURCE21} | %{__sed} -e "s,XULRUNNER_DIRECTORY,$XULRUNNER_DIR,g" > \
-  $RPM_BUILD_ROOT%{_bindir}/firefox
-%{__chmod} 755 $RPM_BUILD_ROOT%{_bindir}/firefox
+%{__cat} %{SOURCE21} | %{__sed} \
+         -e "s,/usr/,%{_prefix}/,g" \
+         -e "s,firefox,%{base_name},g" \
+         -e "s,XULRUNNER_DIRECTORY,$XULRUNNER_DIR,g" > \
+  $RPM_BUILD_ROOT%{_bindir}/%{base_name}
+%{__chmod} 755 $RPM_BUILD_ROOT%{_bindir}/%{base_name}
 
 # Link with xulrunner 
 ln -s `pkg-config --variable=libdir libxul` $RPM_BUILD_ROOT/%{mozappdir}/xulrunner
 
-%{__install} -p -D -m 644 %{SOURCE23} $RPM_BUILD_ROOT%{_mandir}/man1/firefox.1
+%{__install} -p -D -m 644 %{SOURCE23} $RPM_BUILD_ROOT%{_mandir}/man1/%{base_name}.1
 
-%{__rm} -f $RPM_BUILD_ROOT/%{mozappdir}/firefox-config
+%{__rm} -f $RPM_BUILD_ROOT/%{mozappdir}/%{base_name}-config
 %{__rm} -f $RPM_BUILD_ROOT/%{mozappdir}/update-settings.ini
 
 for s in 16 22 24 32 48 256; do
@@ -343,7 +411,6 @@ for langpack in `ls firefox-langpacks/*.xpi`; do
   echo "%%lang($language) %{langpackdir}/${extensionID}.xpi" >> ../%{base_name}.lang
 done
 %{__rm} -rf firefox-langpacks
-%endif # build_langpacks
 
 # Install langpack workaround (see #707100, #821169)
 function create_default_langpack() {
@@ -370,6 +437,7 @@ create_default_langpack "pa-IN" "pa"
 create_default_langpack "pt-PT" "pt"
 create_default_langpack "sv-SE" "sv"
 create_default_langpack "zh-TW" "zh"
+%endif # build_langpacks
 
 # System extensions
 %{__mkdir_p} $RPM_BUILD_ROOT%{_datadir}/mozilla/extensions/%{firefox_app_id}
@@ -377,6 +445,9 @@ create_default_langpack "zh-TW" "zh"
 
 # Copy over the LICENSE
 %{__install} -p -c -m 644 LICENSE $RPM_BUILD_ROOT/%{mozappdir}
+
+# Remove tmp files
+find $RPM_BUILD_ROOT/%{mozappdir}/modules -name '.mkdir.done' -exec rm -rf {} \;
 
 # Enable crash reporter for Firefox application
 %if %{include_debuginfo}
@@ -410,8 +481,8 @@ gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
 
 %files -f %{base_name}.lang
 %defattr(-,root,root,-)
-%{_bindir}/firefox
-%{mozappdir}/firefox
+%{_bindir}/%{base_name}
+%{mozappdir}/%{base_name}
 %doc %{_mandir}/man1/*
 %dir %{_datadir}/mozilla/extensions/%{firefox_app_id}
 %dir %{_libdir}/mozilla/extensions/%{firefox_app_id}
@@ -443,7 +514,11 @@ gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
 %{_datadir}/icons/hicolor/32x32/apps/firefox.png
 %{_datadir}/icons/hicolor/48x48/apps/firefox.png
 %{mozappdir}/xulrunner
-
+%{mozappdir}/webapprt-stub
+%{mozappdir}/modules/*
+%dir %{mozappdir}/webapprt
+%{mozappdir}/webapprt/omni.ja
+%{mozappdir}/webapprt/webapprt.ini
 %if %{include_debuginfo}
 #%{mozappdir}/crashreporter
 %{mozappdir}/crashreporter-override.ini
@@ -454,6 +529,49 @@ gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
 #---------------------------------------------------------------------
 
 %changelog
+* Wed Jan 9 2013 Martin Stransky <stransky@redhat.com> - 18.0-1
+- Update to 18.0
+
+* Tue Dec 18 2012 Martin Stransky <stransky@redhat.com> - 17.0.1-2
+- Fix bug 878831 - Please enable gfx.color_management.enablev4=true
+
+* Thu Nov 29 2012 Jan Horak <jhorak@redhat.com> - 17.0.1-1
+- Update to 17.0.1
+
+* Mon Nov 19 2012 Martin Stransky <stransky@redhat.com> - 17.0-1
+- Update to 17.0
+
+* Thu Nov 15 2012 Martin Stransky <stransky@redhat.com> - 17.0-0.1b6
+- Update to 17.0 Beta 6
+
+* Wed Nov  7 2012 Jan Horak <jhorak@redhat.com> - 16.0.2-4
+- Added duckduckgo.com search engine
+
+* Thu Nov  1 2012 Jan Horak <jhorak@redhat.com> - 16.0.2-3
+- Added keywords to desktop file (871900)
+
+* Tue Oct 30 2012 Martin Stransky <stransky@redhat.com> - 16.0.2-2
+- Updated man page (#800234)
+
+* Fri Oct 26 2012 Jan Horak <jhorak@redhat.com> - 16.0.2-1
+- Update to 16.0.2
+
+* Thu Oct 11 2012 Martin Stransky <stransky@redhat.com> - 16.0.1-1
+- Update to 16.0.1
+
+* Thu Oct 11 2012 Martin Stransky <stransky@redhat.com> - 16.0.1-1
+- Update to 16.0.1
+
+* Mon Oct  8 2012 Jan Horak <jhorak@redhat.com> - 16.0-1
+- Update to 16.0
+- Use /var/tmp instead of /tmp (rhbz#860814)
+
+* Tue Sep 11 2012 Jan Horak <jhorak@redhat.com> - 15.0.1-1
+- Update to 15.0.1
+
+* Tue Aug 28 2012 Martin Stransky <stransky@redhat.com> - 15.0-2
+- Added fix for rhbz#851722 - conflict with incompatible xulrunner
+
 * Mon Aug 27 2012 Martin Stransky <stransky@redhat.com> - 15.0-1
 - Update to 15.0
 
