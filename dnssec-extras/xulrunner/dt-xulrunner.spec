@@ -58,13 +58,13 @@
 # alpha_version should be set to the alpha number if using an alpha, 0 otherwise
 # beta_version  should be set to the beta number if using a beta, 0 otherwise
 # rc_version    should be set to the RC number if using an RC, 0 otherwise
-%global gecko_dir_ver 2
+%global gecko_dir_ver %{version}
 %global alpha_version 0
 %global beta_version  0
 %global rc_version    0
 
 %define base_name     xulrunner
-%global mozappdir     %{_libdir}/%{base_name}-%{gecko_dir_ver}
+%global mozappdir     %{_libdir}/%{base_name}
 %global tarballdir    mozilla-release
 
 # crash reporter work only on x86/x86_64
@@ -96,8 +96,8 @@
 
 Summary:        XUL Runtime for Gecko Applications
 Name:           dt-xulrunner
-Version:        15.0
-Release:        2%{?pre_tag}%{?dist}
+Version:        16.0.1
+Release:        1%{?pre_tag}%{?dist}
 URL:            http://developer.mozilla.org/En/XULRunner
 License:        MPLv1.1 or GPLv2+ or LGPLv2+
 Group:          Applications/Internet
@@ -108,15 +108,12 @@ Source12:       %{base_name}-redhat-default-prefs.js
 Source21:       %{base_name}.sh.in
 
 # build patches
-Patch0:         xulrunner-version.patch
 Patch1:         mozilla-build.patch
+Patch2:         xulrunner-install-dir.patch
 Patch14:        xulrunner-2.0-chromium-types.patch
-%if 0%{?fedora} <= 15
-Patch16:        add-gtkmozembed-11.0.patch
-%endif
 Patch17:        xulrunner-15.0-gcc47.patch
 # https://bugzilla.redhat.com/show_bug.cgi?id=814879#c3
-Patch18:        xulrunner-12.0-jemalloc-ppc.patch
+Patch18:        xulrunner-16.0-jemalloc-ppc.patch
 
 # Fedora specific patches
 Patch20:        mozilla-193-pkgconfig.patch
@@ -124,6 +121,7 @@ Patch20:        mozilla-193-pkgconfig.patch
 # Upstream patches
 Patch49:        mozilla-746112.patch
 Patch51:        mozilla-709732-gfx-icc-profile-fix.patch
+Patch52:        rhbz-855919.patch
 
 # ---------------------------------------------------
 
@@ -245,15 +243,9 @@ debug %{base_name}, you want to install %{base_name}-debuginfo instead.
 %setup -q -c
 cd %{tarballdir}
 
-sed -e 's/__RPM_VERSION_INTERNAL__/%{gecko_dir_ver}/' %{P:%%PATCH0} \
-    > version.patch
-%{__patch} -p1 -b --suffix .version --fuzz=0 < version.patch
-
 %patch1  -p1 -b .build
+%patch2  -p1
 %patch14 -p1 -b .chromium-types
-%if 0%{?fedora} <= 15
-%patch16 -p2 -b .gtkmozembed
-%endif
 %patch17 -p2 -b .gcc47
 %patch18 -p2 -b .jemalloc-ppc
 
@@ -261,6 +253,7 @@ sed -e 's/__RPM_VERSION_INTERNAL__/%{gecko_dir_ver}/' %{P:%%PATCH0} \
 
 %ifarch ppc ppc64
 %patch49 -p2 -b .746112
+%patch52 -p1 -b .855919
 %endif
 %patch51 -p1 -b .709732
 
@@ -361,8 +354,16 @@ MOZ_OPT_FLAGS=$(echo "$RPM_OPT_FLAGS -fpermissive" | \
 %if %{?debug_build}
 MOZ_OPT_FLAGS=$(echo "$MOZ_OPT_FLAGS" | %{__sed} -e 's/-O2//')
 %endif
+%ifarch s390
+MOZ_OPT_FLAGS=$(echo "$RPM_OPT_FLAGS" | %{__sed} -e 's/-g/-g1')
+%endif
+%ifarch s390 %{arm} ppc
+MOZ_LINK_FLAGS="-Wl,--no-keep-memory -Wl,--reduce-memory-overheads"
+%endif
+
 export CFLAGS=$MOZ_OPT_FLAGS
 export CXXFLAGS=$MOZ_OPT_FLAGS
+export LDFLAGS=$MOZ_LINK_FLAGS
 
 export PREFIX='%{_prefix}'
 export LIBDIR='%{_libdir}'
@@ -530,6 +531,24 @@ fi
 #---------------------------------------------------------------------
 
 %changelog
+* Thu Oct 11 2012 Martin Stransky <stransky@redhat.com> - 16.0.1-1
+- Update to 16.0.1
+
+* Mon Oct 10 2012 Martin Stransky <stransky@redhat.com> - 16.0-2
+- Fixed xulrunner launch script
+
+* Mon Oct 8 2012 Martin Stransky <stransky@redhat.com> - 16.0-1
+- Update to 16.0
+
+* Mon Sep 17 2012 Martin Stransky <stransky@redhat.com> - 15.0.1-3
+- Added fix for rhbz#855919 - Firefox freezes on Fedora 18 for PPC64
+
+* Fri Sep 14 2012 Martin Stransky <stransky@redhat.com> - 15.0.1-2
+- Added build flags for second arches
+
+* Tue Sep 11 2012 Jan Horak <jhorak@redhat.com> - 15.0.1-1
+- Update to 15.0.1
+
 * Wed Aug 22 2012 Martin Stransky <stransky@redhat.com> - 15.0-2
 - Update to 15.0
 
