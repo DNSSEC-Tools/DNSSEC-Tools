@@ -1,15 +1,15 @@
-From b59748848164856c0a72001c1bd162fc78eb2a69 Mon Sep 17 00:00:00 2001
+From 31c7acee0a6a7792453dae8b63390d8e433a1c74 Mon Sep 17 00:00:00 2001
 From: Robert Story <rstory@localhost>
 Date: Wed, 11 Apr 2012 14:13:53 -0400
-Subject: [PATCH 03/16] NSPR dnssec options/flags to configure/makefiles
+Subject: [PATCH 03/25] NSPR add dnssec options/flags to configure/makefiles
 
 ---
- nsprpub/config/autoconf.mk.in | 12 ++++--
- nsprpub/config/config.mk      |  5 +++
- nsprpub/config/nspr-config.in |  6 +--
- nsprpub/configure.in          | 97 +++++++++++++++++++++++++++++++++++++++++++
- nsprpub/pr/tests/Makefile.in  |  6 +++
- 5 files changed, 119 insertions(+), 7 deletions(-)
+ nsprpub/config/autoconf.mk.in |  12 +++--
+ nsprpub/config/config.mk      |   5 ++
+ nsprpub/config/nspr-config.in |   6 +--
+ nsprpub/configure.in          | 105 ++++++++++++++++++++++++++++++++++++++++++
+ nsprpub/pr/tests/Makefile.in  |   6 +++
+ 5 files changed, 127 insertions(+), 7 deletions(-)
 
 diff --git a/nsprpub/config/autoconf.mk.in b/nsprpub/config/autoconf.mk.in
 index 5f093c4..547287b 100644
@@ -57,11 +57,39 @@ index 05db076..9807860 100644
  define MAKE_OBJDIR
  if test ! -d $(@D); then rm -rf $(@D); $(NSINSTALL) -D $(@D); fi
  endef
+diff --git a/nsprpub/config/nspr-config.in b/nsprpub/config/nspr-config.in
+index 2cb62a0..b03607b 100755
+--- a/nsprpub/config/nspr-config.in
++++ b/nsprpub/config/nspr-config.in
+@@ -122,7 +122,7 @@ if test "$echo_libdir" = "yes"; then
+ fi
+ 
+ if test "$echo_cflags" = "yes"; then
+-    echo -I$includedir
++    echo -I$includedir @VAL_CFLAGS@
+ fi
+ 
+ if test "$echo_libs" = "yes"; then
+@@ -136,12 +136,12 @@ if test "$echo_libs" = "yes"; then
+       if test -n "$lib_nspr"; then
+ 	libdirs="$libdirs -lnspr${major_version}"
+       fi
+-      os_ldflags="@LDFLAGS@"
++      os_ldflags="@LDFLAGS@ @VAL_LDFLAGS@"
+       for i in $os_ldflags ; do
+ 	if echo $i | grep \^-L >/dev/null; then
+ 	  libdirs="$libdirs $i"
+         fi
+       done
+-      echo $libdirs @OS_LIBS@
++      echo $libdirs @OS_LIBS@ @VAL_LIBS@
+ fi      
+ 
 diff --git a/nsprpub/configure.in b/nsprpub/configure.in
-index da7961c..23609b0 100644
+index a07e384..8148ab9 100644
 --- a/nsprpub/configure.in
 +++ b/nsprpub/configure.in
-@@ -2678,6 +2678,7 @@ dnl AC_HEADER_STDC
+@@ -2547,6 +2547,7 @@ dnl AC_HEADER_STDC
  dnl AC_HEADER_SYS_WAIT
  dnl AC_CHECK_HEADERS(fcntl.h limits.h sys/file.h sys/ioctl.h sys/time.h unistd.h)
  
@@ -69,7 +97,7 @@ index da7961c..23609b0 100644
  dnl ========================================================
  dnl Check for typedefs and structs
  dnl ========================================================
-@@ -3196,6 +3197,102 @@ AC_ARG_WITH(wrap-malloc,
+@@ -3065,6 +3066,110 @@ AC_ARG_WITH(wrap-malloc,
      WRAP_LDFLAGS="${WRAP_LDFLAGS} $withval")
  
  dnl ========================================================
@@ -95,14 +123,9 @@ index da7961c..23609b0 100644
 +VAL_LDFLAGS=""
 +OPENSSL_LIBS=""
 +if test "x$with_system_val" != xno; then
-+  if test "x$USE_64" = x1; then
-+     LIBDIR="lib64"
-+  else
-+     LIBDIR="lib"
-+  fi
 +  if test "x$with_system_val" != xyes; then
 +    VAL_CFLAGS="-I${with_system_val}/include"
-+    VAL_LDFLAGS="-L${with_system_val}/$LIBDIR"
++    VAL_LDFLAGS="-L${with_system_val}/lib"
 +  fi
 +  if test -n "$_WIN32_MSVC"; then
 +    VAL_LIBS="${with_system_val}/lib/libval-threads.a ${with_system_val}/lib/libsres.a ${with_system_val}/lib/libcrypto.a ${with_system_val}/lib/libpthread.dll.a ${with_system_val}/lib/libgcc.a user32.lib gdi32.lib Ws2_32.lib"
@@ -111,22 +134,34 @@ index da7961c..23609b0 100644
 +    if test "x$with_system_openssl" != xno; then
 +        if test "x$with_system_openssl" != xyes; then
 +            CFLAGS="$CFLAGS -I${with_system_openssl}/include"
-+            LDFLAGS="$LDFLAGS -L${with_system_openssl}/$LIBDIR"
++            LDFLAGS="$LDFLAGS -L${with_system_openssl}/lib"
 +            OPENSSL_PATH="${with_system_openssl}"
 +        else
-+            OPENSSL_PATH="/usr/$LIBDIR"
++            OPENSSL_PATH="/usr/lib"
 +        fi
 +    else
-+        OPENSSL_PATH="/usr/$LIBDIR"
++        OPENSSL_PATH="/usr/lib"
 +    fi
 +    LDFLAGS="$LDFLAGS $VAL_LDFLAGS"
 +    CFLAGS="$CFLAGS $VAL_CFLAGS"
 +    AC_CHECK_LIB(crypto, EVP_md5, OPENSSL_LIBS="-lcrypto")
 +
 +    dnl look for static lib
-+    AC_CHECK_LIB(ssl, SSL_get_SSL_CTX, OPENSSL_LIBSSL="yes")
-+    if test -n "$OPENSSL_LIBSSL"; then
-+      OPENSSL_LIBS="$OPENSSL_LIBS $OPENSSL_PATH/libssl.a"
++    AC_CHECK_LIB(ssl, SSL_get_SSL_CTX, , [AC_MSG_ERROR(Cannot find OpenSSL libraries.)])
++    if test -n "$USE_64"; then
++       if test -e "${OPENSSL_PATH}64/libssl.a"; then
++          OPENSSL_LIBS="$OPENSSL_LIBS ${OPENSSL_PATH}64/libssl.a"
++       elif test -e "${OPENSSL_PATH}/libssl.a"; then
++          OPENSSL_LIBS="$OPENSSL_LIBS $OPENSSL_PATH/libssl.a"
++       else
++          AC_MSG_ERROR("Static SSL library not found.")
++       fi
++    else
++       if test -e "${OPENSSL_PATH}/libssl.a"; then
++          OPENSSL_LIBS="$OPENSSL_LIBS $OPENSSL_PATH/libssl.a"
++       else
++          AC_MSG_ERROR("Static SSL library not found.")
++       fi
 +    fi
 +
 +    dnl with static openssl, apparently we need to pull in libkrb5
@@ -136,7 +171,8 @@ index da7961c..23609b0 100644
 +    dnl val-threads check
 +    AC_CHECK_LIB(val-threads, val_gethostbyname,
 +        [VAL_LIBS="-lval-threads -lsres ${OPENSSL_LIBS} ${_PTHREAD_LDFLAGS}"
-+         AC_DEFINE(MOZ_DNSSEC)], ,
++         AC_DEFINE(MOZ_DNSSEC)],
++         [AC_MSG_ERROR(Cannot find val_gethostbyname.)],
 +        -lsres ${OPENSSL_LIBS} ${_PTHREAD_LDFLAGS})
 +  fi
 +  dnl functions added in 1.11
@@ -173,10 +209,10 @@ index da7961c..23609b0 100644
  dnl ========================================================
  AC_SUBST(SHELL_OVERRIDE)
 diff --git a/nsprpub/pr/tests/Makefile.in b/nsprpub/pr/tests/Makefile.in
-index 122ef1c..6cd7842 100644
+index 50e8776..6a63112 100644
 --- a/nsprpub/pr/tests/Makefile.in
 +++ b/nsprpub/pr/tests/Makefile.in
-@@ -423,6 +423,10 @@ LIBPTHREAD =
+@@ -379,6 +379,10 @@ LIBPTHREAD =
  XCFLAGS = $(OS_CFLAGS)
  endif
  
@@ -187,7 +223,7 @@ index 122ef1c..6cd7842 100644
  #####################################################
  #
  # The rules
-@@ -504,6 +508,8 @@ $(OBJDIR)/socket: $(OBJDIR)/socket.o
+@@ -458,6 +462,8 @@ $(OBJDIR)/socket: $(OBJDIR)/socket.o
  	$(PURE) $(CC) $(XCFLAGS) $< $(LDOPTS) $(LIBPLC) $(LIBNSPR) $(LIBPTHREAD) $(EXTRA_LIBS) -o $@
  $(OBJDIR)/testfile: $(OBJDIR)/testfile.o
  	$(PURE) $(CC) $(XCFLAGS) $< $(LDOPTS) $(LIBPLC) $(LIBNSPR) $(LIBPTHREAD) $(EXTRA_LIBS) -o $@
