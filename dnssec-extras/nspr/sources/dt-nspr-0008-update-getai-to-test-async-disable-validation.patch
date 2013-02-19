@@ -1,14 +1,14 @@
-From 0dfb5df460039eba60a6bf217950c22326c3210d Mon Sep 17 00:00:00 2001
+From 25d6c40a8754d39193a0fb1176b75bfd02b9df08 Mon Sep 17 00:00:00 2001
 From: Robert Story <rstory@localhost>
 Date: Thu, 23 Feb 2012 12:35:22 -0500
-Subject: [PATCH 09/18] NSPR update getai to test async/validation
+Subject: [PATCH 08/15] NSPR update getai to test async/validation
 
 ---
  nsprpub/pr/tests/getai.c | 268 +++++++++++++++++++++++++++++++++++++++++++++--
  1 file changed, 261 insertions(+), 7 deletions(-)
 
 diff --git a/nsprpub/pr/tests/getai.c b/nsprpub/pr/tests/getai.c
-index f398ca3..4aa165a 100644
+index f398ca3..5356b30 100644
 --- a/nsprpub/pr/tests/getai.c
 +++ b/nsprpub/pr/tests/getai.c
 @@ -7,26 +7,280 @@
@@ -120,7 +120,7 @@ index f398ca3..4aa165a 100644
 +    PRIntervalTime   timeout;
 +    val_gai_status   *vgs;
 +    struct getai_cb_data *cb_data;
-+#if defined(HAVE_VAL_GETADDRINFO_CANCEL) && defined (DEBUG_rstory)
++#if defined(HAVE_VAL_GETADDRINFO_CANCEL) && defined (DEBUG_VAL_GETADDRINFO_CANCEL)
 +    PRIntn           submitted;
 +#endif
 +
@@ -151,7 +151,7 @@ index f398ca3..4aa165a 100644
 +      ++arg_idx;
 +      ++pending;
 +    }
-+#if defined(HAVE_VAL_GETADDRINFO_CANCEL) && defined (DEBUG_rstory)
++#if defined(HAVE_VAL_GETADDRINFO_CANCEL) && defined (DEBUG_VAL_GETADDRINFO_CANCEL)
 +    submitted = pending;
 +#endif
 +
@@ -160,7 +160,7 @@ index f398ca3..4aa165a 100644
 +      if (debug)
 +          printf("pending %d\n", pending);
 +
-+#if defined(HAVE_VAL_GETADDRINFO_CANCEL) && defined (DEBUG_rstory)
++#if defined(HAVE_VAL_GETADDRINFO_CANCEL) && defined (DEBUG_VAL_GETADDRINFO_CANCEL)
 +      /* if more than 3 request, cancel the last one */
 +      if (submitted > 3 && NULL != vgs) {
 +        printf("cancelling one\n");

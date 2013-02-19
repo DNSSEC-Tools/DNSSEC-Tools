@@ -1,15 +1,15 @@
-From b122bfb14543ad9903360f25612409468f9435da Mon Sep 17 00:00:00 2001
+From b59748848164856c0a72001c1bd162fc78eb2a69 Mon Sep 17 00:00:00 2001
 From: Robert Story <rstory@localhost>
 Date: Wed, 11 Apr 2012 14:13:53 -0400
-Subject: [PATCH 03/18] NSPR dnssec options/flags to configure/makefiles
+Subject: [PATCH 03/16] NSPR dnssec options/flags to configure/makefiles
 
 ---
- nsprpub/config/autoconf.mk.in | 12 +++++---
+ nsprpub/config/autoconf.mk.in | 12 ++++--
  nsprpub/config/config.mk      |  5 +++
- nsprpub/config/nspr-config.in |  4 +--
- nsprpub/configure.in          | 72 +++++++++++++++++++++++++++++++++++++++++++
- nsprpub/pr/tests/Makefile.in  |  6 ++++
- 5 files changed, 93 insertions(+), 6 deletions(-)
+ nsprpub/config/nspr-config.in |  6 +--
+ nsprpub/configure.in          | 97 +++++++++++++++++++++++++++++++++++++++++++
+ nsprpub/pr/tests/Makefile.in  |  6 +++
+ 5 files changed, 119 insertions(+), 7 deletions(-)
 
 diff --git a/nsprpub/config/autoconf.mk.in b/nsprpub/config/autoconf.mk.in
 index 5f093c4..547287b 100644
@@ -58,7 +58,7 @@ index 05db076..9807860 100644
  if test ! -d $(@D); then rm -rf $(@D); $(NSINSTALL) -D $(@D); fi
  endef
 diff --git a/nsprpub/configure.in b/nsprpub/configure.in
-index da7961c..e9fde78 100644
+index da7961c..23609b0 100644
 --- a/nsprpub/configure.in
 +++ b/nsprpub/configure.in
 @@ -2678,6 +2678,7 @@ dnl AC_HEADER_STDC
@@ -69,7 +69,7 @@ index da7961c..e9fde78 100644
  dnl ========================================================
  dnl Check for typedefs and structs
  dnl ========================================================
-@@ -3196,6 +3197,77 @@ AC_ARG_WITH(wrap-malloc,
+@@ -3196,6 +3197,102 @@ AC_ARG_WITH(wrap-malloc,
      WRAP_LDFLAGS="${WRAP_LDFLAGS} $withval")
  
  dnl ========================================================
@@ -91,24 +91,49 @@ index da7961c..e9fde78 100644
 +_SAVE_LDFLAGS="$LDFLAGS"
 +_SAVE_CFLAGS="$CFLAGS"
 +VAL_LIBS=""
++VAL_CFLAGS=""
++VAL_LDFLAGS=""
 +OPENSSL_LIBS=""
 +if test "x$with_system_val" != xno; then
-+  VAL_CFLAGS="-I${with_system_val}/include"
++  if test "x$USE_64" = x1; then
++     LIBDIR="lib64"
++  else
++     LIBDIR="lib"
++  fi
++  if test "x$with_system_val" != xyes; then
++    VAL_CFLAGS="-I${with_system_val}/include"
++    VAL_LDFLAGS="-L${with_system_val}/$LIBDIR"
++  fi
 +  if test -n "$_WIN32_MSVC"; then
 +    VAL_LIBS="${with_system_val}/lib/libval-threads.a ${with_system_val}/lib/libsres.a ${with_system_val}/lib/libcrypto.a ${with_system_val}/lib/libpthread.dll.a ${with_system_val}/lib/libgcc.a user32.lib gdi32.lib Ws2_32.lib"
 +    AC_DEFINE(MOZ_DNSSEC)
 +  else
-+    VAL_LDFLAGS="-L${with_system_val}/lib"
 +    if test "x$with_system_openssl" != xno; then
-+        if test -n "$with_system_openssl"; then
-+            VAL_CFLAGS="$VAL_CFLAGS -I${with_system_openssl}/include"
-+            VAL_LDFLAGS="$VAL_LDFLAGS -L${with_system_openssl}/lib"
++        if test "x$with_system_openssl" != xyes; then
++            CFLAGS="$CFLAGS -I${with_system_openssl}/include"
++            LDFLAGS="$LDFLAGS -L${with_system_openssl}/$LIBDIR"
++            OPENSSL_PATH="${with_system_openssl}"
++        else
++            OPENSSL_PATH="/usr/$LIBDIR"
 +        fi
++    else
++        OPENSSL_PATH="/usr/$LIBDIR"
 +    fi
 +    LDFLAGS="$LDFLAGS $VAL_LDFLAGS"
 +    CFLAGS="$CFLAGS $VAL_CFLAGS"
 +    AC_CHECK_LIB(crypto, EVP_md5, OPENSSL_LIBS="-lcrypto")
-+    AC_CHECK_LIB(ssl, SSL_get_SSL_CTX, OPENSSL_LIBS="$OPENSSL_LIBS -lssl")
++
++    dnl look for static lib
++    AC_CHECK_LIB(ssl, SSL_get_SSL_CTX, OPENSSL_LIBSSL="yes")
++    if test -n "$OPENSSL_LIBSSL"; then
++      OPENSSL_LIBS="$OPENSSL_LIBS $OPENSSL_PATH/libssl.a"
++    fi
++
++    dnl with static openssl, apparently we need to pull in libkrb5
++    AC_CHECK_LIB(krb5, krb5_init_context, OPENSSL_LIBS="$OPENSSL_LIBS -lkrb5")
++    AC_CHECK_LIB(k5crypto, krb5_checksum_size, OPENSSL_LIBS="$OPENSSL_LIBS -lk5crypto")
++
++    dnl val-threads check
 +    AC_CHECK_LIB(val-threads, val_gethostbyname,
 +        [VAL_LIBS="-lval-threads -lsres ${OPENSSL_LIBS} ${_PTHREAD_LDFLAGS}"
 +         AC_DEFINE(MOZ_DNSSEC)], ,
