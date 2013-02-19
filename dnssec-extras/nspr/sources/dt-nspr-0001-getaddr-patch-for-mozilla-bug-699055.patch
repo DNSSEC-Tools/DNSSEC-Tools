@@ -1,7 +1,7 @@
-From 187bfb5dafe1474249e6ff221a91d33eff852b2c Mon Sep 17 00:00:00 2001
+From 8aff68006cbe3e125de214c6600e9b3ef556cb34 Mon Sep 17 00:00:00 2001
 From: Robert Story <rstory@localhost>
 Date: Mon, 8 Oct 2012 12:46:10 -0400
-Subject: [PATCH 01/18] NSPR v3 of getaddr patch, for mozilla bug 699055
+Subject: [PATCH 01/25] NSPR getaddr patch, for mozilla bug 699055
 
 changes from v2:
  add missing return in fallback case
@@ -11,7 +11,7 @@ changes from v2:
  1 file changed, 126 insertions(+), 67 deletions(-)
 
 diff --git a/nsprpub/pr/src/misc/prnetdb.c b/nsprpub/pr/src/misc/prnetdb.c
-index d668550..0df8b91 100644
+index c21e169..5398525 100644
 --- a/nsprpub/pr/src/misc/prnetdb.c
 +++ b/nsprpub/pr/src/misc/prnetdb.c
 @@ -7,6 +7,9 @@
@@ -247,7 +247,7 @@ index d668550..0df8b91 100644
 +#ifdef _PR_HAVE_GETADDRINFO
      {
          PRADDRINFO *res, hints;
-         PRStatus rv;
+         int rv;
 @@ -2057,20 +2106,17 @@ PR_IMPLEMENT(PRAddrInfo *) PR_GetAddrInfoByName(const char  *hostname,
          PR_SetError(PR_DIRECTORY_LOOKUP_ERROR, rv);
      }
