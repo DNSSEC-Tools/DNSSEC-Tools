@@ -1,0 +1,59 @@
+From 45bce3b6989ddd797d2b522a03c229cb98dee12f Mon Sep 17 00:00:00 2001
+From: Robert Story <rstory@localhost>
+Date: Sat, 22 Dec 2012 18:07:52 -0500
+Subject: [PATCH 3/5] DANE use VAL_{CFLAGS,LDFLAGS,LIBS} as needed
+
+---
+ security/build/Makefile.in     | 4 ++++
+ security/nss/lib/ssl/Makefile  | 5 ++++-
+ security/nss/lib/ssl/config.mk | 6 ++++--
+ 3 files changed, 12 insertions(+), 3 deletions(-)
+
+diff --git a/security/build/Makefile.in b/security/build/Makefile.in
+index dcb8400..b3e2043 100644
+--- a/security/build/Makefile.in
++++ b/security/build/Makefile.in
+@@ -141,6 +141,10 @@ DEFAULT_GMAKE_FLAGS += MOZILLA_CLIENT=1
+ DEFAULT_GMAKE_FLAGS += NO_MDUPDATE=1
+ DEFAULT_GMAKE_FLAGS += NSS_ENABLE_ECC=1
+ DEFAULT_GMAKE_FLAGS += NSINSTALL="$(NSINSTALL)"
++# MOZ_DANE
++ifdef MOZ_DNSSEC
++DEFAULT_GMAKE_FLAGS += MOZ_DNSSEC=1 VAL_CFLAGS="$(VAL_CFLAGS)" VAL_LDFLAGS="$(VAL_LDFLAGS)" VAL_LIBS="$(VAL_LIBS)"
++endif
+ ifndef MOZ_NATIVE_SQLITE
+ DEFAULT_GMAKE_FLAGS += SQLITE_LIB_NAME=mozsqlite3
+ DEFAULT_GMAKE_FLAGS += SQLITE_INCLUDE_DIR=$(ABS_DIST)/include
+diff --git a/security/nss/lib/ssl/Makefile b/security/nss/lib/ssl/Makefile
+index cd4d06e..eb0fd0e 100644
+--- a/security/nss/lib/ssl/Makefile
++++ b/security/nss/lib/ssl/Makefile
+@@ -71,7 +71,10 @@ CSRCS	+= unix_err.c
+ endif
+ endif
+ 
+-DEFINES += -I/usr/local/opt/include
++# MOZ_DANE
++ifdef MOZ_DNSSEC
++DEFINES += $(VAL_CFLAGS)
++endif
+ 
+ #######################################################################
+ # (5) Execute "global" rules. (OPTIONAL)                              #
+diff --git a/security/nss/lib/ssl/config.mk b/security/nss/lib/ssl/config.mk
+index 09eaa09..2da2d6a 100644
+--- a/security/nss/lib/ssl/config.mk
++++ b/security/nss/lib/ssl/config.mk
+@@ -119,5 +119,7 @@ endif
+ 
+ endif
+ 
+-# DANE
+-OS_LIBS += -L/usr/local/opt/lib -lval-threads -lsres -lcrypto
++# MOZ_DANE
++ifdef MOZ_DNSSEC
++OS_LIBS += $(VAL_LDFLAGS) $(VAL_LIBS)
++endif
+-- 
+1.7.11.7
+
