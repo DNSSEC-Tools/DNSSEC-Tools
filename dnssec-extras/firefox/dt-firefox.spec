@@ -26,7 +26,9 @@
 %define base_name           firefox
 
 # use dtsvn libval?
+%define dtnss             1
 %define dtsvn             1
+
 %if %{dtsvn}
 %define dt_ver 1.14-1.svn7143
 %else
@@ -54,8 +56,8 @@
 %define default_bookmarks_file /usr/share/bookmarks/default-bookmarks.html
 %define firefox_app_id \{ec8030f7-c20a-464f-9b0e-13a3a9e97384\}
 
-%global xulrunner_version      17.0.1
-%global xulrunner_version_max  17.1
+%global xulrunner_version      18.0
+%global xulrunner_version_max  18.1
 %global xulrunner_release      1
 %global alpha_version          0
 %global beta_version           0
@@ -92,15 +94,19 @@
 %endif
 
 Summary:        Mozilla Firefox Web browser
+%if %{dtnss}
+Name:           dt-firefox-nss
+%else
 Name:           dt-firefox
-Version:        17.0.1
+%endif
+Version:        18.0
 Release:        1%{?pre_tag}%{?dist}
 URL:            http://www.mozilla.org/projects/firefox/
 License:        MPLv1.1 or GPLv2+ or LGPLv2+
 Group:          Applications/Internet
 Source0:        ftp://ftp.mozilla.org/pub/firefox/releases/%{version}%{?pre_version}/source/firefox-%{version}%{?pre_version}.source.tar.bz2
 %if %{build_langpacks}
-Source1:        firefox-langpacks-%{version}%{?pre_version}-20121129.tar.xz
+Source1:        firefox-langpacks-%{version}%{?pre_version}-20130109.tar.xz
 %endif
 Source10:       firefox-mozconfig
 Source11:       firefox-mozconfig-branded
@@ -140,7 +146,11 @@ Patch2016:  dt-browser-0016-update-browser-local-overrides-for-DNSSEC.patch
 
 BuildRequires:  desktop-file-utils
 BuildRequires:  system-bookmarks
+%if %{dtnss}
+BuildRequires:  dt-xulrunner-nss-devel >= %{xulrunner_verrel}
+%else
 BuildRequires:  dt-xulrunner-devel%{?_isa} >= %{xulrunner_verrel}
+%endif
 %if %{dtsvn}
 Requires:       dtsvn-dnsval-libs >= %{dt_ver}
 BuildRequires:  dtsvn-dnsval-libs-devel >= %{dt_ver}
@@ -151,11 +161,19 @@ BuildRequires:  openssl-devel
 %endif
 BuildRequires:  autoconf213
 
+%if %{dtnss}
+Requires:       dt-xulrunner-nss >= %{xulrunner_verrel}
+%else
 Requires:       dt-xulrunner%{?_isa} >= %{xulrunner_verrel}
+%endif
 Requires:       system-bookmarks
 Obsoletes:      mozilla <= 37:1.7.13
 Provides:       webclient
+%if %{dtnss}
+Conflicts:      xulrunner-nss > %{xulrunner_version_max}
+%else
 Conflicts:      xulrunner%{?_isa} > %{xulrunner_version_max}
+%endif
 
 %description
 Mozilla Firefox is an open-source web browser, designed for standards
@@ -502,6 +520,12 @@ gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
 #---------------------------------------------------------------------
 
 %changelog
+* Wed Jan 9 2013 Martin Stransky <stransky@redhat.com> - 18.0-1
+- Update to 18.0
+
+* Tue Dec 18 2012 Martin Stransky <stransky@redhat.com> - 17.0.1-2
+- Fix bug 878831 - Please enable gfx.color_management.enablev4=true
+
 * Thu Nov 29 2012 Jan Horak <jhorak@redhat.com> - 17.0.1-1
 - Update to 17.0.1
 

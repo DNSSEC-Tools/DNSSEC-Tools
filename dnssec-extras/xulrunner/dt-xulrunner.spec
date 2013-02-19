@@ -23,12 +23,13 @@
 
 # use dtsvn libval?
 %define dtsvn             1
+%define dtnss             1
 
 # Use system nspr/nss?
 %define system_nss        1
 
 # Use system sqlite?
-%if 0%{?fedora} <= 17
+%if 0%{?fedora} <= 18
 %define system_sqlite     0
 %else
 %define system_sqlite     1
@@ -47,10 +48,12 @@
 %global libvpx_version 1.0.0
 
 %if %{?system_nss}
-%global nspr_version 4.9.2
-%global nspr_build_version %(pkg-config --silence-errors --modversion nspr 2>/dev/null || echo 65536)
-%global nss_version 3.13.5
-%global nss_build_version %(pkg-config --silence-errors --modversion nss 2>/dev/null || echo 65536)
+%global nspr_version 4.9.3
+#% global nspr_build_version %(pkg-config --silence-errors --modversion nspr 2>/dev/null || echo 65536)
+%global nspr_build_version %{nspr_version}
+%global nss_version 3.14.1
+# %global nss_build_version %(pkg-config --silence-errors --modversion nss 2>/dev/null || echo 65536)
+%global nss_build_version %{nss_version}
 %endif
 
 %if %{?system_sqlite}
@@ -100,9 +103,13 @@
 %endif
 
 Summary:        XUL Runtime for Gecko Applications
+%if %{dtnss}
+Name:           dt-xulrunner-nss
+%else
 Name:           dt-xulrunner
-Version:        17.0.1
-Release:        1%{?pre_tag}%{?dist}
+%endif
+Version:        18.0
+Release:        6%{?pre_tag}%{?dist}
 URL:            http://developer.mozilla.org/En/XULRunner
 License:        MPLv1.1 or GPLv2+ or LGPLv2+
 Group:          Applications/Internet
@@ -124,27 +131,36 @@ Patch18:        xulrunner-16.0-jemalloc-ppc.patch
 Patch20:        mozilla-193-pkgconfig.patch
 
 # Upstream patches
-Patch49:        mozilla-746112.patch
+Patch100:       mozilla-677092-restartless-lang.patch
 
 # dnssec-tools patches
-Patch2010:     dt-xulrunner-0010-add-dnssec-options-to-configure.patch
-Patch2011:     dt-xulrunner-0011-use-NSPRs-new-DNSSEC-functionality.patch
-Patch2012:     dt-xulrunner-0012-support-functions-in-preparation-for-async.patch
-Patch2013:     dt-xulrunner-0013-use-NSPRs-new-async-functionality.patch
-Patch2014:     dt-xulrunner-0014-make-netwerk-DNSSEC-validation-aware.patch
-Patch2015:     dt-xulrunner-0015-add-DNSSEC-preferences-to-browser.patch
+Patch2010:     dt-xulrunner-0001-add-dnssec-options-to-configure.patch
+Patch2011:     dt-xulrunner-0002-use-NSPRs-new-DNSSEC-functionality.patch
+Patch2012:     dt-xulrunner-0003-support-functions-in-preparation-for-async.patch
+Patch2013:     dt-xulrunner-0004-use-NSPRs-new-async-functionality.patch
+Patch2014:     dt-xulrunner-0005-make-netwerk-DNSSEC-validation-aware.patch
+Patch2015:     dt-xulrunner-0006-add-DNSSEC-preferences-to-browser.patch
+%if %{dtnss}
+Patch2099:     dt-xulrunner-0007-add-DANE-checks-for-SSL-certs.patch
+%endif
 
 # ---------------------------------------------------
 
 %if %{?system_nss}
-BuildRequires:  dt-nspr-devel >= %{nspr_version}
+BuildRequires:  dt-nspr-devel >= %{nspr_build_version}
 %if %{dtsvn}
 BuildRequires:  dtsvn-dnsval-libs-devel
 %else
 BuildRequires:  dnssec-tools-libs-devel
 %endif
-BuildRequires:  nss-devel >= %{nss_version}
-BuildRequires:  nss-static >= %{nss_version}
+%if %{dtnss}
+BuildRequires:  dt-nss-devel >= %{nss_build_version}
+BuildRequires:  dt-nss-static >= %{nss_build_version}
+#BuildRequires:  dt-nss-util
+%else
+BuildRequires:  nss-devel >= %{nss_buid_version}
+BuildRequires:  nss-static >= %{nss_build_version}
+%endif
 %endif
 %if %{?system_cairo}
 BuildRequires:  cairo-devel >= %{cairo_version}
@@ -175,8 +191,12 @@ BuildRequires:  libvpx-devel >= %{libvpx_version}
 
 Requires:       mozilla-filesystem
 %if %{?system_nss}
-Requires:       dt-nspr >= %{nspr_version}
-Requires:       nss >= %{nss_version}
+Requires:       dt-nspr >= %{nspr_build_version}
+%if %{dtnss}
+Requires:       dt-nss >= %{nss_build_version}
+%else
+Requires:       nss >= %{nss_build_version}
+%endif
 %endif
 Requires:       openssl
 Provides:       gecko-libs = %{gecko_verrel}
@@ -206,10 +226,18 @@ Provides: gecko-devel%{?_isa} = %{gecko_verrel}
 Provides: gecko-devel-unstable = %{gecko_verrel}
 Provides: gecko-devel-unstable%{?_isa} = %{gecko_verrel}
 
+%if %{dtnss}
+Requires: dt-xulrunner-nss = %{version}-%{release}
+%else
 Requires: dt-xulrunner = %{version}-%{release}
+%endif
 %if %{?system_nss}
-Requires: dt-nspr-devel >= %{nspr_version}
+Requires: dt-nspr-devel >= %{nspr_build_version}
+%if %{dtnss}
+Requires: dt-nss-devel >= %{nss_build_version}
+%else
 Requires: nss-devel >= %{nss_version}
+%endif
 %endif
 %if %{?system_cairo}
 Requires: cairo-devel >= %{cairo_version}
@@ -271,9 +299,8 @@ cd %{tarballdir}
 %patch17 -p2 -b .gcc47
 %patch18 -p2 -b .jemalloc-ppc
 
-%patch20 -p2 -b .pk
-
-%patch49 -p2 -b .746112
+%patch20  -p2 -b .pk
+%patch100 -p1 -R -b .restartless-lang
 
 ###############################
 # DNSSEC-Tools
@@ -283,6 +310,9 @@ cd %{tarballdir}
 %patch2013 -p1 -b .dnssec-tools
 %patch2014 -p1 -b .dnssec-tools
 %patch2015 -p1 -b .dnssec-tools
+%if %{dtnss}
+%patch2099 -p1 -b .dnssec-tools
+%endif
 # rebuild configure(s) due to dnssec patches
 /bin/rm -f ./configure
 /usr/bin/autoconf-2.13
@@ -346,16 +376,17 @@ echo "ac_add_options --with-float-abi=soft" >> .mozconfig
 echo "ac_add_options --disable-elf-hack" >> .mozconfig
 %endif
 
-%ifnarch %{ix86} x86_64
+%ifnarch %{ix86} x86_64 armv7hl armv7hnl
 echo "ac_add_options --disable-methodjit" >> .mozconfig
 echo "ac_add_options --disable-monoic" >> .mozconfig
 echo "ac_add_options --disable-polyic" >> .mozconfig
 echo "ac_add_options --disable-tracejit" >> .mozconfig
 %endif
 
-%ifnarch %{ix86} x86_64 %{arm}
+# Disable WebRTC because of Bug 304121
+#%ifnarch %{ix86} x86_64
 echo "ac_add_options --disable-webrtc" >> .mozconfig
-%endif
+#%endif
 
 %if %{dtsvn}
 echo "ac_add_options --with-system-val=/usr/local/dtsvn" >> .mozconfig
@@ -387,7 +418,7 @@ cd %{tarballdir}
 #
 # Disable C++ exceptions since Mozilla code is not exception-safe
 #
-MOZ_OPT_FLAGS=$(echo "$RPM_OPT_FLAGS -fpermissive" | \
+MOZ_OPT_FLAGS=$(echo "$RPM_OPT_FLAGS" | \
                       %{__sed} -e 's/-Wall//' -e 's/i386/i486/g')
 %if %{?debug_build}
 MOZ_OPT_FLAGS=$(echo "$MOZ_OPT_FLAGS" | %{__sed} -e 's/-O2//' -e 's/-Wp,-D_FORTIFY_SOURCE=2//')
@@ -399,8 +430,11 @@ MOZ_OPT_FLAGS=$(echo "$MOZ_OPT_FLAGS" | %{__sed} -e 's/-g/-g1/')
 MOZ_LINK_FLAGS="-Wl,--no-keep-memory -Wl,--reduce-memory-overheads"
 %endif
 
+# it's this or build dt- versions for nss-softokn-freebl-devel
+MOZ_OPT_FLAGS+=" -I/usr/include/nss3"
+
 export CFLAGS=$MOZ_OPT_FLAGS
-export CXXFLAGS=$MOZ_OPT_FLAGS
+export CXXFLAGS="$MOZ_OPT_FLAGS -fpermissive"
 export LDFLAGS=$MOZ_LINK_FLAGS
 
 export PREFIX='%{_prefix}'
@@ -502,12 +536,18 @@ EOF
 # Install xpcshell
 %{__cp} objdir/dist/bin/xpcshell $RPM_BUILD_ROOT/%{mozappdir}
 
+# Fix libxpcom.so rights
+chmod 755 $RPM_BUILD_ROOT/%{mozappdir}/libxpcom.so
+
 # Install run-mozilla.sh
 %{__cp} objdir/dist/bin/run-mozilla.sh $RPM_BUILD_ROOT/%{mozappdir}
 
 # Use the system hunspell dictionaries
 %{__rm} -rf ${RPM_BUILD_ROOT}%{mozappdir}/dictionaries
 ln -s %{_datadir}/myspell ${RPM_BUILD_ROOT}%{mozappdir}/dictionaries
+
+# Remove tmp files
+find $RPM_BUILD_ROOT/%{mozappdir} -name '.mkdir.done' -exec rm -rf {} \;
 
 # ghost files
 %{__mkdir_p} $RPM_BUILD_ROOT%{mozappdir}/components
@@ -565,9 +605,6 @@ fi
 %{mozappdir}/crashreporter.ini
 %{mozappdir}/Throbber-small.gif
 %endif
-%exclude %{mozappdir}/components/.mkdir.done
-%exclude %{mozappdir}/defaults/pref/.mkdir.done
-%exclude %{mozappdir}/modules/.mkdir.done
 
 %files devel
 %defattr(-,root,root,-)
@@ -581,6 +618,29 @@ fi
 #---------------------------------------------------------------------
 
 %changelog
+* Wed Jan 9 2013 Martin Stransky <stransky@redhat.com> - 18.0-6
+- Fixed missing libxpcom.so provides
+
+* Wed Jan 9 2013 Martin Stransky <stransky@redhat.com> - 18.0-5
+- Added fix for langpacks
+
+* Wed Jan 9 2013 Martin Stransky <stransky@redhat.com> - 18.0-4
+- Fixed source files
+- Disabled WebRTC due to rhbz#304121
+
+* Wed Jan 9 2013 Martin Stransky <stransky@redhat.com> - 18.0-2
+- Disabled system sqlite on Fedora 18
+
+* Mon Jan 7 2013 Martin Stransky <stransky@redhat.com> - 18.0-1
+- Update to 18.0
+
+* Thu Dec 13 2012 Peter Robinson <pbrobinson@fedoraproject.org> 17.0.1-3
+- Disable webrtc on ARM as it currently tries to build SSE on ARM (fix FTBFS)
+- Enable methodjit/tracejit on ARMv7 for more speed :) Fixes RHBZ 870548
+
+* Fri Dec  7 2012 Jan Horak <jhorak@redhat.com> - 17.0.1-2
+- Fixed rhbz#879595
+
 * Thu Nov 29 2012 Jan Horak <jhorak@redhat.com> - 17.0.1-1
 - Update to 17.0.1
 

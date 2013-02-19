@@ -1,23 +1,68 @@
-%global nspr_version 4.9.2
+# DNSSEC-Tools
+%define _default_patch_fuzz 2
+#
+%define _prefix /usr/local/opt
+%define __exec_prefix       %{_prefix}
+%define _sysconfdir         %{_prefix}/etc
+%define _libexecdir         %{_prefix}/libexec
+%define _datadir            %{_prefix}/share
+%define _localstatedir      %{_prefix}/%{_var}
+%define _sharedstatedir     %{_prefix}/%{_var}/lib
+%define _libexecdir         %{_prefix}/%{_lib}/security
+%define _unitdir            %{_prefix}/%{_lib}/systemd/system
+%define _bindir             %{_exec_prefix}/bin
+%define _libdir             %{_exec_prefix}/%{_lib}
+%define _libexecdir         %{_exec_prefix}/libexec
+%define _sbindir            %{_exec_prefix}/sbin
+%define _datarootdir        %{_prefix}/share
+%define _datadir            %{_datarootdir}
+%define _docdir             %{_datadir}/doc
+%define _infodir            %{_prefix}/share/info
+%define _mandir             %{_prefix}/share/man
+%define _initddir           %{_sysconfdir}/rc.d/init.d
+%define _usr                %{_prefix}/usr
+%define _usrsrc             %{_prefix}/usr/src
+
+%define base_name           nss
+
+%define dtsvn 1
+%if %{dtsvn}
+%define dt_ver 1.14-1.svn7457
+%else
+%define dt_ver 1.14-1
+%endif
+
+%global nspr_version 4.9.4
 %global nss_util_version 3.14
 %global nss_softokn_fips_version 3.12.9
 %global nss_softokn_version 3.14
 %global unsupported_tools_directory %{_libdir}/nss/unsupported-tools
 
+# Define if using a source archive like "nss-version.with.ckbi.version".
+# To "disable", add "#" to start of line, AND a space after "%".
+%define nss_ckbi_suffix .with.ckbi.1.93
+
 Summary:          Network Security Services
-Name:             nss
-Version:          3.14
-Release:          7%{?dist}
+Name:             dt-nss
+Version:          3.14.1
+Release:          3%{?dist}
 License:          MPLv2.0
 URL:              http://www.mozilla.org/projects/security/pki/nss/
 Group:            System Environment/Libraries
-Requires:         nspr >= %{nspr_version}
+Requires:         dt-nspr >= %{nspr_version}
 Requires:         nss-util >= %{nss_util_version}
 # TODO: revert to same version as nss once we are done with the merge
 Requires:         nss-softokn%{_isa} >= %{nss_softokn_version}
 Requires:         nss-system-init
 BuildRoot:        %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildRequires:    nspr-devel >= %{nspr_version}
+BuildRequires:    dt-nspr-devel >= %{nspr_version}
+%if %{dtsvn}
+Requires:         dtsvn-dnsval-libs >= %{dt_ver}
+BuildRequires:    dtsvn-dnsval-libs-devel >= %{dt_ver}
+BuildRequires:    openssl-static
+%else
+Requires:         dnssec-tools-libs >= 1.15-1
+%endif
 # TODO: revert to same version as nss once we are done with the merge
 # Using '>=' but on RHEL the requires should be '='
 BuildRequires:    nss-softokn-devel >= %{nss_softokn_version}
@@ -29,7 +74,11 @@ BuildRequires:    gawk
 BuildRequires:    psmisc
 BuildRequires:    perl
 
-Source0:          %{name}-%{version}-stripped.tar.bz2
+%{!?nss_ckbi_suffix:%define full_nss_version %{version}}
+%{?nss_ckbi_suffix:%define full_nss_version %{version}%{nss_ckbi_suffix}}
+
+Source0:          %{base_name}-%{full_nss_version}-stripped.tar.bz2
+
 # The stripped tar ball is a subset of the upstream sources with
 # patent-encumbered cryptographic algorithms removed.
 # Use this script to remove them and create the stripped archive.
@@ -52,7 +101,7 @@ Source7:          blank-key4.db
 Source8:          system-pkcs11.txt
 Source9:          setup-nsssysinit.sh
 Source10:         PayPalEE.cert
-Source12:         %{name}-pem-20120811.tar.bz2
+Source12:         %{base_name}-pem-20120811.tar.bz2
 
 Patch2:           add-relro-linker-option.patch
 Patch3:           renegotiate-transitional.patch
@@ -69,10 +118,18 @@ Patch39:          nss-ssl-enforce-no-pkcs11-bypass.path
 # TODO: Remove this patch when the ocsp test are fixed
 Patch40:          nss-3.14.0.0-disble-ocsp-test.patch
 
-# upstream: https://bugzilla.mozilla.org/show_bug.cgi?id=357025
-Patch41:          Bug-872124-fix-pk11wrap-locking.patch
 # upstream: https://bugzilla.mozilla.org/show_bug.cgi?id=807890
 Patch42:          0001-Add-extended-key-usage-for-MS-Authenticode-Code-Sign.patch
+
+Patch43:          no-softoken-freebl-tests.patch
+
+# DNSSEC-Tools
+Patch1001:      dt-nss-DANE-0001-initial-patch-from-Suresh-2012-12-14.patch
+Patch1002:      dt-nss-DANE-0002-move-new-function-inside-braces.patch
+Patch1003:      dt-nss-DANE-0003-use-VAL_-CFLAGS-LDFLAGS-LIBS-as-needed.patch
+Patch1004:      dt-nss-DANE-0004-only-add-ssldane.c-for-MOZ_DNSSEC.patch
+Patch1005:      dt-nss-DANE-0005-keep-compiler-happy.patch
+# END DNSSEC-Tools
 
 %description
 Network Security Services (NSS) is a set of libraries designed to
@@ -101,8 +158,8 @@ Summary:          System NSS Initialization
 Group:            System Environment/Base
 # providing nss-system-init without version so that it can
 # be replaced by a better one, e.g. supplied by the os vendor
-Provides:         nss-system-init
-Requires:         nss = %{version}-%{release}
+Provides:         dt-nss-system-init
+Requires:         dt-nss = %{version}-%{release}
 Requires(post):   coreutils, sed
 
 %description sysinit
@@ -114,11 +171,11 @@ any system or user configured modules.
 %package devel
 Summary:          Development libraries for Network Security Services
 Group:            Development/Libraries
-Provides:         nss-static = %{version}-%{release}
-Requires:         nss = %{version}-%{release}
+Provides:         dt-nss-static = %{version}-%{release}
+Requires:         dt-nss = %{version}-%{release}
 Requires:         nss-util-devel
 Requires:         nss-softokn-devel
-Requires:         nspr-devel >= %{nspr_version}
+Requires:         dt-nspr-devel >= %{nspr_version}
 Requires:         pkgconfig
 
 %description devel
@@ -128,8 +185,8 @@ Header and Library files for doing development with Network Security Services.
 %package pkcs11-devel
 Summary:          Development libraries for PKCS #11 (Cryptoki) using NSS
 Group:            Development/Libraries
-Provides:         nss-pkcs11-devel-static = %{version}-%{release}
-Requires:         nss-devel = %{version}-%{release}
+Provides:         dt-nss-pkcs11-devel-static = %{version}-%{release}
+Requires:         dt-nss-devel = %{version}-%{release}
 # TODO: revert to using nss_softokn_version once we are done with
 # the merge into to new rhel git repo
 # For RHEL we should have '=' instead of '>='
@@ -141,25 +198,44 @@ low level services.
 
 
 %prep
-%setup -q
+%setup -q -n %{base_name}-%{version}
 %{__cp} %{SOURCE10} -f ./mozilla/security/nss/tests/libpkix/certs
-%setup -q -T -D -n %{name}-%{version} -a 12
+%setup -q -T -D -n %{base_name}-%{version} -a 12
 
 %patch2 -p0 -b .relro
 %patch3 -p0 -b .transitional
 %patch6 -p0 -b .libpem
 %patch16 -p0 -b .539183
 %patch18 -p0 -b .646045
-# link pem against buildroot's freebl, esential wen mixing and matching
+# link pem against buildroot's freebl, essential when mixing and matching
 %patch25 -p0 -b .systemfreebl
 # activate for stable and beta branches
 %patch29 -p0 -b .770682
 %patch39 -p1 -b .nobypass
 %patch40 -p1 -b .noocsptest
-%patch41 -p0 -b .872124
 %patch42 -p0 -b .870864
+%patch43 -p0 -b .nosoftokentests
+
+cd mozilla
+# DNSSEC-Tools
+%patch1001 -p1 -b .dnssec
+%patch1002 -p1 -b .dnssec
+%patch1003 -p1 -b .dnssec
+%patch1004 -p1 -b .dnssec
+%patch1005 -p1 -b .dnssec
+# END DNSSEC-Tools
+
 
 %build
+# use dtsvn
+export PATH=%{_prefix}/bin:%{_prefix}/sbin:$PATH
+LDFLAGS+=" -Wl,-rpath,%{_libdir}"
+CFLAGS="-I%{_prefix}/include "
+export CFLAGS
+export LDFLAGS
+
+PKG_CONFIG_PATH=%{_libdir}/pkgconfig
+export PKG_CONFIG_PATH
 
 NSS_NO_PKCS11_BYPASS=1
 export NSS_NO_PKCS11_BYPASS
@@ -172,8 +248,8 @@ BUILD_OPT=1
 export BUILD_OPT
 
 # Uncomment to disable optimizations
-#RPM_OPT_FLAGS=`echo $RPM_OPT_FLAGS | sed -e 's/-O2/-O0/g'`
-#export RPM_OPT_FLAGS
+RPM_OPT_FLAGS=`echo $RPM_OPT_FLAGS | sed -e 's/-O2/-O0/g'`
+export RPM_OPT_FLAGS
 
 # Generate symbolic info for debuggers
 XCFLAGS=$RPM_OPT_FLAGS
@@ -187,12 +263,15 @@ export PKG_CONFIG_ALLOW_SYSTEM_CFLAGS
 
 NSPR_INCLUDE_DIR=`/usr/bin/pkg-config --cflags-only-I nspr | sed 's/-I//'`
 NSPR_LIB_DIR=%{_libdir}
+%if %{dtsvn}
+NSPR_LIB_DIR+=" -L/_RPM_NSPR_LIBDIR -Wl,-rpath,/usr/local/dtsvn/%{_lib} -L/usr/local/dtsvn/%{_lib} -lval-threads -lsres -lcrypto /usr/%{_lib}/libssl.a -lkrb5 -lk5crypto"
+%endif
 
 export NSPR_INCLUDE_DIR
 export NSPR_LIB_DIR
 
 export FREEBL_INCLUDE_DIR=`/usr/bin/pkg-config --cflags-only-I nss-softokn | sed 's/-I//'`
-export FREEBL_LIB_DIR=%{_libdir}
+export FREEBL_LIB_DIR=/usr/%{_lib}
 export USE_SYSTEM_FREEBL=1
 
 NSS_USE_SYSTEM_SQLITE=1
@@ -237,7 +316,7 @@ export NSS_ECC_MORE_THAN_SUITE_B
 #     
 %{__make} -C ./mozilla/security/coreconf
 %{__make} -C ./mozilla/security/dbm
-%{__make} -C ./mozilla/security/nss
+%{__make} -C ./mozilla/security/nss MOZ_DNSSEC=1
 
 ##### phase 3: build bltest and fipstest
 tar xf build_these_later.tar
@@ -281,6 +360,8 @@ chmod 755 ./mozilla/dist/pkgconfig/nss-config
 
 %{__cat} %{SOURCE9} > ./mozilla/dist/pkgconfig/setup-nsssysinit.sh
 chmod 755 ./mozilla/dist/pkgconfig/setup-nsssysinit.sh
+
+%{__cp} ./mozilla/security/nss/lib/ckfw/nssck.api ./mozilla/dist/private/nss/
 
 %check
 
@@ -347,13 +428,13 @@ nss_tests="cipher libpkix cert dbtests tools fips sdr crmf smime ssl merge pkits
 # global nss_ssl_tests "normal_fips"
 # global nss_ssl_run "cov auth"
 
-HOST=localhost DOMSUF=localdomain PORT=$MYRAND NSS_CYCLES=%{?nss_cycles} NSS_TESTS=%{?nss_tests} NSS_SSL_TESTS=%{?nss_ssl_tests} NSS_SSL_RUN=%{?nss_ssl_run} ./all.sh
+HOST=127.0.0.1 DOMSUF= PORT=$MYRAND NSS_CYCLES=%{?nss_cycles} NSS_TESTS=%{?nss_tests} NSS_SSL_TESTS=%{?nss_ssl_tests} NSS_SSL_RUN=%{?nss_ssl_run} ./all.sh
 
 cd ../../../../
 
 killall $RANDSERV || :
 
-TEST_FAILURES=`grep -c FAILED ./mozilla/tests_results/security/localhost.1/output.log` || :
+TEST_FAILURES=`grep -c FAILED ./mozilla/tests_results/security/127.1/output.log` || :
 # test suite is failing on arm and has for awhile let's run the test suite but make it non fatal on arm
 %ifnarch %{arm}
 if [ $TEST_FAILURES -ne 0 ]; then
@@ -370,6 +451,7 @@ echo "test suite completed"
 # There is no make install target so we'll do it ourselves.
 
 %{__mkdir_p} $RPM_BUILD_ROOT/%{_includedir}/nss3
+%{__mkdir_p} $RPM_BUILD_ROOT/%{_includedir}/nss3/templates
 %{__mkdir_p} $RPM_BUILD_ROOT/%{_bindir}
 %{__mkdir_p} $RPM_BUILD_ROOT/%{_libdir}
 %{__mkdir_p} $RPM_BUILD_ROOT/%{unsupported_tools_directory}
@@ -414,6 +496,12 @@ done
 for file in mozilla/dist/public/nss/*.h
 do
   %{__install} -p -m 644 $file $RPM_BUILD_ROOT/%{_includedir}/nss3
+done
+
+# Copy the template files we want
+for file in mozilla/dist/private/nss/nssck.api
+do
+  %{__install} -p -m 644 $file $RPM_BUILD_ROOT/%{_includedir}/nss3/templates
 done
 
 # Copy the package configuration files
@@ -467,11 +555,6 @@ rm -f $RPM_BUILD_ROOT/%{_includedir}/nss3/nsslowhash.h
 
 %clean
 %{__rm} -rf $RPM_BUILD_ROOT
-
-%triggerpostun -n nss-sysinit -- nss-sysinit < 3.12.8-3
-# Reverse unwanted disabling of sysinit by faulty preun sysinit scriplet
-# from previous versions of nss.spec
-/usr/bin/setup-nsssysinit.sh on
 
 %post -p /sbin/ldconfig
 
@@ -588,11 +671,30 @@ rm -f $RPM_BUILD_ROOT/%{_includedir}/nss3/nsslowhash.h
 %{_includedir}/nss3/nssckg.h
 %{_includedir}/nss3/nssckmdt.h
 %{_includedir}/nss3/nssckt.h
+%{_includedir}/nss3/templates/nssck.api
 %{_libdir}/libnssb.a
 %{_libdir}/libnssckfw.a
 
 
 %changelog
+* Wed Jan 02 2013 Kai Engert <kaie@redhat.com> - 3.14.1-3
+- Update to NSS_3_14_1_WITH_CKBI_1_93_RTM
+
+* Sat Dec 22 2012 Elio Maldonado <emaldona@redhat.com> - 3.14.1-2
+- Require nspr >= 4.9.4
+- Fix changelog invalid dates
+
+* Mon Dec 17 2012 Elio Maldonado <emaldona@redhat.com> - 3.14.1-1
+- Update to NSS_3_14_1_RTM
+
+* Wed Dec 12 2012 Elio Maldonado <emaldona@redhat.com> - 3.14-12
+- Bug 879978 - Install the nssck.api header template where mod_revocator can accss it
+- Install nssck.api in /usr/includes/nss3/templates
+
+* Tue Nov 27 2012 Elio Maldonado <emaldona@redhat.com> - 3.14-11
+- Bug 879978 - Install the nssck.api header template in a place where mod_revocaor can access it
+- Install nssck.api in /usr/includes/nss3
+
 * Mon Nov 19 2012 Elio Maldonado <emaldona@redhat.com> - 3.14-7
 - Bug 870864 - Add support in NSS for Secure Boot
 
