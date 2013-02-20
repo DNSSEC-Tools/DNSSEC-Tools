@@ -11,7 +11,7 @@ INCLUDEPATH += ../../../include
 INCLUDEPATH += /home/hardaker/src/dnssec/dnssec-tools.git/dnssec-tools/validator/include
 
 isEmpty(ANDROID_PLATFORM) {
-    LIBS        += -lval-threads -lsres -lnsl -lcrypto -lpthread
+    LIBS        += -lval-threads -lsres -lnsl -lssl -lcrypto -lpthread
 } else {
     LIBS        += -L/opt/android-external-openssl/lib/
     LIBS        += -L/root/necessitas/android-ndk-r5c/platforms/android-4/arch-arm/usr/lib/
