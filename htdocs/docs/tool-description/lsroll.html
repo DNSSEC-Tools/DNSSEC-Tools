@@ -103,6 +103,12 @@ necessarily the case.  The <em>rollrec</em> name can contain spaces, while the
 zonename can't.  For this reason, <strong>lsroll</strong> displays the <em>rollrec</em> name in
 quotes, even if the name contains no spaces.  This is intended to allow for
 easier parsing by other programs.</p>
+<p>If the <strong>-info</strong> option is given, then the special <em>info rollrec</em> record will
+be displayed.  If the <em>rollrec</em> file has this informational record, notated
+by having the name <em>info rollrec</em>, then the contents of the &lt;info rollrec&gt;
+record will be printed.  If multiple <em>rollrec</em> files are given on the command
+line, then the <em>info rollrec</em> records for each file will be prefixed with the
+<em>rollrec</em> file's name.</p>
 <p>
 </p>
 <hr />
@@ -128,6 +134,11 @@ these options are mutually exclusive.</p>
 
 <dd>
 <p>List all &quot;skip&quot; records in the <em>rollrec</em> file.</p>
+</dd>
+<dt><strong><a name="info" class="item"><strong>-info</strong></a></strong></dt>
+
+<dd>
+<p>List all the fields in the <em>rollrec</em> file's &quot;info&quot; record.</p>
 </dd>
 </dl>
 <p>
@@ -306,7 +317,7 @@ selected are included in the output.</p>
 </p>
 <hr />
 <h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2005-2012 SPARTA, Inc.  All rights reserved.
+<p>Copyright 2005-2013 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <p>
 </p>

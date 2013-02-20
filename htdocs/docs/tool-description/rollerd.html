@@ -128,22 +128,27 @@ information.</p>
 <p>The Double Signature Method has seven phases that are entered when it is time
 to perform KSK rollover:</p>
 <pre>
-    1. wait for old zone data to expire from caches
-    2. generate a new (published) KSK
-    3. wait for the old DNSKEY RRset to expire from caches
-    4. roll the KSKs
-    5. transfer new keyset to the parent
-    6. wait for parent to publish the new DS record
-    7. reload the zone</pre>
-<p><strong>rollerd</strong> uses the <strong>zonesigner</strong> command during KSK rollover phases 2 and 4.
+    1 - wait for cache data to expire
+    2 - generate a new (published) KSK and load zone
+    3 - wait for the old DNSKEY RRset to expire from caches
+    4 - transfer new keyset to the parent
+    5 - wait for parent to publish DS record
+    6 - wait for cache data to expire
+    7 - roll the KSKs and load the zone</pre>
+<p>This is a modification of the original Double Signature Method.  In the
+original method, the KSK keys were rolled before the new keyset was
+transferred to the parent.  The new method rolls the KSK keys after the
+parent has published the new DS records and old data has expired for caches.
+This addresses a potential problem with signing zones during key rollovers.</p>
+<p><strong>rollerd</strong> uses the <strong>zonesigner</strong> command during KSK rollover phases 2 and 7.
 <strong>zonesigner</strong> will generate keys as required and sign the zone during these
 two phases.</p>
-<p>Currently, step 6 is handled manually.  In step 5, <strong>rollerd</strong> informs the
-administrator via email that the zone's keyset must be transferred to its
-parent in order for rollover to continue.  In step 6, after the keyset has
-been transferred to the parent and the parent has published a new DS record,
-the administrator uses <strong>rollctl</strong> to inform <strong>rollerd</strong> that the DS record has
-been published and rollover may continue.</p>
+<p>Currently, leaving the waiting period in step 5 is handled manually.  In step
+4, <strong>rollerd</strong> informs the administrator via email that the zone's keyset must
+be transferred to its parent in order for rollover to continue.  In step 5,
+after the keyset has been transferred to the parent and the parent has
+published a new DS record, the administrator uses <strong>rollctl</strong> to inform
+<strong>rollerd</strong> that the DS record has been published and rollover may continue.</p>
 <p>The Double Signature Method of key rollover is defined in the Step-by-Step
 DNS Security Operator Guidance Document.  See that document for more detailed
 information.</p>
@@ -238,7 +243,7 @@ command line <em>prior</em> to the standard arguments.</p>
        This is only applicable to the current command; other
        commands in this phase's command list must still be run.
     1. The zone should stay in the current rollover phase.
-       This is not necessarily the result of an error. 
+       This is not necessarily the result of an error.
     2. An error was found in the arguments given to the command.
     3. An error was encountered during execution.</p>
 <p>If a rollover phase's configuration entry lists multiple commands, they will
@@ -425,7 +430,7 @@ values.</p>
 <li><strong><a name="install_the_rollover_configuration" class="item">install the rollover configuration</a></strong>
 
 <p>The complete rollover configuration -- <strong>rollerd</strong>, <em>rollrec</em> file,
-DNSSEC-Tools configuration file values, zone files -- should be installed.  
+DNSSEC-Tools configuration file values, zone files -- should be installed.
 The appropriate places for these locations are both installation-dependent
 and operating system-dependent.</p>
 </li>
@@ -661,7 +666,7 @@ taken so that this communication is possible.</p>
 </p>
 <hr />
 <h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2005-2012 SPARTA, Inc.  All rights reserved.
+<p>Copyright 2005-2013 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <p>
 </p>

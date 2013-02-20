@@ -146,9 +146,10 @@ number will be incremented.</p>
 the command line, the default signed zone filename is the <em>zone-file</em>
 appended with &quot;.signed&quot;.  Thus, executing <strong>zonesigner example.com</strong> will
 result in the signed zone being stored in <em>example.com.signed</em>.</p>
-<p>Unless the <strong>-genkeys</strong>, <strong>-genksk</strong>, <strong>-genzsk</strong>, or <strong>-newpubksk</strong> options are
-specified, the last keys generated for a particular zone will be used in
-subsequent <strong>zonesigner</strong> executions.</p>
+<p>Unless the <strong>-genkeys</strong>, <strong>-genksk</strong>, <strong>-genzsk</strong>, or <strong>-newpubksk</strong> options
+are specified, the last keys generated for a particular zone will be used
+in subsequent <strong>zonesigner</strong> executions.  DS records will be included in
+signing operations unless the <strong>-nogends</strong> option is used.</p>
 <p><strong>zonesigner</strong> can be used with a rollover manager, such as <strong>rollerd</strong>, to
 provide automated management of a zone, its keys, and the signing of the zone.
 If a <strong>rollerd</strong>-managed zonefile changes while <strong>rollerd</strong> is waiting for a
@@ -1042,7 +1043,7 @@ plans are to allow for more flexible serial number manipulation.</p>
 </p>
 <hr />
 <h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2004-2012 SPARTA, Inc.  All rights reserved.
+<p>Copyright 2004-2013 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <p>
 </p>
