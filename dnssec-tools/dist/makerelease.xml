@@ -171,6 +171,13 @@
 	<command>svn export https://www.dnssec-tools.org/svn/dnssec-tools/tags/dnssec-tools-{VERSION}/validator/apps/dnssec-nodes dnssec-nodes-{VERSION}</command>
 	<command>svn export https://www.dnssec-tools.org/svn/dnssec-tools/tags/dnssec-tools-{VERSION}/validator/apps/dnssec-system-tray dnssec-system-tray-{VERSION}</command>
 	<command>svn export https://www.dnssec-tools.org/svn/dnssec-tools/tags/dnssec-tools-{VERSION}/validator/apps/lookup lookup-{VERSION}</command>
+
+	<command>svn export https://www.dnssec-tools.org/svn/dnssec-tools/tags/dnssec-tools-{VERSION}/apps/owl-monitor owl-monitor-{VERSION}</command>
+	<command>svn export https://www.dnssec-tools.org/svn/dnssec-tools/tags/dnssec-tools-{VERSION}/apps/owl-monitor owl-sensor-{VERSION}</command>
+	<command>rm -rf owl-sensor-{VERSION}/manager</command>
+	<command>svn export https://www.dnssec-tools.org/svn/dnssec-tools/tags/dnssec-tools-{VERSION}/apps/owl-monitor owl-manager-{VERSION}</command>
+	<command>rm -rf owl-manager-{VERSION}/sensor</command>
+
       </commands>
     </step>
 
@@ -182,6 +189,9 @@
 	<command>tar czf dnssec-check-{VERSION}.tar.gz dnssec-check-{VERSION}</command>
 	<command>tar czf dnssec-system-tray-{VERSION}.tar.gz dnssec-system-tray-{VERSION}</command>
 	<command>tar czf lookup-{VERSION}.tar.gz lookup-{VERSION}</command>
+	<command>tar czf owl-sensor-{VERSION}.tar.gz owl-sensor-{VERSION}</command>
+	<command>tar czf owl-manager-{VERSION}.tar.gz owl-manager-{VERSION}</command>
+	<command>tar czf owl-monitor-{VERSION}.tar.gz owl-monitor-{VERSION}</command>
       </commands>
     </step>
 
@@ -193,13 +203,15 @@
 	<command>gpg --use-agent -a --detach-sign -u 47DBB308 dnssec-check-{VERSION}.tar.gz</command>
 	<command>gpg --use-agent -a --detach-sign -u 47DBB308 dnssec-system-tray-{VERSION}.tar.gz</command>
 	<command>gpg --use-agent -a --detach-sign -u 47DBB308 lookup-{VERSION}.tar.gz</command>
+	<command>gpg --use-agent -a --detach-sign -u 47DBB308 owl-sensor-{VERSION}.tar.gz</command>
+	<command>gpg --use-agent -a --detach-sign -u 47DBB308 owl-manager-{VERSION}.tar.gz</command>
+	<command>gpg --use-agent -a --detach-sign -u 47DBB308 owl-monitor-{VERSION}.tar.gz</command>
       </commands>
     </step>
 
-    <step type="system" title="upload the results to sourceforge" interactive="1">
+    <step type="system" title="upload the results to the web system" interactive="1">
       <commands>
-	<command>echo old command for SF:</command>
-	<command>echo rsync -v dnssec-tools-{VERSION}.tar.gz frs.sourceforge.net:uploads/</command>
+	<command>echo send the files to the server:</command>
       </commands>
     </step>
 
