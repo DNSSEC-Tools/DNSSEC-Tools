@@ -1,4 +1,3342 @@
 ------------------------------------------------------------------------
+r7588 | tewok | 2013-02-19 15:36:05 -0800 (Tue, 19 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-2-installation.html
+
+Changed ".tbz2" to ".tar.gz".
+
+------------------------------------------------------------------------
+r7587 | tewok | 2013-02-19 15:35:01 -0800 (Tue, 19 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-manager-2-installation.html
+
+Changed ".tbz2" to ".tar.gz".
+
+------------------------------------------------------------------------
+r7528 | rstory | 2013-02-19 13:04:55 -0800 (Tue, 19 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/apps/mozilla/mozilla-xulrunner/mozilla-central/dt-xulrunner-0006-add-DNSSEC-preferences-to-browser.patch
+
+slight tweak to patch
+------------------------------------------------------------------------
+r7527 | hserus | 2013-02-19 11:32:11 -0800 (Tue, 19 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libsres/res_debug.c
+
+Some more adjusting of definitions for OpenBSD
+
+------------------------------------------------------------------------
+r7526 | hserus | 2013-02-19 11:11:13 -0800 (Tue, 19 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/configure
+   M /trunk/dnssec-tools/validator/configure.in
+
+On some systems libcrypto is a dependency when linking against libssl
+
+------------------------------------------------------------------------
+r7525 | hserus | 2013-02-19 10:41:59 -0800 (Tue, 19 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/validator-compat.h
+   M /trunk/dnssec-tools/validator/libsres/res_debug.c
+   M /trunk/dnssec-tools/validator/libsres/res_debug.h
+
+Try to fix some openbsd oddities
+
+------------------------------------------------------------------------
+r7524 | tewok | 2013-02-19 10:29:08 -0800 (Tue, 19 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/README
+
+Added some text to the intro and expanded the contents descriptions.
+
+------------------------------------------------------------------------
+r7523 | tewok | 2013-02-19 07:50:41 -0800 (Tue, 19 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-guide.html
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-manager-1-overview.html
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-manager-2-installation.html
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-manager-3-about-queries.html
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-manager-4-adding-sensor.html
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-manager-5-define-graphs.html
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-manager-6-mod-queries.html
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-manager-7-commands.html
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-manager-full-toc.html
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-manager.html
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-1-overview.html
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-2-installation.html
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-3-about-queries.html
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-4-adding-sensor.html
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-5-adding-queries.html
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-6-commands.html
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-full-toc.html
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor.html
+
+Added logo to Owl installation manual.
+
+------------------------------------------------------------------------
+r7522 | tewok | 2013-02-19 07:49:27 -0800 (Tue, 19 Feb 2013) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/docs/owl-logo.jpg
+
+Logo for Owl documentation.
+
+------------------------------------------------------------------------
+r7521 | hserus | 2013-02-19 06:42:30 -0800 (Tue, 19 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/etc/root.hints
+
+Update new address for D.ROOT-SERVERS.NET.
+
+------------------------------------------------------------------------
+r7520 | hserus | 2013-02-15 16:18:48 -0800 (Fri, 15 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libsres/res_io_manager.c
+
+For now don't enable MSG_DONTWAIT for TCP.
+
+------------------------------------------------------------------------
+r7519 | hardaker | 2013-02-15 14:57:39 -0800 (Fri, 15 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/COPYING
+   A /trunk/dnssec-tools/apps/owl-monitor/COPYING
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/COPYING
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/COPYING
+   M /trunk/dnssec-tools/validator/apps/dnssec-system-tray/COPYING
+   M /trunk/dnssec-tools/validator/apps/lookup/COPYING
+
+Add Parsons to all the 2013 COPING files
+------------------------------------------------------------------------
+r7518 | hardaker | 2013-02-15 14:57:22 -0800 (Fri, 15 Feb 2013) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/README
+
+Added a README file for OWL
+------------------------------------------------------------------------
+r7517 | tewok | 2013-02-15 14:09:54 -0800 (Fri, 15 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/check-zone-expiration
+   M /trunk/dnssec-tools/tools/scripts/getds
+   M /trunk/dnssec-tools/tools/scripts/lsdnssec
+
+Adjusted version numbers for new release.
+
+------------------------------------------------------------------------
+r7516 | tewok | 2013-02-15 14:08:54 -0800 (Fri, 15 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/common/perllib/owlutils.pm
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/bin/owl-archdata
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/bin/owl-archold
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/bin/owl-dataarch-mgr
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/bin/owl-initsensor
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/bin/owl-monthly
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/bin/owl-needs
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/bin/owl-newsensor
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/bin/owl-transfer-mgr
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-dnswatch
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-perfdata
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-stethoscope
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/nagios-files/owl-sensor-heartbeat.cgi
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-archold
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-dataarch
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-dnstimer
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-heartbeat
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-needs
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-sensord
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-status
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-transfer
+
+Adjusted version numbers for new release.
+
+------------------------------------------------------------------------
+r7515 | tewok | 2013-02-15 14:08:27 -0800 (Fri, 15 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/zabbix/rollstate
+   M /trunk/dnssec-tools/apps/zabbix/uemstats
+   M /trunk/dnssec-tools/apps/zabbix/zonestate
+
+Fixed copyright dates.
+
+------------------------------------------------------------------------
+r7514 | tewok | 2013-02-15 14:07:00 -0800 (Fri, 15 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/zabbix/rollstate
+   M /trunk/dnssec-tools/apps/zabbix/uemstats
+   M /trunk/dnssec-tools/apps/zabbix/zonestate
+
+Adjusted version numbers for new release.
+
+------------------------------------------------------------------------
+r7513 | tewok | 2013-02-15 14:05:41 -0800 (Fri, 15 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/nagios/dt_donuts
+   M /trunk/dnssec-tools/apps/nagios/dt_trustman
+   M /trunk/dnssec-tools/apps/nagios/dt_zonestat
+   M /trunk/dnssec-tools/apps/nagios/dt_zonetimer
+   M /trunk/dnssec-tools/apps/nagios/dtnagobj
+
+Adjusted version numbers for new release.
+
+------------------------------------------------------------------------
+r7512 | tewok | 2013-02-15 13:49:55 -0800 (Fri, 15 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/demos/demo-tools/makezones
+   M /trunk/dnssec-tools/tools/demos/dtrealms-basic/mkconffiles
+   M /trunk/dnssec-tools/tools/demos/rollerd-vastzones/makezones
+
+Adjusted version numbers for the new release.
+
+------------------------------------------------------------------------
+r7511 | hardaker | 2013-02-15 13:41:19 -0800 (Fri, 15 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/MainWindow.cpp
+
+rearrange the menus for more structure
+------------------------------------------------------------------------
+r7510 | hardaker | 2013-02-15 13:41:01 -0800 (Fri, 15 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/NEWS
+
+name bloodhound in the NEWS file
+------------------------------------------------------------------------
+r7509 | tewok | 2013-02-15 13:38:29 -0800 (Fri, 15 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/conf.pm.in
+   M /trunk/dnssec-tools/tools/modules/defaults.pm
+   M /trunk/dnssec-tools/tools/modules/dnssectools.pm
+   M /trunk/dnssec-tools/tools/modules/keyrec.pm
+   M /trunk/dnssec-tools/tools/modules/realm.pm
+   M /trunk/dnssec-tools/tools/modules/realmmgr.pm
+   M /trunk/dnssec-tools/tools/modules/rolllog.pm
+   M /trunk/dnssec-tools/tools/modules/rollmgr.pm
+   M /trunk/dnssec-tools/tools/modules/rollrec.pm
+   M /trunk/dnssec-tools/tools/modules/timetrans.pm
+   M /trunk/dnssec-tools/tools/modules/tooloptions.pm
+
+Fixed version number for new release.
+
+------------------------------------------------------------------------
+r7508 | tewok | 2013-02-15 13:32:24 -0800 (Fri, 15 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/blinkenlights
+   M /trunk/dnssec-tools/tools/scripts/bubbles
+   M /trunk/dnssec-tools/tools/scripts/buildrealms
+   M /trunk/dnssec-tools/tools/scripts/cleanarch
+   M /trunk/dnssec-tools/tools/scripts/cleankrf
+   M /trunk/dnssec-tools/tools/scripts/dtck
+   M /trunk/dnssec-tools/tools/scripts/dtconf
+   M /trunk/dnssec-tools/tools/scripts/dtconfchk
+   M /trunk/dnssec-tools/tools/scripts/dtdefs
+   M /trunk/dnssec-tools/tools/scripts/dtinitconf
+   M /trunk/dnssec-tools/tools/scripts/dtrealms
+   M /trunk/dnssec-tools/tools/scripts/dtreqmods
+   M /trunk/dnssec-tools/tools/scripts/dtupdkrf
+   M /trunk/dnssec-tools/tools/scripts/expchk
+   M /trunk/dnssec-tools/tools/scripts/fixkrf
+   M /trunk/dnssec-tools/tools/scripts/genkrf
+   M /trunk/dnssec-tools/tools/scripts/getdnskeys
+   M /trunk/dnssec-tools/tools/scripts/grandvizier
+   M /trunk/dnssec-tools/tools/scripts/keyarch
+   M /trunk/dnssec-tools/tools/scripts/keymod
+   M /trunk/dnssec-tools/tools/scripts/krfcheck
+   M /trunk/dnssec-tools/tools/scripts/lights
+   M /trunk/dnssec-tools/tools/scripts/lskrf
+   M /trunk/dnssec-tools/tools/scripts/lsrealm
+   M /trunk/dnssec-tools/tools/scripts/lsroll
+   M /trunk/dnssec-tools/tools/scripts/realmchk
+   M /trunk/dnssec-tools/tools/scripts/realmctl
+   M /trunk/dnssec-tools/tools/scripts/realminit
+   M /trunk/dnssec-tools/tools/scripts/realmset
+   M /trunk/dnssec-tools/tools/scripts/rollchk
+   M /trunk/dnssec-tools/tools/scripts/rollctl
+   M /trunk/dnssec-tools/tools/scripts/rollerd
+   M /trunk/dnssec-tools/tools/scripts/rollinit
+   M /trunk/dnssec-tools/tools/scripts/rolllog
+   M /trunk/dnssec-tools/tools/scripts/rollrec-editor
+   M /trunk/dnssec-tools/tools/scripts/rollset
+   M /trunk/dnssec-tools/tools/scripts/rp-wrapper
+   M /trunk/dnssec-tools/tools/scripts/signset-editor
+   M /trunk/dnssec-tools/tools/scripts/tachk
+   M /trunk/dnssec-tools/tools/scripts/timetrans
+   M /trunk/dnssec-tools/tools/scripts/trustman
+   M /trunk/dnssec-tools/tools/scripts/zonesigner
+
+Adjusted version numbers to reflect the new release.
+
+------------------------------------------------------------------------
+r7507 | hardaker | 2013-02-15 13:21:13 -0800 (Fri, 15 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/NEWS
+
+more NEWS additions
+------------------------------------------------------------------------
+r7506 | hserus | 2013-02-15 13:19:01 -0800 (Fri, 15 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libsres/res_io_manager.c
+   M /trunk/dnssec-tools/validator/libsres/res_query.c
+   M /trunk/dnssec-tools/validator/libsres/res_support.c
+
+Some more initialization of sockaddr memory to 0
+
+------------------------------------------------------------------------
+r7505 | hserus | 2013-02-15 12:16:45 -0800 (Fri, 15 Feb 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/configure
+   M /trunk/dnssec-tools/validator/configure.in
+
+Change the order in which -lssl and -lcrypto are linked into binaries
+since the order matters on some platforms
+
+------------------------------------------------------------------------
+r7504 | tewok | 2013-02-15 09:35:31 -0800 (Fri, 15 Feb 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/dnssectools.pm
+
+Removed credit for Sebastien Schmidt, since it was moved to the NEWS file to
+cover the all his changes.
+
+------------------------------------------------------------------------
+r7503 | hserus | 2013-02-15 09:18:46 -0800 (Fri, 15 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/NEWS
+
+Change tabs to spaces
+
+------------------------------------------------------------------------
+r7502 | tewok | 2013-02-15 09:09:07 -0800 (Fri, 15 Feb 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/NEWS
+
+Tweaked the Owl discussion.
+Added discussion of rollerd and rollrec.pm changes.
+
+------------------------------------------------------------------------
+r7501 | hserus | 2013-02-15 09:02:21 -0800 (Fri, 15 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/NEWS
+
+Add libval and validation-related NEWS items
+
+------------------------------------------------------------------------
+r7500 | hardaker | 2013-02-15 08:45:01 -0800 (Fri, 15 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/NEWS
+
+mention dnssec-check
+------------------------------------------------------------------------
+r7499 | hardaker | 2013-02-15 08:43:24 -0800 (Fri, 15 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/NEWS
+
+more updates to NEWS
+------------------------------------------------------------------------
+r7498 | tewok | 2013-02-15 08:39:09 -0800 (Fri, 15 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/conf.pm.in
+   M /trunk/dnssec-tools/tools/modules/defaults.pm
+   M /trunk/dnssec-tools/tools/modules/dnssectools.pm
+   M /trunk/dnssec-tools/tools/modules/keyrec.pm
+   M /trunk/dnssec-tools/tools/modules/realm.pm
+   M /trunk/dnssec-tools/tools/modules/realmmgr.pm
+   M /trunk/dnssec-tools/tools/modules/rolllog.pm
+   M /trunk/dnssec-tools/tools/modules/rollmgr.pm
+   M /trunk/dnssec-tools/tools/modules/rollrec.pm
+   M /trunk/dnssec-tools/tools/modules/timetrans.pm
+   M /trunk/dnssec-tools/tools/modules/tooloptions.pm
+
+Updated module version numbers to reflect imminent new release.
+
+------------------------------------------------------------------------
+r7497 | tewok | 2013-02-15 08:36:19 -0800 (Fri, 15 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/blinkenlights
+   M /trunk/dnssec-tools/tools/scripts/bubbles
+   M /trunk/dnssec-tools/tools/scripts/buildrealms
+   M /trunk/dnssec-tools/tools/scripts/cleanarch
+   M /trunk/dnssec-tools/tools/scripts/cleankrf
+   M /trunk/dnssec-tools/tools/scripts/dtck
+   M /trunk/dnssec-tools/tools/scripts/dtconf
+   M /trunk/dnssec-tools/tools/scripts/dtconfchk
+   M /trunk/dnssec-tools/tools/scripts/dtdefs
+   M /trunk/dnssec-tools/tools/scripts/dtrealms
+   M /trunk/dnssec-tools/tools/scripts/dtreqmods
+   M /trunk/dnssec-tools/tools/scripts/dtupdkrf
+   M /trunk/dnssec-tools/tools/scripts/expchk
+   M /trunk/dnssec-tools/tools/scripts/fixkrf
+   M /trunk/dnssec-tools/tools/scripts/genkrf
+   M /trunk/dnssec-tools/tools/scripts/getdnskeys
+   M /trunk/dnssec-tools/tools/scripts/grandvizier
+   M /trunk/dnssec-tools/tools/scripts/keyarch
+   M /trunk/dnssec-tools/tools/scripts/keymod
+   M /trunk/dnssec-tools/tools/scripts/krfcheck
+   M /trunk/dnssec-tools/tools/scripts/lights
+   M /trunk/dnssec-tools/tools/scripts/lskrf
+   M /trunk/dnssec-tools/tools/scripts/lsrealm
+   M /trunk/dnssec-tools/tools/scripts/lsroll
+   M /trunk/dnssec-tools/tools/scripts/realmchk
+   M /trunk/dnssec-tools/tools/scripts/realmctl
+   M /trunk/dnssec-tools/tools/scripts/realminit
+   M /trunk/dnssec-tools/tools/scripts/realmset
+   M /trunk/dnssec-tools/tools/scripts/rollchk
+   M /trunk/dnssec-tools/tools/scripts/rollctl
+   M /trunk/dnssec-tools/tools/scripts/rollerd
+   M /trunk/dnssec-tools/tools/scripts/rollinit
+   M /trunk/dnssec-tools/tools/scripts/rolllog
+   M /trunk/dnssec-tools/tools/scripts/rollrec-editor
+   M /trunk/dnssec-tools/tools/scripts/rollset
+   M /trunk/dnssec-tools/tools/scripts/rp-wrapper
+   M /trunk/dnssec-tools/tools/scripts/signset-editor
+   M /trunk/dnssec-tools/tools/scripts/tachk
+   M /trunk/dnssec-tools/tools/scripts/timetrans
+   M /trunk/dnssec-tools/tools/scripts/trustman
+   M /trunk/dnssec-tools/tools/scripts/zonesigner
+
+Update the tool version number for the impending release.
+
+------------------------------------------------------------------------
+r7496 | hardaker | 2013-02-15 08:30:17 -0800 (Fri, 15 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/NEWS
+
+2.0 starting template
+------------------------------------------------------------------------
+r7495 | tewok | 2013-02-15 08:30:15 -0800 (Fri, 15 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/dtinitconf
+
+Added support for zonefile-parser config field.
+
+------------------------------------------------------------------------
+r7494 | hserus | 2013-02-15 08:28:31 -0800 (Fri, 15 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_cache.c
+
+Replace record in cache based on credibility value alone.
+
+------------------------------------------------------------------------
+r7493 | tewok | 2013-02-15 07:58:42 -0800 (Fri, 15 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/dtconfchk
+
+Added support for zonefile-parser config field.
+
+------------------------------------------------------------------------
+r7492 | tewok | 2013-02-15 07:33:25 -0800 (Fri, 15 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/mapper/mapper
+
+Added support for zonefile-parser config field.
+
+------------------------------------------------------------------------
+r7491 | tewok | 2013-02-15 07:32:57 -0800 (Fri, 15 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/donuts
+
+Added support for zonefile-parser config field.
+
+------------------------------------------------------------------------
+r7490 | tewok | 2013-02-15 07:32:27 -0800 (Fri, 15 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/lsdnssec
+
+Added support for zonefile-parser config field.
+
+------------------------------------------------------------------------
+r7489 | tewok | 2013-02-15 07:31:58 -0800 (Fri, 15 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollchk
+
+Added support for zonefile-parser config field.
+
+------------------------------------------------------------------------
+r7488 | tewok | 2013-02-15 07:31:28 -0800 (Fri, 15 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollerd
+
+Added support for zonefile-parser config field.
+
+------------------------------------------------------------------------
+r7487 | tewok | 2013-02-15 07:30:45 -0800 (Fri, 15 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/dnssectools.pm
+
+Added support for zonefile-parser config field.
+
+------------------------------------------------------------------------
+r7486 | tewok | 2013-02-15 07:30:20 -0800 (Fri, 15 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/defaults.pm
+
+Added support for zonefile-parser config field.
+
+------------------------------------------------------------------------
+r7485 | tewok | 2013-02-15 07:29:57 -0800 (Fri, 15 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/etc/dnssec-tools/dnssec-tools.conf.pod
+
+Added support for zonefile-parser config field.
+
+------------------------------------------------------------------------
+r7484 | tewok | 2013-02-15 07:28:29 -0800 (Fri, 15 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/etc/dnssec-tools/dnssec-tools.conf
+
+Added support for zonefile-parser config field.
+
+------------------------------------------------------------------------
+r7483 | hardaker | 2013-02-14 18:59:06 -0800 (Thu, 14 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/MainWindow.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/ValidateViewBox.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/ValidateViewBox.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/ValidateViewWidget.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/graphwidget.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/graphwidget.h
+
+allow for permently toggled validation tab boxes
+------------------------------------------------------------------------
+r7482 | hardaker | 2013-02-14 17:22:03 -0800 (Thu, 14 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/Effects/Effect.cpp
+   A /trunk/dnssec-tools/validator/apps/dnssec-nodes/Effects/SetSize.cpp
+   A /trunk/dnssec-tools/validator/apps/dnssec-nodes/Effects/SetSize.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/dnssec-nodes.pro
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/filtersAndEffects.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/node.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/node.h
+
+Added a new effect to set the size of a node
+------------------------------------------------------------------------
+r7481 | hardaker | 2013-02-14 17:21:50 -0800 (Thu, 14 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/Effects/Effect.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/Effects/SetNodeColoring.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/Effects/SetNodeColoring.h
+
+allow null colors for border colors
+------------------------------------------------------------------------
+r7480 | hardaker | 2013-02-14 11:42:38 -0800 (Thu, 14 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/Effects/Effect.cpp
+   D /trunk/dnssec-tools/validator/apps/dnssec-nodes/Effects/SetBorderColor.cpp
+   D /trunk/dnssec-tools/validator/apps/dnssec-nodes/Effects/SetBorderColor.h
+   A /trunk/dnssec-tools/validator/apps/dnssec-nodes/Effects/SetNodeColoring.cpp (from /trunk/dnssec-tools/validator/apps/dnssec-nodes/Effects/SetBorderColor.cpp:7479)
+   A /trunk/dnssec-tools/validator/apps/dnssec-nodes/Effects/SetNodeColoring.h (from /trunk/dnssec-tools/validator/apps/dnssec-nodes/Effects/SetBorderColor.h:7479)
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/Filters/Filter.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/Filters/LogicalAndOr.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/NodeList.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/dnssec-nodes.pro
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/filtersAndEffects.h
+
+Renamed the border coloring class to node coloring, which is more accurate
+(and a few other bug fixes)
+------------------------------------------------------------------------
+r7479 | hardaker | 2013-02-14 11:42:20 -0800 (Thu, 14 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/Effects/Effect.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/Effects/SetBorderColor.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/Effects/SetBorderColor.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/node.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/node.h
+
+change border coloring effect to handle node coloring as well
+------------------------------------------------------------------------
+r7478 | hardaker | 2013-02-14 10:01:40 -0800 (Thu, 14 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/Effects/SetBorderColor.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/Effects/SetBorderColor.h
+
+use a color selector for border colors
+------------------------------------------------------------------------
+r7477 | hardaker | 2013-02-14 10:01:30 -0800 (Thu, 14 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/node.cpp
+
+fix alpha coloring so it affects everything about a node
+------------------------------------------------------------------------
+r7476 | hardaker | 2013-02-14 10:01:21 -0800 (Thu, 14 Feb 2013) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/validator/apps/dnssec-nodes/Filters/LogicalAndOr.cpp
+   A /trunk/dnssec-tools/validator/apps/dnssec-nodes/Filters/LogicalAndOr.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/dnssec-nodes.pro
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/filtersAndEffects.h
+
+Added a logical and/or filter
+------------------------------------------------------------------------
+r7475 | hardaker | 2013-02-14 10:01:09 -0800 (Thu, 14 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/Filters/Filter.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/Filters/NameFilter.cpp
+
+emit filterChanged when appropriate
+------------------------------------------------------------------------
+r7474 | hardaker | 2013-02-14 10:00:59 -0800 (Thu, 14 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/ValidateViewWidget.cpp
+
+display help text in the background
+------------------------------------------------------------------------
+r7473 | hserus | 2013-02-14 09:39:37 -0800 (Thu, 14 Feb 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/validator_driver.c
+
+Ifdef out debug statements for thread ID since different platforms
+represent the thread ID type differently. 
+
+------------------------------------------------------------------------
+r7472 | hserus | 2013-02-14 09:33:40 -0800 (Thu, 14 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/validator_driver.c
+
+Set exit code to 1 if validation failed for a single test
+
+------------------------------------------------------------------------
+r7470 | hserus | 2013-02-14 06:43:49 -0800 (Thu, 14 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/mozilla/dnssec-status/content/overlay.js
+
+Don't display error links
+
+------------------------------------------------------------------------
+r7469 | hardaker | 2013-02-14 06:43:03 -0800 (Thu, 14 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/Effects/Effect.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/Effects/Effect.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/Effects/MultiEffect.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/Effects/MultiEffect.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/Effects/SetAlphaEffect.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/Effects/SetAlphaEffect.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/Effects/SetBorderColor.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/Effects/SetBorderColor.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/Effects/SetZValue.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/Effects/SetZValue.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/FilterEditorWindow.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/FilterEditorWindow.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/Filters/DNSSECStatusFilter.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/Filters/DNSSECStatusFilter.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/Filters/Filter.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/Filters/Filter.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/Filters/NameFilter.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/Filters/NameFilter.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/Filters/NotFilter.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/Filters/NotFilter.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/Filters/TypeFilter.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/Filters/TypeFilter.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/MainWindow.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/NodeList.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/NodeList.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/node.cpp
+
+first full implementation of a filter editor windows
+------------------------------------------------------------------------
+r7468 | hardaker | 2013-02-14 06:42:46 -0800 (Thu, 14 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/graphwidget.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/node.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/node.h
+
+Show node info immediately on hover
+------------------------------------------------------------------------
+r7467 | hardaker | 2013-02-14 06:42:36 -0800 (Thu, 14 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/graphwidget.cpp
+
+fix centering of new scaled graph
+------------------------------------------------------------------------
+r7466 | hardaker | 2013-02-14 06:42:27 -0800 (Thu, 14 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/graphwidget.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/graphwidget.h
+
+fix the scroll bars to always calculate proper min/max scene sizes
+------------------------------------------------------------------------
+r7465 | hardaker | 2013-02-14 06:42:18 -0800 (Thu, 14 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/graphwidget.cpp
+
+minor bug fix
+------------------------------------------------------------------------
+r7464 | hardaker | 2013-02-14 06:42:08 -0800 (Thu, 14 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/ValidateViewWidget.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/graphwidget.cpp
+
+Fix the wait cursor in various spots to use the viewport
+------------------------------------------------------------------------
+r7463 | hardaker | 2013-02-14 06:41:59 -0800 (Thu, 14 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/main.cpp
+
+set the busy cursor while loading files, names, etc
+------------------------------------------------------------------------
+r7462 | hardaker | 2013-02-14 06:41:49 -0800 (Thu, 14 Feb 2013) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/MainWindow.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/MainWindow.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/graphwidget.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/main.cpp
+
+Add argument parsing to dnssec-nodes.
+  --logfile FILE will load a log file
+  --pcapfile will load a pcap dump file
+  other arguments will be treated as names to lookup on startup
+------------------------------------------------------------------------
+r7461 | rstory | 2013-02-14 05:25:23 -0800 (Thu, 14 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/apps/mozilla/bloodhound/mozilla-central/dt-bloodhound-0002-branding-for-bloodhound.patch
+
+update for os x
+------------------------------------------------------------------------
+r7460 | rstory | 2013-02-14 05:09:43 -0800 (Thu, 14 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/apps/mozilla/bloodhound/mozilla-central/bloodhound-icons.tgz
+
+add icons for os x
+------------------------------------------------------------------------
+r7459 | tewok | 2013-02-13 20:28:35 -0800 (Wed, 13 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/demos/demo-tools/makezones
+
+Add an info rollrec to the rollrec file.
+
+------------------------------------------------------------------------
+r7458 | tewok | 2013-02-13 20:20:32 -0800 (Wed, 13 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/demos/rollerd-vastzones/makezones
+
+Added an info rollrec to the constructed rollrec file.
+
+------------------------------------------------------------------------
+r7457 | tewok | 2013-02-12 17:35:48 -0800 (Tue, 12 Feb 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/demos/rollerd-basic/save-demo.rollrec
+   M /trunk/dnssec-tools/tools/demos/rollerd-single/save-demo.rollrec
+   M /trunk/dnssec-tools/tools/demos/rollerd-split-view/save-demo.rollrec
+   M /trunk/dnssec-tools/tools/demos/rollerd-subdirs/save-demo.rollrec
+   M /trunk/dnssec-tools/tools/demos/rollerd-zonegroups/save-demo.rollrec
+
+Added info rollrec.
+
+
+------------------------------------------------------------------------
+r7456 | tewok | 2013-02-12 17:32:15 -0800 (Tue, 12 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/demos/rollerd-manyzones-fast/Makefile
+   M /trunk/dnssec-tools/tools/demos/rollerd-manyzones-fast/save-dummy.com
+   M /trunk/dnssec-tools/tools/demos/rollerd-manyzones-fast/save-example.com
+   M /trunk/dnssec-tools/tools/demos/rollerd-manyzones-fast/save-test.com
+   M /trunk/dnssec-tools/tools/demos/rollerd-manyzones-fast/save-woof.com
+   M /trunk/dnssec-tools/tools/demos/rollerd-manyzones-fast/save-xorn.com
+   M /trunk/dnssec-tools/tools/demos/rollerd-manyzones-fast/save-yowzah.com
+   M /trunk/dnssec-tools/tools/demos/rollerd-manyzones-fast/save-zero.com
+
+Shrunk rollover times.
+
+------------------------------------------------------------------------
+r7455 | tewok | 2013-02-12 17:30:31 -0800 (Tue, 12 Feb 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/demos/rollerd-manyzones-fast/save-demo.rollrec
+
+Added info rollrec.
+
+
+------------------------------------------------------------------------
+r7454 | tewok | 2013-02-12 17:26:20 -0800 (Tue, 12 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/demos/rollerd-manyzones/save-demo-smallset.rollrec
+   M /trunk/dnssec-tools/tools/demos/rollerd-manyzones/save-demo.rollrec
+
+Added info rollrec.
+
+------------------------------------------------------------------------
+r7453 | tewok | 2013-02-12 17:22:26 -0800 (Tue, 12 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/demos/rollerd-basic/save-demo.rollrec
+
+Added info rollrec.
+
+------------------------------------------------------------------------
+r7452 | tewok | 2013-02-12 17:18:13 -0800 (Tue, 12 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/demos/rollerd-basic/Makefile
+
+Fixed -e arg for zonesigner.
+
+------------------------------------------------------------------------
+r7451 | tewok | 2013-02-12 17:12:27 -0800 (Tue, 12 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollchk
+
+Added checking of info rollrecs.
+
+------------------------------------------------------------------------
+r7450 | tewok | 2013-02-12 17:10:55 -0800 (Tue, 12 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/lsroll
+
+Added -info to display the info rollrec.
+
+------------------------------------------------------------------------
+r7449 | tewok | 2013-02-12 17:10:15 -0800 (Tue, 12 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollinit
+
+Modified to add an info rollrec when creating a new file.
+
+------------------------------------------------------------------------
+r7448 | tewok | 2013-02-12 17:07:30 -0800 (Tue, 12 Feb 2013) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/rollrec.pm
+
+
+Modified to support info rollrecs and rollrec versions.
+
+
+------------------------------------------------------------------------
+r7447 | tewok | 2013-02-12 17:02:08 -0800 (Tue, 12 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/rollrec.pod
+
+Added a description of the info rollrec and rollrec versions.
+
+------------------------------------------------------------------------
+r7446 | hserus | 2013-02-11 11:10:32 -0800 (Mon, 11 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/gethost.c
+   M /trunk/dnssec-tools/validator/apps/getname.c
+   M /trunk/dnssec-tools/validator/libsres/ns_print.c
+   M /trunk/dnssec-tools/validator/libsres/res_io_manager.c
+   M /trunk/dnssec-tools/validator/libval/val_getaddrinfo.c
+   M /trunk/dnssec-tools/validator/libval/val_gethostbyname.c
+   M /trunk/dnssec-tools/validator/libval/val_policy.c
+
+Initialize sockaddr_in structures before use
+
+------------------------------------------------------------------------
+r7445 | hserus | 2013-02-07 08:52:10 -0800 (Thu, 07 Feb 2013) | 5 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/mozilla/dnssec-status/content/overlay.js
+
+Use XPCOMUtils.generateQI to generate the query interface.
+Call dnssecprogresslistener() before dnssecstatusObserver(). Not clear
+why this is necessary, but the earlier ordering affected the way
+notification counters were being incremented.
+
+------------------------------------------------------------------------
+r7444 | hserus | 2013-02-07 08:48:14 -0800 (Thu, 07 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/mozilla/dnssec-status/install.rdf
+
+Minimum version supported is 5
+
+------------------------------------------------------------------------
+r7443 | hardaker | 2013-02-06 17:19:29 -0800 (Wed, 06 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/DNSResources.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/DNSResources.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/DetailsViewer.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/PcapWatcher.cpp
+
+Save and print the resource records that we receive back
+------------------------------------------------------------------------
+r7442 | hardaker | 2013-02-06 17:19:15 -0800 (Wed, 06 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/FilterEditorWindow.cpp
+
+white space
+------------------------------------------------------------------------
+r7441 | hardaker | 2013-02-06 17:19:02 -0800 (Wed, 06 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/validator-compat.h
+   M /trunk/dnssec-tools/validator/libsres/ns_print.c
+
+define a data printing function to sprint only the data of a record
+------------------------------------------------------------------------
+r7440 | hardaker | 2013-02-06 17:18:41 -0800 (Wed, 06 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/Effects/MultiEffect.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/Effects/MultiEffect.h
+   A /trunk/dnssec-tools/validator/apps/dnssec-nodes/FilterEditorWindow.cpp
+   A /trunk/dnssec-tools/validator/apps/dnssec-nodes/FilterEditorWindow.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/MainWindow.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/NodeList.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/NodeList.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/dnssec-nodes.pro
+   A /trunk/dnssec-tools/validator/apps/dnssec-nodes/filtersAndEffects.h
+
+Start building a filtereffect editor window
+------------------------------------------------------------------------
+r7438 | hserus | 2013-02-06 11:50:04 -0800 (Wed, 06 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/mozilla/dnssec-status/update.rdf
+
+Leave out trailing / in what's new page
+
+------------------------------------------------------------------------
+r7437 | hserus | 2013-02-06 11:49:24 -0800 (Wed, 06 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/mozilla/dnssec-status/install.rdf
+
+Leave out trailing / for info location
+
+------------------------------------------------------------------------
+r7436 | hserus | 2013-02-06 11:48:01 -0800 (Wed, 06 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/mozilla/dnssec-status/install.rdf
+
+Fix typo
+
+------------------------------------------------------------------------
+r7435 | hserus | 2013-02-06 11:24:46 -0800 (Wed, 06 Feb 2013) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/mozilla/dnssec-status/update.rdf
+
+Add the update meta-data for the extension
+
+------------------------------------------------------------------------
+r7434 | hserus | 2013-02-06 11:24:10 -0800 (Wed, 06 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/mozilla/dnssec-status/install.rdf
+
+Support version 18.0
+
+------------------------------------------------------------------------
+r7433 | hserus | 2013-02-06 11:23:30 -0800 (Wed, 06 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/mozilla/dnssec-status/content/overlay.js
+
+Enable the extension by default
+
+------------------------------------------------------------------------
+r7431 | hardaker | 2013-02-05 20:57:04 -0800 (Tue, 05 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/NodeList.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/graphwidget.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/graphwidget.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/node.cpp
+
+Add a new option to the right click menu to center the graph on a node.cpp
+------------------------------------------------------------------------
+r7430 | hardaker | 2013-02-05 20:56:52 -0800 (Tue, 05 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/ValidateViewWidget.cpp
+
+arrow point cleanup
+------------------------------------------------------------------------
+r7429 | hardaker | 2013-02-05 20:56:41 -0800 (Tue, 05 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/ValidateViewWidget.cpp
+
+increase arrow head size a touch
+------------------------------------------------------------------------
+r7428 | hardaker | 2013-02-05 14:03:27 -0800 (Tue, 05 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/ValidateViewWidget.cpp
+
+fix a duplicate-data bug
+------------------------------------------------------------------------
+r7427 | hardaker | 2013-02-05 14:03:15 -0800 (Tue, 05 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/ValidateViewWidget.cpp
+
+Sort keys on a line according to interest (ksks before zsk, eg).
+------------------------------------------------------------------------
+r7426 | hardaker | 2013-02-05 14:02:55 -0800 (Tue, 05 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/ValidateViewBox.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/ValidateViewWidget.cpp
+
+Color code the arrow heads too
+------------------------------------------------------------------------
+r7425 | hardaker | 2013-02-05 14:02:36 -0800 (Tue, 05 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/ValidateViewBox.cpp
+
+make the lines thicker
+------------------------------------------------------------------------
+r7424 | hardaker | 2013-02-05 14:02:11 -0800 (Tue, 05 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/ValidateViewWidget.cpp
+
+color the DS box lines too
+------------------------------------------------------------------------
+r7423 | hardaker | 2013-02-05 14:01:53 -0800 (Tue, 05 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/ValidateViewBox.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/ValidateViewBox.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/ValidateViewWidget.cpp
+
+save the original line colors on mouse release
+------------------------------------------------------------------------
+r7422 | hardaker | 2013-02-05 14:01:29 -0800 (Tue, 05 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/ValidateViewBox.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/ValidateViewBox.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/ValidateViewWidget.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/ValidateViewWidget.h
+
+Make the box selections also act on arrow colors when selected
+------------------------------------------------------------------------
+r7421 | hardaker | 2013-02-05 14:01:15 -0800 (Tue, 05 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/ValidateViewWidget.cpp
+
+move the zone label out of the box and only print one
+------------------------------------------------------------------------
+r7420 | hardaker | 2013-02-05 14:01:00 -0800 (Tue, 05 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/ValidateViewBox.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/ValidateViewBox.h
+
+Make the validation box blue when click-held
+------------------------------------------------------------------------
+r7419 | hardaker | 2013-02-05 14:00:29 -0800 (Tue, 05 Feb 2013) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/validator/apps/dnssec-nodes/ValidateViewBox.cpp
+   A /trunk/dnssec-tools/validator/apps/dnssec-nodes/ValidateViewBox.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/ValidateViewWidget.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/ValidateViewWidget.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/dnssec-nodes.pro
+
+Move the box drawing into a separate class
+------------------------------------------------------------------------
+r7418 | hardaker | 2013-02-05 11:06:39 -0800 (Tue, 05 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/DNSResources.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/ValidateViewWidget.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/graphwidget.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/graphwidget.h
+
+Various warning squashes.
+------------------------------------------------------------------------
+r7417 | hardaker | 2013-02-05 11:06:24 -0800 (Tue, 05 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/graphwidget.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/graphwidget.h
+
+save the straight validation line pref
+------------------------------------------------------------------------
+r7416 | hardaker | 2013-02-05 11:06:09 -0800 (Tue, 05 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/PcapWatcher.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/ValidateViewWidget.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/dnssec-nodes.pro
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/graphwidget.h
+   D /trunk/dnssec-tools/validator/apps/dnssec-nodes/qt_auto_properties.h
+   A /trunk/dnssec-tools/validator/apps/dnssec-nodes/qtauto_properties.h (from /trunk/dnssec-tools/validator/apps/dnssec-nodes/qt_auto_properties.h:7415)
+
+rename qt_auto_properties
+------------------------------------------------------------------------
+r7415 | hardaker | 2013-02-05 11:05:50 -0800 (Tue, 05 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/ValidateViewWidget.cpp
+
+minor improvements of drawing calculations
+------------------------------------------------------------------------
+r7414 | hardaker | 2013-02-05 11:05:37 -0800 (Tue, 05 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/DNSData.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/DNSData.h
+
+return a DSNOMATCH code on that status value
+------------------------------------------------------------------------
+r7413 | hardaker | 2013-02-05 11:05:14 -0800 (Tue, 05 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/ValidateViewWidget.cpp
+
+remove debugging
+------------------------------------------------------------------------
+r7412 | hardaker | 2013-02-05 11:05:01 -0800 (Tue, 05 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/ValidateViewWidget.cpp
+
+Much better arrow lines for validation diagrams
+------------------------------------------------------------------------
+r7411 | hardaker | 2013-02-05 11:04:48 -0800 (Tue, 05 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/ValidateViewWidget.cpp
+
+minor cleanup
+------------------------------------------------------------------------
+r7410 | hardaker | 2013-02-05 11:04:34 -0800 (Tue, 05 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/ValidateViewWidget.cpp
+
+slightly better lines with less overlap
+------------------------------------------------------------------------
+r7409 | hardaker | 2013-02-05 11:04:08 -0800 (Tue, 05 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/MainWindow.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/ValidateViewWidget.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/ValidateViewWidgetHolder.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/ValidateViewWidgetHolder.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/graphwidget.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/graphwidget.h
+
+add a menu item for changing the line type
+------------------------------------------------------------------------
+r7408 | hardaker | 2013-02-05 10:50:09 -0800 (Tue, 05 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/ValidateViewWidget.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/ValidateViewWidget.h
+
+Use spline lines for drawing between validation boxes
+------------------------------------------------------------------------
+r7407 | tewok | 2013-02-04 17:51:45 -0800 (Mon, 04 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/dtinitconf
+
+Deleted obsolete, commented-out 'viewimage' line.
+
+------------------------------------------------------------------------
+r7406 | tewok | 2013-02-04 17:50:36 -0800 (Mon, 04 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/dtconfchk
+
+Deleted obsolete, commented-out 'viewimage' line.
+
+------------------------------------------------------------------------
+r7405 | tewok | 2013-02-04 17:50:19 -0800 (Mon, 04 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/defaults.pm
+
+Deleted obsolete, commented-out 'viewimage' line.
+
+------------------------------------------------------------------------
+r7404 | tewok | 2013-02-04 17:32:39 -0800 (Mon, 04 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/rollmgr.pm
+
+Modified comment for KSK rollover phases change.
+
+------------------------------------------------------------------------
+r7403 | tewok | 2013-02-04 17:27:53 -0800 (Mon, 04 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollctl
+
+Modified KS rollover phases.
+
+------------------------------------------------------------------------
+r7402 | tewok | 2013-02-04 17:18:38 -0800 (Mon, 04 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/lights
+
+Handle rollerd's new method of KSK rollover.
+
+------------------------------------------------------------------------
+r7401 | tewok | 2013-02-04 16:55:28 -0800 (Mon, 04 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/bubbles
+
+Deleted an obsolete pod warning.
+
+------------------------------------------------------------------------
+r7400 | tewok | 2013-02-04 16:50:29 -0800 (Mon, 04 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/demos/demo-tools/README
+
+autods:  KSK phase 5 instead of phase 6
+
+------------------------------------------------------------------------
+r7399 | tewok | 2013-02-04 16:49:23 -0800 (Mon, 04 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/demos/demo-tools/autods
+
+Look for KSK phase 5 instead of phase 6.
+
+------------------------------------------------------------------------
+r7398 | tewok | 2013-02-04 16:26:02 -0800 (Mon, 04 Feb 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/blinkenlights
+
+Handle rollerd's new method of KSK rollover.
+Removed some unused variables.
+
+------------------------------------------------------------------------
+r7397 | tewok | 2013-02-04 16:20:16 -0800 (Mon, 04 Feb 2013) | 8 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollerd
+
+Modified step order of KSK rollover.
+
+	- The key-rolling that used to take place in KSK phase 4 now takes
+	  place in KSK phase 7.
+	- Old KSK phase 5 is new KSK phase 4.
+	- Old KSK phase 6 is new KSK phase 5.
+ 
+
+------------------------------------------------------------------------
+r7394 | hardaker | 2013-02-01 10:22:49 -0800 (Fri, 01 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/ZoneFile-Fast/t/rrs.t
+
+test TLSA if Net::DNS > 0.72
+------------------------------------------------------------------------
+r7393 | hardaker | 2013-02-01 10:22:35 -0800 (Fri, 01 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/ZoneFile-Fast/Fast.pm
+
+parse TLSA
+------------------------------------------------------------------------
+r7392 | hardaker | 2013-02-01 10:22:22 -0800 (Fri, 01 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/TestManager.cpp
+
+change the data version and the DT version for submitting
+------------------------------------------------------------------------
+r7391 | hardaker | 2013-02-01 10:22:01 -0800 (Fri, 01 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/DnssecCheckVersion.h
+
+update to version 1.14.0.2
+------------------------------------------------------------------------
+r7390 | hardaker | 2013-02-01 10:21:45 -0800 (Fri, 01 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/dist/makerelease.xml
+
+modify the submitted DT version number
+------------------------------------------------------------------------
+r7389 | hardaker | 2013-02-01 10:21:31 -0800 (Fri, 01 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/TestManager.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/TestManager.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec_checks.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec_checks.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/mainwindow.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DNSSECCheck.js
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DnssecCheck.qml
+
+Add a DNAME check to the list of available tests.
+------------------------------------------------------------------------
+r7388 | hardaker | 2013-02-01 10:21:15 -0800 (Fri, 01 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/maketestzone/maketestzone
+
+add dname records for each zone
+------------------------------------------------------------------------
+r7387 | hardaker | 2013-02-01 10:21:01 -0800 (Fri, 01 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/ZoneFile-Fast/t/rr-dnssec.t
+
+ignore spacing issues for comparing rrsigs
+------------------------------------------------------------------------
+r7386 | hserus | 2013-01-31 18:45:23 -0800 (Thu, 31 Jan 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_dane.c
+
+Return correct failure code when there is a DANE_SEL_PUBKEY and
+DANE_MATCH_EXACT mismatch. 
+
+------------------------------------------------------------------------
+r7385 | rstory | 2013-01-31 11:02:28 -0800 (Thu, 31 Jan 2013) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/apps/mozilla/bloodhound
+   A /trunk/dnssec-tools/apps/mozilla/bloodhound/mozilla-central
+   A /trunk/dnssec-tools/apps/mozilla/bloodhound/mozilla-central/bloodhound-dnssec-tools.tgz
+   A /trunk/dnssec-tools/apps/mozilla/bloodhound/mozilla-central/bloodhound-icons.tgz
+   A /trunk/dnssec-tools/apps/mozilla/bloodhound/mozilla-central/dt-bloodhound-0001-replace-mozilla-URLs.patch
+   A /trunk/dnssec-tools/apps/mozilla/bloodhound/mozilla-central/dt-bloodhound-0002-branding-for-bloodhound.patch
+   A /trunk/dnssec-tools/apps/mozilla/bloodhound/mozilla-central/dt-bloodhound-0003-update-bookmarks.patch
+
+patches, docs and icons for bloodhound
+------------------------------------------------------------------------
+r7384 | rstory | 2013-01-31 11:02:14 -0800 (Thu, 31 Jan 2013) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/apps/mozilla/mozilla-firefox/mozilla-central/dt-browser-0001-update-browser-local-overrides-for-DNSSEC.patch (from /trunk/dnssec-tools/apps/mozilla/mozilla-firefox/mozilla-central/dt-browser-0015-update-browser-local-overrides-for-DNSSEC.patch:7383)
+   D /trunk/dnssec-tools/apps/mozilla/mozilla-firefox/mozilla-central/dt-browser-0015-update-browser-local-overrides-for-DNSSEC.patch
+
+renumber patch
+------------------------------------------------------------------------
+r7383 | rstory | 2013-01-31 11:01:59 -0800 (Thu, 31 Jan 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/apps/mozilla/mozilla-nss/mozilla-central/dt-nss-0001-DANE-patch-from-Suresh-2012-12-14.patch
+   M /trunk/dnssec-tools/apps/mozilla/mozilla-nss/mozilla-central/dt-nss-0002-DANE-move-new-function-inside-braces.patch
+   M /trunk/dnssec-tools/apps/mozilla/mozilla-nss/mozilla-central/dt-nss-0003-DANE-use-VAL_-CFLAGS-LDFLAGS-LIBS-as-needed.patch
+   M /trunk/dnssec-tools/apps/mozilla/mozilla-nss/mozilla-central/dt-nss-0004-DANE-only-add-ssldane.c-for-MOZ_DNSSEC.patch
+   M /trunk/dnssec-tools/apps/mozilla/mozilla-nss/mozilla-central/dt-nss-0005-DANE-keep-compiler-happy.patch
+   M /trunk/dnssec-tools/apps/mozilla/mozilla-nss/mozilla-central/dt-nss-0006-DANE-patch-addendum-from-Suresh-130117.patch
+
+update to latest patches
+------------------------------------------------------------------------
+r7382 | rstory | 2013-01-31 11:01:46 -0800 (Thu, 31 Jan 2013) | 1 line
+Changed paths:
+   D /trunk/dnssec-tools/apps/mozilla/mozilla-nss/mozilla-central/dt-dane-0016-nss-patch-from-Suresh-2012-12-14.patch
+   D /trunk/dnssec-tools/apps/mozilla/mozilla-nss/mozilla-central/dt-dane-0017-manager-patch-from-Suresh-2012-12-14.patch
+   D /trunk/dnssec-tools/apps/mozilla/mozilla-nss/mozilla-central/dt-dane-0018-move-new-function-inside-braces.patch
+   D /trunk/dnssec-tools/apps/mozilla/mozilla-nss/mozilla-central/dt-dane-0019-use-VAL_-CFLAGS-LDFLAGS-LIBS-as-needed.patch
+   D /trunk/dnssec-tools/apps/mozilla/mozilla-nss/mozilla-central/dt-dane-0020-only-add-ssldane.c-for-MOZ_DNSSEC.patch
+   D /trunk/dnssec-tools/apps/mozilla/mozilla-nss/mozilla-central/dt-dane-0021-keep-compiler-happy.patch
+   D /trunk/dnssec-tools/apps/mozilla/mozilla-nss/mozilla-central/dt-dane-0022-patch-addendum-from-Suresh-130117.patch
+   A /trunk/dnssec-tools/apps/mozilla/mozilla-nss/mozilla-central/dt-nss-0001-DANE-patch-from-Suresh-2012-12-14.patch (from /trunk/dnssec-tools/apps/mozilla/mozilla-nss/mozilla-central/dt-dane-0016-nss-patch-from-Suresh-2012-12-14.patch:7381)
+   A /trunk/dnssec-tools/apps/mozilla/mozilla-nss/mozilla-central/dt-nss-0002-DANE-move-new-function-inside-braces.patch (from /trunk/dnssec-tools/apps/mozilla/mozilla-nss/mozilla-central/dt-dane-0018-move-new-function-inside-braces.patch:7381)
+   A /trunk/dnssec-tools/apps/mozilla/mozilla-nss/mozilla-central/dt-nss-0003-DANE-use-VAL_-CFLAGS-LDFLAGS-LIBS-as-needed.patch (from /trunk/dnssec-tools/apps/mozilla/mozilla-nss/mozilla-central/dt-dane-0019-use-VAL_-CFLAGS-LDFLAGS-LIBS-as-needed.patch:7381)
+   A /trunk/dnssec-tools/apps/mozilla/mozilla-nss/mozilla-central/dt-nss-0004-DANE-only-add-ssldane.c-for-MOZ_DNSSEC.patch (from /trunk/dnssec-tools/apps/mozilla/mozilla-nss/mozilla-central/dt-dane-0020-only-add-ssldane.c-for-MOZ_DNSSEC.patch:7381)
+   A /trunk/dnssec-tools/apps/mozilla/mozilla-nss/mozilla-central/dt-nss-0005-DANE-keep-compiler-happy.patch (from /trunk/dnssec-tools/apps/mozilla/mozilla-nss/mozilla-central/dt-dane-0021-keep-compiler-happy.patch:7381)
+   A /trunk/dnssec-tools/apps/mozilla/mozilla-nss/mozilla-central/dt-nss-0006-DANE-patch-addendum-from-Suresh-130117.patch (from /trunk/dnssec-tools/apps/mozilla/mozilla-nss/mozilla-central/dt-dane-0022-patch-addendum-from-Suresh-130117.patch:7381)
+
+renumber patches, remove xulrunner patch
+------------------------------------------------------------------------
+r7381 | rstory | 2013-01-31 11:01:32 -0800 (Thu, 31 Jan 2013) | 1 line
+Changed paths:
+   D /trunk/dnssec-tools/apps/mozilla/dane/mozilla-central/dt-dane-0016-nss-patch-from-Suresh-2012-12-14.patch
+   D /trunk/dnssec-tools/apps/mozilla/dane/mozilla-central/dt-dane-0017-manager-patch-from-Suresh-2012-12-14.patch
+   D /trunk/dnssec-tools/apps/mozilla/dane/mozilla-central/dt-dane-0018-move-new-function-inside-braces.patch
+   D /trunk/dnssec-tools/apps/mozilla/dane/mozilla-central/dt-dane-0019-use-VAL_-CFLAGS-LDFLAGS-LIBS-as-needed.patch
+   D /trunk/dnssec-tools/apps/mozilla/dane/mozilla-central/dt-dane-0020-only-add-ssldane.c-for-MOZ_DNSSEC.patch
+   D /trunk/dnssec-tools/apps/mozilla/dane/mozilla-central/dt-dane-0021-keep-compiler-happy.patch
+   D /trunk/dnssec-tools/apps/mozilla/dane/mozilla-central/dt-dane-0022-patch-addendum-from-Suresh-130117.patch
+   A /trunk/dnssec-tools/apps/mozilla/mozilla-nss
+   A /trunk/dnssec-tools/apps/mozilla/mozilla-nss/mozilla-central
+   A /trunk/dnssec-tools/apps/mozilla/mozilla-nss/mozilla-central/dt-dane-0016-nss-patch-from-Suresh-2012-12-14.patch (from /trunk/dnssec-tools/apps/mozilla/dane/mozilla-central/dt-dane-0016-nss-patch-from-Suresh-2012-12-14.patch:7380)
+   A /trunk/dnssec-tools/apps/mozilla/mozilla-nss/mozilla-central/dt-dane-0017-manager-patch-from-Suresh-2012-12-14.patch (from /trunk/dnssec-tools/apps/mozilla/dane/mozilla-central/dt-dane-0017-manager-patch-from-Suresh-2012-12-14.patch:7380)
+   A /trunk/dnssec-tools/apps/mozilla/mozilla-nss/mozilla-central/dt-dane-0018-move-new-function-inside-braces.patch (from /trunk/dnssec-tools/apps/mozilla/dane/mozilla-central/dt-dane-0018-move-new-function-inside-braces.patch:7380)
+   A /trunk/dnssec-tools/apps/mozilla/mozilla-nss/mozilla-central/dt-dane-0019-use-VAL_-CFLAGS-LDFLAGS-LIBS-as-needed.patch (from /trunk/dnssec-tools/apps/mozilla/dane/mozilla-central/dt-dane-0019-use-VAL_-CFLAGS-LDFLAGS-LIBS-as-needed.patch:7380)
+   A /trunk/dnssec-tools/apps/mozilla/mozilla-nss/mozilla-central/dt-dane-0020-only-add-ssldane.c-for-MOZ_DNSSEC.patch (from /trunk/dnssec-tools/apps/mozilla/dane/mozilla-central/dt-dane-0020-only-add-ssldane.c-for-MOZ_DNSSEC.patch:7380)
+   A /trunk/dnssec-tools/apps/mozilla/mozilla-nss/mozilla-central/dt-dane-0021-keep-compiler-happy.patch (from /trunk/dnssec-tools/apps/mozilla/dane/mozilla-central/dt-dane-0021-keep-compiler-happy.patch:7380)
+   A /trunk/dnssec-tools/apps/mozilla/mozilla-nss/mozilla-central/dt-dane-0022-patch-addendum-from-Suresh-130117.patch (from /trunk/dnssec-tools/apps/mozilla/dane/mozilla-central/dt-dane-0022-patch-addendum-from-Suresh-130117.patch:7380)
+
+rename dane -> mozilla-nss
+------------------------------------------------------------------------
+r7380 | rstory | 2013-01-31 11:01:16 -0800 (Thu, 31 Jan 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/apps/mozilla/mozilla-xulrunner/mozilla-central/dt-xulrunner-0001-add-dnssec-options-to-configure.patch
+   M /trunk/dnssec-tools/apps/mozilla/mozilla-xulrunner/mozilla-central/dt-xulrunner-0002-use-NSPRs-new-DNSSEC-functionality.patch
+   M /trunk/dnssec-tools/apps/mozilla/mozilla-xulrunner/mozilla-central/dt-xulrunner-0003-support-functions-in-preparation-for-async.patch
+   M /trunk/dnssec-tools/apps/mozilla/mozilla-xulrunner/mozilla-central/dt-xulrunner-0004-use-NSPRs-new-async-functionality.patch
+   M /trunk/dnssec-tools/apps/mozilla/mozilla-xulrunner/mozilla-central/dt-xulrunner-0005-make-netwerk-DNSSEC-validation-aware.patch
+   M /trunk/dnssec-tools/apps/mozilla/mozilla-xulrunner/mozilla-central/dt-xulrunner-0006-add-DNSSEC-preferences-to-browser.patch
+   A /trunk/dnssec-tools/apps/mozilla/mozilla-xulrunner/mozilla-central/dt-xulrunner-0007-add-DANE-checks-for-SSL-certs.patch
+
+update for f18, fixes, DANE
+------------------------------------------------------------------------
+r7379 | rstory | 2013-01-31 11:01:05 -0800 (Thu, 31 Jan 2013) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/apps/mozilla/mozilla-xulrunner/mozilla-central/dt-xulrunner-0001-add-dnssec-options-to-configure.patch (from /trunk/dnssec-tools/apps/mozilla/mozilla-xulrunner/mozilla-central/dt-xulrunner-0009-add-dnssec-options-to-configure.patch:7378)
+   A /trunk/dnssec-tools/apps/mozilla/mozilla-xulrunner/mozilla-central/dt-xulrunner-0002-use-NSPRs-new-DNSSEC-functionality.patch (from /trunk/dnssec-tools/apps/mozilla/mozilla-xulrunner/mozilla-central/dt-xulrunner-0010-use-NSPRs-new-DNSSEC-functionality.patch:7378)
+   A /trunk/dnssec-tools/apps/mozilla/mozilla-xulrunner/mozilla-central/dt-xulrunner-0003-support-functions-in-preparation-for-async.patch (from /trunk/dnssec-tools/apps/mozilla/mozilla-xulrunner/mozilla-central/dt-xulrunner-0011-support-functions-in-preparation-for-async.patch:7378)
+   A /trunk/dnssec-tools/apps/mozilla/mozilla-xulrunner/mozilla-central/dt-xulrunner-0004-use-NSPRs-new-async-functionality.patch (from /trunk/dnssec-tools/apps/mozilla/mozilla-xulrunner/mozilla-central/dt-xulrunner-0012-use-NSPRs-new-async-functionality.patch:7378)
+   A /trunk/dnssec-tools/apps/mozilla/mozilla-xulrunner/mozilla-central/dt-xulrunner-0005-make-netwerk-DNSSEC-validation-aware.patch (from /trunk/dnssec-tools/apps/mozilla/mozilla-xulrunner/mozilla-central/dt-xulrunner-0013-make-netwerk-DNSSEC-validation-aware.patch:7378)
+   A /trunk/dnssec-tools/apps/mozilla/mozilla-xulrunner/mozilla-central/dt-xulrunner-0006-add-DNSSEC-preferences-to-browser.patch (from /trunk/dnssec-tools/apps/mozilla/mozilla-xulrunner/mozilla-central/dt-xulrunner-0014-add-DNSSEC-preferences-to-browser.patch:7378)
+   D /trunk/dnssec-tools/apps/mozilla/mozilla-xulrunner/mozilla-central/dt-xulrunner-0009-add-dnssec-options-to-configure.patch
+   D /trunk/dnssec-tools/apps/mozilla/mozilla-xulrunner/mozilla-central/dt-xulrunner-0010-use-NSPRs-new-DNSSEC-functionality.patch
+   D /trunk/dnssec-tools/apps/mozilla/mozilla-xulrunner/mozilla-central/dt-xulrunner-0011-support-functions-in-preparation-for-async.patch
+   D /trunk/dnssec-tools/apps/mozilla/mozilla-xulrunner/mozilla-central/dt-xulrunner-0012-use-NSPRs-new-async-functionality.patch
+   D /trunk/dnssec-tools/apps/mozilla/mozilla-xulrunner/mozilla-central/dt-xulrunner-0013-make-netwerk-DNSSEC-validation-aware.patch
+   D /trunk/dnssec-tools/apps/mozilla/mozilla-xulrunner/mozilla-central/dt-xulrunner-0014-add-DNSSEC-preferences-to-browser.patch
+
+renumber patches
+------------------------------------------------------------------------
+r7378 | tewok | 2013-01-31 09:12:30 -0800 (Thu, 31 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollerd
+
+Deleted some extraneous trailing spaces and tabs.
+
+------------------------------------------------------------------------
+r7377 | hserus | 2013-01-25 14:11:53 -0800 (Fri, 25 Jan 2013) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/curl
+   A /trunk/dnssec-tools/apps/curl/README.curl
+   A /trunk/dnssec-tools/apps/curl/curl-7.28.0.patch
+
+Add DANE patch for curl
+
+------------------------------------------------------------------------
+r7375 | hserus | 2013-01-25 13:22:13 -0800 (Fri, 25 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_dane.c
+
+Log the DANE usage value when validation fails.  
+
+------------------------------------------------------------------------
+r7374 | hserus | 2013-01-25 13:20:37 -0800 (Fri, 25 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dane_check.c
+
+Add log message for non-existant TLSA
+
+------------------------------------------------------------------------
+r7373 | hserus | 2013-01-25 08:30:05 -0800 (Fri, 25 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dane_check.c
+
+Allow fallbacks to occur if a name server fails to respond
+
+------------------------------------------------------------------------
+r7372 | tewok | 2013-01-24 08:57:00 -0800 (Thu, 24 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/zonesigner
+
+Added a note about DS records being included unless -nogends is given.
+
+------------------------------------------------------------------------
+r7371 | tewok | 2013-01-24 08:19:48 -0800 (Thu, 24 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-manager-2-installation.html
+
+Added note about multiple Owl users.
+
+------------------------------------------------------------------------
+r7370 | tewok | 2013-01-23 09:49:35 -0800 (Wed, 23 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-full-toc.html
+
+Valign rows to top.
+
+------------------------------------------------------------------------
+r7369 | tewok | 2013-01-23 09:49:11 -0800 (Wed, 23 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-manager-full-toc.html
+
+Valign rows to top.
+
+------------------------------------------------------------------------
+r7368 | tewok | 2013-01-23 09:44:42 -0800 (Wed, 23 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-manager.html
+
+Added link to toppedyest-level manual page.
+
+------------------------------------------------------------------------
+r7367 | tewok | 2013-01-23 09:40:00 -0800 (Wed, 23 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-full-toc.html
+
+Fixed a few section numbers.
+
+------------------------------------------------------------------------
+r7366 | tewok | 2013-01-23 09:39:13 -0800 (Wed, 23 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-manager.html
+
+Fixed link.
+
+------------------------------------------------------------------------
+r7365 | tewok | 2013-01-23 09:31:31 -0800 (Wed, 23 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-manager-6-mod-queries.html
+
+Adjusted titles.
+
+------------------------------------------------------------------------
+r7364 | tewok | 2013-01-23 09:24:11 -0800 (Wed, 23 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-manager-4-adding-sensor.html
+
+Minor title tweaks.
+
+------------------------------------------------------------------------
+r7363 | tewok | 2013-01-23 09:10:36 -0800 (Wed, 23 Jan 2013) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/docs/install-manager-full-toc.html
+
+Full Table of Contents for Manager Installation Manual.
+
+------------------------------------------------------------------------
+r7362 | tewok | 2013-01-23 08:13:19 -0800 (Wed, 23 Jan 2013) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/docs/install-manager-7-commands.html
+
+Brief descriptions of the Owl manager commands.
+
+------------------------------------------------------------------------
+r7361 | rstory | 2013-01-22 20:09:28 -0800 (Tue, 22 Jan 2013) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/apps/mozilla/dane
+   A /trunk/dnssec-tools/apps/mozilla/dane/mozilla-central
+   A /trunk/dnssec-tools/apps/mozilla/dane/mozilla-central/dt-dane-0016-nss-patch-from-Suresh-2012-12-14.patch
+   A /trunk/dnssec-tools/apps/mozilla/dane/mozilla-central/dt-dane-0017-manager-patch-from-Suresh-2012-12-14.patch
+   A /trunk/dnssec-tools/apps/mozilla/dane/mozilla-central/dt-dane-0018-move-new-function-inside-braces.patch
+   A /trunk/dnssec-tools/apps/mozilla/dane/mozilla-central/dt-dane-0019-use-VAL_-CFLAGS-LDFLAGS-LIBS-as-needed.patch
+   A /trunk/dnssec-tools/apps/mozilla/dane/mozilla-central/dt-dane-0020-only-add-ssldane.c-for-MOZ_DNSSEC.patch
+   A /trunk/dnssec-tools/apps/mozilla/dane/mozilla-central/dt-dane-0021-keep-compiler-happy.patch
+   A /trunk/dnssec-tools/apps/mozilla/dane/mozilla-central/dt-dane-0022-patch-addendum-from-Suresh-130117.patch
+   M /trunk/dnssec-tools/apps/mozilla/mozilla-firefox/mozilla-central/dt-browser-0015-update-browser-local-overrides-for-DNSSEC.patch
+   M /trunk/dnssec-tools/apps/mozilla/mozilla-nspr/mozilla-central/dt-nspr-0001-getaddr-patch-for-mozilla-bug-699055.patch
+   M /trunk/dnssec-tools/apps/mozilla/mozilla-nspr/mozilla-central/dt-nspr-0002-add-NSPR-log-module-for-DNS.patch
+   M /trunk/dnssec-tools/apps/mozilla/mozilla-nspr/mozilla-central/dt-nspr-0003-add-dnssec-options-flags-to-configure-makefiles.patch
+   M /trunk/dnssec-tools/apps/mozilla/mozilla-nspr/mozilla-central/dt-nspr-0004-add-DNSSEC-error-codes-and-text.patch
+   M /trunk/dnssec-tools/apps/mozilla/mozilla-nspr/mozilla-central/dt-nspr-0005-factor-out-common-code-from-PR_GetAddrInfoByNam.patch
+   M /trunk/dnssec-tools/apps/mozilla/mozilla-nspr/mozilla-central/dt-nspr-0006-header-definitions-for-new-APIs.patch
+   M /trunk/dnssec-tools/apps/mozilla/mozilla-nspr/mozilla-central/dt-nspr-0007-add-dnssec-validation-to-prnetdb.patch
+   M /trunk/dnssec-tools/apps/mozilla/mozilla-nspr/mozilla-central/dt-nspr-0008-update-getai-to-test-async-validation.patch
+   A /trunk/dnssec-tools/apps/mozilla/mozilla-xulrunner/mozilla-central
+   A /trunk/dnssec-tools/apps/mozilla/mozilla-xulrunner/mozilla-central/dt-xulrunner-0009-add-dnssec-options-to-configure.patch
+   A /trunk/dnssec-tools/apps/mozilla/mozilla-xulrunner/mozilla-central/dt-xulrunner-0010-use-NSPRs-new-DNSSEC-functionality.patch
+   A /trunk/dnssec-tools/apps/mozilla/mozilla-xulrunner/mozilla-central/dt-xulrunner-0011-support-functions-in-preparation-for-async.patch
+   A /trunk/dnssec-tools/apps/mozilla/mozilla-xulrunner/mozilla-central/dt-xulrunner-0012-use-NSPRs-new-async-functionality.patch
+   A /trunk/dnssec-tools/apps/mozilla/mozilla-xulrunner/mozilla-central/dt-xulrunner-0013-make-netwerk-DNSSEC-validation-aware.patch
+   A /trunk/dnssec-tools/apps/mozilla/mozilla-xulrunner/mozilla-central/dt-xulrunner-0014-add-DNSSEC-preferences-to-browser.patch
+
+update patches; add dane patches
+------------------------------------------------------------------------
+r7360 | rstory | 2013-01-22 20:08:56 -0800 (Tue, 22 Jan 2013) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/apps/mozilla/mozilla-nspr
+   A /trunk/dnssec-tools/apps/mozilla/mozilla-nspr/mozilla-central
+   A /trunk/dnssec-tools/apps/mozilla/mozilla-nspr/mozilla-central/dt-nspr-0001-getaddr-patch-for-mozilla-bug-699055.patch (from /trunk/dnssec-tools/apps/mozilla/nspr/mozilla-central/dt-nspr-0001-getaddr-patch-for-mozilla-bug-699055.patch:7359)
+   A /trunk/dnssec-tools/apps/mozilla/mozilla-nspr/mozilla-central/dt-nspr-0002-add-NSPR-log-module-for-DNS.patch (from /trunk/dnssec-tools/apps/mozilla/nspr/mozilla-central/dt-nspr-0002-add-NSPR-log-module-for-DNS.patch:7359)
+   A /trunk/dnssec-tools/apps/mozilla/mozilla-nspr/mozilla-central/dt-nspr-0003-add-dnssec-options-flags-to-configure-makefiles.patch (from /trunk/dnssec-tools/apps/mozilla/nspr/mozilla-central/dt-nspr-0003-add-dnssec-options-flags-to-configure-makefiles.patch:7359)
+   A /trunk/dnssec-tools/apps/mozilla/mozilla-nspr/mozilla-central/dt-nspr-0004-add-DNSSEC-error-codes-and-text.patch (from /trunk/dnssec-tools/apps/mozilla/nspr/mozilla-central/dt-nspr-0004-add-DNSSEC-error-codes-and-text.patch:7359)
+   A /trunk/dnssec-tools/apps/mozilla/mozilla-nspr/mozilla-central/dt-nspr-0005-factor-out-common-code-from-PR_GetAddrInfoByNam.patch (from /trunk/dnssec-tools/apps/mozilla/nspr/mozilla-central/dt-nspr-0005-factor-out-common-code-from-PR_GetAddrInfoByNam.patch:7359)
+   A /trunk/dnssec-tools/apps/mozilla/mozilla-nspr/mozilla-central/dt-nspr-0006-header-definitions-for-new-APIs.patch (from /trunk/dnssec-tools/apps/mozilla/nspr/mozilla-central/dt-nspr-0006-header-definitions-for-new-APIs.patch:7359)
+   A /trunk/dnssec-tools/apps/mozilla/mozilla-nspr/mozilla-central/dt-nspr-0007-add-dnssec-validation-to-prnetdb.patch (from /trunk/dnssec-tools/apps/mozilla/nspr/mozilla-central/dt-nspr-0007-add-dnssec-validation-to-prnetdb.patch:7359)
+   A /trunk/dnssec-tools/apps/mozilla/mozilla-nspr/mozilla-central/dt-nspr-0008-update-getai-to-test-async-validation.patch (from /trunk/dnssec-tools/apps/mozilla/nspr/mozilla-central/dt-nspr-0008-update-getai-to-test-async-validation.patch:7359)
+   A /trunk/dnssec-tools/apps/mozilla/mozilla-nspr/nspr-spec.patch (from /trunk/dnssec-tools/apps/mozilla/nspr/nspr-spec.patch:7359)
+   D /trunk/dnssec-tools/apps/mozilla/nspr/mozilla-central/dt-nspr-0001-getaddr-patch-for-mozilla-bug-699055.patch
+   D /trunk/dnssec-tools/apps/mozilla/nspr/mozilla-central/dt-nspr-0002-add-NSPR-log-module-for-DNS.patch
+   D /trunk/dnssec-tools/apps/mozilla/nspr/mozilla-central/dt-nspr-0003-add-dnssec-options-flags-to-configure-makefiles.patch
+   D /trunk/dnssec-tools/apps/mozilla/nspr/mozilla-central/dt-nspr-0004-add-DNSSEC-error-codes-and-text.patch
+   D /trunk/dnssec-tools/apps/mozilla/nspr/mozilla-central/dt-nspr-0005-factor-out-common-code-from-PR_GetAddrInfoByNam.patch
+   D /trunk/dnssec-tools/apps/mozilla/nspr/mozilla-central/dt-nspr-0006-header-definitions-for-new-APIs.patch
+   D /trunk/dnssec-tools/apps/mozilla/nspr/mozilla-central/dt-nspr-0007-add-dnssec-validation-to-prnetdb.patch
+   D /trunk/dnssec-tools/apps/mozilla/nspr/mozilla-central/dt-nspr-0008-update-getai-to-test-async-validation.patch
+   D /trunk/dnssec-tools/apps/mozilla/nspr/nspr-spec.patch
+
+rename nspr dir to mozilla-nspr to be consistent
+------------------------------------------------------------------------
+r7359 | rstory | 2013-01-22 20:08:31 -0800 (Tue, 22 Jan 2013) | 3 lines
+Changed paths:
+   D /trunk/dnssec-tools/apps/mozilla/mozilla-base/mozilla-central/moz-base-0001-take-advantage-of-new-DNSSEC-functionality-in-NSPR.patch
+   D /trunk/dnssec-tools/apps/mozilla/mozilla-base/mozilla-central/moz-base-0002-support-functions-in-preparation-for-async-support.patch
+   D /trunk/dnssec-tools/apps/mozilla/mozilla-base/mozilla-central/moz-base-0003-take-advantage-of-new-async-functionality-in-NSPR.patch
+   D /trunk/dnssec-tools/apps/mozilla/mozilla-base/mozilla-central/moz-base-0004-make-netwerk-DNSSEC-validation-aware.patch
+   A /trunk/dnssec-tools/apps/mozilla/mozilla-firefox/mozilla-central/dt-browser-0015-update-browser-local-overrides-for-DNSSEC.patch (from /trunk/dnssec-tools/apps/mozilla/mozilla-firefox/mozilla-central/moz-firefox-0001-update-browser-local-overrides-for-DNSSEC.patch:7358)
+   D /trunk/dnssec-tools/apps/mozilla/mozilla-firefox/mozilla-central/moz-firefox-0001-update-browser-local-overrides-for-DNSSEC.patch
+   D /trunk/dnssec-tools/apps/mozilla/mozilla-firefox/mozilla-central/moz-firefox-0002-add-DNSSEC-preferences-to-browser.patch
+   A /trunk/dnssec-tools/apps/mozilla/nspr/mozilla-central/dt-nspr-0001-getaddr-patch-for-mozilla-bug-699055.patch (from /trunk/dnssec-tools/apps/mozilla/nspr/mozilla-central/nspr-0001-getaddr-patch-for-mozilla-bug-699055.patch:7358)
+   A /trunk/dnssec-tools/apps/mozilla/nspr/mozilla-central/dt-nspr-0002-add-NSPR-log-module-for-DNS.patch (from /trunk/dnssec-tools/apps/mozilla/nspr/mozilla-central/nspr-0002-add-NSPR-log-module-for-DNS.patch:7358)
+   A /trunk/dnssec-tools/apps/mozilla/nspr/mozilla-central/dt-nspr-0003-add-dnssec-options-flags-to-configure-makefiles.patch (from /trunk/dnssec-tools/apps/mozilla/nspr/mozilla-central/nspr-0003-add-dnssec-options-flags-to-configure-and-makefiles.patch:7358)
+   A /trunk/dnssec-tools/apps/mozilla/nspr/mozilla-central/dt-nspr-0004-add-DNSSEC-error-codes-and-text.patch (from /trunk/dnssec-tools/apps/mozilla/nspr/mozilla-central/nspr-0004-add-DNSSEC-error-codes-and-text.patch:7358)
+   A /trunk/dnssec-tools/apps/mozilla/nspr/mozilla-central/dt-nspr-0005-factor-out-common-code-from-PR_GetAddrInfoByNam.patch (from /trunk/dnssec-tools/apps/mozilla/nspr/mozilla-central/nspr-0005-factor-out-common-code-from-PR_GetAddrInfoByName.patch:7358)
+   A /trunk/dnssec-tools/apps/mozilla/nspr/mozilla-central/dt-nspr-0006-header-definitions-for-new-APIs.patch (from /trunk/dnssec-tools/apps/mozilla/nspr/mozilla-central/nspr-0006-header-definitions-for-Extended-DNSSEC-and-asynchron.patch:7358)
+   A /trunk/dnssec-tools/apps/mozilla/nspr/mozilla-central/dt-nspr-0007-add-dnssec-validation-to-prnetdb.patch (from /trunk/dnssec-tools/apps/mozilla/nspr/mozilla-central/nspr-0007-add-dnssec-validation-to-prnetdb.patch:7358)
+   A /trunk/dnssec-tools/apps/mozilla/nspr/mozilla-central/dt-nspr-0008-update-getai-to-test-async-validation.patch (from /trunk/dnssec-tools/apps/mozilla/nspr/mozilla-central/nspr-0008-update-getai-to-test-async-disable-validation.patch:7358)
+   D /trunk/dnssec-tools/apps/mozilla/nspr/mozilla-central/nspr-0001-getaddr-patch-for-mozilla-bug-699055.patch
+   D /trunk/dnssec-tools/apps/mozilla/nspr/mozilla-central/nspr-0002-add-NSPR-log-module-for-DNS.patch
+   D /trunk/dnssec-tools/apps/mozilla/nspr/mozilla-central/nspr-0003-add-dnssec-options-flags-to-configure-and-makefiles.patch
+   D /trunk/dnssec-tools/apps/mozilla/nspr/mozilla-central/nspr-0004-add-DNSSEC-error-codes-and-text.patch
+   D /trunk/dnssec-tools/apps/mozilla/nspr/mozilla-central/nspr-0005-factor-out-common-code-from-PR_GetAddrInfoByName.patch
+   D /trunk/dnssec-tools/apps/mozilla/nspr/mozilla-central/nspr-0006-header-definitions-for-Extended-DNSSEC-and-asynchron.patch
+   D /trunk/dnssec-tools/apps/mozilla/nspr/mozilla-central/nspr-0007-add-dnssec-validation-to-prnetdb.patch
+   D /trunk/dnssec-tools/apps/mozilla/nspr/mozilla-central/nspr-0008-update-getai-to-test-async-disable-validation.patch
+
+rename/delete patches
+
+- prep for more recent patches
+------------------------------------------------------------------------
+r7358 | hserus | 2013-01-22 18:24:05 -0800 (Tue, 22 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dane_check.c
+
+Add capability to validate DANE record against SSL certificate
+
+------------------------------------------------------------------------
+r7357 | hserus | 2013-01-22 18:22:19 -0800 (Tue, 22 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_dane.c
+
+Update log level for certain log messages
+
+------------------------------------------------------------------------
+r7356 | tewok | 2013-01-22 17:46:58 -0800 (Tue, 22 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-manager-5-define-graphs.html
+
+Fixed section title.
+
+------------------------------------------------------------------------
+r7355 | tewok | 2013-01-22 17:42:09 -0800 (Tue, 22 Jan 2013) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/docs/install-manager-6-mod-queries.html
+
+Info on modifying existing queries.
+
+------------------------------------------------------------------------
+r7354 | tewok | 2013-01-22 17:41:18 -0800 (Tue, 22 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-5-adding-queries.html
+
+Fixed forward reference.
+
+------------------------------------------------------------------------
+r7353 | tewok | 2013-01-22 17:24:50 -0800 (Tue, 22 Jan 2013) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/docs/install-manager-5-define-graphs.html
+
+Provides information about defining graphs.
+
+------------------------------------------------------------------------
+r7352 | tewok | 2013-01-22 17:15:46 -0800 (Tue, 22 Jan 2013) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/docs/install-manager-4-adding-sensor.html
+
+Gives steps needed to add a new sensor.
+
+------------------------------------------------------------------------
+r7351 | tewok | 2013-01-22 08:16:21 -0800 (Tue, 22 Jan 2013) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/docs/install-manager-2-installation.html
+
+Installation procedures for Owl manager.
+
+------------------------------------------------------------------------
+r7350 | tewok | 2013-01-22 08:15:20 -0800 (Tue, 22 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-4-adding-sensor.html
+
+Removed extraneous article.
+
+------------------------------------------------------------------------
+r7349 | tewok | 2013-01-19 09:35:59 -0800 (Sat, 19 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-2-installation.html
+
+Added info on using rrsync for manager-pull.
+
+------------------------------------------------------------------------
+r7348 | tewok | 2013-01-19 08:46:26 -0800 (Sat, 19 Jan 2013) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/docs/install-manager-3-about-queries.html
+
+Discussion on queries for Manager Install Manual.
+
+------------------------------------------------------------------------
+r7347 | tewok | 2013-01-19 08:44:18 -0800 (Sat, 19 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-2-installation.html
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-3-about-queries.html
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-4-adding-sensor.html
+
+Adjust section-specific TOCs.
+
+------------------------------------------------------------------------
+r7346 | tewok | 2013-01-18 16:38:09 -0800 (Fri, 18 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-manager.html
+
+Fixed a link.
+
+------------------------------------------------------------------------
+r7345 | tewok | 2013-01-18 16:34:34 -0800 (Fri, 18 Jan 2013) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/docs/install-manager-1-overview.html
+
+Overview of manager and sensor for Manager Installation Manual.
+
+------------------------------------------------------------------------
+r7344 | tewok | 2013-01-18 16:25:34 -0800 (Fri, 18 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-1-overview.html
+
+Clarified manager's transfer comment.
+
+------------------------------------------------------------------------
+r7343 | tewok | 2013-01-18 16:11:11 -0800 (Fri, 18 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-1-overview.html
+
+Clarified sentence about data transfer.
+
+------------------------------------------------------------------------
+r7342 | tewok | 2013-01-18 16:02:07 -0800 (Fri, 18 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-manager.html
+
+Fixed a link.
+
+------------------------------------------------------------------------
+r7341 | tewok | 2013-01-18 15:56:00 -0800 (Fri, 18 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-manager.html
+
+Section title fixes.
+
+------------------------------------------------------------------------
+r7340 | tewok | 2013-01-18 15:51:14 -0800 (Fri, 18 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-manager.html
+
+Fixed a few section titles.
+
+------------------------------------------------------------------------
+r7339 | tewok | 2013-01-18 15:48:34 -0800 (Fri, 18 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-manager.html
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-1-overview.html
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-2-installation.html
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-3-about-queries.html
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-4-adding-sensor.html
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-5-adding-queries.html
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-6-commands.html
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor.html
+
+Guide -> Manual
+
+------------------------------------------------------------------------
+r7338 | tewok | 2013-01-18 15:46:08 -0800 (Fri, 18 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-guide.html
+
+Guide -> Manual
+
+------------------------------------------------------------------------
+r7337 | tewok | 2013-01-18 15:43:53 -0800 (Fri, 18 Jan 2013) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/docs/install-manager.html
+
+Top-level page for manager installation guide.
+
+------------------------------------------------------------------------
+r7336 | tewok | 2013-01-18 15:24:55 -0800 (Fri, 18 Jan 2013) | 2 lines
+Changed paths:
+   D /trunk/dnssec-tools/apps/owl-monitor/docs/install-full-toc.html
+
+Deleting this version in favor of the split sensor/manager version.
+
+------------------------------------------------------------------------
+r7335 | tewok | 2013-01-18 15:19:43 -0800 (Fri, 18 Jan 2013) | 2 lines
+Changed paths:
+   D /trunk/dnssec-tools/apps/owl-monitor/docs/install-0-intro.html
+   D /trunk/dnssec-tools/apps/owl-monitor/docs/install-1-overview.html
+   D /trunk/dnssec-tools/apps/owl-monitor/docs/install-2-installation.html
+   D /trunk/dnssec-tools/apps/owl-monitor/docs/install-3-about-queries.html
+   D /trunk/dnssec-tools/apps/owl-monitor/docs/install-4-adding-sensor.html
+   D /trunk/dnssec-tools/apps/owl-monitor/docs/install-5-define-graphs.html
+   D /trunk/dnssec-tools/apps/owl-monitor/docs/install-6-adding-queries.html
+   D /trunk/dnssec-tools/apps/owl-monitor/docs/install-7-commands.html
+
+Deleting these versions in favor of the split sensor/manager versions.
+
+------------------------------------------------------------------------
+r7334 | hserus | 2013-01-18 14:25:30 -0800 (Fri, 18 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+Make some additional checks when checking for non-existence 
+
+------------------------------------------------------------------------
+r7333 | tewok | 2013-01-18 10:19:22 -0800 (Fri, 18 Jan 2013) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-full-toc.html
+
+Full table of contents for sensor installation manual.
+
+------------------------------------------------------------------------
+r7332 | tewok | 2013-01-18 10:02:48 -0800 (Fri, 18 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-1-overview.html
+
+Clarified a reference to manager command section.
+
+------------------------------------------------------------------------
+r7331 | tewok | 2013-01-18 09:58:45 -0800 (Fri, 18 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-2-installation.html
+
+Fixed links.
+
+------------------------------------------------------------------------
+r7330 | tewok | 2013-01-18 09:52:42 -0800 (Fri, 18 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-4-adding-sensor.html
+
+Fixed links.
+
+------------------------------------------------------------------------
+r7329 | tewok | 2013-01-18 09:44:16 -0800 (Fri, 18 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-6-commands.html
+
+Fixed the title.
+
+------------------------------------------------------------------------
+r7328 | tewok | 2013-01-18 09:42:44 -0800 (Fri, 18 Jan 2013) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-5-adding-queries.html
+
+Describes how to add and delete queries.
+
+------------------------------------------------------------------------
+r7327 | hserus | 2013-01-18 09:39:06 -0800 (Fri, 18 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_getaddrinfo.c
+
+Fix typo in function name
+
+------------------------------------------------------------------------
+r7326 | tewok | 2013-01-18 09:29:27 -0800 (Fri, 18 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-4-adding-sensor.html
+
+Fixed a link.
+
+------------------------------------------------------------------------
+r7325 | hserus | 2013-01-18 09:20:49 -0800 (Fri, 18 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_dane.c
+
+Ensure that shared lock on context is unlocked where necessary.
+
+------------------------------------------------------------------------
+r7324 | tewok | 2013-01-18 09:17:15 -0800 (Fri, 18 Jan 2013) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-4-adding-sensor.html
+
+Describes how to add a new sensor.
+
+------------------------------------------------------------------------
+r7323 | hserus | 2013-01-18 08:46:01 -0800 (Fri, 18 Jan 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_log.c
+
+Add debug code (ifdef'ed out for now) to display signature inception and
+expiration times
+
+------------------------------------------------------------------------
+r7322 | hserus | 2013-01-18 08:43:42 -0800 (Fri, 18 Jan 2013) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator-internal.h
+   M /trunk/dnssec-tools/validator/libval/val_context.c
+   M /trunk/dnssec-tools/validator/libval/val_context.h
+   M /trunk/dnssec-tools/validator/libval/val_getaddrinfo.c
+   M /trunk/dnssec-tools/validator/libval/val_policy.c
+   M /trunk/dnssec-tools/validator/libval/val_resquery.c
+   M /trunk/dnssec-tools/validator/libval/val_resquery.h
+
+Probe for IPv6 and IPv4 enabled interfaces and cache the result in the
+context structure. Look for glue records of a particular type only if an
+interface of that type is enabled.
+
+------------------------------------------------------------------------
+r7321 | tewok | 2013-01-17 16:21:37 -0800 (Thu, 17 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-3-about-queries.html
+
+Added note about mixed configuration of transferring hosts.
+
+------------------------------------------------------------------------
+r7320 | tewok | 2013-01-17 15:36:25 -0800 (Thu, 17 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-3-about-queries.html
+
+Added a toc.
+
+------------------------------------------------------------------------
+r7319 | tewok | 2013-01-17 15:16:38 -0800 (Thu, 17 Jan 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-3-about-queries.html
+
+Added a section on transferring data.
+Added a section on sensor heartbeat.
+
+------------------------------------------------------------------------
+r7316 | tewok | 2013-01-17 09:45:39 -0800 (Thu, 17 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-1-overview.html
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-2-installation.html
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-3-about-queries.html
+
+Fixed title.
+
+------------------------------------------------------------------------
+r7315 | tewok | 2013-01-16 16:41:57 -0800 (Wed, 16 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-perfdata
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-stethoscope
+
+Fixed contact address.
+
+------------------------------------------------------------------------
+r7314 | tewok | 2013-01-16 16:35:26 -0800 (Wed, 16 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/bin/owl-transfer-mgr
+
+Only transfer from sensors with a sensor data directory defined in config file.
+
+------------------------------------------------------------------------
+r7313 | tewok | 2013-01-16 16:30:42 -0800 (Wed, 16 Jan 2013) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/manager/bin/owl-transfer-mgr
+
+Daemon to transfer Owl data from sensors to manager.
+
+------------------------------------------------------------------------
+r7312 | tewok | 2013-01-16 16:27:50 -0800 (Wed, 16 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/bin/owl-archold
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/bin/owl-dataarch-mgr
+
+Fixed contact address.
+
+------------------------------------------------------------------------
+r7311 | tewok | 2013-01-16 16:26:17 -0800 (Wed, 16 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-archold
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-dataarch
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-transfer
+
+Fixed contact address.
+
+------------------------------------------------------------------------
+r7310 | tewok | 2013-01-16 16:23:40 -0800 (Wed, 16 Jan 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/common/manpages/owl-config.pod
+
+Added new 'data sensors' field.
+Added discussion of 'remote ssh-users' new third subfield.
+
+------------------------------------------------------------------------
+r7309 | tewok | 2013-01-16 16:01:43 -0800 (Wed, 16 Jan 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/common/perllib/owlutils.pm
+
+Added the "data sensors" lines for the config file.  This will be used by
+owl-transfer-mgr.
+
+------------------------------------------------------------------------
+r7308 | hserus | 2013-01-15 12:40:35 -0800 (Tue, 15 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_dane.c
+
+Handle aliases in the DANE checks
+
+------------------------------------------------------------------------
+r7301 | tewok | 2013-01-03 06:44:27 -0800 (Thu, 03 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/common/perllib/owlutils.pm
+
+Added transfer-mgr-args as a host subkey.
+
+------------------------------------------------------------------------
+r7300 | tewok | 2013-01-02 11:57:11 -0800 (Wed, 02 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-heartbeat
+
+Modified to use renamed values in owlutils.pm.
+
+------------------------------------------------------------------------
+r7299 | tewok | 2013-01-02 11:55:58 -0800 (Wed, 02 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-dnstimer
+
+Modified to use renamed values in owlutils.pm.
+
+------------------------------------------------------------------------
+r7298 | tewok | 2013-01-02 11:44:21 -0800 (Wed, 02 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-transfer
+
+Minor comment fix.  Very minor.
+
+------------------------------------------------------------------------
+r7297 | tewok | 2013-01-02 11:43:18 -0800 (Wed, 02 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-status
+
+Cosmetic spacing fixes.
+
+------------------------------------------------------------------------
+r7296 | tewok | 2013-01-02 11:37:21 -0800 (Wed, 02 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/conf/owl.conf
+
+Generalized config lines.
+
+------------------------------------------------------------------------
+r7295 | tewok | 2013-01-02 11:35:11 -0800 (Wed, 02 Jan 2013) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/common/manpages (from /trunk/dnssec-tools/apps/owl-monitor/sensor/manpages:7289)
+   A /trunk/dnssec-tools/apps/owl-monitor/common/perllib (from /trunk/dnssec-tools/apps/owl-monitor/sensor/perllib:7263)
+   R /trunk/dnssec-tools/apps/owl-monitor/common/perllib/owlutils.pm (from /trunk/dnssec-tools/apps/owl-monitor/sensor/perllib/owlutils.pm:7290)
+
+Moved from sensor/
+
+------------------------------------------------------------------------
+r7294 | tewok | 2013-01-02 11:34:22 -0800 (Wed, 02 Jan 2013) | 2 lines
+Changed paths:
+   D /trunk/dnssec-tools/apps/owl-monitor/sensor/manpages
+
+Moved to common directory.
+
+------------------------------------------------------------------------
+r7293 | tewok | 2013-01-02 11:33:44 -0800 (Wed, 02 Jan 2013) | 2 lines
+Changed paths:
+   D /trunk/dnssec-tools/apps/owl-monitor/sensor/perllib
+
+Moved to common directory.
+
+------------------------------------------------------------------------
+r7292 | hardaker | 2013-01-02 11:32:41 -0800 (Wed, 02 Jan 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/ZoneFile-Fast/Fast.pm
+
+Update Fast.pm Version Number: 1.18
+------------------------------------------------------------------------
+r7291 | tewok | 2013-01-02 11:30:37 -0800 (Wed, 02 Jan 2013) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/common
+
+Adding new directory for files common to sensor and manager.
+
+------------------------------------------------------------------------
+r7290 | tewok | 2013-01-02 11:26:40 -0800 (Wed, 02 Jan 2013) | 10 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/perllib/owlutils.pm
+
+Generalized config file so it isn't sensor-specific:
+
+	- "sensor" keyword changed to "host" keyword
+	- "manager" keyword changed to "remote" keyword
+
+	- "dnstimerargs" subkey changed to "dnstimer-args"
+	- "transferargs" subkey changed to "transfer-args"
+	- added "transfer-mgr-args"
+
+
+------------------------------------------------------------------------
+r7289 | tewok | 2013-01-02 11:22:03 -0800 (Wed, 02 Jan 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/manpages/owl-config.pod
+
+Generalized the config file so it isn't sensor-specific.
+
+------------------------------------------------------------------------
+r7288 | hardaker | 2013-01-02 11:17:57 -0800 (Wed, 02 Jan 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/ZoneFile-Fast/Fast.pm
+   M /trunk/dnssec-tools/tools/modules/ZoneFile-Fast/t/rrs.t
+
+allow for + characters in the SOA rname
+------------------------------------------------------------------------
+r7287 | hardaker | 2013-01-02 11:17:41 -0800 (Wed, 02 Jan 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/ZoneFile-Fast/Fast.pm
+
+don't use new_from_hash since it's no longer around (bug #81757)
+------------------------------------------------------------------------
+r7286 | hardaker | 2013-01-02 09:13:32 -0800 (Wed, 02 Jan 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/COPYING
+   M /trunk/dnssec-tools/INSTALL
+   M /trunk/dnssec-tools/README
+   M /trunk/dnssec-tools/apps/README
+   M /trunk/dnssec-tools/apps/mozilla/README.firefox
+   M /trunk/dnssec-tools/apps/mozilla/README.nspr
+   M /trunk/dnssec-tools/apps/mozilla/README.xulrunner
+   M /trunk/dnssec-tools/apps/nagios/README
+   M /trunk/dnssec-tools/apps/nagios/diff-status.c
+   M /trunk/dnssec-tools/apps/nagios/dt_donuts
+   M /trunk/dnssec-tools/apps/nagios/dt_trustman
+   M /trunk/dnssec-tools/apps/nagios/dt_zonestat
+   M /trunk/dnssec-tools/apps/nagios/dt_zonetimer
+   M /trunk/dnssec-tools/apps/nagios/dtnagobj
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/bin/owl-archdata
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/bin/owl-archold
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/bin/owl-dataarch-mgr
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/bin/owl-initsensor
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/bin/owl-monthly
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/bin/owl-needs
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/bin/owl-newsensor
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-dnswatch
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-perfdata
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-stethoscope
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/nagios-files/owl-sensor-heartbeat.cgi
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-archold
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-dataarch
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-dnstimer
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-heartbeat
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-needs
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-sensord
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-status
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-transfer
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/conf/owl.conf
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/manpages/owl-config.pod
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/manpages/owl-data.pod
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/perllib/owlutils.pm
+   M /trunk/dnssec-tools/apps/sendmail/README
+   M /trunk/dnssec-tools/apps/zabbix/README
+   M /trunk/dnssec-tools/apps/zabbix/backup-zabbix
+   M /trunk/dnssec-tools/apps/zabbix/item.fields
+   M /trunk/dnssec-tools/apps/zabbix/rollstate
+   M /trunk/dnssec-tools/apps/zabbix/uemstats
+   M /trunk/dnssec-tools/apps/zabbix/zonestate
+   M /trunk/dnssec-tools/podmantex
+   M /trunk/dnssec-tools/podtrans
+   M /trunk/dnssec-tools/testing/README
+   M /trunk/dnssec-tools/tools/Makefile.PL
+   M /trunk/dnssec-tools/tools/convertar/Makefile.PL
+   M /trunk/dnssec-tools/tools/convertar/convertar
+   M /trunk/dnssec-tools/tools/convertar/lib/Net/DNS/SEC/Tools/TrustAnchor/Makefile.PL
+   M /trunk/dnssec-tools/tools/demos/Makefile
+   M /trunk/dnssec-tools/tools/demos/README
+   M /trunk/dnssec-tools/tools/demos/demo-tools/README
+   M /trunk/dnssec-tools/tools/demos/demo-tools/autods
+   M /trunk/dnssec-tools/tools/demos/demo-tools/makezones
+   M /trunk/dnssec-tools/tools/demos/demo-tools/phaser
+   M /trunk/dnssec-tools/tools/demos/dtrealms-basic/Makefile
+   M /trunk/dnssec-tools/tools/demos/dtrealms-basic/README
+   M /trunk/dnssec-tools/tools/demos/dtrealms-basic/mkconffiles
+   M /trunk/dnssec-tools/tools/demos/dtrealms-basic/phaser
+   M /trunk/dnssec-tools/tools/demos/dtrealms-basic/rundemo
+   M /trunk/dnssec-tools/tools/demos/dtrealms-basic/savefiles/example-Makefile
+   M /trunk/dnssec-tools/tools/demos/dtrealms-basic/savefiles/test-Makefile
+   M /trunk/dnssec-tools/tools/demos/rollerd-basic/Makefile
+   M /trunk/dnssec-tools/tools/demos/rollerd-basic/README
+   M /trunk/dnssec-tools/tools/demos/rollerd-basic/rundemo
+   M /trunk/dnssec-tools/tools/demos/rollerd-manyzones/Makefile
+   M /trunk/dnssec-tools/tools/demos/rollerd-manyzones/README
+   M /trunk/dnssec-tools/tools/demos/rollerd-manyzones/rundemo
+   M /trunk/dnssec-tools/tools/demos/rollerd-manyzones-fast/Makefile
+   M /trunk/dnssec-tools/tools/demos/rollerd-manyzones-fast/README
+   M /trunk/dnssec-tools/tools/demos/rollerd-manyzones-fast/rundemo
+   M /trunk/dnssec-tools/tools/demos/rollerd-single/Makefile
+   M /trunk/dnssec-tools/tools/demos/rollerd-single/README
+   M /trunk/dnssec-tools/tools/demos/rollerd-single/rundemo
+   M /trunk/dnssec-tools/tools/demos/rollerd-split-view/Makefile
+   M /trunk/dnssec-tools/tools/demos/rollerd-split-view/README
+   M /trunk/dnssec-tools/tools/demos/rollerd-split-view/rundemo
+   M /trunk/dnssec-tools/tools/demos/rollerd-subdirs/Makefile
+   M /trunk/dnssec-tools/tools/demos/rollerd-subdirs/README
+   M /trunk/dnssec-tools/tools/demos/rollerd-subdirs/rundemo
+   M /trunk/dnssec-tools/tools/demos/rollerd-vastzones/Makefile
+   M /trunk/dnssec-tools/tools/demos/rollerd-vastzones/README
+   M /trunk/dnssec-tools/tools/demos/rollerd-vastzones/makezones
+   M /trunk/dnssec-tools/tools/demos/rollerd-vastzones/rundemo
+   M /trunk/dnssec-tools/tools/demos/rollerd-zonegroups/Makefile
+   M /trunk/dnssec-tools/tools/demos/rollerd-zonegroups/README
+   M /trunk/dnssec-tools/tools/demos/rollerd-zonegroups/rundemo
+   M /trunk/dnssec-tools/tools/dnspktflow/Makefile.PL
+   M /trunk/dnssec-tools/tools/dnspktflow/dnspktflow
+   M /trunk/dnssec-tools/tools/donuts/Makefile.PL
+   M /trunk/dnssec-tools/tools/donuts/Rule.pm
+   M /trunk/dnssec-tools/tools/donuts/donuts
+   M /trunk/dnssec-tools/tools/donuts/donutsd
+   M /trunk/dnssec-tools/tools/donuts/rules/check_nameservers.txt
+   M /trunk/dnssec-tools/tools/donuts/rules/dns.errors.txt
+   M /trunk/dnssec-tools/tools/donuts/rules/dnssec.rules.txt
+   M /trunk/dnssec-tools/tools/donuts/rules/nsec_check.rules.txt
+   M /trunk/dnssec-tools/tools/donuts/rules/parent_child.rules.txt
+   M /trunk/dnssec-tools/tools/donuts/rules/recommendations.rules.txt
+   M /trunk/dnssec-tools/tools/drawvalmap/Makefile.PL
+   M /trunk/dnssec-tools/tools/drawvalmap/drawvalmap
+   M /trunk/dnssec-tools/tools/etc/Makefile.PL
+   M /trunk/dnssec-tools/tools/etc/README
+   M /trunk/dnssec-tools/tools/etc/dnssec-tools/blinkenlights.conf.pod
+   M /trunk/dnssec-tools/tools/etc/dnssec-tools/dnssec-tools.conf.pod
+   M /trunk/dnssec-tools/tools/logwatch/README
+   M /trunk/dnssec-tools/tools/maketestzone/Makefile.PL
+   M /trunk/dnssec-tools/tools/maketestzone/maketestzone
+   M /trunk/dnssec-tools/tools/mapper/Makefile.PL
+   M /trunk/dnssec-tools/tools/mapper/mapper
+   M /trunk/dnssec-tools/tools/modules/BootStrap.pm
+   M /trunk/dnssec-tools/tools/modules/Makefile.PL
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/Validator.pm
+   M /trunk/dnssec-tools/tools/modules/Net-addrinfo/addrinfo.pm
+   M /trunk/dnssec-tools/tools/modules/QWPrimitives.pm
+   M /trunk/dnssec-tools/tools/modules/README
+   M /trunk/dnssec-tools/tools/modules/ZoneFile-Fast/Fast.pm
+   M /trunk/dnssec-tools/tools/modules/conf.pm.in
+   M /trunk/dnssec-tools/tools/modules/defaults.pm
+   M /trunk/dnssec-tools/tools/modules/dnssectools.pm
+   M /trunk/dnssec-tools/tools/modules/keyrec.pm
+   M /trunk/dnssec-tools/tools/modules/keyrec.pod
+   M /trunk/dnssec-tools/tools/modules/realm.pm
+   M /trunk/dnssec-tools/tools/modules/realm.pod
+   M /trunk/dnssec-tools/tools/modules/realmmgr.pm
+   M /trunk/dnssec-tools/tools/modules/rolllog.pm
+   M /trunk/dnssec-tools/tools/modules/rollmgr.pm
+   M /trunk/dnssec-tools/tools/modules/rollrec.pm
+   M /trunk/dnssec-tools/tools/modules/rollrec.pod
+   M /trunk/dnssec-tools/tools/modules/tests/Makefile.PL
+   M /trunk/dnssec-tools/tools/modules/tests/README
+   M /trunk/dnssec-tools/tools/modules/tests/test-conf
+   M /trunk/dnssec-tools/tools/modules/tests/test-keyrec
+   M /trunk/dnssec-tools/tools/modules/tests/test-rollmgr
+   M /trunk/dnssec-tools/tools/modules/tests/test-rollrec
+   M /trunk/dnssec-tools/tools/modules/tests/test-timetrans
+   M /trunk/dnssec-tools/tools/modules/tests/test-toolopts1
+   M /trunk/dnssec-tools/tools/modules/tests/test-toolopts2
+   M /trunk/dnssec-tools/tools/modules/tests/test-toolopts3
+   M /trunk/dnssec-tools/tools/modules/timetrans.pm
+   M /trunk/dnssec-tools/tools/modules/tooloptions.pm
+   M /trunk/dnssec-tools/tools/scripts/Makefile.PL
+   M /trunk/dnssec-tools/tools/scripts/README
+   M /trunk/dnssec-tools/tools/scripts/blinkenlights
+   M /trunk/dnssec-tools/tools/scripts/bubbles
+   M /trunk/dnssec-tools/tools/scripts/buildrealms
+   M /trunk/dnssec-tools/tools/scripts/check-zone-expiration
+   M /trunk/dnssec-tools/tools/scripts/cleanarch
+   M /trunk/dnssec-tools/tools/scripts/cleankrf
+   M /trunk/dnssec-tools/tools/scripts/dtck
+   M /trunk/dnssec-tools/tools/scripts/dtconf
+   M /trunk/dnssec-tools/tools/scripts/dtconfchk
+   M /trunk/dnssec-tools/tools/scripts/dtdefs
+   M /trunk/dnssec-tools/tools/scripts/dtinitconf
+   M /trunk/dnssec-tools/tools/scripts/dtrealms
+   M /trunk/dnssec-tools/tools/scripts/dtreqmods
+   M /trunk/dnssec-tools/tools/scripts/dtupdkrf
+   M /trunk/dnssec-tools/tools/scripts/expchk
+   M /trunk/dnssec-tools/tools/scripts/fixkrf
+   M /trunk/dnssec-tools/tools/scripts/genkrf
+   M /trunk/dnssec-tools/tools/scripts/getdnskeys
+   M /trunk/dnssec-tools/tools/scripts/getds
+   M /trunk/dnssec-tools/tools/scripts/grandvizier
+   M /trunk/dnssec-tools/tools/scripts/keyarch
+   M /trunk/dnssec-tools/tools/scripts/keymod
+   M /trunk/dnssec-tools/tools/scripts/krfcheck
+   M /trunk/dnssec-tools/tools/scripts/lights
+   M /trunk/dnssec-tools/tools/scripts/lsdnssec
+   M /trunk/dnssec-tools/tools/scripts/lskrf
+   M /trunk/dnssec-tools/tools/scripts/lsrealm
+   M /trunk/dnssec-tools/tools/scripts/lsroll
+   M /trunk/dnssec-tools/tools/scripts/realmchk
+   M /trunk/dnssec-tools/tools/scripts/realmctl
+   M /trunk/dnssec-tools/tools/scripts/realminit
+   M /trunk/dnssec-tools/tools/scripts/realmset
+   M /trunk/dnssec-tools/tools/scripts/rollchk
+   M /trunk/dnssec-tools/tools/scripts/rollctl
+   M /trunk/dnssec-tools/tools/scripts/rollerd
+   M /trunk/dnssec-tools/tools/scripts/rollinit
+   M /trunk/dnssec-tools/tools/scripts/rolllog
+   M /trunk/dnssec-tools/tools/scripts/rollrec-editor
+   M /trunk/dnssec-tools/tools/scripts/rollset
+   M /trunk/dnssec-tools/tools/scripts/rp-wrapper
+   M /trunk/dnssec-tools/tools/scripts/signset-editor
+   M /trunk/dnssec-tools/tools/scripts/tachk
+   M /trunk/dnssec-tools/tools/scripts/timetrans
+   M /trunk/dnssec-tools/tools/scripts/trustman
+   M /trunk/dnssec-tools/tools/scripts/zonesigner
+   M /trunk/dnssec-tools/validator/README
+   M /trunk/dnssec-tools/validator/apps/README
+   M /trunk/dnssec-tools/validator/apps/dane_check.c
+   M /trunk/dnssec-tools/validator/apps/getaddr.c
+   M /trunk/dnssec-tools/validator/apps/gethost.c
+   M /trunk/dnssec-tools/validator/apps/getname.c
+   M /trunk/dnssec-tools/validator/apps/getquery.c
+   M /trunk/dnssec-tools/validator/apps/getrrset.c
+   M /trunk/dnssec-tools/validator/apps/libsres_test.c
+   M /trunk/dnssec-tools/validator/apps/libval_check_conf.c
+   M /trunk/dnssec-tools/validator/apps/validator_driver.c
+   M /trunk/dnssec-tools/validator/apps/validator_driver.h
+   M /trunk/dnssec-tools/validator/doc/dnsval.conf.pod
+   M /trunk/dnssec-tools/validator/doc/dt-getaddr.pod
+   M /trunk/dnssec-tools/validator/doc/dt-gethost.pod
+   M /trunk/dnssec-tools/validator/doc/dt-getname.pod
+   M /trunk/dnssec-tools/validator/doc/dt-getquery.pod
+   M /trunk/dnssec-tools/validator/doc/dt-getrrset.pod
+   M /trunk/dnssec-tools/validator/doc/dt-libval_check_conf.pod
+   M /trunk/dnssec-tools/validator/doc/dt-validate.pod
+   M /trunk/dnssec-tools/validator/doc/libsres-implementation-notes
+   M /trunk/dnssec-tools/validator/doc/libsres.pod
+   M /trunk/dnssec-tools/validator/doc/libval-implementation-notes
+   M /trunk/dnssec-tools/validator/doc/libval.pod
+   M /trunk/dnssec-tools/validator/doc/libval_shim.pod
+   M /trunk/dnssec-tools/validator/doc/val_get_rrset.pod
+   M /trunk/dnssec-tools/validator/doc/val_getaddrinfo.pod
+   M /trunk/dnssec-tools/validator/doc/val_gethostbyname.pod
+   M /trunk/dnssec-tools/validator/doc/val_res_query.pod
+   M /trunk/dnssec-tools/validator/include/validator/resolver.h
+   M /trunk/dnssec-tools/validator/include/validator/val_dane.h
+   M /trunk/dnssec-tools/validator/include/validator/val_errors.h
+   M /trunk/dnssec-tools/validator/include/validator/validator-compat.h
+   M /trunk/dnssec-tools/validator/include/validator/validator.h
+   M /trunk/dnssec-tools/validator/include/validator-internal.h
+   M /trunk/dnssec-tools/validator/libsres/res_mkquery.h
+   M /trunk/dnssec-tools/validator/libsres/res_query.c
+   M /trunk/dnssec-tools/validator/libsres/res_support.c
+   M /trunk/dnssec-tools/validator/libsres/res_support.h
+   M /trunk/dnssec-tools/validator/libval/README
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+   M /trunk/dnssec-tools/validator/libval/val_assertion.h
+   M /trunk/dnssec-tools/validator/libval/val_cache.c
+   M /trunk/dnssec-tools/validator/libval/val_cache.h
+   M /trunk/dnssec-tools/validator/libval/val_context.c
+   M /trunk/dnssec-tools/validator/libval/val_context.h
+   M /trunk/dnssec-tools/validator/libval/val_crypto.c
+   M /trunk/dnssec-tools/validator/libval/val_crypto.h
+   M /trunk/dnssec-tools/validator/libval/val_dane.c
+   M /trunk/dnssec-tools/validator/libval/val_get_rrset.c
+   M /trunk/dnssec-tools/validator/libval/val_getaddrinfo.c
+   M /trunk/dnssec-tools/validator/libval/val_gethostbyname.c
+   M /trunk/dnssec-tools/validator/libval/val_log.c
+   M /trunk/dnssec-tools/validator/libval/val_parse.c
+   M /trunk/dnssec-tools/validator/libval/val_parse.h
+   M /trunk/dnssec-tools/validator/libval/val_policy.c
+   M /trunk/dnssec-tools/validator/libval/val_resquery.c
+   M /trunk/dnssec-tools/validator/libval/val_resquery.h
+   M /trunk/dnssec-tools/validator/libval/val_support.c
+   M /trunk/dnssec-tools/validator/libval/val_support.h
+   M /trunk/dnssec-tools/validator/libval/val_verify.c
+   M /trunk/dnssec-tools/validator/libval/val_verify.h
+   M /trunk/dnssec-tools/validator/libval/val_x_query.c
+
+copyright update
+------------------------------------------------------------------------
+r7282 | tewok | 2012-12-31 15:44:46 -0800 (Mon, 31 Dec 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-transfer
+
+Renamed a variable from $user to $sensor; reflected that view to comments.
+
+------------------------------------------------------------------------
+r7281 | tewok | 2012-12-31 15:37:56 -0800 (Mon, 31 Dec 2012) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-transfer
+
+Improved construction of the rsync command line so the src/dest
+arguments are clearer.
+Improved an error message.
+
+------------------------------------------------------------------------
+r7280 | hardaker | 2012-12-31 06:43:10 -0800 (Mon, 31 Dec 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/testing/Makefile.in
+
+added new test invocations to the Makefile.in file
+------------------------------------------------------------------------
+r7279 | tewok | 2012-12-29 15:25:52 -0800 (Sat, 29 Dec 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-3-about-queries.html
+
+Discussion of Owl sensor queries.
+
+------------------------------------------------------------------------
+r7278 | tewok | 2012-12-29 15:19:09 -0800 (Sat, 29 Dec 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-2-installation.html
+
+Fixed two URLs.
+
+------------------------------------------------------------------------
+r7277 | tewok | 2012-12-29 15:15:58 -0800 (Sat, 29 Dec 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-6-commands.html
+
+Owl Sensor commands.
+
+------------------------------------------------------------------------
+r7276 | tewok | 2012-12-29 15:14:44 -0800 (Sat, 29 Dec 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-2-installation.html
+
+Sensor-installation instructions.
+
+------------------------------------------------------------------------
+r7275 | tewok | 2012-12-29 15:13:38 -0800 (Sat, 29 Dec 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-1-overview.html
+
+Overview of Owl system.
+
+------------------------------------------------------------------------
+r7274 | tewok | 2012-12-29 15:12:34 -0800 (Sat, 29 Dec 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor.html
+
+Main page for Owl Sensor Installation Manual.
+
+------------------------------------------------------------------------
+r7273 | tewok | 2012-12-29 15:10:25 -0800 (Sat, 29 Dec 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/docs/install-guide.html
+
+Top-level page for the two Owl installation manuals.
+
+------------------------------------------------------------------------
+r7272 | tewok | 2012-12-28 17:37:17 -0800 (Fri, 28 Dec 2012) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/zonesigner
+
+Added a note that briefly mentions some of serialincr()'s limitations and
+abilities.
+
+------------------------------------------------------------------------
+r7271 | tewok | 2012-12-28 17:11:20 -0800 (Fri, 28 Dec 2012) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/zonesigner
+
+Reworked big chunks of serialincr().  This now handles SOA lines that
+include the optional TTL value.  It also does a *much* better job of
+handling parentheses on the SOA line.
+
+------------------------------------------------------------------------
+r7270 | hardaker | 2012-12-27 09:12:28 -0800 (Thu, 27 Dec 2012) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/testing/zonesigner-soas
+   A /trunk/dnssec-tools/testing/zonesigner-soas/example.com.basic
+   A /trunk/dnssec-tools/testing/zonesigner-soas/example.com.commented
+   A /trunk/dnssec-tools/testing/zonesigner-soas/example.com.multi-line
+   A /trunk/dnssec-tools/testing/zonesigner-soas/example.com.withttl
+
+test files for zonesigner's serial number incrementing
+------------------------------------------------------------------------
+r7269 | hardaker | 2012-12-27 09:12:16 -0800 (Thu, 27 Dec 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/testing/t/011zonesigner-soa-tests.t
+
+display the last serial number it should be an increment from
+------------------------------------------------------------------------
+r7268 | hardaker | 2012-12-27 09:12:06 -0800 (Thu, 27 Dec 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/testing/t/011zonesigner-soa-tests.t
+
+Load the zone from Zonefile::Fast and check the serial number after each run
+------------------------------------------------------------------------
+r7267 | hardaker | 2012-12-27 09:11:55 -0800 (Thu, 27 Dec 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/testing/t/011zonesigner-soa-tests.t
+
+copy files into place, cd, and execute ZS and test exit status
+------------------------------------------------------------------------
+r7266 | hardaker | 2012-12-27 09:11:40 -0800 (Thu, 27 Dec 2012) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/testing/t/011zonesigner-soa-tests.t
+
+initial template for a series of zonesigner soa tests
+------------------------------------------------------------------------
+r7265 | tewok | 2012-12-22 15:39:20 -0800 (Sat, 22 Dec 2012) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/zonesigner
+
+In serialincr(), account for the stuff preceding "IN SOA" in the
+line-finding regexp.
+
+------------------------------------------------------------------------
+r7264 | tewok | 2012-12-22 15:06:34 -0800 (Sat, 22 Dec 2012) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/zonesigner
+
+Fixed use of line copy in serialincr().  Don't need to delete lparens from
+it, and we'll actually use the copy in checking for SOA lines.
+
+------------------------------------------------------------------------
+r7263 | tewok | 2012-12-18 09:05:58 -0800 (Tue, 18 Dec 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/manpages/owl-data.pod
+
+Bolded SEE ALSO entry.
+
+------------------------------------------------------------------------
+r7262 | tewok | 2012-12-18 09:05:00 -0800 (Tue, 18 Dec 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/perllib/owlutils.pm
+
+Bolded pod SEE ALSO entries.
+
+------------------------------------------------------------------------
+r7261 | tewok | 2012-12-18 09:02:38 -0800 (Tue, 18 Dec 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-dnstimer
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-heartbeat
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-status
+
+Bolded entries in SEE ALSO section.
+
+------------------------------------------------------------------------
+r7260 | tewok | 2012-12-18 09:00:00 -0800 (Tue, 18 Dec 2012) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-needs
+
+Clarified that this is for sensor.
+Bolded the "SEE ALSO" entries.
+
+------------------------------------------------------------------------
+r7259 | tewok | 2012-12-18 08:54:40 -0800 (Tue, 18 Dec 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/manager/bin/owl-needs
+
+Checks for necessary Perl modules on Owl manager.
+
+------------------------------------------------------------------------
+r7258 | tewok | 2012-12-18 08:43:58 -0800 (Tue, 18 Dec 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-needs
+
+Checks if the sensor host has all the required Perl modules.
+
+------------------------------------------------------------------------
+r7257 | tewok | 2012-12-17 14:31:02 -0800 (Mon, 17 Dec 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-2-installation.html
+
+Added a few installation examples.
+
+------------------------------------------------------------------------
+r7256 | tewok | 2012-12-17 13:31:27 -0800 (Mon, 17 Dec 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-2-installation.html
+
+Added example ssh-keygen command.
+
+------------------------------------------------------------------------
+r7255 | tewok | 2012-12-17 13:08:14 -0800 (Mon, 17 Dec 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/owl-manager-data.odp
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/owl-manager-data.png
+
+Fixed "X executes Y" arrowheads.
+
+------------------------------------------------------------------------
+r7254 | tewok | 2012-12-17 12:55:27 -0800 (Mon, 17 Dec 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-2-installation.html
+
+Added user-creation examples to 2.1.1.
+
+------------------------------------------------------------------------
+r7253 | tewok | 2012-12-17 12:23:46 -0800 (Mon, 17 Dec 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/owl-sensor-data.odp
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/owl-sensor-data.png
+
+Modified heads of "X executes Y" arrows.
+
+------------------------------------------------------------------------
+r7252 | tewok | 2012-12-17 12:05:37 -0800 (Mon, 17 Dec 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-2-installation.html
+
+Added several suggestions to 2.1.1 for possible names for the Owl user.
+
+------------------------------------------------------------------------
+r7251 | hardaker | 2012-12-17 10:37:10 -0800 (Mon, 17 Dec 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libsres/res_io_manager.c
+
+check check for bytes < 0 rather than -1
+------------------------------------------------------------------------
+r7250 | hardaker | 2012-12-17 10:36:57 -0800 (Mon, 17 Dec 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/configure
+
+run autoconf
+------------------------------------------------------------------------
+r7249 | hardaker | 2012-12-17 10:17:54 -0800 (Mon, 17 Dec 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libsres/res_io_manager.c
+
+don't bother checking EAGAIN in complete_read()
+------------------------------------------------------------------------
+r7248 | hardaker | 2012-12-17 09:57:44 -0800 (Mon, 17 Dec 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/configure.in
+   M /trunk/dnssec-tools/validator/include/validator/validator-compat.h
+   M /trunk/dnssec-tools/validator/include/validator/validator-config.h.in
+
+check for the size_t and ssize_t types and define something if they don't exist
+------------------------------------------------------------------------
+r7247 | hardaker | 2012-12-17 09:50:16 -0800 (Mon, 17 Dec 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libsres/res_io_manager.c
+
+use a signed size_t for bytes returned from recv() and check it with signedness
+------------------------------------------------------------------------
+r7246 | hardaker | 2012-12-17 09:49:59 -0800 (Mon, 17 Dec 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qmlapplicationviewer/qmlapplicationviewer.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qmlapplicationviewer/qmlapplicationviewer.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qmlapplicationviewer/qmlapplicationviewer.pri
+
+new versions of the application viewer from a new qtcreator
+------------------------------------------------------------------------
+r7245 | tewok | 2012-12-14 09:56:45 -0800 (Fri, 14 Dec 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-full-toc.html
+
+Added new section 4.2.9.
+
+------------------------------------------------------------------------
+r7244 | tewok | 2012-12-14 09:56:17 -0800 (Fri, 14 Dec 2012) | 5 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-4-adding-sensor.html
+
+Added new section 4.2.9 for graphing modifications.
+Fixed path in owl-newsensor example.
+Clarified sentence in owl-hostgroups.cfg section.
+
+
+------------------------------------------------------------------------
+r7243 | tewok | 2012-12-14 09:53:14 -0800 (Fri, 14 Dec 2012) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-2-installation.html
+
+Fixed pathnames in drraw.conf section.
+Fixed verb tense in a sentence.
+
+------------------------------------------------------------------------
+r7242 | rstory | 2012-12-13 08:11:41 -0800 (Thu, 13 Dec 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-1-overview.html
+
+slight clarification of subject
+------------------------------------------------------------------------
+r7241 | rstory | 2012-12-12 20:47:55 -0800 (Wed, 12 Dec 2012) | 7 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libsres/res_io_manager.c
+
+fine tune res_io source management
+
+- new res_io_retry_source: try source again immediately
+- new res_io_reset_source: try next address for server
+- res_io_cancel_source: try next server
+- update many places that used simple CLOSESOCK to use
+  new routines, which should jumpstart retries
+------------------------------------------------------------------------
+r7240 | rstory | 2012-12-12 20:47:48 -0800 (Wed, 12 Dec 2012) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libsres/res_io_manager.c
+
+tweak socket reading
+
+instead of continue on socket error, continue on anything
+besides success.
+------------------------------------------------------------------------
+r7239 | rstory | 2012-12-12 20:47:40 -0800 (Wed, 12 Dec 2012) | 7 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libsres/res_io_manager.c
+
+tweak tcp read function
+
+- use MSG_DONTWAIT if available
+- retry on EAGAIN
+- bail on any other error
+- log socket shutdown, incomplete reads, and error
+  as appropriate
+------------------------------------------------------------------------
+r7238 | rstory | 2012-12-12 11:22:52 -0800 (Wed, 12 Dec 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/validator_selftest.c
+
+optional code to check for fd leaks
+------------------------------------------------------------------------
+r7237 | rstory | 2012-12-12 11:22:40 -0800 (Wed, 12 Dec 2012) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_policy.c
+
+fix fd leak
+
+close config file fd for empty file case
+------------------------------------------------------------------------
+r7236 | tewok | 2012-12-12 10:42:56 -0800 (Wed, 12 Dec 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-2-installation.html
+
+Fixed a path.
+
+------------------------------------------------------------------------
+r7235 | tewok | 2012-12-10 17:08:07 -0800 (Mon, 10 Dec 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-4-adding-sensor.html
+
+Minor adjustments to the file's TOC.
+
+------------------------------------------------------------------------
+r7234 | tewok | 2012-12-10 16:08:36 -0800 (Mon, 10 Dec 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-0-intro.html
+
+Added a "sponsors" section to the bottom.
+
+------------------------------------------------------------------------
+r7233 | tewok | 2012-12-10 11:29:43 -0800 (Mon, 10 Dec 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-2-installation.html
+
+Removed an unneeded module from the modules list.
+
+------------------------------------------------------------------------
+r7232 | tewok | 2012-12-10 11:23:30 -0800 (Mon, 10 Dec 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-dnstimer
+
+Removed unnecessary log message.
+
+------------------------------------------------------------------------
+r7230 | rstory | 2012-12-09 19:43:23 -0800 (Sun, 09 Dec 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/validator-compat.h
+
+use internal namser defs on OpenBSD
+------------------------------------------------------------------------
+r7229 | rstory | 2012-12-09 19:42:50 -0800 (Sun, 09 Dec 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/Makefile.in
+   M /trunk/dnssec-tools/validator/apps/Makefile.in
+
+move test/leaktest targets into apps makefile
+------------------------------------------------------------------------
+r7228 | rstory | 2012-12-09 19:41:44 -0800 (Sun, 09 Dec 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/getaddr.c
+
+test for macro before using it
+------------------------------------------------------------------------
+r7227 | tewok | 2012-12-08 18:07:58 -0800 (Sat, 08 Dec 2012) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-dnstimer
+
+Removed the logging thread completely.  It was burning huge amounts of
+computrons and wasn't actually needed.
+
+------------------------------------------------------------------------
+r7226 | tewok | 2012-12-08 16:25:43 -0800 (Sat, 08 Dec 2012) | 5 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-dnstimer
+
+Added better handling of log messages when threaded or forked.
+Added pod describing threaded/forked behavior.
+For the sake of generality, removed references to root nameservers.
+Renamed a couple routines for clarity.
+
+------------------------------------------------------------------------
+r7225 | hardaker | 2012-12-07 09:33:22 -0800 (Fri, 07 Dec 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/apps/qt/dnssec-test/DNSSECStatus.h
+   M /trunk/dnssec-tools/apps/qt/dnssec-test/MainWindow.cpp
+   M /trunk/dnssec-tools/apps/qt/dnssec-test/MainWindow.h
+   M /trunk/dnssec-tools/apps/qt/dnssec-test/dnssec-test.pro
+
+revert the qt4 tests accidentially converted to qt5 headers
+------------------------------------------------------------------------
+r7224 | hardaker | 2012-12-07 09:33:08 -0800 (Fri, 07 Dec 2012) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/apps/qt5/qml-test
+   A /trunk/dnssec-tools/apps/qt5/qml-test/README
+   A /trunk/dnssec-tools/apps/qt5/qml-test/test.qml
+
+qml test for qt5
+------------------------------------------------------------------------
+r7223 | hardaker | 2012-12-07 09:32:54 -0800 (Fri, 07 Dec 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/apps/qt/dnssec-test/DNSSECStatus.h
+   M /trunk/dnssec-tools/apps/qt/dnssec-test/MainWindow.cpp
+   M /trunk/dnssec-tools/apps/qt/dnssec-test/MainWindow.h
+   M /trunk/dnssec-tools/apps/qt/dnssec-test/dnssec-test.pro
+   A /trunk/dnssec-tools/apps/qt5/dnssec-test
+   A /trunk/dnssec-tools/apps/qt5/dnssec-test/DNSSECStatus.cpp
+   A /trunk/dnssec-tools/apps/qt5/dnssec-test/DNSSECStatus.h (from /trunk/dnssec-tools/apps/qt/dnssec-test/DNSSECStatus.h:7222)
+   A /trunk/dnssec-tools/apps/qt5/dnssec-test/MainWindow.cpp (from /trunk/dnssec-tools/apps/qt/dnssec-test/MainWindow.cpp:7222)
+   A /trunk/dnssec-tools/apps/qt5/dnssec-test/MainWindow.h (from /trunk/dnssec-tools/apps/qt/dnssec-test/MainWindow.h:7222)
+   A /trunk/dnssec-tools/apps/qt5/dnssec-test/MainWindow.ui
+   A /trunk/dnssec-tools/apps/qt5/dnssec-test/README
+   A /trunk/dnssec-tools/apps/qt5/dnssec-test/dnssec-test.pro (from /trunk/dnssec-tools/apps/qt/dnssec-test/dnssec-test.pro:7222)
+   A /trunk/dnssec-tools/apps/qt5/dnssec-test/dnssec-tests.txt
+   A /trunk/dnssec-tools/apps/qt5/dnssec-test/main.cpp
+   A /trunk/dnssec-tools/apps/qt5/dnssec-test/ui_MainWindow.h
+
+qt5 version of dnssec-test
+------------------------------------------------------------------------
+r7222 | hardaker | 2012-12-07 09:32:33 -0800 (Fri, 07 Dec 2012) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/apps/qt5
+   A /trunk/dnssec-tools/apps/qt5/README
+   A /trunk/dnssec-tools/apps/qt5/qt5.patch
+
+Added a patch for doing dnssec lookups by default in qt5
+------------------------------------------------------------------------
+r7221 | rstory | 2012-12-06 17:48:06 -0800 (Thu, 06 Dec 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/configure
+   M /trunk/dnssec-tools/validator/configure.in
+
+add tests for lib for ssl functions (used by dane)
+------------------------------------------------------------------------
+r7220 | rstory | 2012-12-06 17:47:59 -0800 (Thu, 06 Dec 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/Makefile.in
+
+don't hardcode validate app name in test targets
+------------------------------------------------------------------------
+r7219 | tewok | 2012-12-06 17:06:18 -0800 (Thu, 06 Dec 2012) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-dnstimer
+
+When running unthreaded, each query process handles its own logging instead
+of sending it to a logging process.
+
+------------------------------------------------------------------------
+r7218 | tewok | 2012-12-06 10:58:40 -0800 (Thu, 06 Dec 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-2-installation.html
+
+Added note about threaded vs. nonthreaded executions.
+
+------------------------------------------------------------------------
+r7217 | tewok | 2012-12-06 10:55:10 -0800 (Thu, 06 Dec 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/docs/install-full-toc.html
+
+Full table of contents for Owl Installation Manual.
+
+------------------------------------------------------------------------
+r7216 | tewok | 2012-12-06 10:54:53 -0800 (Thu, 06 Dec 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/docs/install-7-commands.html
+
+Owl command index.
+
+------------------------------------------------------------------------
+r7215 | tewok | 2012-12-06 10:54:37 -0800 (Thu, 06 Dec 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/docs/install-6-adding-queries.html
+
+Instructions for adding new queries.
+
+------------------------------------------------------------------------
+r7214 | tewok | 2012-12-06 10:54:08 -0800 (Thu, 06 Dec 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/docs/install-5-define-graphs.html
+
+Discussion of defining graphs for Owl.
+
+------------------------------------------------------------------------
+r7213 | tewok | 2012-12-06 10:53:30 -0800 (Thu, 06 Dec 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/docs/install-4-adding-sensor.html
+
+Instructions for adding an Owl sensor.
+
+------------------------------------------------------------------------
+r7212 | tewok | 2012-12-06 10:53:11 -0800 (Thu, 06 Dec 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/docs/install-3-about-queries.html
+
+Discussion of queries.
+
+------------------------------------------------------------------------
+r7211 | tewok | 2012-12-06 10:52:57 -0800 (Thu, 06 Dec 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/docs/install-2-installation.html
+
+Installation instructions for Owl.
+
+------------------------------------------------------------------------
+r7210 | tewok | 2012-12-06 10:52:10 -0800 (Thu, 06 Dec 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/docs/install-1-overview.html
+
+Overview of Owl.
+
+------------------------------------------------------------------------
+r7209 | tewok | 2012-12-06 10:51:09 -0800 (Thu, 06 Dec 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/docs/install-0-intro.html
+
+Introduction to Owl installation guide.
+
+------------------------------------------------------------------------
+r7208 | tewok | 2012-12-06 10:43:16 -0800 (Thu, 06 Dec 2012) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-dnstimer
+
+If Perl or the O/S isn't thread-enabled, then each query will be run in its  
+own process.
+
+------------------------------------------------------------------------
+r7207 | tewok | 2012-12-06 10:35:07 -0800 (Thu, 06 Dec 2012) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-transfer
+
+Added the -confdir option.
+Added logging.
+
+------------------------------------------------------------------------
+r7206 | tewok | 2012-12-06 09:27:25 -0800 (Thu, 06 Dec 2012) | 9 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-sensord
+
+Minor fixes:
+	Deleted some unused variables.
+	Used $NAME rather than hardcoded name.
+	Modified a few log messages.
+	Deleted some debugging code.
+	Properly specified non-arg in owl_setup() call.
+	Changed logging to log info messages instead of warnings.
+
+
+------------------------------------------------------------------------
+r7205 | tewok | 2012-12-06 09:22:25 -0800 (Thu, 06 Dec 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/perllib/owlutils.pm
+
+Allow better specification of non-args for owl_setup().
+
+------------------------------------------------------------------------
+r7204 | tewok | 2012-12-06 09:18:28 -0800 (Thu, 06 Dec 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/conf/owl.conf
+
+Used full argument name in transferargs.
+
+------------------------------------------------------------------------
+r7203 | tewok | 2012-12-04 10:13:40 -0800 (Tue, 04 Dec 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-dnstimer
+
+Remove some obsolete testing code.
+
+------------------------------------------------------------------------
+r7202 | tewok | 2012-12-04 09:39:24 -0800 (Tue, 04 Dec 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-dnstimer
+
+Require that Perl threading be available.
+
+------------------------------------------------------------------------
+r7201 | tewok | 2012-12-03 13:20:26 -0800 (Mon, 03 Dec 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-archold
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-dataarch
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-dnstimer
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-heartbeat
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-sensord
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-status
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-transfer
+
+Fixed program versions.
+
+------------------------------------------------------------------------
+r7200 | tewok | 2012-12-03 10:59:16 -0800 (Mon, 03 Dec 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-dnswatch
+
+Replaced another reference to site-specific directories with example names.
+
+------------------------------------------------------------------------
+r7199 | tewok | 2012-12-03 10:27:35 -0800 (Mon, 03 Dec 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/docs/owl-sensor-data.odp
+   A /trunk/dnssec-tools/apps/owl-monitor/docs/owl-sensor-data.png
+
+Diagram showing data flow on the Owl sensor.
+
+------------------------------------------------------------------------
+r7198 | tewok | 2012-12-03 10:26:54 -0800 (Mon, 03 Dec 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/docs/owl-manager-data.odp
+   A /trunk/dnssec-tools/apps/owl-monitor/docs/owl-manager-data.png
+
+Diagram showing dataflow on the Owl manager.
+
+------------------------------------------------------------------------
+r7197 | tewok | 2012-12-03 10:23:13 -0800 (Mon, 03 Dec 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/docs/owl-topography.odp
+   A /trunk/dnssec-tools/apps/owl-monitor/docs/owl-topography.png
+
+Diagram showing the topography of two example Owl monitoring setups.
+
+------------------------------------------------------------------------
+r7196 | tewok | 2012-12-03 10:20:29 -0800 (Mon, 03 Dec 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/nagios-files/example-side.php
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/nagios-files/owl-sensor-heartbeat.cgi
+
+Replaced references to site-specific directories with example names.
+
+------------------------------------------------------------------------
+r7195 | tewok | 2012-12-03 10:18:27 -0800 (Mon, 03 Dec 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-stethoscope
+
+Replaced references to site-specific directories with example names.
+
+------------------------------------------------------------------------
+r7194 | tewok | 2012-12-03 10:18:08 -0800 (Mon, 03 Dec 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-perfdata
+
+Replaced references to site-specific directories with example names.
+
+------------------------------------------------------------------------
+r7193 | tewok | 2012-12-03 10:17:26 -0800 (Mon, 03 Dec 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-dnswatch
+
+Replaced references to site-specific directories with example names.
+
+------------------------------------------------------------------------
+r7192 | tewok | 2012-12-03 10:14:30 -0800 (Mon, 03 Dec 2012) | 3 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/manager/nagios-objects/sensor42.cfg
+
+Example objects required for handling a single Owl sensor.
+These objects will normally be built by owl-newsensor.
+
+------------------------------------------------------------------------
+r7191 | tewok | 2012-12-03 10:12:13 -0800 (Mon, 03 Dec 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/manager/nagios-objects/owl-services.cfg
+
+Template service object required for monitoring DNS data for Owl Monitor.
+
+------------------------------------------------------------------------
+r7190 | tewok | 2012-12-03 10:11:39 -0800 (Mon, 03 Dec 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/manager/nagios-objects/owl-hosts.cfg
+
+Template host objects required for monitoring DNS data for Owl Monitor.
+
+------------------------------------------------------------------------
+r7189 | tewok | 2012-12-03 10:11:00 -0800 (Mon, 03 Dec 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/manager/nagios-objects/owl-hostgroups.cfg
+
+Example hostgroup object required for monitoring DNS data for Owl Monitor.
+
+------------------------------------------------------------------------
+r7188 | tewok | 2012-12-03 10:10:14 -0800 (Mon, 03 Dec 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/manager/nagios-objects/owl-contacts.cfg
+
+Contact objects required for monitoring DNS data for Owl Monitor.
+
+------------------------------------------------------------------------
+r7187 | tewok | 2012-12-03 10:09:14 -0800 (Mon, 03 Dec 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/manager/nagios-objects/owl-commands.cfg
+
+Command objects required for monitoring DNS data for Owl Monitor.
+
+------------------------------------------------------------------------
+r7186 | tewok | 2012-12-03 10:07:48 -0800 (Mon, 03 Dec 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/manager/nagios-objects/nagios.cfg-owl.mods
+
+Mods to nagios.cfg to include Owl object files.
+
+------------------------------------------------------------------------
+r7185 | tewok | 2012-12-03 09:59:31 -0800 (Mon, 03 Dec 2012) | 3 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/manager/nagios-files/owl-sensor-heartbeat.cgi
+
+Script run by the webserver in order to register that an Owl sensor has
+sent a "heartbeat" signal.
+
+------------------------------------------------------------------------
+r7184 | tewok | 2012-12-03 09:58:41 -0800 (Mon, 03 Dec 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/manager/nagios-files/example-side.php
+
+Example lines that may be added to Nagios' side.php file.
+
+------------------------------------------------------------------------
+r7183 | tewok | 2012-12-03 09:57:34 -0800 (Mon, 03 Dec 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/manager/nagios-files/README
+
+Briefly describes files in nagios-files directory.
+
+------------------------------------------------------------------------
+r7182 | tewok | 2012-12-03 09:56:09 -0800 (Mon, 03 Dec 2012) | 3 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/manager/nagiosgraph-files/ng-owl-map
+
+Code for nagiosgraph map file so it will do The Right Thing with Owl sensor
+data.
+
+------------------------------------------------------------------------
+r7181 | tewok | 2012-12-03 09:54:44 -0800 (Mon, 03 Dec 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/manager/nagiosgraph-files/ng-owl-conf
+
+Recommended settings for nagiosgraph config file.
+
+------------------------------------------------------------------------
+r7180 | tewok | 2012-12-03 09:51:55 -0800 (Mon, 03 Dec 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/manager/README
+
+Brief description of contents of manager source directory. 
+
+------------------------------------------------------------------------
+r7179 | tewok | 2012-12-03 09:50:03 -0800 (Mon, 03 Dec 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-dnswatch
+
+Small grammar fix in pod.
+
+------------------------------------------------------------------------
+r7178 | tewok | 2012-12-03 09:48:39 -0800 (Mon, 03 Dec 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-stethoscope
+
+Nagios plugin to retrieve Owl sensor's heartbeat data.
+
+------------------------------------------------------------------------
+r7177 | tewok | 2012-12-03 09:47:50 -0800 (Mon, 03 Dec 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-perfdata
+
+Front-end to handling Nagios performance data for the Owl Monitor.
+
+------------------------------------------------------------------------
+r7176 | tewok | 2012-12-03 09:46:44 -0800 (Mon, 03 Dec 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-dnswatch
+
+Nagios plugin to retrieve DNS response data from an Owl sensor.
+
+------------------------------------------------------------------------
+r7175 | tewok | 2012-12-03 09:37:52 -0800 (Mon, 03 Dec 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/manager/bin/owl-newsensor
+
+Builds Nagios objects for a new Owl sensor.
+
+------------------------------------------------------------------------
+r7174 | tewok | 2012-12-03 09:37:17 -0800 (Mon, 03 Dec 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/manager/bin/owl-monthly
+
+Makes monthly archives of previously archived Owl monitor data.
+
+------------------------------------------------------------------------
+r7173 | tewok | 2012-12-03 09:36:42 -0800 (Mon, 03 Dec 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/manager/bin/owl-initsensor
+
+Initializes files and directories for new Owl sensors.
+
+------------------------------------------------------------------------
+r7172 | tewok | 2012-12-03 09:36:10 -0800 (Mon, 03 Dec 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/manager/bin/owl-dataarch-mgr
+
+Archives Owl sensor data on an Owl manager.
+
+------------------------------------------------------------------------
+r7171 | tewok | 2012-12-03 09:35:24 -0800 (Mon, 03 Dec 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/manager/bin/owl-archold
+
+Archives archived Owl sensor data.
+
+------------------------------------------------------------------------
+r7170 | tewok | 2012-12-03 09:34:38 -0800 (Mon, 03 Dec 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/manager/bin/owl-archdata
+
+Archives DNS response data from Owl sensors.
+
+------------------------------------------------------------------------
+r7169 | tewok | 2012-12-03 08:46:41 -0800 (Mon, 03 Dec 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/manager/bin
+   A /trunk/dnssec-tools/apps/owl-monitor/manager/libexec
+   A /trunk/dnssec-tools/apps/owl-monitor/manager/nagios-files
+   A /trunk/dnssec-tools/apps/owl-monitor/manager/nagios-objects
+   A /trunk/dnssec-tools/apps/owl-monitor/manager/nagiosgraph-files
+
+Directories for Owl manager files.
+
+------------------------------------------------------------------------
+r7168 | tewok | 2012-12-03 08:36:53 -0800 (Mon, 03 Dec 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/sensor/perllib/owlutils.pm
+
+Utility routines for the Owl sensor.
+
+------------------------------------------------------------------------
+r7167 | tewok | 2012-12-03 08:36:15 -0800 (Mon, 03 Dec 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/sensor/manpages/owl-data.pod
+
+Manpage describing the data file format for the Owl sensor.
+
+------------------------------------------------------------------------
+r7166 | tewok | 2012-12-03 08:35:47 -0800 (Mon, 03 Dec 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/sensor/manpages/owl-config.pod
+
+Manpage describing the configuration file of the Owl sensor.
+
+------------------------------------------------------------------------
+r7165 | tewok | 2012-12-03 08:34:53 -0800 (Mon, 03 Dec 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/sensor/conf/owl.conf
+
+Example configuration file for an Owl sensor.
+
+------------------------------------------------------------------------
+r7164 | tewok | 2012-12-03 08:32:54 -0800 (Mon, 03 Dec 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-archold
+   A /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-dataarch
+   A /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-dnstimer
+   A /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-heartbeat
+   A /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-sensord
+   A /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-status
+   A /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-transfer
+
+Scripts for Owl sensor.
+
+------------------------------------------------------------------------
+r7163 | tewok | 2012-12-03 08:30:50 -0800 (Mon, 03 Dec 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/sensor/bin
+   A /trunk/dnssec-tools/apps/owl-monitor/sensor/conf
+   A /trunk/dnssec-tools/apps/owl-monitor/sensor/manpages
+   A /trunk/dnssec-tools/apps/owl-monitor/sensor/perllib
+
+And here are a few subdirectories for the sensor.
+
+------------------------------------------------------------------------
+r7162 | tewok | 2012-12-03 08:29:43 -0800 (Mon, 03 Dec 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/docs
+   A /trunk/dnssec-tools/apps/owl-monitor/manager
+   A /trunk/dnssec-tools/apps/owl-monitor/sensor
+
+Added a few more directories for Owl stuff.
+
+------------------------------------------------------------------------
+r7161 | tewok | 2012-12-03 08:26:21 -0800 (Mon, 03 Dec 2012) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor
+
+Top-level directory for Owl Monitor software and documents.
+
+------------------------------------------------------------------------
+r7160 | tewok | 2012-12-03 08:03:59 -0800 (Mon, 03 Dec 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/defaults.pm
+   M /trunk/dnssec-tools/tools/modules/dnssectools.pm
+   M /trunk/dnssec-tools/tools/modules/keyrec.pm
+   M /trunk/dnssec-tools/tools/modules/realm.pm
+   M /trunk/dnssec-tools/tools/modules/realmmgr.pm
+   M /trunk/dnssec-tools/tools/modules/rolllog.pm
+   M /trunk/dnssec-tools/tools/modules/rollmgr.pm
+   M /trunk/dnssec-tools/tools/modules/rollrec.pm
+   M /trunk/dnssec-tools/tools/modules/timetrans.pm
+   M /trunk/dnssec-tools/tools/modules/tooloptions.pm
+
+Adjusted version number.
+
+------------------------------------------------------------------------
+r7157 | hserus | 2012-11-20 11:22:18 -0800 (Tue, 20 Nov 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/val_dane.h
+   M /trunk/dnssec-tools/validator/libval/val_dane.c
+
+Rename VAL_DANE_MISSING_TLSA to VAL_DANE_IGNORE_TLSA
+
+------------------------------------------------------------------------
+r7156 | hserus | 2012-11-20 10:20:06 -0800 (Tue, 20 Nov 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/val_dane.h
+   M /trunk/dnssec-tools/validator/libval/val_dane.c
+
+Add function to check DANE use-cases for openssl-based SSL objects
+
+------------------------------------------------------------------------
+r7154 | hserus | 2012-11-12 12:04:54 -0800 (Mon, 12 Nov 2012) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/val_dane.h
+   M /trunk/dnssec-tools/validator/libval/val_dane.c
+
+Properly handle internal to DER conversions.
+Add debugging output
+
+------------------------------------------------------------------------
+r7153 | hserus | 2012-11-12 12:01:09 -0800 (Mon, 12 Nov 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dane_check.c
+
+Print queried name in output
+
+------------------------------------------------------------------------
+r7152 | hserus | 2012-11-08 10:27:08 -0800 (Thu, 08 Nov 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dane_check.c
+
+Output selector, type and usage fields for the TLSA record
+
+------------------------------------------------------------------------
+r7151 | hserus | 2012-11-08 10:25:51 -0800 (Thu, 08 Nov 2012) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/val_dane.h
+   M /trunk/dnssec-tools/validator/libval/val_dane.c
+
+Add function to check selector and type fields for the TLSA record
+
+------------------------------------------------------------------------
+r7148 | hardaker | 2012-10-24 21:36:17 -0700 (Wed, 24 Oct 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/DNSData.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/DNSData.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/Filters/DNSSECStatusFilter.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/Legend.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/PcapWatcher.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/node.cpp
+
+check for authoritative answers
+------------------------------------------------------------------------
+r7147 | hardaker | 2012-10-24 21:36:05 -0700 (Wed, 24 Oct 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/NEWS
+
+NEWS reformatting
+------------------------------------------------------------------------
+r7146 | hardaker | 2012-10-24 21:35:56 -0700 (Wed, 24 Oct 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/PcapWatcher.cpp
+
+Catch NXDomains
+------------------------------------------------------------------------
+r7143 | hardaker | 2012-10-15 11:35:24 -0700 (Mon, 15 Oct 2012) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/DnssecCheckVersion.h
+
+added the version number file
+------------------------------------------------------------------------
+r7142 | hardaker | 2012-10-15 11:15:37 -0700 (Mon, 15 Oct 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/TestManager.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/TestManager.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec-check.pro
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/mainwindow.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/mainwindow.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DnssecCheck.qml
+
+move all version numbers to a central header
+------------------------------------------------------------------------
+r7141 | hardaker | 2012-10-15 11:15:17 -0700 (Mon, 15 Oct 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/dist/makerelease.xml
+
+fix dnssec-check version modification
+------------------------------------------------------------------------
+r7140 | hardaker | 2012-10-15 11:09:22 -0700 (Mon, 15 Oct 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/mainwindow.cpp
+
+fix the DNSSEC-Check version number
+------------------------------------------------------------------------
+r7139 | hardaker | 2012-10-15 11:09:12 -0700 (Mon, 15 Oct 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/mainwindow.cpp
+
+version number fix
+------------------------------------------------------------------------
+r7138 | hardaker | 2012-10-15 11:09:00 -0700 (Mon, 15 Oct 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DnssecCheck.qml
+
+fix spaces
+------------------------------------------------------------------------
+r7134 | hardaker | 2012-10-11 22:21:34 -0700 (Thu, 11 Oct 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/Makefile.top
+
+libtool update
+------------------------------------------------------------------------
+r7132 | hardaker | 2012-10-11 22:16:12 -0700 (Thu, 11 Oct 2012) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/ChangeLog
+
+Update for verison 1.14
+------------------------------------------------------------------------
 r7131 | hardaker | 2012-10-11 22:11:48 -0700 (Thu, 11 Oct 2012) | 1 line
 Changed paths:
    M /trunk/dnssec-tools/validator/apps/dnssec-check/mainwindow.cpp
