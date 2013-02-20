@@ -25,6 +25,7 @@ inconsistencies.</title>
 
 		<li><a href="#file_checks">File Checks</a></li>
 		<li><a href="#raw_file_checks">Raw File Checks</a></li>
+		<li><a href="#info_rollrec_checks">Info Rollrec Checks</a></li>
 		<li><a href="#rollrec_checks">Rollrec Checks</a></li>
 	</ul>
 
@@ -60,9 +61,10 @@ problems and inconsistencies.</p>
 </p>
 <hr />
 <h1><a name="types_of_checks">TYPES OF CHECKS</a></h1>
-<p>There are three types of checks performed by <strong>rollchk</strong>:  file checks,
-&quot;raw&quot; file checks, and <em>rollrec</em> checks.  The checks are performed in that
-order, and if any of the group checks fail then <strong>rollchk</strong> exits.</p>
+<p>There are four types of checks performed by <strong>rollchk</strong>:  file checks, &quot;raw&quot;
+file checks, <em>info rollrec</em> checks, and <em>rollrec</em> checks.  The checks are
+performed in that order, and if any of the group checks fail then <strong>rollchk</strong>
+exits.</p>
 <p>
 </p>
 <h2><a name="file_checks">File Checks</a></h2>
@@ -87,6 +89,25 @@ using the <em>rollrec.pm</em> interfaces.  Recognized problems are:</p>
 <li><strong><a name="duplicated_rollrec_names" class="item">duplicated rollrec names</a></strong>
 
 <p>A <em>rollrec</em> name is not unique.</p>
+</li>
+</ul>
+<p>
+</p>
+<h2><a name="info_rollrec_checks">Info Rollrec Checks</a></h2>
+<p>These checks are performed to ensure the <em>info rollrec</em> is valid.
+Recognized problems are:</p>
+<ul>
+<li><strong><a name="negative_version" class="item">negative version</a></strong>
+
+<p>The version number in the <em>info rollrec</em> is less than 0.</p>
+</li>
+<li><strong><a name="overly_large_version" class="item">overly large version</a></strong>
+
+<p>The version number in the <em>info rollrec</em> is greater than 2.</p>
+</li>
+<li><strong><a name="invalid_version" class="item">invalid version</a></strong>
+
+<p>The version number in the <em>info rollrec</em> is not 0, 1, or 2.</p>
 </li>
 </ul>
 <p>
@@ -224,7 +245,7 @@ This option is mutually exclusive of the <strong>-roll</strong> option.</p>
 </p>
 <hr />
 <h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2006-2012 SPARTA, Inc.  All rights reserved.
+<p>Copyright 2006-2013 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <p>
 </p>
