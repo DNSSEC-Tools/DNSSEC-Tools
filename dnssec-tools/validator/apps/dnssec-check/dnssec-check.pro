@@ -20,21 +20,21 @@ isEmpty(ANDROID_PLATFORM) {
     contains(MEEGO_EDITION,harmattan): {
         QMAKE_LIBDIR += /scratchbox/users/hardaker/targets/HARMATTAN_ARMEL/usr/lib
     } else:osx {
-        LIBS        += -lval-threads -lsres -lcrypto -lpthread
+        LIBS        += -lval-threads -lsres -lssl -lcrypto -lpthread
     } else:maemo5 {
         INCLUDEPATH += /opt/maemo/usr/include/
     } else:win32 {
         #QMAKE_LIBDIR += /MinGW/msys/1.0/lib
         LIBS += -lval-threads -lsres -leay32 -lpthread -lws2_32
     } else {
-        LIBS        += -lval-threads -lsres -lcrypto -lpthread
+        LIBS        += -lval-threads -lsres -lssl -lcrypto -lpthread
     }
 } else {
     QMAKE_LIBDIR += /opt/android-external-openssl/lib/
     QMAKE_LIBDIR += /root/necessitas/android-ndk-r5c/platforms/android-4/arch-arm/usr/lib/
     QMAKE_LIBDIR     += ../../libval/.libs
     QMAKE_LIBDIR     += ../../libsres/.libs
-    LIBS        += -lval -lsres -lcrypto
+    LIBS        += -lval -lsres -lssl -lcrypto
 }
 
 # Needs to be defined for Symbian
