@@ -1,7 +1,7 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
   <head>
-    <meta content="text/html; charset=ISO-8859-1"
+    <meta content="text/html; charset=windows-1252"
       http-equiv="Content-Type">
     <title>Bloodhound - Sniffing out insecure names</title>
   </head>
@@ -31,17 +31,17 @@ src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAAAXNSR
           wiki page.<br>
         </p>
         <p>Bloodhound adds local DNSSEC validation support. This means
-          that&nbsp; DNSSEC validation information for all names looked
-          up while loading a web page is determined within the browser
-          itself (as opposed to on a validating recursive name server
-          elsewhere on the network).&nbsp; This provides more assurance
-          that the DNSSEC validation status was not tampered with
-          between the point where DNSSEC responses were validated and
-          the point at which such information was used. Enabling local
-          validation is especially useful in the context of protocols
-          such as <a href="http://tools.ietf.org/html/rfc6698">DANE</a>,
-          where information that was validated using DNSSEC is used as a
-          trust anchor bootstrapping mechanism within other protocols. <br>
+          that&nbsp; DNSSEC validation status information for all names
+          looked up while loading a web page is determined within the
+          browser itself (as opposed to on a validating recursive name
+          server elsewhere on the network).&nbsp; This provides more
+          assurance that the DNSSEC responses were not tampered with
+          between the points where they were validated and where they
+          were used. Enabling local validation is especially useful in
+          the context of protocols such as <a
+            href="http://tools.ietf.org/html/rfc6698">DANE</a>, where
+          information validated using DNSSEC is used as a trust anchor
+          bootstrapping mechanism within other protocols. <br>
         </p>
         <p>DNSSEC support is enabled using the DNSSEC-Tools <a
             href="https://www.dnssec-tools.org/wiki/index.php/Libval_and_libsres">dnsval</a>
@@ -50,24 +50,22 @@ src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAAAAXNSR
           and also via the update channels for certain OS platforms. <br>
         </p>
         <p>Since DNSSEC adds some overhead in the number of additional
-          lookups that must be performed in order to validate a DNS
-          response, Bloodhound uses the asynchronous lookup capability
+          lookups that must be performed in order to validate DNS
+          responses, Bloodhound uses the asynchronous lookup capability
           in dnsval to speed up this operation.&nbsp; With this feature
-          Bloodhound is able to perform a number of lookup requests in
-          parallel without the need for additional threads. <br>
+          Bloodhound is able to perform a number of lookup operations in
+          parallel without the need to spawn additional threads. <br>
         </p>
         <p>By default, Bloodhound will use a pre-configured validation
           policy, but you may override it by defining your own validator
-          configuration file in
-          /usr/local/opt/etc/dnssec-tools/dnsval.conf. For instance, the
-          in-built validator config file does not have DLV enabled, so
-          you could enable DLV configuration in your custom validator
-          config file. A sample dnsval.conf file with DLV enabled can be
-          found <a
+          configuration in /usr/local/opt/etc/dnssec-tools/dnsval.conf.
+          For instance, the in-built validator configuration file does
+          not have DLV enabled, so you could enable DLV configuration in
+          your custom validator configuration file as described <a
 href="https://www.dnssec-tools.org/wiki/index.php/Dnsval.conf#With_DLV_support">here</a>.
           <br>
         </p>
-        <p>By default, this version will look at /etc/resolv.conf file
+        <p>By default, Bloodhound will look at the /etc/resolv.conf file
           for recursive name server information. If name servers in
           /etc/resolv.conf are not DNSSEC-capable, Bloodhound will try
           to work around the problem by doing iterative queries from
@@ -76,8 +74,8 @@ href="https://www.dnssec-tools.org/wiki/index.php/Dnsval.conf#With_DLV_support">
           fallback technique may or may not work. You can define a new
           resolv.conf file in
           /usr/local/opt/etc/dnssec-tools/resolv.conf to have Bloodhound
-          use a different recursive name server if needed. If you define
-          an "empty" resolv.conf file (size = 0) in
+          use a different recursive name server if necessary. If you
+          define an "empty" resolv.conf file (size = 0) in
           /usr/local/opt/etc/dnssec-tools/resolv.conf Bloodhound will
           use the iterative lookup process for all query resolutions,
           caching results internally where necessary. <br>
@@ -86,6 +84,7 @@ href="https://www.dnssec-tools.org/wiki/index.php/Dnsval.conf#With_DLV_support">
         </h2>
         <p>The DNSSEC-Status extension for Bloodhound (also available
           from the <a href="https://www.dnssec-tools.org/download">download
+
           </a> page) will listen for DNSSEC-related events generated by
           Bloodhound and will provide appropriate messages to the user
           when it detects validation errors. For further information
@@ -111,25 +110,27 @@ href="http://www.internetsociety.org/deploy360/resources/dane-test-sites/">this<
           ensure that DLV is enabled in your validator configuration
           file as described <a
 href="https://www.dnssec-tools.org/wiki/index.php/Dnsval.conf#With_DLV_support">here</a>.
-          Further, there still seems to be some discrepancy in the hash
-          value returned in the TLSA records for some of these tests
-          sites from the hash values expected by <a
+          Further, there seems to be some discrepancy between the hash
+          values returned in the TLSA records for some of these tests
+          sites and the expected hash values computed by <a
 href="https://www.dnssec-deployment.org/wiki/index.php/Lastmile_tools_matrix">other
+
             stand-alone DANE test programs</a>. This inconsistency needs
           to be checked and clarified by the DANE community.<br>
         </p>
         <h2>Additional Links<br>
         </h2>
         <ul>
-          <li>
-            For additional information on the DNSSEC-Tools project
+          <li> For additional information on the DNSSEC-Tools project
             please visit the <a href="http://www.dnssec-tools.org">project
+
               website</a>.</li>
           <li>For additional information on the need for validation
             within applications please visit <a
 href="https://www.dnssec-deployment.org/index.php/2012/02/are-you-secure/">this
+
               page</a>.</li>
-          <li>For additional information on DNSSEC-Deployment and
+          <li>For additional information on DNSSEC-Deployment and for
             information on tools and resources that will help you deploy
             DNSSEC please visit the <a
               href="https://www.dnssec-deployment.org">DNSSEC-Deployment
@@ -150,16 +151,16 @@ href="https://www.dnssec-deployment.org/index.php/2012/02/are-you-secure/">this
         <p>Bloodhound is an experimental piece of software. It is being
           provided to the community in order to encourage further
           discussion on the need for DNSSEC validation within
-          applications, innovative ways to use DNSSEC (such as the DANE
-          protocol), and ways to communicate DNSSEC related errors to
-          the user. <br>
+          applications, demonstrate innovative ways to use DNSSEC (such
+          as within the DANE protocol), and ways to communicate DNSSEC
+          related errors to the user. <br>
         </p>
         <p>Bloodhound is a re-branded and patched version of the Mozilla
           Firefox browser.&nbsp; That is, it contains changes to the
           Firefox code-base that result in new code paths, and
-          consequently adds the potential for new sources of bugs. While
-          we will try and make periodic updates to Bloodhound available,
-          it is important to note that the version of Bloodhound made
+          consequently increases the potential for new bugs. While we
+          will try and make periodic updates to Bloodhound available, it
+          is important to note that the version of Bloodhound made
           available on our website may not always be in sync with the
           latest patched version of Firefox. Please visit the <a
             href="http://www.mozilla.org">Mozilla website</a> if you are
@@ -169,6 +170,7 @@ href="https://www.dnssec-deployment.org/index.php/2012/02/are-you-secure/">this
         </h2>
         Please use the DNSSEC-Tools <a
           href="https://www.dnssec-tools.org/mailman/listinfo/users">users
+
           mailing list</a> to send us general comments, and please
         submit all bugs to our <a
           href="https://www.dnssec-tools.org/trac/">bug database</a>.<br>
