@@ -1,0 +1,148 @@
+#!/bin/sh
+#
+# Copyright 2013 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details.
+#
+# owl-sensor						Owl Monitoring System
+#
+#       This is the system rc script for the Owl Monitoring System.
+#
+
+
+# PROVIDE: owl_sensor
+# REQUIRE: NETWORKING named
+# KEYWORD: shutdown
+
+. /etc/rc.subr
+
+#
+# Variables required of rc scripts.
+#
+name="owl_sensor"
+rcvar=owl_sensor_enable
+
+#
+# Location of Owl sensor code.  It is assumed that the various Owl
+# directories will live in this directory.
+#
+owldir="/home/owl-sensor"
+owlbin="/home/owl-sensor/bin"
+
+#
+# Location of Owl sensor configuration directory and file.
+#
+owlconf="${owldir}/conf"
+owlconfig="${owlconf}/owl.conf"
+
+#
+# The interpreter that runs our commands.
+#
+command_interpreter="/usr/bin/perl"
+
+#
+# Names needed to find running instance of the Owl daemon.
+#	- If the manager will be fetching data from the sensor, then
+#	  the command variable should be owl-dnstimer.  
+#
+#	- If the sensor will be sending data to the Owl manager itself,
+#	  then the command variable should most likely be owl-sensord.  
+#	  The Owl sensor daemons (owl-dnstimer and owl-transfer) may
+#	  be started individually, but it is easier to use owl-sensord
+#	  to manage both.
+#
+#
+command="${owlbin}/owl-sensord"
+# command="${owlbin}/owl-dnstimer"
+
+#
+# Options for the command.
+#
+owl_sensor_flags="-config ${owlconfig} > /dev/null 2>&1"
+
+#
+# Process-id file for the Owl daemon.
+# This should be set to mirror the setting of the command variable.
+#
+pidfile="${owlconf}/owl-sensord.pid"
+# pidfile="${owlconf}/owl-dnstimer.pid"
+
+#
+# Files required by the Owl daemon.
+#
+required_files="${owlconfig}"
+
+#
+# Halt signal.
+#
+sig_stop="INT"
+
+#
+# 
+# 
+start_cmd="${name}_start"
+stop_cmd="${name}_stop"
+restart_cmd="${name}_restart"
+poll_cmd="${name}_poll"
+status_cmd="${name}_status"
+
+#
+# Load the rc config file.
+#
+load_rc_config $name
+: ${owl_sensor_enable:=yes}
+: ${owl_sensor_message:="Owl sensor not started."}
+
+#
+# Start the Owl sensor.
+#
+owl_sensor_start()
+{
+	echo "starting Owl sensor"
+	cd ${owldir}
+	${owlbin}/owl-sensord ${owl_sensor_flags} &
+}
+
+#
+# Stop the Owl sensor.
+#
+owl_sensor_stop()
+{
+	echo "stopping Owl sensor"
+	cd ${owldir}
+	${owlbin}/owl-sensord ${owl_sensor_flags} -stop &
+}
+
+#
+# Restart the Owl sensor.
+#
+owl_sensor_restart()
+{
+	echo "restarting Owl sensor"
+	owl_sensor_stop
+	sleep 5
+	owl_sensor_start
+}
+
+#
+# Poll the Owl sensor.
+#
+owl_sensor_poll()
+{
+	echo "polling Owl sensor"
+	cd ${owldir}
+	${owlbin}/owl-sensord ${owl_sensor_flags} -stop &
+}
+
+#
+# Status the Owl sensor.
+#
+owl_sensor_status()
+{
+	echo "Owl sensor status:"
+	cd ${owldir}
+	${owlbin}/owl-status
+}
+
+
+run_rc_command "$1"
+
