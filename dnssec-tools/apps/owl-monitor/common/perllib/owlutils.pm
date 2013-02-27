@@ -158,6 +158,7 @@ our $transfermgrargs;			# Arguments for owl-transfer-mgr daemon.
 our $transfermgrargs;			# Arguments for owl-transfer-mgr daemon.
 
 our $admins = 'root';			# Administrator email.
+our $executors;				# Owl programs to execute.
 our $hesitation;			# Sleep time between executions.
 our $hibernation;			# Sleep time for minion xtn problems.
 our $quickcount;			# Consecutive quick xtns before pausing.
@@ -479,6 +480,50 @@ sub owl_readconfig
 			$cf_states[$ind] = 0;
 		}
 
+	}
+
+	#
+	# Ensure our execution targets are all valid.  If none were given,
+	# then we'll use the default values.
+	#
+	if($executors ne '')
+	{
+		my @badactors = ();		# Invalid execution targets.
+
+		#
+		# Look at all the given execution targets.  Any that we
+		# don't recognize, we'll add to a list.
+		#
+		foreach my $xqtr (split /\s/, $executors)
+		{
+			if(!defined($owldaemons{lc($xqtr)}))
+			{
+				push @badactors, $xqtr;
+			}
+		}
+
+		#
+		# If we found any unrecognized exeuction targets, give
+		# an error message.
+		#
+		if(@badactors > 0)
+		{
+			print STDERR "invalid execution targets:  " . join(', ', @badactors) . "\n";
+			$errs++;
+		}
+
+		#
+		# Make sure everything is lowercase.
+		#
+		$executors = lc($executors);
+	}
+	else
+	{
+		#
+		# If nothing was specified, we'll specify the default and
+		# let our caller decide how to interpret that.
+		#
+		$executors = 'default';
 	}
 
 	#
@@ -827,6 +872,10 @@ sub conf_hostline
 	elsif($keyword =~ /^admin$/i)
 	{
 		$admins = join(' ', @atoms);
+	}
+	elsif($keyword =~ /^execute$/i)
+	{
+		$executors = join(' ', @atoms);
 	}
 	elsif($keyword =~ /^hesitation$/i)
 	{
@@ -1267,6 +1316,9 @@ Data specified on a I<host> line:
 
     $admins                  Administrator email addresses.
     $dnstimerargs            Arguments for the owl-dnstimer daemon.
+    $executors               Programs to execute.  This may be
+                             "default", "dnstimer", "owl-dnstimer",
+			     "transfer", or "owl-transfer".
     $hostname                Name of this host.
     $transferargs            Arguments for owl-transfer daemon.
     $transfermgrargs         Arguments for owl-transfer-mgr daemon.
@@ -1350,8 +1402,8 @@ Data from "host" lines:
 
     $owlutils::admins          - email addresses for Owl
 				 administrators
-    $owlutils::dnstimerargs    - arguments for the owl-dnstimer
-				 daemon
+    $owlutils::dnstimerargs    - arguments for owl-dnstimer daemon
+    $owlutils::executors       - programs to be executed
     $owlutils::hesitation      - time between Owl daemon executions
     $owlutils::hibernation     - sleep time upon execution problems
     $owlutils::quickcount      - count of quick executions before
@@ -1359,10 +1411,8 @@ Data from "host" lines:
     $owlutils::quickseconds    - seconds count that makes a quick
 			         execution
     $owlutils::hostname        - name of this host
-    $owlutils::transferargs    - arguments for the owl-transfer
-				 daemon
-    $owlutils::transfermgrargs - arguments for the owl-transfer-mgr
-				 daemon
+    $owlutils::transferargs    - arguments for owl-transfer daemon
+    $owlutils::transfermgrargs - arguments for owl-transfer-mgr daemon
 
 Data from "data" lines:
 
