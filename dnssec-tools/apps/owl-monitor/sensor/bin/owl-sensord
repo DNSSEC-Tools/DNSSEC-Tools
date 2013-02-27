@@ -29,7 +29,7 @@ use Getopt::Long qw(:config no_ignore_case_always);
 # Version information.
 #
 my $NAME   = 'owl-sensord';
-my $VERS   = "$NAME version: 2.0.0";
+my $VERS   = "$NAME version: 2.0.1";
 my $DTVERS = 'DNSSEC-Tools version: 2.0';
 
 #------------------------------------------------------------------------
@@ -107,9 +107,11 @@ my %loginfo = ();		# Logging information.
 
 my $pidfile;			# Name of process-id file.
 
+my %executors = ();		# Commands to execute.
+
 my %chronos = ();		# Start times of children.
 my %children = ();		# Commands run for children.
-my %quickies = ();		# Commands running to quickly.
+my %quickies = ();		# Commands running too quickly.
 
 #------------------------------------------------------------------------
 
@@ -189,7 +191,8 @@ sub doopts
 #
 sub startup
 {
-	my $hostname = `hostname`;			# Sensor's hostname.
+	my $hostname = `hostname`;		# Sensor's hostname.
+	my $xqtrs;				# Programs to be executed.
 
 	#
 	# Set up the Owl environment.
@@ -268,7 +271,17 @@ sub startup
 	exit(0) if((! $foreground) && fork());
 	POSIX::setsid();
 	owl_writepid();
-	
+
+	#
+	# Get a list of the programs we should run.
+	#
+	$xqtrs = lc($owlutils::executors);
+	$xqtrs = 'dnstimer transfer' if(($xqtrs eq '') || ($xqtrs eq 'default'));
+	foreach my $xq (split / /, $xqtrs)
+	{
+		$executors{$xq} = 1;
+	}
+
 	#
 	# Set the fast-execution parameters, mixing in the defaults, the
 	# config file values, and the command line arguments.
@@ -393,12 +406,19 @@ sub runner
 	system("owl-transfer $xferargs -stop $devnull");
 
 	#
-	# Make sure the sensor and transfer daemons are running.
+	# Start up the sensor and transfer daemons -- as required by the
+	# config file.
 	#
-	logger("$NAME:  starting sensor daemon owl-dnstimer",1);
-	runcmd("owl-dnstimer -confdir $confdir -logdir $logdir $dnstimerargs -foreground $devnull");
-	logger("$NAME:  starting transfer daemon owl-transfer",1);
-	runcmd("owl-transfer $xferargs -foreground $devnull");
+	if($executors{'dnstimer'} || $executors{'owl-dnstimer'})
+	{
+		logger("$NAME:  starting sensor daemon owl-dnstimer",1);
+		runcmd("owl-dnstimer -confdir $confdir -logdir $logdir $dnstimerargs -foreground $devnull");
+	}
+	if($executors{'transfer'} || $executors{'owl-transfer'})
+	{
+		logger("$NAME:  starting transfer daemon owl-transfer",1);
+		runcmd("owl-transfer $xferargs -foreground $devnull");
+	}
 
 	#
 	# Wait forever while children run.  If one dies, we'll restart
