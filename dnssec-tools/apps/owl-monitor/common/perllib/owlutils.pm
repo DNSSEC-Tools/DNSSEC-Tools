@@ -115,8 +115,8 @@ my %dnsqueries =
 my $progname;					# Program we're part of.
 my $owllog;					# The log object.
 
-my $OWL_SENSOR	= 1;				# Sensor daemon.
-my $OWL_MANAGER	= 1;				# Sensor manager.
+my $OWL_SENSOR	= 1;				# Owl sensor daemon.
+my $OWL_MANAGER	= 2;				# Owl manager.
 
 my %owldaemons =				# Owl daemons.
 (
