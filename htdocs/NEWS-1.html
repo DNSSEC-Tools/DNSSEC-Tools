@@ -1,14 +1,38 @@
-<h2>News: 1.14 Released</h2>
+<h2>News: 2.0 Released</h2>
 <h3>New Features</h3>
+<h4>Bloodhound</h4>
+<p> A mozilla-based DNSSEC-enabled browser with DANE support
+                    - Added support for validation of SSL certificates
+                      using the DANE protocol.
+<h4>Owl</h4>
+<p>The Owl Monitoring System uses timed DNS queries
+   to monitor basic network functionality.  The system
+   consists of a manager host and a set of sensor hosts.
+   The Owl sensors perform periodic DNS queries and
+   report to the Owl manager the time taken for each
+   query.  Over time, this shows the responsiveness of
+   the DNS infrastructure.
+<h4>curl</h4>
+<p> Added support for validation of SSL certificates
+                      using the DANE protocol.
+<h4>Qt5</h4>
+<p> A patch to support DNSSEC checks in Qt5 DNS lookups
 <h4>dnssec-nodes</h4>
-<p>Many new features, including validation tree                      graphing, on-the-wire traffic display, pcap dump
-                      file display, increased data logging and
-                      display, improved simultaneous updating, etc.
-<h4>Libval:</h4>
-<p>Added initial support for the TLSA rrtype                     - Added support for ECDSA
-                    - Implemented checking for AI_ADDRCONFIG in getaddrinfo
-                    - Memory optimizations to improve speed-up
-<h4>dnssec-check</h4>
-<p>increased stability across all platforms.
-    - All Around:   - Many bug fixes and other minor improvements
-
+<p> Many new features have been added:
+    - The validation tree now supports clicking on
+    boxes to highlight it and the arrows that derive
+    from it.  Great for use when teaching about
+    DNSSEC.
+    - An extensive filter/effect editor now lets you
+    tailor the look of a graph to color-code, set
+    the alpha levels, etc of nodes based on their
+    names, status, data types, etc.
+    - Right clicking on a node lets you center the
+    graph on that node.
+    - More data types are collected and shown in the
+    data view.
+    - Support for arguments on the command line for
+    parsing log files, pcap files and domain names.
+    - The validation view has received a visual clean-up
+    - Many other bug fixes
+<h4>... and more.</h4>
