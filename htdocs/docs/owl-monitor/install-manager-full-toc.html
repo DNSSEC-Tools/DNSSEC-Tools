@@ -1,0 +1,147 @@
+<html>
+
+<head>
+<title>Owl Monitoring System -- Manager Installation Manual -- Table of Contents</title>
+</head>
+
+<body>
+
+<p>
+
+<table>
+<tr>
+<td>
+<img align=left src="owl-logo.jpg"><br>
+<td width=30>&nbsp;
+<td align=center valign=top>
+<br>
+<center><h2>Owl Monitoring System</h2></center>
+<center><h2>Manager Installation Manual</h2></center>
+</tr>
+</table>
+
+<p>
+
+<!*****************************************************************************>
+
+<!--------------------------------------------------------------------------->
+
+<a name="0.toc"></a>
+<center><h3>Table of Contents</h3></center>
+
+<table>
+
+<tr valign=top>
+<td valign=top>
+
+<table>
+<tr valign=top><td>&nbsp;<td><a href="install-manager.html">0.</a><td>&nbsp;<td>Setting Up the Owl Monitoring System</tr>
+<tr valign=top><td>&nbsp;<td>&nbsp;<td>&nbsp;<td>&nbsp;</tr>
+
+<tr valign=top><td>&nbsp;<td><a href="install-manager-1-overview.html">1.</a><td>&nbsp;<td>Operational Overview of the Owl Monitoring System</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-1-overview.html#1.1.">1.1.</a><td>&nbsp;<td>Owl Sensor Overview</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-1-overview.html#1.2.">1.2.</a><td>&nbsp;<td>Owl Manager Overview</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-1-overview.html#1.3.">1.3.</a><td>&nbsp;<td>Data Retention on Owl Hosts</tr>
+<tr valign=top><td>&nbsp;<td>&nbsp;<td>&nbsp;<td>&nbsp;</tr>
+
+<tr valign=top><td>&nbsp;<td><a href="install-manager-2-installation.html">2.</a><td>&nbsp;<td>Owl Manager Installation</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-2-installation.html#2.1.">2.1.</a><td>&nbsp;<td>Manager Installation</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-2-installation.html#2.1.1.">2.1.1.</a><td>&nbsp;<td>Preparatory Steps</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-2-installation.html#2.1.2.">2.1.2.</a><td>&nbsp;<td>Installing Third-Party Software</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-2-installation.html#2.1.2.1.">2.1.2.1.</a><td>&nbsp;<td>Nagios Core and Plugins</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-2-installation.html#2.1.2.2.">2.1.2.2.</a><td>&nbsp;<td><b>nagiosgraph</b></tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-2-installation.html#2.1.2.3.">2.1.2.3.</a><td>&nbsp;<td><b>rrdtool</b></tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-2-installation.html#2.1.2.4.">2.1.2.4.</a><td>&nbsp;<td><b>drraw.cgi</b></tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-2-installation.html#2.1.2.5.">2.1.2.5.</a><td>&nbsp;<td>Perl modules</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-2-installation.html#2.1.3.">2.1.3.</a><td>&nbsp;<td>Installing the Owl Monitor Software</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-2-installation.html#2.1.3.1.">2.1.3.1.</a><td>&nbsp;<td>Unpacking the Owl Monitor Software</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-2-installation.html#2.1.3.2.">2.1.3.2.</a><td>&nbsp;<td><b>owl-dnswatch</b></tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-2-installation.html#2.1.3.3.">2.1.3.3.</a><td>&nbsp;<td><b>owl-perfdata</b></tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-2-installation.html#2.1.3.4.">2.1.3.4.</a><td>&nbsp;<td><b>owl-newsensor</b></tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-2-installation.html#2.1.3.5.">2.1.3.5.</a><td>&nbsp;<td><b>owl-transfer-mgr</b></tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-2-installation.html#2.1.3.6.">2.1.3.6.</a><td>&nbsp;<td>Data-Archiving Programs</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-2-installation.html#2.2.">2.2.</a><td>&nbsp;<td>Modifying Configuration Files</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-2-installation.html#2.2.1.">2.2.1.</a><td>&nbsp;<td>Save Files!</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-2-installation.html#2.2.2.">2.2.2.</a><td>&nbsp;<td><b>nagios.cfg</b> (Nagios)</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-2-installation.html#2.2.3.">2.2.3.</a><td>&nbsp;<td><b>cgi.cfg</b> (Nagios)</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-2-installation.html#2.2.4.">2.2.4.</a><td>&nbsp;<td><b>resource.cfg</b> (Nagios)</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-2-installation.html#2.2.5.">2.2.5.</a><td>&nbsp;<td><b>share/config.inc.php (Nagios)</tr>
+
+<tr valign=top><td>&nbsp;<td><a href="install-manager-2-installation.html#2.2.6.">2.2.6.</a><td>&nbsp;<td><b>nagiosgraph.conf</b> (nagiosgraph)</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-2-installation.html#2.2.7.">2.2.7.</a><td>&nbsp;<td><b>map</b> (nagiosgraph)</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-2-installation.html#2.2.8.">2.2.8.</a><td>&nbsp;<td><b>htpasswd.users</b> (Apache)</tr>
+<tr valign=top><td>&nbsp;<td>&nbsp;<td>&nbsp;<td>&nbsp;</tr>
+
+</table>
+</td>
+
+<td valign=top>
+<table>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-3-about-queries.html">3.</a><td>&nbsp;<td>An Interlude on Sensor Queries</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-3-about-queries.html">3.</a><td>&nbsp;<td>An Interlude on Sensor Queries</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-3-about-queries.html#3.1.">3.1.</a><td>&nbsp;<td>Gathering and Storing Sensor Data</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-3-about-queries.html#3.2.">3.2.</a><td>&nbsp;<td>Transferring Sensor Data</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-3-about-queries.html#3.3.">3.3.</a><td>&nbsp;<td>Sensor Heartbeats</tr>
+<tr valign=top><td>&nbsp;<td>&nbsp;<td>&nbsp;<td>&nbsp;</tr>
+
+<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html">4.</a><td>&nbsp;<td>Adding Owl Sensors to an Existing Owl Installation</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#4.1.">4.1.</a><td>&nbsp;<td>Create Directories and Files for Sensor's Data </tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#4.2.">4.2.</a><td>&nbsp;<td>Firewall Configuration</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#4.3.">4.3.</a><td>&nbsp;<td>SSH Set-up</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#4.4.">4.4.</a><td>&nbsp;<td>Configuration Settings</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#4.4.1.">4.4.1.</a><td>&nbsp;<td>Provide Configuration Information to Sensor Administrator</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#4.4.2.">4.4.2.</a><td>&nbsp;<td>Receive Configuration Information from Sensor Administrator</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#4.5.">4.5.</a><td>&nbsp;<td>Test Transfer from Sensor</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#4.6.">4.6.</a><td>&nbsp;<td>Wait for Sensor Data</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#4.7.">4.7.</a><td>&nbsp;<td>Build Nagios Sensor Objects</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#4.8.">4.8.</a><td>&nbsp;<td>Nagios Modifications</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#4.8.1.">4.8.1.</a><td>&nbsp;<td><b>nagios.cfg</b></tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#4.8.2.">4.8.2.</a><td>&nbsp;<td><b>owl-hostgroups.cfg</b></tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#4.9.">4.9.</a><td>&nbsp;<td>Graphing Modifications</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#4.10.">4.10.</a><td>&nbsp;<td>Restart Nagios</tr>
+<tr valign=top><td>&nbsp;<td>&nbsp;<td>&nbsp;<td>&nbsp;</tr>
+
+<tr valign=top><td>&nbsp;<td><a href="install-manager-5-define-graphs.html">5.</a><td>&nbsp;<td>Defining Graphs</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-5-define-graphs.html#5.1.">5.1.</a><td>&nbsp;<td>Graphing with <b>nagiosgraph</b></tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-5-define-graphs.html#5.2.">5.2.</a><td>&nbsp;<td>Graphing with <b>drraw.cgi</b></tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-5-define-graphs.html#5.3.">5.3.</a><td>&nbsp;<td>Adding Graphs to the Nagios Sidebar</tr>
+<tr valign=top><td>&nbsp;<td>&nbsp;<td>&nbsp;<td>&nbsp;</tr>
+
+<tr valign=top><td>&nbsp;<td><a href="install-manager-6-mod-queries.html">6.</a><td>&nbsp;<td>Changing Queries on Existing Owl Sensors</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-6-mod-queries.html#6.1.">6.1</a><td>&nbsp;<td>Adding New Queries</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-6-mod-queries.html#6.2.">6.2</a><td>&nbsp;<td>Deleting Old Queries</tr>
+<tr valign=top><td>&nbsp;<td>&nbsp;<td>&nbsp;<td>&nbsp;</tr>
+
+<tr valign=top><td>&nbsp;<td><a href="install-manager-7-commands.html">7.</a><td>&nbsp;<td>Owl Manager Commands</tr>
+<tr valign=top><td width=20>&nbsp;<td width=20>&nbsp;<td>&nbsp;<td>&nbsp;</tr>
+
+</td>
+</table>
+
+</tr>
+
+<tr valign=top><td width="50%">&nbsp;<td width="50%">&nbsp;</tr>
+
+</table>
+
+<p>
+
+<!*****************************************************************************>
+
+<br><br>
+
+<center>
+
+<hr width="70%">
+
+<p>
+
+<a href="http:www.dnssec-tools.org">DNSSEC Tools</a>
+
+</center>
+
+<p>
+
+</body>
+</html>
+

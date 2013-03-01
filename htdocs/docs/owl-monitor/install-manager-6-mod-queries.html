@@ -1,0 +1,171 @@
+<html>
+
+<head>
+<title>Owl Monitoring System -- Manager Installation Manual -- Adding Queries</title>
+</head>
+
+<body>
+
+<p>
+
+<table>
+<tr>
+<td>
+<img align=left src="owl-logo.jpg"><br>
+<td width=30>&nbsp;
+<td align=center valign=top>
+<br>
+<center><h2>Owl Monitoring System</h2></center>
+<center><h2>Manager Installation Manual</h2></center>
+</tr>
+</table>
+
+<p>
+
+<!*****************************************************************************>
+
+<a name="6."></a>
+<h3>6. Changing Queries on Existing Owl Sensors</h3>
+
+<p>
+
+<!------------------------------------------------------------>
+
+<table align=right width="35%">
+
+<tr><td>&nbsp;<td><a href="install-manager-6-mod-queries.html#6.1.">6.1.</a><td>&nbsp;<td>Adding New Queries</tr>
+<tr><td>&nbsp;<td><a href="install-manager-6-mod-queries.html#6.2.">6.2.</a><td>&nbsp;<td>Deleting Old Queries</tr>
+<tr><td width="10%">&nbsp;<td>&nbsp;<td>&nbsp;<td>&nbsp;</tr>
+
+</table>
+
+<p>
+
+
+<!------------------------------------------------------------>
+
+From time to time, you might decide to change the queries being performed
+by the Owl sensors.  This could be adding new queries to some or all of the
+sensors, stopping some of the queries from being performed, or modifying
+existing queries.  Regardless of the changes, there are actions that must
+be taken on the Owl manager and all affected Owl sensors.
+
+<p>
+
+<!---------------------------------------->
+
+<a name="6.1."></a>
+<h3>6.1. Adding New Queries</h3>
+
+<p>
+
+Adding new queries to the Owl manager is a matter of informing Nagios that it
+should report on new data.  This is accomplished by adding new Nagios objects
+for the sensor.  The following actions must be performed:
+
+<p>
+
+<ol>
+
+<li>Wait for the query changes to take place in the Owl sensor.  You will
+know this has happened when new sensor data files start appearing in the
+sensor's data directory, if you are adding queries, or fewer data files
+are arriving, if you are removing queries.
+
+<p>
+
+<li>Build new Nagios objects for the new queries' data files.  This may be
+most simply accomplished by rerunning <b>owl-newsensor</b> for the affected
+sensor.  This will rebuild <u>all</u> the sensor's Nagios objects, so you
+must take this into account if you have made manual changes to the object
+file.  See <a href="install-manager-4-adding-sensor.html#4.7.">section 4.7</a>
+and <a href="install-manager-4-adding-sensor.html#4.8.">section 4.8</a>
+for more information on creating new Nagios objects.
+
+<p>
+
+<li>Perform the actions in
+<a href="install-manager-4-adding-sensor.html#4.10.">section 4.10.</a>
+in order to restart Nagios.
+
+<p>
+
+<li>With  sensor query data arriving, you might want to consider modifying
+your graphs to display the changes in sensor data.  See
+<a href="install-manager-5-define-graphs.html#5.">section 5</a>
+for information on defining graphs.
+
+<p>
+
+</ol>
+
+<p>
+
+<!---------------------------------------->
+
+<a name="6.2."></a>
+<h3>6.2. Deleting Old Queries</h3>
+
+<p>
+
+Deleting existing queries to the Owl manager is a matter of informing Nagios
+that it should stop reporting on existing data.  This is accomplished by
+deleting Nagios objects for the sensor.  The following actions must be
+performed:
+
+<p>
+
+<ol>
+
+<li>Edit the Nagios object files to delete the objects for the unwanted
+queries.  See <a href="install-manager-4-adding-sensor.html#4.7.">section
+4.7</a> and <a href="install-manager-4-adding-sensor.html#4.8.">section
+4.8</a> for more information on Nagios objects.
+
+<p>
+
+<li>Perform the actions in
+<a href="install-manager-4-adding-sensor.html#4.10.">section 4.10</a>
+in order to restart Nagios.
+
+<p>
+
+</ol>
+
+After performing these steps, the old data files will still exist on the
+manager.  They can be archived or deleted as desired.
+
+<p>
+
+<!*****************************************************************************>
+
+<br><br>
+
+<center>
+
+<hr width="70%">
+
+<p>
+
+<!-------------------------------------->
+<table width="100%">
+<tr>
+<td width="33%" align=left>
+<a href="install-manager-5-define-graphs.html">Section 5.<br>Defining Graphs</a>
+<td width="33%" align=center>
+<a href="install-manager.html">Owl Monitoring System<br>Manager Installation Manual</a>
+<td width="33%" align=right>
+<a href="install-manager-7-commands.html">Section 7.<br>Owl Manager Commands</a>
+</tr>
+</table>
+<p>
+<!-------------------------------------->
+
+<a href="http:www.dnssec-tools.org">DNSSEC Tools</a>
+
+</center>
+
+<p>
+
+</body>
+</html>
