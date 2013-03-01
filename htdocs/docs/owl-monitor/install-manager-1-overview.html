@@ -1,0 +1,319 @@
+<html>
+
+<head>
+<title>Owl Monitoring System -- Manager Installation Manual -- Operational Overview</title>
+</head>
+
+<body>
+
+<p>
+
+<table>
+<tr>
+<td>
+<img align=left src="owl-logo.jpg"><br>
+<td width=30>&nbsp;
+<td align=center valign=top>
+<br>
+<center><h2>Owl Monitoring System</h2></center>
+<center><h2>Manager Installation Manual</h2></center>
+</tr>
+</table>
+
+<p>
+
+<!*****************************************************************************>
+
+<a name="1."></a>
+<h3>1. Operational Overview of the Owl Monitoring System</h3>
+
+<p>
+
+<!------------------------------------------------------------>
+
+<table align=right width="35%">
+<tr><td>&nbsp;<td><a href="install-manager-1-overview.html#1.1.">1.1.</a><td>&nbsp;<td>Owl Sensor Overview</tr>
+<tr><td>&nbsp;<td><a href="install-manager-1-overview.html#1.2.">1.2.</a><td>&nbsp;<td>Owl Manager Overview</tr>
+<tr><td>&nbsp;<td><a href="install-manager-1-overview.html#1.3.">1.3.</a><td>&nbsp;<td>Data Retention on Owl Hosts</tr>
+<tr><td width="10%">&nbsp;<td width="5%">&nbsp;<td width="5%">&nbsp;<td width="80%">&nbsp;</tr>
+
+</table>
+
+<p>
+
+<!------------------------------------------------------------>
+
+The Owl Monitoring System has a conceptually simple method of operations.
+There is a manager host and a set of sensor hosts.  The sensors periodically
+make a set of DNS queries and time how long it takes to get a response.  The
+response times are saved to data files.  After a certain amount of time, the
+data files are transferred from the sensor to the manager host.   For any
+particular sensor, this data transfer may be configured to be initiated by
+either the manager or by the sensor.  The manager transfers the data into
+a monitoring package, which allows easy display of the data.
+
+
+<p>
+
+Below is a diagram of the flow of Owl sensor data through two Owl monitoring
+installations.
+
+<p>
+
+<center>
+<img src="owl-topography.png">
+</center>
+
+<p>
+
+Take note of the following:
+
+<ul>
+<li>There are three distinct administrative domains, two of which have Owl
+managers.
+<li>Owl Manager 1 receives sensor data from all three domains.
+<li>Owl Manager 2 receives sensor data from itself and one other domain.
+<li>Domain 1's sensors do not provide data to other domains.
+<li>Domain 2 contains an Owl sensor, but not an Owl manager. 
+<li>Owl sensors in the domains 2 and 3 provide data to Owl managers outside
+of their own domain.
+<li>Owl sensors can query multiple name servers.
+</ul>
+
+(Domains in this example are defining administrative control and are <u>not</u>
+DNS domains.)
+
+<p>
+
+The remainder of this section provides a little more information on the
+components that make up the sensor and manager software.
+
+<p>
+
+<!------------------------------------------------------->
+
+<a name="1.1."></a>
+<h3>1.1. Owl Sensor Overview</h3>
+
+<p>
+
+An Owl sensor makes timed DNS queries and records the time required for a
+response.  The response time data are transferred to the Owl manager after
+a certain period of time.  The transfer may occur at the instigation of
+either the manager or the sensor.  The Owl sensor's three primary programs
+that handle these tasks are described below.
+
+<p>
+
+The Owl sensor's actions are controlled by a configuration file.  This file
+defines the queries that must be performed, how often the queries must
+happen, how frequently the response data files are transferred to the
+manager, data and logging information, and other required information.
+
+<p>
+
+The <b>owl-dnstimer</b> program performs periodic DNS lookups, as specified by
+the configuration file.  These lookups are timed so that the sensor can record
+how long it took to make a particular request.  The configuration parameters
+used by <b>owl-dnstimer</b> include the nameserver to query, the target zone
+to query about, the type of DNS record, and the frequency of queries.
+
+<p>
+
+If the Owl system is configured so that the sensor transfers its data to the
+manager, then the transfer is performed by the
+<b>owl-transfer</b> program.  The transfers are performed using <b>rsync</b>
+over an <b>ssh</b> connection.  The sensor host must be able to do a
+password-less <b>ssh</b> into the manager host.  The frequency of transfers
+is defined in the configuration file.  Choosing the transfer frequency is a
+trade-off between lower impact on the sensor, manager, and network (less
+frequent) and lower latency of data display on the manager (more frequent.)
+
+<p>
+
+The <b>owl-sensord</b> program is an optional controller for <b>owl-dnstimer</b>
+and <b>owl-transfer</b>.  If used, it will run these daemons and restart them
+if they stop.  If one of the daemons tries to restart too often in too short
+a time, then <b>owl-sensord</b> will warn an administrator (via email) and
+temporarily stop trying to execute the program.  <b>owl-sensord</b> is not
+required in order to run <b>owl-dnstimer</b> and <b>owl-transfer</b>; the Owl
+sensor can run fine without it.  However, it provides a convenient way to keep
+them running.
+
+<p>
+
+As part of the installation process, you must decide whether you will run the
+Owl sensor using the <b>owl-sensord</b> daemon to control execution or if you
+will run <b>owl-dnstimer</b> and <b>owl-transfer</b> directly.
+
+<p>
+
+The Owl sensor has a number of programs for administrative support.  Most
+of these are not required, but they assist in sensor administration.  In
+particular, the <b>owl-dataarch</b> and <b>owl-heartbeat</b> programs are
+intended to run as <b>cron</b> jobs.  <b>owl-dataarch</b> moves "old" sensor
+data into an archive directory, in order to keep the sensor-manager data
+transfer from bogging down (within <b>rsync</b>) as the data collection grows.
+The <b>owl-heartbeat</b> program periodically touches a webpage hosted on the
+Owl manager, in order to let the manager know that the sensor host is still
+running.  <b>owl-heartbeat</b> is not critical and can be left off, but
+<b>owl-dataarch</b> is essential.  There are a few other administrative
+commands available; see
+<a href="install-sensor-6-commands.html#6">section 6</a>
+for a brief description of all the Owl sensor commands.
+
+<p>
+
+<!------------------------------------------------------->
+
+<a name="1.2."></a>
+<h3>1.2. Owl Manager Overview</h3>
+
+<p>
+
+The Owl manager's purpose is to receive sensor data and make it available for
+display.  The majority of the Owl manager is actually third-party packages,
+and the Owl manager software provides the "glue" that allows the Owl sensor
+data to work with those packages.  In particular, Owl provides data to the
+Nagios monitoring system, which then displays the data.
+
+<p>
+
+The Owl sensors may report to managers that are under separate administrative
+control.  A particular installation of the Owl Monitoring System may use
+multiple manager hosts, but this document assumes that there is only one.
+
+<p>
+
+The manager can have either an active or passive role in the process of moving
+Owl sensor data from the sensor to the manager.  If the manager is active, it
+will use the <b>owl-transfer-mgr</b> program to pull sensor data from the Owl
+sensor host.  If the manager is passive, then the sensor will transfer the
+data when it sees fit.
+
+<p>
+
+The are two groups of "glue" programs that Owl uses to interface with
+Nagios.  The <b>owl-dnswatch</b> and <b>owl-perfdata</b> inject Owl
+sensor DNS response data into Nagios for display and graphing.  The
+<b>owl-sensor-heartbeat.cgi</b> and <b>owl-stethoscope</b> programs
+insert Owl "heartbeat" data into Nagios so it can track availability
+of the Owl sensors.
+
+<p>
+
+The Owl manager also has a number of programs for administrative support.
+Most of these are not required, but they assist in manager administration.
+In particular, the <b>owl-archdata</b> and <b>owl-monthly</b> programs are
+intended to run as <b>cron</b> jobs.  <b>owl-archdata</b> moves "old" sensor
+data into an archive directory, in order to keep data transfer from the sensor
+from bogging down as the data collection grows.  The <b>owl-monthly</b>
+program archives the previous month's sensor data into a compressed tarfile.
+<b>owl-newsensor</b> and <b>owl-initsensor</b> assist in setting up the
+manager for a new sensor.  There are a few others available; see <a
+href="install-manager-7-commands.html#7">section 7</a> for a brief description
+of all the Owl manager commands.
+
+<p>
+
+The following third-party software packages are used in with this distribution
+of the Owl Monitoring System.  The packages are not included with the Owl
+distribution, but must be retrieved as required for your operating system.
+These packages must be installed on the manager:
+
+<p>
+
+<table>
+<tr><td width=40>&nbsp;<td width=150><li>Nagios<td>Monitoring system.
+<tr><td>&nbsp;<td><li>Nagios plugins<td>Monitoring system.
+<tr><td>&nbsp;<td><li><b>nagiosgraph</b><td>Provides graphing for Nagios.
+<tr><td>&nbsp;<td><li><b>rrdtool</b><td>Database tool for use by <b>nagiosgraph</b>.
+<tr><td>&nbsp;<td><li><b>drraw.cgi</b><td>Draws graphs for <b>nagiosgraph</b> of data stored by <b>rrdtool</b>.
+</table>
+
+<p>
+
+Instructions are given in this document for integrating these packages with
+the Owl software.  It would be for the best to read the installation
+instructions below for each package <i>prior</i> to installing them.
+
+<p>
+
+Different management, graphing, and database tools may be used instead of
+those listed above, if so desired.  Integrating the Owl manager software
+with other packages is beyond the scope of this manual.
+
+<p>
+
+David Josephsen's <u>Building a Monitoring Infrastructure with Nagios</u>
+is very helpful for understanding Nagios and how the various pieces work
+together.  If you're going to be running a Nagios monitor, you would be
+doing yourself a favor to read this book.
+
+<!------------------------------------------------------->
+
+<a name="1.3."></a>
+<h3>1.3. Data Retention on Owl Hosts</h3>
+
+<p>
+
+Owl sensors generate a large amount of DNS response data.  For example, a
+sensor running five queries, once a minute each, generated roughly 517KB of
+data per day.  (Due to the way the data are stored, this will be affected by
+the amount length of target and nameserver hostnames used.)  You may or may
+not want to retain any of this data.  The data files can be useful for
+rebuilding the Owl manager's <b>rrdtool</b> databases (or building with
+different parameters.)
+
+<p>
+
+On both the Owl manager and the Owl sensors, sensor data are stored in
+a data directory.  After a few days, the data files are moved to a data
+archive directory.  A full month's data files will be collapsed into a
+compressed format.
+
+<p>
+
+The Owl Monitoring System provides tools that assist with managing Owl sensor
+data.  After the sensor data have been moved from the sensor to the manager,
+the sensor has no further need of the data.  On the manager, after the data
+have been moved into the data archive, the Owl Monitoring System has no
+further need of the old data; it may be retained or deleted.  (The data will
+have been moved into the manager's <b>rrdtool</b> databases by then, so the
+data is not lost.)  Each installation must decide their own data retention
+policy.
+
+<p>
+
+<!*****************************************************************************>
+
+<br><br>
+
+<center>
+
+<hr width="70%">
+
+<p>
+<!-------------------------------------->
+<table width="100%">
+<tr>
+<td width="33%" align=left>
+<a href="install-sensor.html">Section 0.<br>Introduction</a>
+<td width="33%" align=center>
+<a href="install-sensor.html">Owl Monitoring System<br>Manager Installation Manual</a>
+<td width="33%" align=right>
+<a ht href="install-manager-2-installation.html">Section 2.<br>Installation</a>
+</tr>
+</table>
+<p>
+<!-------------------------------------->
+
+
+<a href="http:www.dnssec-tools.org">DNSSEC Tools</a>
+
+</center>
+
+<p>
+
+</body>
+</html>

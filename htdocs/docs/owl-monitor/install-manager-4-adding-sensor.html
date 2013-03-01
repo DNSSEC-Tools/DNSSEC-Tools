@@ -1,0 +1,634 @@
+<html>
+
+<head>
+<title>Owl Monitoring System -- Manager Installation Manual -- Adding Sensors</title>
+</head>
+
+<body>
+
+<p>
+
+<table>
+<tr>
+<td>
+<img align=left src="owl-logo.jpg"><br>
+<td width=30>&nbsp;
+<td align=center valign=top>
+<br>
+<center><h2>Owl Monitoring System</h2></center>
+<center><h2>Manager Installation Manual</h2></center>
+</tr>
+</table>
+
+<p>
+
+<!*****************************************************************************>
+
+<a name="4."></a>
+<h3>4. Adding Owl Sensors to an Existing Owl Installation</h3>
+
+<p>
+
+<!------------------------------------------------------------>
+
+<table align=right width="35%">
+
+<tr valign=top>
+<td valign=top>
+
+<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#4.1.">4.1.</a><td>&nbsp;<td>Create Directories and Files for Sensor's Data</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#4.2.">4.2.</a><td>&nbsp;<td>Firewall Configuration</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#4.3.">4.3.</a><td>&nbsp;<td>SSH Set-up</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#4.4.">4.4.</a><td>&nbsp;<td>Configuration Settings</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#4.4.1.">4.4.1.</a><td>&nbsp;<td>Provide Configuration Information to Sensor Administrator</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#4.4.2.">4.4.2.</a><td>&nbsp;<td>Receive Configuration Information from Sensor Administrator</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#4.5.">4.5.</a><td>&nbsp;<td>Test Transfer from Sensor</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#4.6.">4.6.</a><td>&nbsp;<td>Wait for Sensor Data</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#4.7.">4.7.</a><td>&nbsp;<td>Build Nagios Sensor Objects</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#4.8.">4.8.</a><td>&nbsp;<td>Nagios Modifications</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#4.8.1.">4.8.1.</a><td>&nbsp;<td><b>nagios.cfg</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#4.8.2.">4.8.2.</a><td>&nbsp;<td><b>owl-hostgroups.cfg</b></tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#4.9.">4.9.</a><td>&nbsp;<td>Graphing Modifications</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#4.10.">4.10.</a><td>&nbsp;<td>Restart Nagios</tr>
+<tr valign=top><td width=20>&nbsp;<td width=20>&nbsp;<td>&nbsp;<td>&nbsp;</tr>
+
+</table>
+
+<p>
+
+<!------------------------------------------------------------>
+
+Whenever a new Owl sensor is added to those handled by an Owl manager, there
+are a number of actions that must take place on both the sensor and the
+manager.  These actions should be followed consecutively within each section.
+However, there is some amount of necessary interleaving of actions.  For
+example, a particular sensor action may be required before a particular
+manager action.
+
+<p>
+
+It is acceptable for the Owl sensor and Owl manager to be under completely
+different administrative control.  Each host may even be owned by different
+commercial, educational, governmental, or other such entity.  All that is
+required is that there be some initial coordination between administrators
+when the sensor is first configured, along with (probably) aperiodic support
+from time to time later.
+
+<p>
+
+The discussions on adding Owl sensors assumes that the sensor and manager
+are under different administrative control.  Required actions will not change
+if they are under unified administrative control, but they may be easier to
+accomplish. 
+
+<p>
+
+This section describes the various actions that must be performed on the
+Owl manager in order to configure a new sensor for it.  This assumes the
+installation and configuration procedures detailed in
+<a href="install-manager-2-installation.html">section 2</a>
+have been completed.
+
+<p>
+
+<!----------------------------------->
+
+<a name="4.1."></a>
+<h3>4.1. Create Directories and Files for Sensor's Data</h3>
+
+<p>
+
+A set of directories and files must be created for a new sensor.  These are
+the sensor directory, the sensor's data directory, the history directory, the
+data archive directory.  The heartbeat file, if the sensor will be providing
+heartbeats, must also be created.
+
+<p>
+
+These files are best created by the <b>owl-initsensor</b> command, but they
+may also be created manually.  If they are created manually, you <b>must</b>
+use the names and organization as given in the examples below.  The locations
+of the directories may change (i.e., the <b>/owl/data</b> and
+<b>/owl/archive</b> portions), but that's it.
+
+<p>
+
+For example, when adding the new sensors <b>helsinki</b> and <b>canberra</b>,
+you might create the following sets of directories:
+
+<center>
+<table>
+<tr>
+<td>
+sensor directory<br>
+data directory<br>
+heartbeat file<br>
+history directory<br>
+archive directory<br>
+<td width=50>&nbsp;
+
+<td>
+<b>/owl/data/helsinki/</b><br>
+<b>/owl/data/helsinki/data/</b><br>
+<b>/owl/data/helsinki/heartbeat</b><br>
+<b>/owl/data/helsinki/history/</b><br>
+<b>/owl/archive/helsinki/</b><br>
+<td width=50>&nbsp;
+
+<td>
+<b>/owl/data/canberra/</b><br>
+<b>/owl/data/canberra/data/</b><br>
+<b>/owl/data/canberra/heartbeat</b><br>
+<b>/owl/data/canberra/history/</b><br>
+<b>/owl/archive/canberra/</b><br>
+</td>
+</tr>
+</table>
+</center>
+
+<p>
+
+The archive directory must be writable by the manager's Owl user, but the
+others must be writable by the manager's Owl user and the manager's web
+server.
+
+<p>
+
+<!----------------------------------->
+
+<a name="4.2."></a>
+<h3>4.2. Firewall Configuration</h3>
+
+<p>
+
+The Owl manager and the Owl sensor communicate by way of SSH and HTTP.  If the
+Owl manager is protected by a firewall (either on the manager host itself or
+by an enterprise-level firewall) then the firewall must be configured to allow
+data to be transferred between the manager and the sensor.  The direction of
+this transfer (initiated by sensor or initiated by manager) depends on the Owl
+configuration.  These firewall modifications are far beyond the scope of this
+document.
+
+<p>
+
+<!----------------------------------->
+
+<a name="4.3."></a>
+<h3>4.3. SSH Set-up</h3>
+
+<p>
+
+First, you must generate a new SSH key for the manager's Owl user.
+
+<p>
+
+If the manager will be pulling data from the sensor, then the you must provide
+the sensor administrator with your Owl user's public key.  This key will allow
+<b>owl-transfer-mgr</b> to retrieve Owl sensor data.  You must generate your
+key in compliance with particular key requirements (e.g., length and type)
+specified by the sensor administrator.
+
+<p>
+
+If the sensor will be transferring data to the manager, then the sensor
+administrator must provide you with the public key of their Owl sensor user.
+This key will allow <b>owl-transfer</b> to pass Owl sensor data to the your
+manager.  You must add this key to your <b>.ssh/authorized_keys</b> file.
+The key must be generated with key characteristics (e.g., length and type)
+that are acceptable to you.  See the example below.
+
+<p>
+
+The <b>authorized_keys</b> file restricts access to known sensor hosts and
+controls where each Owl sensor's data are stored.  This file should only have
+one entry per sensor, and each sensor should have a unique data directory.
+
+<p>
+
+Example entries (with abbreviated keys):
+
+<pre>
+    command="/usr/local/bin/rrsync /owl/data/sensor1" ssh-rsa AAAA...Qw== sensor@sensor1.example.com
+    command="/usr/local/bin/rrsync /owl/data/sensor8" ssh-rsa AAAA...gM== sensor@sensor8.example.au
+</pre>
+
+The parts of the line from "ssh-rsa " to the end of the line are the public
+SSH key provided by the sensor's administrator.  You will add everything
+before the "ssh-rsa ", using the proper paths for <b>rrsync</b> and the
+sensor's data directory.
+
+<p>
+
+<!----------------------------------->
+
+<a name="4.4."></a>
+<h3>4.4. Configuration Settings</h3>
+
+<p>
+
+With Owl's capability of having either the sensor or the manager transfer
+sensor data to the manager, there are configuration settings that must be
+made to allow the transfer. These are described in the subsections below.
+Regardless of how your Owl installation handles data transfer, you should
+read both subsections to ensure you are making all the required settings.
+
+<p>
+
+It would be a good idea for you and the sensor administrator to agree on a
+name for the sensor.  This isn't required, but it will probably make things
+easier for you both in the long run to refer to the sensor by the same name.
+
+<p>
+
+The sensor name can be very generic, such as <i>sensor42</i>, <i>sensor-d</i>,
+or <i>owl-us-east</i>.  It can also be very specific, such as
+<i>washdc-1600-penn-ave-nw</i> or <i>cheltenham-bldg4</i>.  The intent is
+to provide distinguishing information to the intended audience of the DNS
+monitoring data.  You should use names that easily distinguish sensors and
+are acceptable to the manager and sensor administrators.
+
+<p>
+
+<!------------------------->
+
+<a name="4.4.1."></a>
+<h3>4.4.1. Provide Configuration Information to Sensor Administrator</h3>
+
+<p>
+
+If the Owl sensor will be transferring data to the manager, then you must
+provide the sensor administrator with an SSH user.  All Owl sensors may
+use this single SSH user, and the data will be distinguished by the SSH
+key used to connect from the sensor.
+
+<p>
+
+The sensor will use the heartbeat URL to provide a heartbeat to the manager.
+If this is to be used, it must be set on the sensor regardless of who
+initiates sensor data transfer.
+
+<p>
+
+The data values will be added to the sensor's configuration file.
+
+<p>
+
+The following example data will allow the sensor to work with the Owl manager
+as expected.  These data are used, in conjunction with the <i>remote</i>
+keyword, in the sensor's configuration file.
+
+<p>
+
+<table>
+
+<tr>
+<td valign=top>Configuration&nbsp;Field
+<td valign=top width=20>&nbsp;
+<td valign=top>Purpose
+<td valign=top width=20>&nbsp;
+<td valign=top>Example
+
+<tr>
+<td valign=top><i>ssh-user</i>
+<td width=20>&nbsp;
+<td valign=top>user on Owl manager with which <b>owl-transfer</b> will connect via <b>ssh</b>
+<td width=20>&nbsp;
+<td valign=top>sensor-ottawa@owl-manager.example.com
+
+<tr>
+<td valign=top><i>heartbeat</i>
+<td width=20>&nbsp;
+<td valign=top>URL to provide "heartbeat" data to manager
+<td width=20>&nbsp;
+<td valign=top>http://owl.example.com/cgi-bin/owl-sensor-heartbeat.cgi
+
+</table>
+
+<p>
+
+<!------------------------->
+
+<a name="4.4.2."></a>
+<h3>4.4.2. Receive Configuration Information from Sensor Administrator</h3>
+
+<p>
+
+If the Owl manager will be pulling data from the sensor, then the sensor
+administrator must provide you with an SSH user.  The <b>owl-transfer-mgr</b>
+program will use this SSH user to copy data from the sensor.
+
+<p>
+
+The following data will allow the manager to connect to the Owl sensor as
+expected.  These data are used, in conjunction with the <i>remote</i>
+keyword, in the sensor's configuration file.
+
+<p>
+
+<table>
+
+<tr>
+<td valign=top>Configuration&nbsp;Field
+<td valign=top width=20>&nbsp;
+<td valign=top width="40%">Purpose
+<td valign=top width=20>&nbsp;
+<td valign=top>Example
+
+<tr>
+<td valign=top><i>ssh-user</i>
+<td width=20>&nbsp;
+<td valign=top>user on Owl sensor with which <b>owl-transfer-mgr</b> will connect via <b>ssh</b>
+<td width=20>&nbsp;
+<td valign=top>sensor-meatcove@owl-sensor.example.com
+
+</table>
+
+<p>
+
+<!----------------------------------->
+
+<a name="4.5."></a>
+<h3>4.5. Test Transfer from Sensor</h3>
+
+<p>
+
+At this point, you are ready to test your Owl manager.  When the sensor
+administrator reaches
+<a href="install-manager-4-adding-sensor.html#4.5.">section 4.5</a> in their
+installation instructions, both sensor and manager are ready to test the data
+transfer.
+
+<p>
+
+Coordinate with the sensor administrator to test data transfer.  The sensor
+administrator must put a data file (of any sort, it doesn't have to be an Owl
+data file) in their data directory.  If the manager will be transferring data,
+you must run <b>owl-transfer-mgr</b> to attempt to retrieve the test file.  If
+the sensor will be transferring data, the sensor administrator must run
+<b>owl-transfer</b> to attempt to retrieve the test file.  After the transfer
+command <i>appears</i> to have transferred the file without error, you must
+check that sensor's data directory on the manager to ensure the file has
+arrived as expected.
+
+<p>
+
+Once the test file successfully appears in the new sensor's data directory,
+the sensor is ready to start collecting data and transferring it to the
+manager.  You must inform the sensor administrator of this, so they can start
+the Owl sensor daemons.
+
+<p>
+
+<!----------------------------------->
+
+<a name="4.6."></a>
+<h3>4.6. Wait for Sensor Data</h3>
+
+<p>
+
+The sensor should now be in the process of collecting DNS response data.
+Whichever host will be transferring data must have the appropriate transfer
+daemon executing.  You must now wait for sensor data to show up in the
+sensor's data directory.  The time this takes will depend on how frequently
+the data is transferred to the manager.  This is set in the configuration
+file.
+
+<p>
+
+You will know when the sensor is transferring data because the new sensor's
+data directory will start holding files whose names reflect the queries you
+are expecting.  You may proceed when you have found files for all the
+queries the sensor will be performing.
+
+<p>
+
+<!----------------------------------->
+
+<a name="4.7."></a>
+<h3>4.7. Build Nagios Sensor Objects</h3>
+
+<p>
+
+Once all the sensor's data directory contains files for all the queries
+expected from the new sensor, Nagios objects must be built for those queries.
+This may be done automatically using the <b>owl-newsensor</b> command.
+A file containing these Nagios objects must be created, and it will be
+added to the Nagios environment in
+<a href="install-manager-4-adding-sensor.html#4.8.1.">section 4.8.1</a>.
+
+<p>
+
+<b>owl-newsensor</b> can be used like this to create the Nagios objects:
+
+<pre>
+    $ owl-newsensor -out sensor8.cfg /owl/data/sensor8/data
+</pre>
+
+<p>
+
+Passing <b>owl-newsensor</b> the <i>-heartbeat</i> option will cause an
+object to be created that will allow Nagios to display heartbeat information
+about the new sensor.
+
+<p>
+
+<!----------------------------------->
+
+<a name="4.8."></a>
+<h3>4.8. Nagios Modifications</h3>
+
+<p>
+
+Several Nagios configuration files must be modified to account for the new
+sensor.  These changes will allow Nagios to start reporting current status
+of the new sensor as well as saving historical data to be used in graphing.
+
+<p>
+
+<!------------------------->
+
+<a name="4.8.1."></a>
+<h3>4.8.1. <b>nagios.cfg</b></h3>
+
+<p>
+
+The following modifications must be made to the <b>nagios.cfg</b> file to
+prepare Nagios for monitoring Owl sensor data.
+
+<ul>
+
+<li>Add the following entries to <b>nagios.cfg</b>:
+
+<pre>
+    cfg_file=/owl/nagios/etc/objects/owl-contacts.cfg
+    cfg_file=/owl/nagios/etc/objects/owl-hosts.cfg
+    cfg_file=/owl/nagios/etc/objects/owl-commands.cfg
+    cfg_file=/owl/nagios/etc/objects/owl-services.cfg
+</pre>
+
+These files contain basic Nagios object definitions used by the Owl sensor
+objects.  They should follow all the other standard <i>cfg_file</i> lines.
+
+<p>
+
+<li>Once Nagios object configuration files have been created for your sensors
+(as described in
+<a href="install-manager-4-adding-sensor.html#4.7.">section 4.7</a>),
+<b>nagios.cfg</b> must be modified to include
+the new files.  Add a new <i>cfg_file</i> entry for each of the sensor object
+files.  These entries will look something like this:
+<pre>
+    cfg_file=/owl/nagios/etc/objects/owl-sensor21.cfg
+    cfg_file=/owl/nagios/etc/objects/sensor-london.cfg
+</pre>
+The sensor lines should follow all four of the <i>cfg_file</i> lines listed
+in the previous point.
+
+<p>
+
+<li>Add the following line after the sensor <i>cfg_file</i> lines described
+in the previous point.
+<pre>
+    cfg_file=/owl/etc/objects/owl-hostgroups.cfg
+</pre>
+Modification of the <b>owl-hostgroups.cfg</b> file is described below.
+
+<p>
+
+<li>Find the <i>service_perfdata_command</i> line and change it to:
+"service_perfdata_command=service-perfdata-for-owl"
+
+<p>
+
+<li>Find the <i>service_perfdata_file_processing_command</i> line and change
+it to:  "service_perfdata_file_processing_command=service-perfdata-for-owl"
+
+<p>
+
+</ul>
+
+<p>
+
+Examples for the <i>cfg_file</i> modifications may be found in
+<b>nagios.cfg-owl.mods</b> in the Owl manager distribution.
+
+<p>
+
+<!------------------------->
+
+<a name="4.8.2."></a>
+<h3>4.8.2. <b>owl-hostgroups.cfg</b></h3>
+
+<p>
+
+This file contains the "<i>DNS Response Time Sensors</i>" Nagios
+<i>hostgroup</i> object that lists the Owl sensor hosts.  All your Owl
+sensors should be listed in the "<i>DNS Response Time Sensors</i>" object.
+
+<p>
+
+<ul>
+
+<li>Add the new sensor name to the <i>members</i> field in the "<i>DNS Response
+Time Sensors</i>" object.  The names must be separated by commas.
+
+</ul>
+
+<p>
+
+You may add your own <i>hostgroup</i> objects to this file.  Use the "<i>DNS
+Response Time Sensors</i>" object as a guide to create custom groups.  This
+can be used, for example, to group all the sensors in a geographical region
+or those that are running a particular operating system.  The <i>hostgroup</i>
+object allows you to group a set of hosts in a manner that makes sense for
+your purposes.
+
+<p>
+
+<!----------------------------------->
+
+<a name="4.9."></a>
+<h3>4.9. Graphing Modifications</h3>
+
+<p>
+
+The new sensor's data must be made available to the <b>drraw.cgi</b> script.
+To do this, the new sensor's data sources must be added to the <i>%datadirs</i>
+hash in the <b>drraw.conf</b> file.
+See <a href="install-manager-2-installation.html#2.1.2.4.">2.1.2.4.</a><td>&nbsp;<td><b>drraw.cgi</b>
+for more details.
+
+<p>
+
+<!----------------------------------->
+
+<a name="4.10."></a>
+<h3>4.10. Restart Nagios</h3>
+
+<p>
+
+Nagios must be restarted in order for it to see your new sensor's objects.
+
+<p>
+
+Prior to the restart, verify that your object modifications won't cause
+a problem for Nagios.  Execute this command (assuming you are in the
+directory containing the Nagios files):
+
+<pre>
+    $ nagios -v nagios.cfg
+</pre>
+
+It will read the configuration files and ensure they all look okay.
+If there are problems, they must be resolved before Nagios is started.
+
+<p>
+
+Once the Nagios configuration file is validated and without problems, Nagios
+may be restarted:
+
+<pre>
+    $ nagios stop
+    $ nagios start
+</pre>
+
+<p>
+
+It will probably take several minutes for Nagios to check all its services.
+Clicking on the "Services" link in the left-hand sidebar will bring up the
+configured services and you can watch the status of your new sensor.
+
+<p>
+
+<!*****************************************************************************>
+
+<br><br>
+
+<center>
+
+<hr width="70%">
+
+<p>
+
+<!-------------------------------------->
+<table width="100%">
+<tr>
+<td width="33%" align=left>
+<a href="install-manager-3-about-queries.html">Section 3.<br>An Interlude on<br>Sensor Queries</a>
+<td width="33%" align=center>
+<a href="install-manager.html">Owl Monitoring System<br>Manager Installation Manual</a>
+<td width="33%" align=right>
+<a href="install-manager-5-define-graphs.html">Section 5.<br>Defining Graphs</a>
+</tr>
+</table>
+<p>
+<!-------------------------------------->
+
+<a href="http:www.dnssec-tools.org">DNSSEC Tools</a>
+
+</center>
+
+<p>
+
+</body>
+</html>
