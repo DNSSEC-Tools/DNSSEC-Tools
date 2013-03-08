@@ -22,13 +22,15 @@
 
 <p>
 
+<!--- {docula start} --->
 <!*****************************************************************************>
 
-<a name="4."></a>
+<a name="ig-sensor-4."></a>
 <h3>4. Adding Sensors</h3>
 
 <p>
 
+<!--- {docula end} --->
 <!------------------------------------------------------------>
 
 <table align=right width="35%">
@@ -36,20 +38,21 @@
 <tr valign=top>
 <td valign=top>
 
-<tr valign=top><td>&nbsp;<td><a href="install-sensor-4-adding-sensor.html#4.1.">4.1.</a><td>&nbsp;<td>Firewall Configuration</tr>
-<tr valign=top><td>&nbsp;<td><a href="install-sensor-4-adding-sensor.html#4.2.">4.2.</a><td>&nbsp;<td>SSH Set-up</tr>
-<tr valign=top><td>&nbsp;<td><a href="install-sensor-4-adding-sensor.html#4.3.">4.3.</a><td>&nbsp;<td>Get Configuration Data from Manager</tr>
-<tr valign=top><td>&nbsp;<td><a href="install-sensor-4-adding-sensor.html#4.4.">4.4.</a><td>&nbsp;<td>Set Up the Owl Configuration File</tr>
-<tr valign=top><td>&nbsp;<td><a href="install-sensor-4-adding-sensor.html#4.5.">4.5.</a><td>&nbsp;<td>Test Transfer to Manager</tr>
-<tr valign=top><td>&nbsp;<td><a href="install-sensor-4-adding-sensor.html#4.6.">4.6.</a><td>&nbsp;<td>Add Start-up Entries</tr>
-<tr valign=top><td>&nbsp;<td><a href="install-sensor-4-adding-sensor.html#4.7.">4.7.</a><td>&nbsp;<td>Add <b>cron</b> Entries</tr>
-<tr valign=top><td>&nbsp;<td><a href="install-sensor-4-adding-sensor.html#4.8.">4.8.</a><td>&nbsp;<td>Start Owl Daemons</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-sensor-4-adding-sensor.html#ig-sensor-4.1.">4.1.</a><td>&nbsp;<td>Firewall Configuration</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-sensor-4-adding-sensor.html#ig-sensor-4.2.">4.2.</a><td>&nbsp;<td>SSH Set-up</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-sensor-4-adding-sensor.html#ig-sensor-4.3.">4.3.</a><td>&nbsp;<td>Get Configuration Data from Manager</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-sensor-4-adding-sensor.html#ig-sensor-4.4.">4.4.</a><td>&nbsp;<td>Set Up the Owl Configuration File</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-sensor-4-adding-sensor.html#ig-sensor-4.5.">4.5.</a><td>&nbsp;<td>Test Transfer to Manager</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-sensor-4-adding-sensor.html#ig-sensor-4.6.">4.6.</a><td>&nbsp;<td>Add Start-up Entries</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-sensor-4-adding-sensor.html#ig-sensor-4.7.">4.7.</a><td>&nbsp;<td>Add <b>cron</b> Entries</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-sensor-4-adding-sensor.html#ig-sensor-4.8.">4.8.</a><td>&nbsp;<td>Start Owl Daemons</tr>
 <tr valign=top><td width=20>&nbsp;<td width=20>&nbsp;<td>&nbsp;<td>&nbsp;</tr>
 
 </table>
 
 <p>
 
+<!--- {docula start} --->
 <!------------------------------------------------------------>
 
 Whenever a new Owl sensor is added to those handled by an Owl manager, there
@@ -80,14 +83,14 @@ accomplish.
 This section describes the configuration and testing actions that must be
 undertaken in order to have a working Owl sensor.  It assumes the installation
 procedures detailed in
-<a href="install-sensor-2-installation.html#2.1.">section 2.1</a>
+<a href="install-sensor-2-installation.html#ig-sensor-2.1.">section 2.1</a>
 have been completed.
 
 <p>
 
 <!----------------------------------->
 
-<a name="4.1."></a>
+<a name="ig-sensor-4.1."></a>
 <h3>4.1. Firewall Configuration</h3>
 
 <p>
@@ -104,7 +107,7 @@ document.
 
 <!----------------------------------->
 
-<a name="4.2."></a>
+<a name="ig-sensor-4.2."></a>
 <h3>4.2. SSH Set-up</h3>
 
 <p>
@@ -132,7 +135,7 @@ manager's administrator.
 
 <!----------------------------------->
 
-<a name="4.3."></a>
+<a name="ig-sensor-4.3."></a>
 <h3>4.3. Get Configuration Data from Manager</h3>
 
 <p>
@@ -199,7 +202,7 @@ are acceptable to the manager and sensor administrators.
 
 <!----------------------------------->
 
-<a name="4.4."></a>
+<a name="ig-sensor-4.4."></a>
 <h3>4.4. Set Up the Owl Configuration File</h3>
 
 <p>
@@ -257,7 +260,7 @@ specified if the sensor will provide "heartbeat" information to the manager.
 <p>
 
 When translated to the configuration file format, the example lines from
-<a href="install-sensor-4-adding-sensor.html#4.4.">section 4.3</a>
+<a href="install-sensor-4-adding-sensor.html#ig-sensor-4.3.">section 4.3</a>
 will look like the following:
 
 <pre>
@@ -269,7 +272,7 @@ will look like the following:
 
 <!----------------------------------->
 
-<a name="4.5."></a>
+<a name="ig-sensor-4.5."></a>
 <h3>4.5. Test Transfer to Manager</h3>
 
 <p>
@@ -309,12 +312,12 @@ to perform the transfer, so problem diagnosis should start with them.
 
 <!----------------------------------->
 
-<a name="4.6."></a>
+<a name="ig-sensor-4.6."></a>
 <h3>4.6. Add Start-up Entries</h3>
 
 <p>
 
-As discussed in <a href="install-sensor-1-overview.html#1.1.">section 1.1</a>,
+As discussed in <a href="install-sensor-1-overview.html#ig-sensor-1.1.">section 1.1</a>,
 you must decide whether you will run the Owl sensor using the
 <b>owl-sensord</b> daemon or if you will run <b>owl-dnstimer</b> and
 <b>owl-transfer</b> directly.  Both methods are acceptable; the first
@@ -351,7 +354,7 @@ start-up and the proper place to set up execution.
 
 <!----------------------------------->
 
-<a name="4.7."></a>
+<a name="ig-sensor-4.7."></a>
 <h3>4.7. Add <b>cron</b> Entries</h3>
 
 <p>
@@ -418,7 +421,7 @@ manager.  Once per minute or hour is probably sufficient for most purposes.
 
 <!----------------------------------->
 
-<a name="4.8."></a>
+<a name="ig-sensor-4.8."></a>
 <h3>4.8. Start Owl Daemons</h3>
 
 <p>
@@ -432,6 +435,7 @@ and <b>owl-transfer</b>) or by rebooting your system.
 
 <p>
 
+<!--- {docula end} --->
 <!*****************************************************************************>
 
 <br><br>
