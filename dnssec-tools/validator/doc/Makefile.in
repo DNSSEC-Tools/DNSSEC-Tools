@@ -5,6 +5,7 @@ GADDR_MAN=val_getaddrinfo.3
 QUERY_MAN=val_res_query.3
 GETRRSET_MAN=val_get_rrset.3
 POLICY_MAN=dnsval.conf.3
+DANE_MAN=val_getdaneinfo.3
 
 LIBVAL_SYMLINKS=\
     val_resolve_and_check.3	\
@@ -37,15 +38,20 @@ GADDR_SYMLINKS=\
 
 QUERY_SYMLINKS=\
     val_free_response.3 \
-    val_res_query.3 \
     val_res_search.3 
 
 GETRRSET_SYMLINKS=\
-    val_get_rrset.3 \
     val_free_answer_chain.3 
 
 POLICY_SYMLINKS=\
 	val_add_valpolicy.3
+
+DANE_SYMLINKS=\
+	val_dane_submit.3\
+	val_dane_match.3\
+	val_dane_check.3\
+	val_free_dane.3\
+	p_dane_error.3
 
 MAN3PAGES=\
 	  $(GADDR_MAN) \
@@ -55,6 +61,7 @@ MAN3PAGES=\
 	  $(POLICY_MAN) \
 	  $(LIBVAL_MAN) \
 	  $(LIBVAL_SHIM_MAN) \
+	  $(DANE_MAN) \
 	  libsres.3
 
 MAN1PAGES=\
@@ -111,6 +118,10 @@ install:
 	for i in $(POLICY_SYMLINKS) ; do		\
 	  $(RM) -f $(DESTDIR)/$(man3dir)/$$i ;	\
 	  echo ".so $(POLICY_MAN)" > $(DESTDIR)/$(man3dir)/$$i  ;	\
+	done
+	for i in $(DANE_SYMLINKS) ; do		\
+	  $(RM) -f $(DESTDIR)/$(man3dir)/$$i ;	\
+	  echo ".so $(DANE_MAN)" > $(DESTDIR)/$(man3dir)/$$i  ;	\
 	done
 
 
