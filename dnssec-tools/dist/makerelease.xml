@@ -181,6 +181,10 @@
       </commands>
     </step>
 
+    <step type "system" title="copy in the COPYING file">
+	<command>cp -p COPYING dnsval-{VERSION}</command>
+    </step>
+
     <step type="system" title="create the tar file">
       <commands>
 	<command>tar czf dnssec-tools-{VERSION}.tar.gz dnssec-tools-{VERSION}</command>
