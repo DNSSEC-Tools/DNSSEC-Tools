@@ -124,7 +124,7 @@
 .\" ========================================================================
 .\"
 .IX Title "libval 3"
-.TH libval 3 "2012-07-16" "perl v5.14.2" "Programmer's Manual"
+.TH libval 3 "2013-02-27" "perl v5.14.3" "Programmer's Manual"
 .\" For nroff, turn off justification.  Always turn off hyphenation; it makes
 .\" way too many mistakes in technical documents.
 .if n .ad l
@@ -217,16 +217,23 @@ enables asynchronous query resolution for that lookup.
 causes the validator to disable \s-1DLV\s0 processing for this query.  
 This is only available if the \fI\fIlibval\fI\|(3)\fR library has
 been compiled with \s-1DLV\s0 support.
-.IP "\fB\s-1VAL_QUERY_NO_EDNS0_FALLBACK\s0\fR In querying various name servers, libsres will also attempt multiple \s-1EDNS0\s0 sizes, ending with a query that has \s-1EDNS0\s0 disabled (i.e. no \s-1CD\s0 bit set). This option causes libval to disable \s-1EDNS0\s0 fallback for the query." 4
-.IX Item "VAL_QUERY_NO_EDNS0_FALLBACK In querying various name servers, libsres will also attempt multiple EDNS0 sizes, ending with a query that has EDNS0 disabled (i.e. no CD bit set). This option causes libval to disable EDNS0 fallback for the query."
-.PD 0
-.IP "\fB\s-1VAL_QUERY_RECURSE\s0\fR forces libval to recursively answer the query by iteratively querying various name servers in the delegation hierarchy, instead of requesting this information from any caching name server that may be configured in \fBdnsval.conf\fR" 4
-.IX Item "VAL_QUERY_RECURSE forces libval to recursively answer the query by iteratively querying various name servers in the delegation hierarchy, instead of requesting this information from any caching name server that may be configured in dnsval.conf"
-.IP "\fB\s-1VAL_QUERY_SKIP_RESOLVER\s0\fR forces libval to only look at its cache while trying to resolve a name." 4
-.IX Item "VAL_QUERY_SKIP_RESOLVER forces libval to only look at its cache while trying to resolve a name."
-.IP "\fB\s-1VAL_QUERY_SKIP_CACHE\s0\fR forces libval to ignore cached data while trying to resolve a name." 4
-.IX Item "VAL_QUERY_SKIP_CACHE forces libval to ignore cached data while trying to resolve a name."
-.PD
+.IP "\fB\s-1VAL_QUERY_NO_EDNS0_FALLBACK\s0\fR" 4
+.IX Item "VAL_QUERY_NO_EDNS0_FALLBACK"
+In querying various name servers, libsres will also attempt multiple \s-1EDNS0\s0
+sizes, ending with a query that has \s-1EDNS0\s0 disabled (i.e. no \s-1CD\s0 bit set).
+This option causes libval to disable \s-1EDNS0\s0 fallback for the query.
+.IP "\fB\s-1VAL_QUERY_RECURSE\s0\fR" 4
+.IX Item "VAL_QUERY_RECURSE"
+forces libval to recursively answer the query by iteratively querying
+various name servers in the delegation hierarchy, instead of
+requesting this information from
+any caching name server that may be configured in \fBdnsval.conf\fR
+.IP "\fB\s-1VAL_QUERY_SKIP_RESOLVER\s0\fR" 4
+.IX Item "VAL_QUERY_SKIP_RESOLVER"
+forces libval to only look at its cache while trying to resolve a name.
+.IP "\fB\s-1VAL_QUERY_SKIP_CACHE\s0\fR" 4
+.IX Item "VAL_QUERY_SKIP_CACHE"
+forces libval to ignore cached data while trying to resolve a name.
 .PP
 The first parameter to \fI\fIval_resolve_and_check()\fI\fR is the validator context.
 Applications can create a new validator context using the
@@ -334,82 +341,84 @@ authentication chain.
 .IP "\fIval_rc_status\fR" 4
 .IX Item "val_rc_status"
 Validation status for a given RRset.  This can be one of the following:
-.Sp
-.Vb 2
-\&    VAL_SUCCESS
-\&        Answer received and validated successfully.
-\&
-\&    VAL_NONEXISTENT_NAME
-\&        No name was present and a valid proof of non\-
-\&            existence confirming the missing name (NSEC or
-\&            NSEC3 span) was returned. The components of
-\&            the proof were also individually validated.
-\&
-\&    VAL_NONEXISTENT_TYPE
-\&        No type exists for the name and a valid proof
-\&        of non\-existence confirming the missing name
-\&        was returned.  The components of the proof
-\&        were also individually validated.
-\&
-\&    VAL_NONEXISTENT_NAME_NOCHAIN
-\&        No name was present and a valid proof of non\-
-\&            existence confirming the missing name was
-\&            returned. The components of the proof were also
-\&            identified to be trustworthy, but they were
-\&            not individually validated.
-\&
-\&    VAL_NONEXISTENT_TYPE_NOCHAIN
-\&        No type exists for the name and a valid proof
-\&        of non\-existence confirming the missing name
-\&        (NSEC or NSEC3 span) was returned.  The
-\&        components of the proof were also identified
-\&        to be trustworthy, but they were not
-\&        individually validated.
-\&
-\&    VAL_PINSECURE
-\&        The record or some ancestor of the record in
-\&        the authentication chain towards the trust
-\&        anchor was known to be provably insecure.
-\&
-\&    VAL_PINSECURE_UNTRUSTED
-\&        The record or some ancestor of the record in the
-\&        authentication chain towards the trust anchor was
-\&        known to be provably insecure. But the provably
-\&        insecure condition was configured as untrustworthy.
-\&
-\&    VAL_BARE_RRSIG
-\&        No DNSSEC validation possible, query was
-\&        for an RRSIG.
-\&
-\&    VAL_IGNORE_VALIDATION
-\&        Local policy was configured to ignore validation
-\&        for the zone from which this data was received.
-\&
-\&    VAL_UNTRUSTED_ZONE
-\&        Local policy was configured to reject
-\&        any data received from the given zone.
-\&
-\&    VAL_OOB_ANSWER
-\&        Answer was obtained using some Out of Band 
-\&        method, such as a local configuration file.
-\&
-\&    VAL_BOGUS
-\&        Response could not be validated due to signature
-\&        verification failures or the inability to verify
-\&        proofs for an indeterminate number of components
-\&        in the authentication chain.
-\&
-\&    VAL_DNS_ERROR       
-\&        Some error was encountered during DNS processing. 
-\&
-\&    VAL_NOTRUST
-\&        All available components in the authentication
-\&        chain verified properly, but there was no trust
-\&        anchor available.
-.Ve
+.RS 4
+.IP "\s-1VAL_SUCCESS\s0" 4
+.IX Item "VAL_SUCCESS"
+Answer received and validated successfully.
+.IP "\s-1VAL_NONEXISTENT_NAME\s0" 4
+.IX Item "VAL_NONEXISTENT_NAME"
+No name was present and a valid proof of non\-
+existence confirming the missing name (\s-1NSEC\s0 or
+\&\s-1NSEC3\s0 span) was returned. The components of
+the proof were also individually validated.
+.IP "\s-1VAL_NONEXISTENT_TYPE\s0" 4
+.IX Item "VAL_NONEXISTENT_TYPE"
+No type exists for the name and a valid proof
+of non-existence confirming the missing name
+was returned.  The components of the proof
+were also individually validated.
+.IP "\s-1VAL_NONEXISTENT_NAME_NOCHAIN\s0" 4
+.IX Item "VAL_NONEXISTENT_NAME_NOCHAIN"
+No name was present and a valid proof of non\-
+existence confirming the missing name was
+returned. The components of the proof were also
+identified to be trustworthy, but they were
+not individually validated.
+.IP "\s-1VAL_NONEXISTENT_TYPE_NOCHAIN\s0" 4
+.IX Item "VAL_NONEXISTENT_TYPE_NOCHAIN"
+No type exists for the name and a valid proof
+of non-existence confirming the missing name
+(\s-1NSEC\s0 or \s-1NSEC3\s0 span) was returned.  The
+components of the proof were also identified
+to be trustworthy, but they were not
+individually validated.
+.IP "\s-1VAL_PINSECURE\s0" 4
+.IX Item "VAL_PINSECURE"
+The record or some ancestor of the record in
+the authentication chain towards the trust
+anchor was known to be provably insecure.
+.IP "\s-1VAL_PINSECURE_UNTRUSTED\s0" 4
+.IX Item "VAL_PINSECURE_UNTRUSTED"
+The record or some ancestor of the record in the
+authentication chain towards the trust anchor was
+known to be provably insecure. But the provably
+insecure condition was configured as untrustworthy.
+.IP "\s-1VAL_BARE_RRSIG\s0" 4
+.IX Item "VAL_BARE_RRSIG"
+No \s-1DNSSEC\s0 validation possible, query was
+for an \s-1RRSIG\s0.
+.IP "\s-1VAL_IGNORE_VALIDATION\s0" 4
+.IX Item "VAL_IGNORE_VALIDATION"
+Local policy was configured to ignore validation
+for the zone from which this data was received.
+.IP "\s-1VAL_UNTRUSTED_ZONE\s0" 4
+.IX Item "VAL_UNTRUSTED_ZONE"
+Local policy was configured to reject
+any data received from the given zone.
+.IP "\s-1VAL_OOB_ANSWER\s0" 4
+.IX Item "VAL_OOB_ANSWER"
+Answer was obtained using some Out of Band 
+method, such as a local configuration file.
+.IP "\s-1VAL_BOGUS\s0" 4
+.IX Item "VAL_BOGUS"
+Response could not be validated due to signature
+verification failures or the inability to verify
+proofs for an indeterminate number of components
+in the authentication chain.
+.IP "\s-1VAL_DNS_ERROR\s0" 4
+.IX Item "VAL_DNS_ERROR"
+Some error was encountered during \s-1DNS\s0 processing.
+.IP "\s-1VAL_NOTRUST\s0" 4
+.IX Item "VAL_NOTRUST"
+All available components in the authentication
+chain verified properly, but there was no trust
+anchor available.
+.RE
+.RS 4
 .Sp
 Status values in \fIval_status_t\fR returned by the validator can be displayed
 in \s-1ASCII\s0 format using \fI\fIp_val_status()\fI\fR.
+.RE
 .RE
 .RS 4
 .RE
@@ -429,67 +438,69 @@ in \s-1ASCII\s0 format using \fI\fIp_val_status()\fI\fR.
 Validation state of the authentication chain element.  This field will
 contain the status code for the given component in the authentication chain.
 This field may contain one of the following values:
-.Sp
-.Vb 2
-\&    VAL_AC_UNSET
-\&        The status could not be determined. 
-\&
-\&    VAL_AC_IGNORE_VALIDATION
-\&        Validation for the given resource record was ignored,
-\&        either because of some local policy directive or
-\&        because of some protocol\-specific behavior.
-\&
-\&    VAL_AC_UNTRUSTED_ZONE
-\&        Local policy defined a given zone as untrusted,
-\&        with no further validation being deemed necessary.
-\&
-\&    VAL_AC_PINSECURE
-\&        The authentication chain from a trust anchor to a
-\&        given zone could not be constructed due to the
-\&        provable absence of a DS record for this zone in
-\&        the parent.
-\&
-\&    VAL_AC_BARE_RRSIG
-\&        The response was for a query of type RRSIG.  RRSIGs
-\&        contain the cryptographic signatures for other DNS
-\&        data and cannot themselves be validated.
-\&
-\&    VAL_AC_NO_LINK
-\&        There was no trust anchor configured for a given
-\&        authentication chain or the chain didn\*(Aqt link up.
-\&
-\&    VAL_AC_TRUST
-\&        At least one of the signatures covering the given
-\&        DNSKEY RRset was directly verified using a key that was
-\&        configured as a DNSSEC trust anchor.
-\&
-\&    VAL_AC_RRSIG_MISSING
-\&        RRSIG data could not be retrieved for a
-\&        resource record.
-\&
-\&    VAL_AC_DNSKEY_MISSING
-\&        The DNSKEY for an RRSIG covering a resource
-\&        record could not be retrieved.
-\&
-\&    VAL_AC_DS_MISSING
-\&        The DS record covering a DNSKEY record was
-\&        not available.
-\&
-\&    VAL_AC_DATA_MISSING
-\&        No data were returned for a query and the
-\&        DNS did not indicate an error.
-\&
-\&    VAL_AC_DNS_ERROR
-\&        Some error was encountered during DNS processing. 
-\&
-\&    VAL_AC_NOT_VERIFIED
-\&        All RRSIGs covering the RRset could not
-\&        be verified.
-\&
-\&    VAL_AC_VERIFIED
-\&        At least one RRSIG covering a resource
-\&        record had a status of VAL_AC_RRSIG_VERIFIED.
-.Ve
+.RS 4
+.IP "\s-1VAL_AC_UNSET\s0" 4
+.IX Item "VAL_AC_UNSET"
+The status could not be determined.
+.IP "\s-1VAL_AC_IGNORE_VALIDATION\s0" 4
+.IX Item "VAL_AC_IGNORE_VALIDATION"
+Validation for the given resource record was ignored,
+either because of some local policy directive or
+because of some protocol-specific behavior.
+.IP "\s-1VAL_AC_UNTRUSTED_ZONE\s0" 4
+.IX Item "VAL_AC_UNTRUSTED_ZONE"
+Local policy defined a given zone as untrusted,
+with no further validation being deemed necessary.
+.IP "\s-1VAL_AC_PINSECURE\s0" 4
+.IX Item "VAL_AC_PINSECURE"
+The authentication chain from a trust anchor to a
+given zone could not be constructed due to the
+provable absence of a \s-1DS\s0 record for this zone in
+the parent.
+.IP "\s-1VAL_AC_BARE_RRSIG\s0" 4
+.IX Item "VAL_AC_BARE_RRSIG"
+The response was for a query of type \s-1RRSIG\s0.  RRSIGs
+contain the cryptographic signatures for other \s-1DNS\s0
+data and cannot themselves be validated.
+.IP "\s-1VAL_AC_NO_LINK\s0" 4
+.IX Item "VAL_AC_NO_LINK"
+There was no trust anchor configured for a given
+authentication chain or the chain didn't link up.
+.IP "\s-1VAL_AC_TRUST\s0" 4
+.IX Item "VAL_AC_TRUST"
+At least one of the signatures covering the given
+\&\s-1DNSKEY\s0 RRset was directly verified using a key that was
+configured as a \s-1DNSSEC\s0 trust anchor.
+.IP "\s-1VAL_AC_RRSIG_MISSING\s0" 4
+.IX Item "VAL_AC_RRSIG_MISSING"
+\&\s-1RRSIG\s0 data could not be retrieved for a
+resource record.
+.IP "\s-1VAL_AC_DNSKEY_MISSING\s0" 4
+.IX Item "VAL_AC_DNSKEY_MISSING"
+The \s-1DNSKEY\s0 for an \s-1RRSIG\s0 covering a resource
+record could not be retrieved.
+.IP "\s-1VAL_AC_DS_MISSING\s0" 4
+.IX Item "VAL_AC_DS_MISSING"
+The \s-1DS\s0 record covering a \s-1DNSKEY\s0 record was
+not available.
+.IP "\s-1VAL_AC_DATA_MISSING\s0" 4
+.IX Item "VAL_AC_DATA_MISSING"
+No data were returned for a query and the
+\&\s-1DNS\s0 did not indicate an error.
+.IP "\s-1VAL_AC_DNS_ERROR\s0" 4
+.IX Item "VAL_AC_DNS_ERROR"
+Some error was encountered during \s-1DNS\s0 processing.
+.IP "\s-1VAL_AC_NOT_VERIFIED\s0" 4
+.IX Item "VAL_AC_NOT_VERIFIED"
+All RRSIGs covering the RRset could not
+be verified.
+.IP "\s-1VAL_AC_VERIFIED\s0" 4
+.IX Item "VAL_AC_VERIFIED"
+At least one \s-1RRSIG\s0 covering a resource
+record had a status of \s-1VAL_AC_RRSIG_VERIFIED\s0.
+.RE
+.RS 4
+.RE
 .IP "\fIval_ac_rrset\fR" 4
 .IX Item "val_ac_rrset"
 Pointer to an RRset of type \fIstruct val_rrset_rec\fR obtained from the \s-1DNS\s0 response.
@@ -741,7 +752,7 @@ The validator library reads configuration information from two files,
 See \fB\f(BIdnsval.conf\fB\|(5)\fR for a description of syntax for these files.
 .SH "COPYRIGHT"
 .IX Header "COPYRIGHT"
-Copyright 2004\-2012 \s-1SPARTA\s0, Inc.  All rights reserved.
+Copyright 2004\-2013 \s-1SPARTA\s0, Inc.  All rights reserved.
 See the \s-1COPYING\s0 file included with the dnssec-tools package for details.
 .SH "AUTHORS"
 .IX Header "AUTHORS"
