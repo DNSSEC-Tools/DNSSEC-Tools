@@ -130,7 +130,19 @@
 .if n .ad l
 .nh
 .SH "NAME"
-val_getdaneinfo() \- Perform synchronous validation of TLSA records
+val_async_submit() \- submits a request for asynchronous processing of
+DNS queries.
+.PP
+val_async_select_info() \- set the appropriate file descriptors for
+outstanding asynchronous requests.
+.PP
+val_async_check_wait() \- handle timeouts or processes DNS
+responses to outstanding queries.
+.PP
+val_async_cancel() \- cancel an asynchronous query request.
+.PP
+val_async_cancel_all() \- cancel all asynchronous queries for a given
+context.
 .SH "SYNOPSIS"
 .IX Header "SYNOPSIS"
 #include <validator/validator.h>
@@ -166,6 +178,11 @@ The asynchronous \s-1DNSSEC\s0 validator \s-1API\s0 allows an
 application to submit multiple requests, which can be processed
 in parallel. In most cases, this will result in validation
 completing much sooner than a series of synchronous requests.
+.PP
+The \fIctx\fR parameter in the various functions below specifies the
+validation context, which can be set to \s-1NULL\s0 for default values (see
+\&\fI\fIlibval\fI\|(3)\fR and \fIdnsval.conf\fR for more details on validation contexts
+and alidation policy).
 .PP
 The \fI\fIval_async_submit()\fI\fR function submits a request for
 asynchronous processing of \s-1DNS\s0 queries for the data associated
