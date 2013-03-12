@@ -63,6 +63,7 @@ LIBS=\
 	validator/doc/dt-validate\
 	validator/doc/libsres\
 	validator/doc/libval\
+	validator/doc/libval_async\
 	validator/doc/libval_shim\
 	validator/doc/val_get_rrset\
 	validator/doc/val_getaddrinfo\
