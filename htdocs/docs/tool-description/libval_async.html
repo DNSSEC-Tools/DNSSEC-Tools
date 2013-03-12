@@ -2,7 +2,8 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>I&lt;val_getdaneinfo&gt; - Perform synchronous validation of TLSA records</title>
+<title>I&lt;val_async_submit&gt; - submits a request for asynchronous processing of
+DNS queries.</title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:assp@beta.macosforge.org" />
 </head>
@@ -33,7 +34,15 @@
 </p>
 <hr />
 <h1><a name="name">NAME</a></h1>
-<p><em>val_getdaneinfo()</em> - Perform synchronous validation of TLSA records</p>
+<p><em>val_async_submit()</em> - submits a request for asynchronous processing of
+DNS queries.</p>
+<p><em>val_async_select_info()</em> - set the appropriate file descriptors for
+outstanding asynchronous requests.</p>
+<p><em>val_async_check_wait()</em> - handle timeouts or processes DNS
+responses to outstanding queries.</p>
+<p><em>val_async_cancel()</em> - cancel an asynchronous query request.</p>
+<p><em>val_async_cancel_all()</em> - cancel all asynchronous queries for a given
+context.</p>
 <p>
 </p>
 <hr />
@@ -67,6 +76,10 @@
 application to submit multiple requests, which can be processed
 in parallel. In most cases, this will result in validation
 completing much sooner than a series of synchronous requests.</p>
+<p>The <em>ctx</em> parameter in the various functions below specifies the
+validation context, which can be set to NULL for default values (see
+<em>libval(3)</em> and <em>dnsval.conf</em> for more details on validation contexts
+and alidation policy).</p>
 <p>The <em>val_async_submit()</em> function submits a request for
 asynchronous processing of DNS queries for the data associated
 with the given domain <em>name</em>, <em>class</em> and <em>type</em>. 
