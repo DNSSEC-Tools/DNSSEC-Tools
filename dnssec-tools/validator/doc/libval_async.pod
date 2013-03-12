@@ -3,8 +3,19 @@
 =head1 NAME
 
 
-I<val_getdaneinfo()> - Perform synchronous validation of TLSA records
+I<val_async_submit()> - submits a request for asynchronous processing of
+DNS queries.
 
+I<val_async_select_info()> - set the appropriate file descriptors for
+outstanding asynchronous requests.
+
+I<val_async_check_wait()> - handle timeouts or processes DNS
+responses to outstanding queries.
+
+I<val_async_cancel()> - cancel an asynchronous query request.
+
+I<val_async_cancel_all()> - cancel all asynchronous queries for a given
+context.
 
 =head1 SYNOPSIS
 
@@ -44,6 +55,11 @@ The asynchronous DNSSEC validator API allows an
 application to submit multiple requests, which can be processed
 in parallel. In most cases, this will result in validation
 completing much sooner than a series of synchronous requests.
+
+The I<ctx> parameter in the various functions below specifies the
+validation context, which can be set to NULL for default values (see
+I<libval(3)> and I<dnsval.conf> for more details on validation contexts
+and alidation policy).
 
 The I<val_async_submit()> function submits a request for
 asynchronous processing of DNS queries for the data associated
