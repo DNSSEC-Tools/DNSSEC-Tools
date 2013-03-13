@@ -249,6 +249,20 @@ sub doopts
 		exit(5);
 	}
 
+	#
+	# Remove leading and trailing whitespace, then ensure the name is
+	# still there.
+	#
+	if(defined($zonegroup))
+	{
+		$zonegroup =~ s/^\s*//;
+		$zonegroup =~ s/\s*$//;
+		if(length($zonegroup) == 0)
+		{
+			print STDERR "you must specify a zonegroup that isn't all blanks\n";
+			exit(6);
+		}
+	}
 
 	#
 	# Delete the non-command options and ensure that we were given
@@ -333,7 +347,7 @@ sub editrrf
 	if(!$doall && (rollrec_exists($name) == 0))
 	{
 		print STDERR "invalid rollrec name \"$name\"\n";
-		exit(6);
+		exit(7);
 	}
 
 	#
