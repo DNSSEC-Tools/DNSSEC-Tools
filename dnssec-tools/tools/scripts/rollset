@@ -54,6 +54,7 @@ my $deladm	= 0;
 my $deldir	= 0;
 my $dellog	= 0;
 my $delzsa	= 0;
+my $delzg	= 0;
 my $rstzn	= 0;
 
 my %options = ();			# Filled option array.
@@ -76,6 +77,7 @@ my @opts =
 	'del-admin',			# Delete the administrator line.
 	'del-directory',		# Delete the directory line.
 	'del-loglevel',			# Delete the logging level line.
+	'del-zg',			# Delete the zonegroup line.
 	'del-zsargs',			# Delete the zonesigner arguments.
 	'reset-zonename',		# Reset the zonename fields.
 
@@ -152,6 +154,7 @@ sub doopts
 	$deladm	   = $options{'del-admin'};
 	$deldir	   = $options{'del-directory'};
 	$dellog	   = $options{'del-loglevel'};
+	$delzg	   = $options{'del-zg'};
 	$delzsa	   = $options{'del-zsargs'};
 	$rstzn	   = $options{'reset-zonename'};
 
@@ -181,6 +184,16 @@ sub doopts
 	if(defined($zsargs) && $delzsa)
 	{
 		print STDERR "-zsargs and -del-zsargs are mutually exclusive\n";
+		exit(1);
+	}
+	if(defined($loglvl) && $dellog)
+	{
+		print STDERR "-loglevel and -del-loglevel are mutually exclusive\n";
+		exit(1);
+	}
+	if(defined($zonegroup) && $delzg)
+	{
+		print STDERR "-zg and -del-zg are mutually exclusive\n";
 		exit(1);
 	}
 	if(defined($zonename) && $rstzn)
@@ -389,6 +402,7 @@ sub editrrf
 		deleter($deladm,$rname,'administrator');
 		deleter($deldir,$rname,'directory');
 		deleter($dellog,$rname,'loglevel');
+		deleter($delzg,$rname,'zonegroup');
 		deleter($delzsa,$rname,'zsargs');
 
 		#
@@ -471,6 +485,7 @@ sub changer
 	# Change the rollrec field's value.
 	#
 	rollrec_setval($rname,$field,$val);
+
 }
 
 #----------------------------------------------------------------------
@@ -551,6 +566,7 @@ sub usage
 	print STDERR "		-del-admin\n";
 	print STDERR "		-del-directory\n";
 	print STDERR "		-del-loglevel\n";
+	print STDERR "		-del-zg\n";
 	print STDERR "		-del-zsargs\n";
 	print STDERR "		-reset-zonename\n";
 
@@ -614,6 +630,11 @@ The B<-directory> and B<-del-directory> options are mutually exclusive.
 
 The I<loglevel> line is deleted.
 The B<-loglevel> and B<-del-loglevel> options are mutually exclusive.
+
+=item B<-del-zg>
+
+The I<zonegroup> line is deleted.
+The B<-zg> and B<-del-zg> options are mutually exclusive.
 
 =item B<-del-zsargs>
 
@@ -679,7 +700,13 @@ This option is mutually exclusive of the B<-roll> option.
 =item B<-zg zonegroup-name>
 
 The zonegroup in the selected I<rollrec> records is modified to be
-I<zonegroup-name>.
+I<zonegroup-name>.  This field may contain a single zonegroup name or a
+comma-separated list of names.  If a list is given, then there may be
+whitespace before or after each name, but it is not recognized as being part
+of the zonegroup name itself.  Whitespace I<within> the name is considered
+part of the name.  Zonegroup names are considered case insensitive.  The
+names may be given with whatever case the user desires, but names whose only
+differences are the case of the letters are considered to be the same name.
 
 =item B<-zonename zone-name>
 
