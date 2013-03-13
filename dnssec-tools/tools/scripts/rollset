@@ -298,10 +298,8 @@ sub chkphase
 #-----------------------------------------------------------------------------
 # Routine:	editrrf()
 #
-# Purpose:	This routine reads a rollrec file and copies the rollrec
-#		records into either the roll hash or the skip hash,
-#		depending on each record's type.  Any unrecognized rollrec
-#		entries are reported. 
+# Purpose:	This routine reads a rollrec file and performs the requested
+#		record updates.
 #
 sub editrrf
 {
@@ -314,6 +312,15 @@ sub editrrf
 		rollrec_unlock();
 		print STDERR "unable to read rollrec file \"$rrf\"\n";
 		exit(-1);
+	}
+
+	#
+	# Ensure the specified rollrec name exists.
+	#
+	if(!$doall && (rollrec_exists($name) == 0))
+	{
+		print STDERR "invalid rollrec name \"$name\"\n";
+		exit(6);
 	}
 
 	#
@@ -388,6 +395,12 @@ sub editrrf
 		# Reset some fields.
 		#
 		changer($rstzn,$rname,'zonename',$rname);
+
+		#
+		# If we aren't messing with all the rollrecs then we're
+		# done because we've found the requested record.
+		#
+		last if(!$doall);
 	}
 
 	#
@@ -395,6 +408,7 @@ sub editrrf
 	#
 	rollrec_close();
 	rollrec_unlock();
+
 }
 
 #----------------------------------------------------------------------
