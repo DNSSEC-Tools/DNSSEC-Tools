@@ -173,6 +173,16 @@ sub doopts
 	}
 
 	#
+	# Ensure the zonegroup has no leading or trailing whitespace.
+	#
+	if($zonegroup ne '')
+	{
+		$zonegroup =~ s/^\s*//;
+		$zonegroup =~ s/\s*$//;
+	}
+
+
+	#
 	# Show the version number if requested.
 	#
 	version() if(defined($options{'Version'}));
