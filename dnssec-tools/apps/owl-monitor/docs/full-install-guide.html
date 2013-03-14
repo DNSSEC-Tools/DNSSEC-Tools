@@ -1,0 +1,4056 @@
+<html>
+
+<head>
+<title>Owl Monitoring System -- Full Installation Manual -- Setting Up the Owl Monitoring System</title>
+</head>
+
+<body>
+
+<br><br>
+
+<p>
+
+<table>
+<tr>
+<td>
+<img align=left src="owl-logo.jpg"><br>
+<td width=30>&nbsp;
+<td align=center valign=top>
+<br>
+<center><h2>Owl Monitoring System</h2></center>
+<center><h2>Full Installation Manual</h2></center>
+</tr>
+</table>
+
+<p>
+
+<!*****************************************************************************>
+
+<a name="full-install-guide"></a>
+<h3>Setting Up the Owl Monitoring System</h3>
+
+<!--------------------------------------------------------------------------->
+
+The Owl Monitoring System uses timed Domain Name System (DNS) queries to
+monitor basic network functionality.  The system consists of a manager host
+and a set of sensor hosts.  The Owl sensors perform periodic DNS queries and
+report to the Owl manager the time taken for each query.  Over time, this
+shows the responsiveness of the DNS infrastructure.
+
+<p>
+
+The Owl Monitoring System was designed such that the Owl sensor hosts need
+not be under the same administrative control as the Owl manager host.  In
+fact, each sensor in a set of Owl sensors may be under administrative control
+of different organizations and still report to a single Owl manager.
+
+<p>
+
+An Owl sensor may provide its data to more than one Owl manager.  In such
+situations, the managers operate independently of each other and do not know
+of each other's existence.  Throughout the installation manuals, it will be
+assumed that an installation will have a single manager.  Special instructions
+for multiple-manager environments will be given where needed.
+
+<p>
+
+Contact between sensors and their manager may be initiated and performed by
+the sensor or the manager.  This is a configuration decision that must be made
+on a case by case basis.  The push or pull model may cover all of an Owl
+manager's sensors.  For example, a particular manager may initiate sensor data
+retrieval from all of its sensors.  Also, the push/pull model may be specific
+to each sensor, so a particular manager could retrieve data from one sensor
+but wait for another sensor to provide its data.
+
+<p>
+
+This document provides an operational overview of the Owl system, installation
+instructions for the Owl and supporting third-party software.  Configuration
+instructions for the Owl software are also provided, along with configuration
+information for the required third-party software.
+
+<p>
+
+<!----------------------------------------------------------------->
+
+<h3>How To Use This Manual</h3>
+
+<p>
+
+There are two installation manuals, one for the manager and one for the sensor.
+Sensor administrators only need to read the 
+<a href="full-install-guide.html#ig-sensor">Owl Sensor Installation Manual</a>.
+Manager administrators only need to read the 
+<a href="full-install-guide.html#ig-manager">Owl Manager Installation Manual</a>
+As you might expect, those who are administrators for both manager and sensor
+hosts must read both installation guides.
+
+<p>
+
+<center>
+<table>
+<tr>
+<td width="5%">&nbsp;
+<td width="35%"><a href="full-install-guide.html#ig-manager">Owl Manager Installation Manual</a>
+<td width="20%">&nbsp;
+<td width="35%"><a href="full-install-guide.html#ig-sensor">Owl Sensor Installation Manual</a>
+<td width="5%">&nbsp;
+</tr>
+</table>
+</center>
+
+<p>
+
+<hr>
+
+
+<a name="ig-sensor"></a>
+<center><h2>Sensor Installation Manual</h2></center>
+
+<!*****************************************************************************>
+
+<a name="ig-sensor-0."></a>
+<h3>0. Setting Up Sensors for the Owl Monitoring System</h3>
+
+<!--------------------------------------------------------------------------->
+
+The Owl Monitoring System uses timed Domain Name System (DNS) queries to
+monitor basic network functionality.  The system consists of a manager host
+and a set of sensor hosts.  The Owl sensors perform periodic DNS queries and
+report to the Owl manager the time taken for each query.  Over time, this
+shows the responsiveness of the DNS infrastructure.
+
+<p>
+
+An Owl sensor is configured to send DNS queries to a set of DNS nameservers.
+The queries may be for a variety of DNS resource record types, and they are
+sent to a specific nameserver to request data about a specific target host.
+For example, one query might request that the D root nameserver return NS
+records for the "www.example.com" host, while another query might request
+that a local (non-root) nameserver return AAAA records for the
+"mail.example.com" host.  Data will be collected for each configured query
+and given to the Owl manager to whom the sensor reports.  The different
+sensors in the sensor set may perform different queries or the same queries.
+
+<p>
+
+A configuration file controls the behavior of the Owl sensor.  This file
+defines the queries that the sensor will perform, the Owl manager (or
+managers) to whom the sensor reports, locations of data and log files,
+frequency of queries, and other important behaviors.
+
+<p>
+
+An Owl sensor may provide its data to more than one Owl manager.  In such
+situations, the managers operate independently of each other and do not know
+of each other's existence.  Throughout the installation manuals, it will be
+assumed that an installation will have a single manager.  Special instructions
+for multiple-manager environments will be given where needed.
+
+<p>
+
+This document provides an operational overview of the Owl system, installation
+instructions for the Owl sensor and the third-party software that supports it.
+Instructions for configuring the Owl sensor are also given.
+
+<p>
+
+<!----------------------------------------------------------------->
+
+<h3>Organization of Installation Manual</h3>
+
+<p>
+
+Sections:
+
+<table>
+
+<tr>
+<td>&nbsp;
+<td><a href="full-install-guide.html#ig-sensor-0.">0.</a>
+<td>&nbsp;
+<td>Setting Up Sensors for the Owl Monitoring System</tr>
+
+<tr>
+<td>&nbsp;
+<td><a href="full-install-guide.html#ig-sensor-1.">1.</a>
+<td>&nbsp;
+<td>Operational Overview of the Owl Monitoring System</tr>
+
+<tr>
+<td>&nbsp;
+<td><a href="full-install-guide.html#ig-sensor-2.">2.</a>
+<td>&nbsp;
+<td>Owl Sensor Installation</tr>
+
+<tr>
+<td>&nbsp;
+<td><a href="full-install-guide.html#ig-sensor-3.">3.</a>
+<td>&nbsp;
+<td>An Interlude on Sensor Queries</tr>
+
+<tr>
+<td>&nbsp;
+<td><a href="full-install-guide.html#ig-sensor-4.">4.</a>
+<td>&nbsp;
+<td>Adding Owl Sensors to an Existing Owl Installation</tr>
+
+<tr>
+<td>&nbsp;
+<td><a href="full-install-guide.html#ig-sensor-5.">5.</a>
+<td>&nbsp;
+<td>Adding New Queries to Existing Owl Sensors</tr>
+
+<tr>
+<td>&nbsp;
+<td><a href="full-install-guide.html#ig-sensor-6.">6.</a>
+<td>&nbsp;
+<td>Owl Sensor Commands</tr>
+
+<tr>
+<td width=20>&nbsp;
+<td width=20>&nbsp;
+<td>&nbsp;
+<td>&nbsp;</tr>
+
+</table>
+
+<p>
+
+
+
+<!*****************************************************************************>
+
+<a name="ig-sensor-1."></a>
+<h3>1. Operational Overview of the Owl Monitoring System</h3>
+
+<p>
+
+<!------------------------------------------------------------>
+
+The Owl Monitoring System has a conceptually simple method of operations.
+There is a manager host and a set of sensor hosts.  The sensors periodically
+make a set of DNS queries and time how long it takes to get a response.  The
+response times are saved to data files.  After a certain amount of time, the
+data files are transferred from the sensor to the manager host.  For any
+particular sensor, this data transfer may be configured to be initiated by
+either the manager or by the sensor.  The manager transfers the data into a
+monitoring package, which allows easy display of the data.
+
+<p>
+
+Below is a diagram of the flow of Owl sensor data through two Owl monitoring
+installations.
+
+<p>
+
+<center>
+<img src="owl-topography.png">
+</center>
+
+<p>
+
+Take note of the following:
+
+<ul>
+<li>There are three distinct administrative domains, two of which have Owl
+managers.
+<li>Owl Manager 1 receives sensor data from all three domains.
+<li>Owl Manager 2 receives sensor data from itself and one other domain.
+<li>Domain 1's sensors do not provide data to other domains.
+<li>Domain 2 contains an Owl sensor, but not an Owl manager. 
+<li>Owl sensors in the domains 2 and 3 provide data to Owl managers outside
+of their own domain.
+<li>Owl sensors can query multiple name servers.
+</ul>
+
+(Domains in this example are defining administrative control and are <u>not</u>
+DNS domains.)
+
+<p>
+
+The remainder of this section provides a little more information on the
+components that make up the sensor and manager software.
+
+<p>
+
+<!------------------------------------------------------->
+
+<a name="ig-sensor-1.1."></a>
+<h3>1.1. Owl Sensor Overview</h3>
+
+<p>
+
+An Owl sensor makes timed DNS queries and records the time required for a
+response.  The response time data are transferred to the Owl manager after
+a certain period of time.  The transfer may occur at the instigation of
+either the manager or the sensor.  The Owl sensor's three primary programs
+that handle these tasks are described below.
+
+<p>
+
+The Owl sensor's actions are controlled by a configuration file.  This file
+defines the queries that must be performed, how often the queries must
+happen, how frequently the response data files are transferred to the
+manager, data and logging information, and other required information.
+
+<p>
+
+The <b>owl-dnstimer</b> program performs periodic DNS lookups, as specified by
+the configuration file.  These lookups are timed so that the sensor can record
+how long it took to make a particular request.  The configuration parameters
+used by <b>owl-dnstimer</b> include the nameserver to query, the target zone
+to query about, the type of DNS record, and the frequency of queries.
+
+<p>
+
+If the Owl system is configured so that the sensor transfers its data to the
+manager, then the transfer is performed by the
+<b>owl-transfer</b> program.  The transfers are performed using <b>rsync</b>
+over an <b>ssh</b> connection.  The sensor host must be able to do a
+password-less <b>ssh</b> into the manager host.  The frequency of transfers
+is defined in the configuration file.  Choosing the transfer frequency is a
+trade-off between lower impact on the sensor, manager, and network (less
+frequent) and lower latency of data display on the manager (more frequent.)
+
+<p>
+
+The <b>owl-sensord</b> program is an optional controller for <b>owl-dnstimer</b>
+and <b>owl-transfer</b>.  If used, it will run these daemons and restart them
+if they stop.  If one of the daemons tries to restart too often in too short
+a time, then <b>owl-sensord</b> will warn an administrator (via email) and
+temporarily stop trying to execute the program.  <b>owl-sensord</b> is not
+required in order to run <b>owl-dnstimer</b> and <b>owl-transfer</b>; the Owl
+sensor can run fine without it.  However, it provides a convenient way to keep
+them running.
+
+<p>
+
+As part of the installation process, you must decide whether you will run the
+Owl sensor using the <b>owl-sensord</b> daemon to control execution or if you
+will run <b>owl-dnstimer</b> and <b>owl-transfer</b> directly.
+
+<p>
+
+The Owl sensor has a number of programs for administrative support.  Most
+of these are not required, but they assist in sensor administration.  In
+particular, the <b>owl-dataarch</b> and <b>owl-heartbeat</b> programs are
+intended to run as <b>cron</b> jobs.  <b>owl-dataarch</b> moves "old" sensor
+data into an archive directory, in order to keep the sensor-manager data
+transfer from bogging down (within <b>rsync</b>) as the data collection
+grows.  The <b>owl-heartbeat</b> program periodically touches a webpage hosted
+on the Owl manager, in order to let the manager know that the sensor host is
+still running.  <b>owl-heartbeat</b> is not critical and can be left off, but
+<b>owl-dataarch</b> is essential.  There are a few other administrative
+commands available; see
+<a href="full-install-guide.html#ig-sensor-6.">section 6</a>
+for a brief description of all the Owl sensor commands.
+
+<p>
+
+<!------------------------------------------------------->
+
+<a name="ig-sensor-1.2."></a>
+<h3>1.2. Owl Manager Overview</h3>
+
+<p>
+
+The Owl manager's purpose is to receive sensor data and make it available for
+display.  The majority of the Owl manager is actually third-party packages,
+and the Owl manager software provides the "glue" that allows the Owl sensor
+data to work with those packages.  In particular, Owl provides data to the
+Nagios monitoring system, which then displays the data.
+
+<p>
+
+The Owl sensors may report to managers that are under separate administrative
+control.  A particular installation of the Owl Monitoring System may use
+multiple manager hosts, but this document assumes that there is only one.
+
+<p>
+
+The manager can have either an active or passive role in the process of moving
+Owl sensor data from the sensor to the manager.  If the manager is active, it
+will use the <b>owl-transfer-mgr</b> program to pull sensor data from the Owl
+sensor host.  If the manager is passive, then the sensor will transfer the
+data when it sees fit.
+
+<p>
+
+The are two groups of "glue" programs that Owl uses to interface with
+Nagios.  The <b>owl-dnswatch</b> and <b>owl-perfdata</b> inject Owl
+sensor DNS response data into Nagios for display and graphing.  The
+<b>owl-sensor-heartbeat.cgi</b> and <b>owl-stethoscope</b> programs
+insert Owl "heartbeat" data into Nagios so it can track availability
+of the Owl sensors.
+
+<p>
+
+The Owl manager also has a number of programs for administrative support.
+Most of these are not required, but they assist in manager administration.
+In particular, the <b>owl-archdata</b> and <b>owl-monthly</b> programs are
+intended to run as <b>cron</b> jobs.  <b>owl-archdata</b> moves "old" sensor
+data into an archive directory, in order to keep data transfer from the sensor
+from bogging down as the data collection grows.  The <b>owl-monthly</b>
+program archives the previous month's sensor data into a compressed tarfile.
+<b>owl-newsensor</b> and <b>owl-initsensor</b> assist in setting up the
+manager for a new sensor.  There are a few others available; see
+<a href="full-install-guide.html#ig-manager-7.">section 7</a>
+for a brief description of all the Owl manager commands.
+
+<p>
+
+The following third-party software packages are used in with this distribution
+of the Owl Monitoring System.  The packages are not included with the Owl
+distribution, but must be retrieved as required for your operating system.
+These packages must be installed on the manager:
+
+<p>
+
+<table>
+<tr><td width=40>&nbsp;<td width=150><li>Nagios<td>Monitoring system.
+<tr><td>&nbsp;<td><li>Nagios plugins<td>Monitoring system.
+<tr><td>&nbsp;<td><li><b>nagiosgraph</b><td>Provides graphing for Nagios.
+<tr><td>&nbsp;<td><li><b>rrdtool</b><td>Database tool for use by <b>nagiosgraph</b>.
+<tr><td>&nbsp;<td><li><b>drraw.cgi</b><td>Draws graphs for <b>nagiosgraph</b> of data stored by <b>rrdtool</b>.
+</table>
+
+<p>
+
+Instructions are given in this document for integrating these packages with
+the Owl software.  It would be for the best to read the installation
+instructions below for each package <i>prior</i> to installing them.
+
+<p>
+
+Different management, graphing, and database tools may be used instead of
+those listed above, if so desired.  Integrating the Owl manager software
+with other packages is beyond the scope of this manual.
+
+<p>
+
+David Josephsen's <u>Building a Monitoring Infrastructure with Nagios</u>
+is very helpful for understanding Nagios and how the various pieces work
+together.  If you're going to be running a Nagios monitor, you would be
+doing yourself a favor to read this book.
+
+<!------------------------------------------------------->
+
+<a name="ig-sensor-1.3."></a>
+<h3>1.3. Data Retention on Owl Hosts</h3>
+
+<p>
+
+Owl sensors generate a large amount of DNS response data.  For example, a
+sensor running five queries, once a minute each, generated roughly 517KB of
+data per day.  (Due to the way the data are stored, this will be affected by
+the amount length of target and nameserver hostnames used.)  You may or may
+not want to retain any of this data.  The data files can be useful for
+rebuilding the Owl manager's <b>rrdtool</b> databases (or building with
+different parameters.)
+
+<p>
+
+On both the Owl manager and the Owl sensors, sensor data are stored in
+a data directory.  After a few days, the data files are moved to a data
+archive directory.  A full month's data files will be collapsed into a
+compressed format.
+
+<p>
+
+The Owl Monitoring System provides tools that assist with managing Owl sensor
+data.  After the sensor data have been moved from the sensor to the manager,
+the sensor has no further need of the data.  On the manager, after the data
+have been moved into the data archive, the Owl Monitoring System has no
+further need of the old data; it may be retained or deleted.  (The data will
+have been moved into the manager's <b>rrdtool</b> databases by then, so the
+data is not lost.)  Each installation must decide their own data retention
+policy.
+
+<p>
+
+
+
+<!*****************************************************************************>
+
+<a name="ig-sensor-2."></a>
+<h3>2. Owl Sensor Installation</h3>
+<p>
+
+
+<!------------------------------------------------------------>
+
+<p>
+
+This section gives installation procedures for installing the Owl Monitoring
+software on sensor hosts.  Installation of the Owl sensor is relatively simple.
+This requires the creation of a sensor account, SSH initialization, software
+installation, and a few other set-up activities.  The most complicated aspect
+is likely to be coordinating SSH access with the Owl manager host.  The
+required actions for installing an Owl sensor are described in this section.
+
+<p>
+
+The installation instructions discuss software installation of Owl software
+and supporting third-party software packages.  There are a number of
+Owl-specific configuration actions that must be performed, and these are
+detailed in <a href="full-install-guide.html#ig-sensor-4.">section 4</a>.
+
+<p>
+
+The Owl sensors <b>require</b> Perl.  You must install it on your system if
+it isn't already available.  If the sensor host's Perl or operating system
+does not support threading, then each query will run in its own process,
+rather than all queries running in their own threads within a single process.
+
+<p>
+
+Below is a diagram of the flow of Owl sensor data on the Owl sensor.  The
+details may not make sense at this stage, but this will show how the various
+pieces fit together.
+
+<p>
+
+<img src="owl-sensor-data.png">
+
+<p>
+
+<!----------------------------------->
+
+<a name="ig-sensor-2.1."></a>
+<h3>2.1. Create an Owl Sensor Account</h3>
+
+<p>
+
+The Owl sensor will run several daemons and <b>cron</b> jobs.  It is a good
+idea, but not an imperative one, for these to run as their own user.  It is
+easier to segregate the Owl sensor's actions, processes, and files if they
+are performed by a dedicated user.
+
+<p>
+
+However, it is certainly acceptable to run them as yourself or some other
+existing user.  If you choose to do this, you may disregard the rest of this
+section.
+
+<p>
+
+There are no requirements on the Owl username; it may be anything that
+makes sense to you.  Some possibilities are: <i>owl</i>, <i>owl-sensor</i>,
+<i>owl-user</i>, <i>bob</i>, and <i>tricorder</i>.
+
+<p>
+
+To create a new user, use your operating system's user-creation command (e.g.,
+<b>adduser</b> or <b>useradd</b>) to create a new <i>unprivileged</i> user.
+
+<p>
+
+Examples of commands to create a new user:
+
+<p>
+
+<table>
+
+<tr valign=top>
+<td>&nbsp;
+<td>Operating System<td>&nbsp;<td>Example Command<td>Notes
+
+<tr valign=top>
+<td>&nbsp;
+<td>Centos<td>&nbsp;<td><i>useradd hoots-mon</i><td>remember to add a password
+
+<tr valign=top>
+<td>&nbsp;
+<td>FreeBSD<td>&nbsp;<td><i>adduser</i>
+<td>you'll be prompted for all user information
+
+<tr valign=top>
+<td>&nbsp;
+<td>Mac OS X<td>&nbsp;<td>"Users & Groups" in System Preferences
+<td>you'll be prompted for all user information
+
+<tr valign=top>
+<td width=50>&nbsp;
+<td width=125>&nbsp;<td width=10>&nbsp;<td width=300>&nbsp;<td>&nbsp;
+
+</table>
+
+<p>
+
+<!----------------------------------->
+
+<a name="ig-sensor-2.2."></a>
+<h3>2.2. SSH Initialization</h3>
+
+<p>
+
+Owl sensor data are transferred to the Owl manager using the <b>rsync</b>
+and <b>ssh</b> commands.  You must initialize the Owl sensor user's SSH
+environment by generating keys for the <b>ssh</b> command to use.  This
+may be dependent on your operating system or the version of SSH installed.
+
+<p>
+
+The OpenSSH package is a widely available SSH package, and its
+<b>ssh-keygen</b> command is used to create SSH keys.  This manual
+will assume that OpenSSH is being used.
+
+<p>
+
+There are no specific key parameters required by Owl.  The generated key must
+be sufficient to allow the sensor and the manager to transfer files without
+having to manually enter a password.
+
+<p>
+
+Example of a command to generate a new SSH key:
+
+<pre>
+    $ ssh-keygen -b 1024 -t dsa
+</pre>
+
+<p>
+
+If the Owl sensor will be pushing data to the manager, then the newly
+generated public key must be transferred to the Owl manager host.  This key
+must be added to the list of authorized keys for the Owl manager's account.
+For OpenSSH, the public key will be in a file called <b>id_rsa.pub</b> and it
+will be added to the <b>authorized_keys</b> file on the manager host.  Once
+the sensor's public key has been added to the Owl manager, you must ensure
+that the Owl sensor user may successfully transfer files to the manager
+without need of a password.
+
+<p>
+
+If the Owl manager will be pulling data from the sensor, then you must do the
+following things.  First, install the <b>rrsync</b> utility. This is a
+front-end to <b>rsync</b> that restricts the locations to which <b>rsync</b>
+may copy data.  <b>rrsync</b> is available here:
+<b>http://ftp.samba.org/pub/unpacked/rsync/support/rrsync</b>.  Next, the
+manager's administrator must provide you with a public SSH key.  This public
+key must be added to the <b>authorized_keys</b> file belonging to the Owl
+sensor account.
+
+<p>
+
+The <b>authorized_keys</b> entry should look something like this:
+
+<pre>
+    command="/usr/local/bin/rrsync /owl/data" ssh-rsa AAAAB3Nza...A3Q== owl-manager@owl.example.com
+</pre>
+
+<p>
+
+<!----------------------------------->
+
+<a name="ig-sensor-2.3."></a>
+<h3>2.3. Install the Owl Environment</h3>
+
+<p>
+
+You must select a place to install the Owl sensor's files.  The files and
+directories may live in the Owl sensor user's home directory, a subdirectory
+beneath that home directory, or somewhere else entirely.  For ease of finding
+these files later, it may be helpful to keep the Owl sensor's files all
+beneath a single directory.
+
+<p>
+
+There are a set of directories that will be used by the Owl sensor: <b>bin</b>,
+<b>conf</b>, and <b>perllib</b>.  These names shouldn't be changed.
+
+<p>
+
+Additional modifications to the Owl sensor environment will be discussed
+in <a href="full-install-guide.html#ig-sensor-4.1.">section 4.1</a>.
+
+<p>
+
+Several installation examples are given below.  For each, it is assumed
+the Owl sensor user is named <i>owl-sensor</i>.  
+
+<p>
+
+Installation example 1:  In this case, the software will be installed
+in the sensor user's home directory by unpacking a tar file located in
+<b>/tmp/owl-sensor.tar.gz</b>.
+
+<p>
+
+<pre>
+    $ cd ~owl-sensor
+    $ tar xzf /tmp/owl-sensor.tar.gz
+</pre>
+
+<p>
+
+Installation example 2:  In this case, the software will be installed in a
+subdirectory within the sensor user's home directory by unpacking a tar file
+located in <b>/tmp/owl-sensor.tar.gz</b>.
+
+<p>
+
+<pre>
+    $ mkdir ~owl-sensor/owl-dir
+    $ cd ~owl-sensor/owl-dir
+    $ tar xzf /tmp/owl-sensor.tar.gz
+</pre>
+
+<p>
+
+<!----------------------------------->
+
+<a name="ig-sensor-2.4."></a>
+<h3>2.4. Install Required Perl Modules</h3>
+
+<p>
+
+There is a set of Perl modules required by the Owl sensor.
+These should be available through CPAN.
+
+<p>
+
+Modules required by the Owl sensor:
+<table>
+<td valign=top>
+<ul>
+<li>Cwd.pm
+<li>Date::Format.pm
+<li>FindBin.pm
+<li>Getopt::Long.pm
+<li>LWP::Simple.pm
+<li>Log::Dispatch.pm
+<li>Log::Dispatch::FileRotate.pm
+<li>Net::DNS.pm
+</ul>
+</td>
+<td width=50>&nbsp;
+<td valign=top>
+<ul>
+<li>Net::DNS::Packet.pm
+<li>Net::DNS::Resolver.pm
+<li>POSIX.pm
+<li>Time::HiRes.pm
+<li>Time::Local.pm
+<li>threads.pm
+<li>threads::shared.pm
+</ul>
+</td>
+</table>
+
+<p>
+
+If the two threads-related modules are unavailable for your system, or if your
+version of Perl doesn't support threading, then the Owl sensor will run each
+query in its own process.  In this case, these two modules are not needed.
+
+<p>
+
+
+
+<!*****************************************************************************>
+
+<a name="ig-sensor-3."></a>
+<h3>3. An Interlude on Sensor Queries</h3>
+
+<p>
+
+
+<!------------------------------------------------------------>
+
+Before running your Owl Monitoring System, you must consider a number of
+questions.  How many Owl sensors will be providing data to the Owl manager?
+How many queries will the sensors be performing?  What queries will the
+sensors be performing?  Will each sensor be performing the same queries?  Will
+the sensor be providing "heartbeat" information to the manager?  Who will
+transfer the sensor data to the manager?  These questions are important for
+the sensor administrator, but they are critical for the manager administrator.
+
+<p>
+
+<!*********************************************************>
+
+<a name="ig-sensor-3.1."></a>
+<h3>3.1. Gathering and Storing Sensor Data</h3>
+
+<p>
+
+A query consists of three parts:  a nameserver, a target host, and a query
+type.  Responses to each query will be kept in their own datafile.  The
+amount of data generated by each sensor will depend on the number of queries
+and the frequency with which the queries are performed.
+
+<p>
+
+The sensors will have to gather the data and more queries will result in more
+data that will be collected.  The data will all have to be transferred from
+the sensor to the manager.  If the manager is configured for graphing, then
+data from each query will be stored in its own database.  These databases can
+be quite large, so the manager host must have a good amount of available disk
+space.
+
+<p>
+
+The administrators of an Owl sensor and the Owl manager (if they are different
+people) must coordinate the queries that the sensor will be performing.  The
+manager's administrator can request that a set of queries be performed, but it
+is up to the sensor's administrator to actually configure the sensor for the
+queries.  The manager is effectively at the mercy of the sensor.
+
+<p>
+
+Sensor data filenames contain metadata about the sensor data contained
+therein.  Therefore, the filenames will reflect the queries that generated
+the files.  The fields are separated by commas and have this format:
+
+<pre>
+        121129.1701,seattle-sensor,example.com,a.root-servers.net,A.dns
+        121129.1701,seattle-sensor,example.com,m.root-servers.net,A.dns
+        121129.1701,seattle-sensor,example.com,m.root-servers.net,NS.dns
+        121129.1701,portland-sensor,example.com,a.root-servers.net,A.dns
+</pre>
+
+<p>
+
+Breaking out the fields of the last example above gives this table:
+
+<p>
+
+<table>
+
+<tr>
+<td valign=top width=50>&nbsp;
+<td valign=top><b>Field</b>
+<td valign=top width=20>&nbsp;
+<td valign=top><b>Purpose</b>
+<td valign=top width=20>&nbsp;
+<td valign=top><b>Example</b>
+
+<tr>
+<td valign=top>&nbsp;
+<td valign=top>Timestamp
+<td valign=top>&nbsp;
+<td valign=top>File creation timestamp; (YYMMDD.hhmm)
+<td valign=top>&nbsp;
+<td valign=top>121129.1701
+
+<tr>
+<td valign=top>&nbsp;
+<td valign=top>Sensor Name
+<td valign=top>&nbsp;
+<td valign=top>Name of sensor that recorded data
+<td valign=top>&nbsp;
+<td valign=top>portland-sensor
+
+<tr>
+<td valign=top>&nbsp;
+<td valign=top>Target Name
+<td valign=top>&nbsp;
+<td valign=top>Host whose name was target of DNS lookups
+<td valign=top>&nbsp;
+<td valign=top>example.com
+
+<tr>
+<td valign=top>&nbsp;
+<td valign=top>Nameserver Name
+<td valign=top>&nbsp;
+<td valign=top>Name of queried nameserver
+<td valign=top>&nbsp;
+<td valign=top>a.root-servers.net
+
+<tr>
+<td valign=top>&nbsp;
+<td valign=top>Query Type
+<td valign=top>&nbsp;
+<td valign=top>Type of DNS query
+<td valign=top>&nbsp;
+<td valign=top>A
+
+<tr>
+<td valign=top>&nbsp;
+<td valign=top>File suffix
+<td valign=top>&nbsp;
+<td valign=top>File suffix
+<td valign=top>&nbsp;
+<td valign=top>.dns
+
+</table>
+
+<p>
+
+<!*********************************************************>
+
+<a name="ig-sensor-3.2."></a>
+<h3>3.2. Transferring Sensor Data</h3>
+
+<p>
+
+The Owl Monitoring System provides utilities to transfer sensor data from
+the sensor to the manager.  One utility, <b>owl-transfer</b> runs on the
+sensor and transfers the data to the manager.  The other utility,
+<b>owl-transfer-mgr</b> runs on the manager and transfers the data from
+the sensor.  Both utilities are front-ends for the <b>rsync</b> program
+and run using an <b>ssh</b>-initiated connection.
+
+<p>
+
+In both cases, the transferring host <u>must</u> be able to <b>ssh</b> into
+the remote host without a password.  The FOSS <b>rrsync</b> ("restricted
+rsync", written by Joe Smith, modified by Wayne Davison) is used to restrict
+the transferring host's access to the remote host.
+
+<p>
+
+The administrators of the sensor and the manager must agree on which host
+will be transferring data to the manager.  The appropriate SSH public keys
+from the transferring host must be placed on the other host, so that the
+password-less <b>ssh</b> (as described above) may be performed.
+
+<p>
+
+An Owl system with multiple sensors may have a mixed transfer configuration.
+In such a system, some sensors will transfer their data to the manager, while
+the manager will transfer data from other sensors.
+
+<p>
+
+<!*********************************************************>
+
+<a name="ig-sensor-3.3."></a>
+<h3>3.3. Sensor Heartbeats</h3>
+
+The "heartbeat" facility allows an Owl sensor to periodically contact a
+manager to let it know that the sensor is still alive and network accessible.
+The heartbeat is sent by contacting a particular webpage on the Owl manager.
+
+<p>
+
+The heartbeat facility is not necessary for Owl operation and Owl runs
+perfectly well without it.  However, it can provide a useful assurance to
+the manager administrator that the sensor is still working.  Enabling this
+facility on the sensor is at the discretion of the sensor administrator.
+Since this requires a webserver to be running on the manager host, that
+aspect is at the discretion of the manager administrator.
+
+<p>
+
+
+
+<!*****************************************************************************>
+
+<a name="ig-sensor-4."></a>
+<h3>4. Adding Sensors</h3>
+
+<p>
+
+
+<!------------------------------------------------------------>
+
+Whenever a new Owl sensor is added to those handled by an Owl manager, there
+are a number of actions that must take place on both the sensor and the
+manager.  These actions should be followed consecutively within each section.
+However, there is some amount of necessary interleaving of sensor actions and
+manager actions.  For example, a particular sensor action may be required
+before a particular manager action.
+
+<p>
+
+It is acceptable for the Owl sensor and Owl manager to be under completely
+different administrative control.  Each host may even be owned by different
+commercial, educational, governmental, or other such entity.  All that is
+required is that there be some initial coordination between administrators
+when the sensor is first configured, along with (probably) aperiodic support
+from time to time later.
+
+<p>
+
+The discussions on adding Owl sensors assumes that the sensor and manager
+are under different administrative control.  Required actions will not change
+if they are under unified administrative control, but they may be easier to
+accomplish. 
+
+<p>
+
+This section describes the configuration and testing actions that must be
+undertaken in order to have a working Owl sensor.  It assumes the installation
+procedures detailed in
+<a href="full-install-guide.html#ig-sensor-2.1.">section 2.1</a>
+have been completed.
+
+<p>
+
+<!----------------------------------->
+
+<a name="ig-sensor-4.1."></a>
+<h3>4.1. Firewall Configuration</h3>
+
+<p>
+
+The Owl sensor and the Owl manager communicate by way of SSH and HTTP.  If the
+Owl sensor is protected by a firewall (either on the sensor host itself or by
+an enterprise-level firewall) then the firewall must be configured to allow
+data to be transferred between the sensor and the manager.  The direction of
+this transfer (initiated by sensor or initiated by manager) depends on the Owl
+configuration.  These firewall modifications are far beyond the scope of this
+document.
+
+<p>
+
+<!----------------------------------->
+
+<a name="ig-sensor-4.2."></a>
+<h3>4.2. SSH Set-up</h3>
+
+<p>
+
+You must generate a new SSH key for the sensor's Owl user.
+
+<p>
+
+If the sensor will be transferring data to the manager, then you must provide
+the public key to the administrator of the Owl manager.  This key will allow
+<b>owl-transfer</b> to pass Owl sensor data to the manager.  You must generate
+keys with key characteristics (e.g., length and type) that are acceptable to
+the manager's administrator.
+
+<p>
+
+If the manager will be pulling data from the sensor, then the manager's
+administrator must provide you with the manager host's public key.  You must
+add this key to your <b>authorized_keys</b> file.  This key will allow
+<b>owl-transfer-mgr</b> to retrieve Owl sensor data.  If you have particular
+key requirements (e.g., length and type), then you must give them to the 
+manager's administrator.
+
+<p>
+
+<!----------------------------------->
+
+<a name="ig-sensor-4.3."></a>
+<h3>4.3. Get Configuration Data from Manager</h3>
+
+<p>
+
+There are several pieces of information that must be provided by the
+administrator of the Owl manager.  These include values for the sensor's
+configuration file and the sensor's name.
+
+<p>
+
+The following data will allow the sensor to work with the Owl manager as
+expected.  These data are used, in conjunction with the <i>manager</i>
+keyword, in the sensor's configuration file.
+
+<p>
+
+<table>
+
+<tr>
+<td valign=top>Configuration&nbsp;Field
+<td valign=top width=20>&nbsp;
+<td valign=top>Purpose
+<td valign=top width=20>&nbsp;
+<td valign=top>Example
+
+<tr>
+<td valign=top><i>ssh-user</i>
+<td width=20>&nbsp;
+<td valign=top>User on Owl manager with which <b>owl-transfer</b> will connect
+via <b>ssh</b>.<br>
+This is only required if the sensor will be transferring data to the manager.
+<td width=20>&nbsp;
+<td valign=top>sensor-ottawa@owl-manager.example.com
+
+<tr>
+<td valign=top><i>heartbeat</i>
+<td width=20>&nbsp;
+<td valign=top>URL to provide "heartbeat" data to manager.<br>
+This is only required if the sensor will be providing heartbeat data.
+<td width=20>&nbsp;
+<td valign=top>http://owl.example.com/cgi-bin/owl-sensor-heartbeat.cgi
+
+</table>
+
+<p>
+
+In addition to these data, it would be a good idea for you and the manager
+administrator to agree on a name for the sensor.  This is not a hostname, but
+is a name by which your sensor will be known to the Owl Monitoring System.
+Name agreement between sensor and manager isn't required, but it will probably
+make things easier for you both in the long run to refer to the sensor by the
+same name.
+
+<p>
+
+The sensor name can be very generic, such as <i>sensor42</i>, <i>sensor-d</i>,
+or <i>owl-us-east</i>.  It can also be very specific, such as
+<i>washdc-1600-penn-ave-nw</i> or <i>cheltenham-bldg4</i>.  The intent is
+to provide distinguishing information to the intended audience of the DNS
+monitoring data.  You should use names that easily distinguish sensors and
+are acceptable to the manager and sensor administrators.
+
+<p>
+
+<!----------------------------------->
+
+<a name="ig-sensor-4.4."></a>
+<h3>4.4. Set Up the Owl Configuration File</h3>
+
+<p>
+
+The Owl configuration file must be initialized.  The data fields include
+sensor information, query definitions, file locations, transfer intervals,
+and information about contacting the manager.
+
+<p>
+
+The following is a sample <b>owl.conf</b> file:
+
+<pre>
+	host name rome-sensor
+	host sensor-args	-config /home/owl/conf/owl.conf
+	host transfer-args	-conf /home/owl/conf/owl.conf
+	host admin		owl-mgmt bob@example.com
+
+	query		example.com	d	ns
+	query		example.com	d	a
+	query		.		h	A
+	query		.		m
+
+	data	dir		data
+	data	interval	60
+
+	log	dir		log
+
+	remote	ssh-user	owl-mgr@owlmonitor.example.com
+
+	remote	heartbeat	http://owlmonitor.example.com/cgi-bin/owl-sensor-heartbeat.cgi
+</pre>
+
+<p>
+
+The full definition of the configuration file may be found in the
+<b>owl-config.pod</b> manpage.
+
+<p>
+
+The sensor configuration file must include a set of query definitions.  These
+are best specified by the administrator of the Owl manager, but you must be
+willing to generate and transfer the volume of data required by those queries.
+The impact won't be as large for the sensor as it will be for the manager
+since the manager is likely to have multiple sensors for which it will store
+data.
+
+<p>
+
+In addition, the manager-contact fields must be set with data provided by the
+administrator of the Owl manager.  The <i>ssh-user</i> field is required for
+transfer of data files.  The <i>heartbeat</i> field is optional, but must be
+specified if the sensor will provide "heartbeat" information to the manager.
+
+<p>
+
+When translated to the configuration file format, the example lines from
+<a href="full-install-guide.html#ig-sensor-4.3.">section 4.3</a>
+will look like the following:
+
+<pre>
+	manager ssh-user        sensor-ottawa@owl-manager.example.com
+	manager heartbeat	http://owl.example.com/cgi-bin/owl-sensor-heartbeat.cgi
+</pre>
+
+<p>
+
+<!----------------------------------->
+
+<a name="ig-sensor-4.5."></a>
+<h3>4.5. Test Transfer to Manager</h3>
+
+<p>
+
+At this point, the manager should be ready to accept data from the Owl
+sensor.  Test that this will succeed with the following steps:
+
+<p>
+
+<ol>
+<li>Ensure the Owl manager's administrator is ready for this test.
+<li>Put a file in the data directory -- specified in the <i>data dir</i>
+field of the configuration file.  It doesn't matter what the file's name is
+nor its contents.
+<li>Inform the manager's administrator of the name of the file.
+<li>Run a test transfer in one of these ways:
+<ul>
+<li>If the sensor will be transferring data to the manager, then run
+"owl-transfer -config &lt;config-file&gt; -foreground".<br>
+<li>If the manager will be transferring data from the sensor, then the
+manager's administrator must run the <b>owl-transfer-mgr</b> command.
+</ul>
+</ol>
+
+<p>
+
+If the file was successfully transferred, then the Owl sensor is ready to
+start generating data and providing it to the manager.
+
+<p>
+
+If not, you must determine why the file wasn't transferred.
+<b>owl-transfer</b> uses the <b>rsync</b> and <b>ssh</b> commands
+to perform the transfer, so problem diagnosis should start with them.
+
+<p>
+
+<!----------------------------------->
+
+<a name="ig-sensor-4.6."></a>
+<h3>4.6. Add Start-up Entries</h3>
+
+<p>
+
+As discussed in <a href="full-install-guide.html#ig-sensor-1.1.">section 1.1</a>,
+you must decide whether you will run the Owl sensor using the
+<b>owl-sensord</b> daemon or if you will run <b>owl-dnstimer</b> and
+<b>owl-transfer</b> directly.  Both methods are acceptable; the first
+is more robust in the case of problems.
+
+<p>
+
+In any event, you must add entries to your operating system's boot process
+to start the appropriate Owl daemons.  This is highly dependent on the
+operating system, and may involve such things as adding some lines to
+<b>/etc/rc.local</b> or adding a start-up file to <b>/etc/rc.d/rc2.d</b>.
+
+<p>
+
+These lines executing the Owl sensor daemons may look something like this:
+
+<pre>
+        /home/owl/bin/owl-sensord -config /home/owl/bin/conf/owl.conf
+</pre>
+
+or
+
+<pre>
+        /home/owl/bin/owl-dnstimer -config /home/owl/bin/conf/owl.conf
+        /home/owl/bin/owl-transfer -config /home/owl/bin/conf/owl.conf
+</pre>
+
+<p>
+
+It is incumbent upon the installer to determine the proper method of Owl
+start-up and the proper place to set up execution.
+
+<p>
+
+<!----------------------------------->
+
+<a name="ig-sensor-4.7."></a>
+<h3>4.7. Add <b>cron</b> Entries</h3>
+
+<p>
+
+The <b>owl-dataarch</b>, <b>owl-archold</b>, and <b>owl-heartbeat</b> programs
+provide additional services for the Owl Monitoring System.  These programs are
+not required, but they can ease some of the burden of administering an Owl
+sensor.  However, due to the volume of data generated by an Owl sensor, it
+is strongly advised that <b>owl-dataarch</b> be run.
+
+<p>
+
+These programs may be set up as <b>cron</b> jobs.  This will remove the
+necessity for the administrator to run these programs manually, and it will
+provide regularity to their execution.
+
+<p>
+
+<b>owl-dataarch</b> periodically moves sensor data from the data directory to
+an archive directory.  It should be run on a daily basis.
+
+<p>
+
+<b>owl-archold</b> will create a compressed tarfile of a month's data that has
+been previously stored in the archive directory.  It should be run on a
+monthly basis -- but not on the first or second day of the month.  If the
+sensor host is used for much other than as an Owl sensor, then it would be
+best to run <b>owl-archold</b> whenever the system is normally at "off hours."
+
+<p>
+
+<b>owl-heartbeat</b> touches a webpage (specified in the configuration file)
+and is intended to inform the Owl manager that the sensor is up and running.
+This may be run as often as desired.  The more frequently it's run, the more
+up-to-date is the information on the Owl manager.  The less frequently it's
+run, the lower the granularity of the sensor-availability information on the
+manager.  Once per minute or hour is probably sufficient for most purposes. 
+
+<p>
+
+<center>
+<table border=1>
+<tr>
+<td width=120 align=center><b>Program</b>
+<td width=275 align=center><b>Frequency of Execution</b>
+</tr>
+
+<tr>
+<td>&nbsp;<b>owl-dataarch</b>
+<td>&nbsp;once per day
+
+<tr>
+<td>&nbsp;<b>owl-archold</b>
+<td>&nbsp;once per month,<br>&nbsp;on the 3rd of the month or later
+
+<tr>
+<td>&nbsp;<b>owl-heartbeat</b>
+<td>&nbsp;as desired,<br>&nbsp;but once per minute or hour is reasonable
+
+</table>
+</center>
+
+<p>
+
+<!----------------------------------->
+
+<a name="ig-sensor-4.8."></a>
+<h3>4.8. Start Owl Daemons</h3>
+
+<p>
+
+Installation and configuration are complete for the Owl sensor.  The Owl
+sensor is now ready to gather timing data on DNS queries.  If the sensor will
+be transferring data to the Owl manager, it is ready for that task as well.
+To start the Owl sensor daemons, you can either start them manually (either
+by running just <b>owl-sensord</b> or by running both <b>owl-dnswatch</b>
+and <b>owl-transfer</b>) or by rebooting your system.
+
+<p>
+
+
+
+<!*****************************************************************************>
+
+<a name="ig-sensor-5."></a>
+<h3>5. Adding New Queries to Existing Owl Sensors</h3>
+
+<p>
+
+<!------------------------------------------------------------>
+
+From time to time, you might decide to change the queries being performed
+by the Owl sensors.  This could be adding new queries to some or all of the
+sensors, stopping some of the queries from being performed, or modifying
+existing queries.  Regardless of the changes, there are actions that must
+be taken on the Owl manager and all affected Owl sensors.
+
+<p>
+
+It is relatively painless to modify queries for a sensor.  The following
+actions must be performed:
+
+<p>
+
+<ol>
+
+<li>The query entries in the Owl configuration file must be changed to
+reflect the new set of queries that should be performed.  Add new <i>query</i>
+entries to add new queries; delete or change existing <i>query</i> entries
+to remove or modify current queries.
+See <a href="full-install-guide.html#ig-sensor-4.4.">section 4.4</a>
+for information about query entries.
+
+<p>
+
+<li>Restart <b>owl-dnstimer</b>.  
+
+<p>
+
+</ol>
+
+<p>
+
+If you have correctly set up your configuration file, then <b>owl-dnstimer</b>
+will start collecting data for the new queries.
+
+<p>
+
+Stopping collection of certain queries only requires deleting (or commenting
+out) the appropriate entries from the configuration file.  <b>owl-dnstimer</b>,
+of course, must be restarted.
+
+<p>
+
+
+
+<!*****************************************************************************>
+
+<a name="ig-sensor-6."></a>
+<h3>6. Owl Sensor Commands</h3>
+
+<p>
+
+<!------------------------------------------------------------>
+
+The Owl sensor has a number of Owl-specific commands required for its
+operation.  This section provides a brief overview of the available commands.
+These are all Perl scripts and have self-contained man pages, which contain
+greater details about their use.  These scripts are intended to run as an
+unprivileged user.
+
+<p>
+
+This section briefly describes the software used on the Owl sensor hosts.
+
+<ul>
+
+<li><b>owl-archold</b><br>
+This script archives previously archived Owl sensor data into monthly
+archives.  A compressed <b>tar</b> file is created that contains the archived
+data files from a particular month.  It should only be run on a particular
+month's archive after the month has been completed.  This script is exactly
+the same as the <b>owl-archold</b> on the Owl manager host.
+<br>
+This script is assumed to live in the Owl user's home or <b>bin</b> directory.
+
+<p>
+
+<!--------------------------------------------->
+
+<li><b>owl-dataarch</b><br>
+This script moves data from the Owl sensor's active data directory to a
+year/month-specific archive directory.  This script archives Owl sensor
+data by moving old data from the Owl data directory to an archive directory.
+<br>
+This script is assumed to live in the Owl user's home or <b>bin</b> directory.
+
+<p>
+
+<!--------------------------------------------->
+
+<li><b>owl-dnstimer</b><br>
+This script is the primary part of the Owl sensor.  It sends periodic DNS
+requests to the root nameservers and records the time each request takes.
+These query records are provided to the Owl manager for aggregation and
+display.
+<br>
+This script is assumed to live in the Owl user's home or <b>bin</b> directory.
+
+<p>
+
+<!--------------------------------------------->
+
+<li><b>owl-heartbeat</b><br>
+This script periodically contacts the Owl manager to let it know the sensor
+is still alive.  <b>owl-heartbeat</b> is an optional service for the benefit
+of the Owl manager's administrators; the Owl sensor will run just fine if a
+sensor's administrator elects not to run it.  This is intended to be a
+<b>cron</b> job that runs once a minute, but other time periods may be chosen.
+<br>
+This script is assumed to live in the Owl user's home or <b>bin</b> directory.
+
+<p>
+
+<!--------------------------------------------->
+
+<li><b>owl-sensord</b><br>
+This script executes the <b>owl-dnstimer</b> and <b>owl-transfer</b> daemons
+and monitors their execution.  If either of the daemons exits unexpectedly,
+then <b>owl-sensord</b> will restart it.  In order to keep configuration or
+other problems from causing rapid re-executions, <b>owl-sensord</b> will
+temporarily suspend execution of one of the daemons if a certain number of
+execution attempts fail within a short period of time.
+<br>
+This script is assumed to live in the Owl user's home or <b>bin</b> directory.
+
+<p>
+
+<!--------------------------------------------->
+
+<li><b>owl-status</b><br>
+This script gives the user a simple view of the status of the three primary
+Owl sensor components.  It reports whether or not <b>owl-dnstimer</b>,
+<b>owl-sensord</b>, and <b>owl-transfer</b> are running.  An additional
+option shows the query parameters used by <b>owl-dnstimer</b> and the time
+that each root nameserver was last queried.
+<br>
+This script is assumed to live in the Owl user's home or <b>bin</b> directory.
+
+<p>
+
+<!--------------------------------------------->
+
+<li><b>owl-transfer</b><br>
+This script periodically transfers Owl sensor data from the sensor host to
+the manager host.
+<br>
+This script is assumed to live in the Owl user's home or <b>bin</b> directory.
+
+<p>
+
+</ul>
+
+<p>
+
+
+
+<hr>
+
+
+<a name="ig-manager"></a>
+<center><h2>Manager Installation Manual</h2></center>
+
+<p>
+
+<!*****************************************************************************>
+
+<a name="ig-manager-0."></a>
+<h3>0. Setting Up Managers for the Owl Monitoring System</h3>
+
+<!--------------------------------------------------------------------------->
+
+The Owl Monitoring System uses timed Domain Name System (DNS) queries to
+monitor basic network functionality.  The system consists of a manager host
+and a set of sensor hosts.  The Owl sensors perform periodic DNS queries and
+report to the Owl manager the time taken for each query.  Over time, this
+shows the responsiveness of the DNS infrastructure.
+
+<p>
+
+An Owl sensor is configured to send DNS queries to a set of DNS nameservers.
+The queries may be for a variety of DNS resource record types, and they are
+sent to a specific nameserver to request data about a specific target host.
+For example, one query might request that the D root nameserver return NS
+records for the "www.example.com" host, while another query might request
+that a local (non-root) nameserver return AAAA records for the
+"mail.example.com" host.  Data will be collected for each configured query
+and given to the Owl manager to whom the sensor reports.  The different
+sensors in the sensor set may perform different queries or the same queries.
+
+<p>
+
+A configuration file controls the behavior of the Owl sensor.  This file
+defines the queries that the sensor will perform, the Owl manager (or
+managers) to whom the sensor reports, locations of data and log files,
+frequency of queries, and other important behaviors.
+
+<p>
+
+An Owl sensor may provide its data to more than one Owl manager.  In such
+situations, the managers operate independently of each other and do not know
+of each other's existence.  Throughout the installation manuals, it will be
+assumed that an installation will have a single manager.  Special instructions
+for multiple-manager environments will be given where needed.
+
+<p>
+
+This document provides an operational overview of the Owl system, installation
+instructions for the Owl manager and the third-party software that supports it.
+Instructions for configuring the Owl manager are also given.
+
+<p>
+
+<!----------------------------------------------------------------->
+
+<table>
+
+<tr>
+
+<!-------------------------------------------------->
+
+<td valign=top width="50%">
+
+<h3>Organization of Installation Manual</h3>
+
+Sections:
+
+<table>
+
+<tr>
+<td>&nbsp;
+<td><a href="full-install-guide.html#ig-manager-0.">0.</a>
+<td>&nbsp;
+<td>Setting Up Managers for the Owl Monitoring System</tr>
+
+<tr>
+<td>&nbsp;
+<td><a href="full-install-guide.html#ig-manager-1.">1.</a>
+<td>&nbsp;
+<td>Operational Overview of the Owl Monitoring System</tr>
+
+<tr>
+<td>&nbsp;
+<td><a href="full-install-guide.html#ig-manager-2.">2.</a>
+<td>&nbsp;
+<td>Owl Manager Installation</tr>
+
+<tr>
+<td>&nbsp;
+<td><a href="full-install-guide.html#ig-manager-3.">3.</a>
+<td>&nbsp;
+<td>An Interlude on Sensor Queries</tr>
+
+<tr>
+<td>&nbsp;
+<td><a href="full-install-guide.html#ig-manager-4.">4.</a>
+<td>&nbsp;
+<td>Adding Owl Sensors to an Existing Owl Installation</tr>
+
+<tr>
+<td>&nbsp;
+<td><a href="full-install-guide.html#ig-manager-5.">5.</a>
+<td>&nbsp;
+<td>Defining Graphs</tr>
+
+<tr>
+<td>&nbsp;
+<td><a href="full-install-guide.html#ig-manager-6.">6.</a>
+<td>&nbsp;
+<td>Changing Queries on Existing Owl Sensors</tr>
+
+<tr>
+<td>&nbsp;
+<td><a href="full-install-guide.html#ig-manager-7.">7.</a>
+<td>&nbsp;
+<td>Owl Manager Commands</tr>
+
+<tr>
+<td width=20>&nbsp;
+<td width=20>&nbsp;
+<td>&nbsp;
+<td>&nbsp;</tr>
+
+</table>
+
+<p>
+
+
+<!*****************************************************************************>
+
+<a name="ig-manager-1."></a>
+<h3>1. Operational Overview of the Owl Monitoring System</h3>
+
+<p>
+
+<!------------------------------------------------------------>
+
+The Owl Monitoring System has a conceptually simple method of operations.
+There is a manager host and a set of sensor hosts.  The sensors periodically
+make a set of DNS queries and time how long it takes to get a response.  The
+response times are saved to data files.  After a certain amount of time, the
+data files are transferred from the sensor to the manager host.  For any
+particular sensor, this data transfer may be configured to be initiated by
+either the manager or by the sensor.  The manager transfers the data into
+a monitoring package, which allows easy display of the data.
+
+<p>
+
+Below is a diagram of the flow of Owl sensor data through two Owl monitoring
+installations.
+
+<p>
+
+<center>
+<img src="owl-topography.png">
+</center>
+
+<p>
+
+Take note of the following:
+
+<ul>
+<li>There are three distinct administrative domains, two of which have Owl
+managers.
+<li>Owl Manager 1 receives sensor data from all three domains.
+<li>Owl Manager 2 receives sensor data from itself and one other domain.
+<li>Domain 1's sensors do not provide data to other domains.
+<li>Domain 2 contains an Owl sensor, but not an Owl manager. 
+<li>Owl sensors in the domains 2 and 3 provide data to Owl managers outside
+of their own domain.
+<li>Owl sensors can query multiple name servers.
+</ul>
+
+(Domains in this example are defining administrative control and are <u>not</u>
+DNS domains.)
+
+<p>
+
+The remainder of this section provides a little more information on the
+components that make up the sensor and manager software.
+
+<p>
+
+<!------------------------------------------------------->
+
+<a name="ig-manager-1.1."></a>
+<h3>1.1. Owl Sensor Overview</h3>
+
+<p>
+
+An Owl sensor makes timed DNS queries and records the time required for a
+response.  The response time data are transferred to the Owl manager after
+a certain period of time.  The transfer may occur at the instigation of
+either the manager or the sensor.  The Owl sensor's three primary programs
+that handle these tasks are described below.
+
+<p>
+
+The Owl sensor's actions are controlled by a configuration file.  This file
+defines the queries that must be performed, how often the queries must
+happen, how frequently the response data files are transferred to the
+manager, data and logging information, and other required information.
+
+<p>
+
+The <b>owl-dnstimer</b> program performs periodic DNS lookups, as specified by
+the configuration file.  These lookups are timed so that the sensor can record
+how long it took to make a particular request.  The configuration parameters
+used by <b>owl-dnstimer</b> include the nameserver to query, the target zone
+to query about, the type of DNS record, and the frequency of queries.
+
+<p>
+
+If the Owl system is configured so that the sensor transfers its data to the
+manager, then the transfer is performed by the
+<b>owl-transfer</b> program.  The transfers are performed using <b>rsync</b>
+over an <b>ssh</b> connection.  The sensor host must be able to do a
+password-less <b>ssh</b> into the manager host.  The frequency of transfers
+is defined in the configuration file.  Choosing the transfer frequency is a
+trade-off between lower impact on the sensor, manager, and network (less
+frequent) and lower latency of data display on the manager (more frequent.)
+
+<p>
+
+The <b>owl-sensord</b> program is an optional controller for <b>owl-dnstimer</b>
+and <b>owl-transfer</b>.  If used, it will run these daemons and restart them
+if they stop.  If one of the daemons tries to restart too often in too short
+a time, then <b>owl-sensord</b> will warn an administrator (via email) and
+temporarily stop trying to execute the program.  <b>owl-sensord</b> is not
+required in order to run <b>owl-dnstimer</b> and <b>owl-transfer</b>; the Owl
+sensor can run fine without it.  However, it provides a convenient way to keep
+them running.
+
+<p>
+
+As part of the installation process, you must decide whether you will run the
+Owl sensor using the <b>owl-sensord</b> daemon to control execution or if you
+will run <b>owl-dnstimer</b> and <b>owl-transfer</b> directly.
+
+<p>
+
+The Owl sensor has a number of programs for administrative support.  Most
+of these are not required, but they assist in sensor administration.  In
+particular, the <b>owl-dataarch</b> and <b>owl-heartbeat</b> programs are
+intended to run as <b>cron</b> jobs.  <b>owl-dataarch</b> moves "old" sensor
+data into an archive directory, in order to keep the sensor-manager data
+transfer from bogging down (within <b>rsync</b>) as the data collection grows.
+The <b>owl-heartbeat</b> program periodically touches a webpage hosted on the
+Owl manager, in order to let the manager know that the sensor host is still
+running.  <b>owl-heartbeat</b> is not critical and can be left off, but
+<b>owl-dataarch</b> is essential.  There are a few other administrative
+commands available; see
+<a href="full-install-guide.html#ig-sensor-6.">section 6</a>
+for a brief description of all the Owl sensor commands.
+
+<p>
+
+<!------------------------------------------------------->
+
+<a name="ig-manager-1.2."></a>
+<h3>1.2. Owl Manager Overview</h3>
+
+<p>
+
+The Owl manager's purpose is to receive sensor data and make it available for
+display.  The majority of the Owl manager is actually third-party packages,
+and the Owl manager software provides the "glue" that allows the Owl sensor
+data to work with those packages.  In particular, Owl provides data to the
+Nagios monitoring system, which then displays the data.
+
+<p>
+
+The Owl sensors may report to managers that are under separate administrative
+control.  A particular installation of the Owl Monitoring System may use
+multiple manager hosts, but this document assumes that there is only one.
+
+<p>
+
+The manager can have either an active or passive role in the process of moving
+Owl sensor data from the sensor to the manager.  If the manager is active, it
+will use the <b>owl-transfer-mgr</b> program to pull sensor data from the Owl
+sensor host.  If the manager is passive, then the sensor will transfer the
+data when it sees fit.
+
+<p>
+
+The are two groups of "glue" programs that Owl uses to interface with
+Nagios.  The <b>owl-dnswatch</b> and <b>owl-perfdata</b> inject Owl
+sensor DNS response data into Nagios for display and graphing.  The
+<b>owl-sensor-heartbeat.cgi</b> and <b>owl-stethoscope</b> programs
+insert Owl "heartbeat" data into Nagios so it can track availability
+of the Owl sensors.
+
+<p>
+
+The Owl manager also has a number of programs for administrative support.
+Most of these are not required, but they assist in manager administration.
+In particular, the <b>owl-archdata</b> and <b>owl-monthly</b> programs are
+intended to run as <b>cron</b> jobs.  <b>owl-archdata</b> moves "old" sensor
+data into an archive directory, in order to keep data transfer from the sensor
+from bogging down as the data collection grows.  The <b>owl-monthly</b>
+program archives the previous month's sensor data into a compressed tarfile.
+<b>owl-newsensor</b> and <b>owl-initsensor</b> assist in setting up the
+manager for a new sensor.  There are a few others available; see
+<a href="full-install-guide.html#ig-manager-7.">section 7</a>
+for a brief description of all the Owl manager commands.
+
+<p>
+
+The following third-party software packages are used in with this distribution
+of the Owl Monitoring System.  The packages are not included with the Owl
+distribution, but must be retrieved as required for your operating system.
+These packages must be installed on the manager:
+
+<p>
+
+<table>
+<tr><td width=40>&nbsp;<td width=150><li>Nagios<td>Monitoring system.
+<tr><td>&nbsp;<td><li>Nagios plugins<td>Monitoring system.
+<tr><td>&nbsp;<td><li><b>nagiosgraph</b><td>Provides graphing for Nagios.
+<tr><td>&nbsp;<td><li><b>rrdtool</b><td>Database tool for use by <b>nagiosgraph</b>.
+<tr><td>&nbsp;<td><li><b>drraw.cgi</b><td>Draws graphs for <b>nagiosgraph</b> of data stored by <b>rrdtool</b>.
+</table>
+
+<p>
+
+Instructions are given in this document for integrating these packages with
+the Owl software.  It would be for the best to read the installation
+instructions below for each package <i>prior</i> to installing them.
+
+<p>
+
+Different management, graphing, and database tools may be used instead of
+those listed above, if so desired.  Integrating the Owl manager software
+with other packages is beyond the scope of this manual.
+
+<p>
+
+David Josephsen's <u>Building a Monitoring Infrastructure with Nagios</u>
+is very helpful for understanding Nagios and how the various pieces work
+together.  If you're going to be running a Nagios monitor, you would be
+doing yourself a favor to read this book.
+
+<!------------------------------------------------------->
+
+<a name="ig-manager-1.3."></a>
+<h3>1.3. Data Retention on Owl Hosts</h3>
+
+<p>
+
+Owl sensors generate a large amount of DNS response data.  For example, a
+sensor running five queries, once a minute each, generated roughly 517KB of
+data per day.  (Due to the way the data are stored, this will be affected by
+the amount length of target and nameserver hostnames used.)  You may or may
+not want to retain any of this data.  The data files can be useful for
+rebuilding the Owl manager's <b>rrdtool</b> databases (or building with
+different parameters.)
+
+<p>
+
+On both the Owl manager and the Owl sensors, sensor data are stored in
+a data directory.  After a few days, the data files are moved to a data
+archive directory.  A full month's data files will be collapsed into a
+compressed format.
+
+<p>
+
+The Owl Monitoring System provides tools that assist with managing Owl sensor
+data.  After the sensor data have been moved from the sensor to the manager,
+the sensor has no further need of the data.  On the manager, after the data
+have been moved into the data archive, the Owl Monitoring System has no
+further need of the old data; it may be retained or deleted.  (The data will
+have been moved into the manager's <b>rrdtool</b> databases by then, so the
+data is not lost.)  Each installation must decide their own data retention
+policy.
+
+<p>
+
+
+
+<p>
+
+<!*****************************************************************************>
+
+<a name="ig-manager-2."></a>
+<h3>2. Owl Manager Installation</h3>
+
+<p>
+
+<!------------------------------------------------------------>
+
+<p>
+
+This section gives installation procedures for setting up the Owl Monitoring
+software on manager hosts.  There are two sections, an installation section
+and a configuration section.  The installation instructions discuss software
+installation of Owl software and supporting third-party software packages.
+System configuration is also detailed in this section, but only for
+non-Owl-specific configuration.  There are a number of Owl-specific
+configuration actions that must be performed and these are detailed in <a
+href="full-install-guide.html#ig-manager-4.">section 4</a>.
+
+<p>
+
+The Owl manager <b>requires</b> Perl.  You must install it on your system
+if it isn't already available.
+
+<p>
+
+
+<!------------------------------------------------------->
+
+<a name="ig-manager-2.1."></a>
+<h3>2.1. Manager Installation</h3>
+
+The basic Owl manager configuration consists of the Owl software and the
+Nagios monitoring system.  This configuration allows for monitoring of current
+sensor status, but does not provide any view into past monitoring data.  In
+order to get the historical view, especially as provided by a graphing
+capability, several additional software packages must be installed on the
+manager.  Since the historical view provides a great deal of useful
+information, these instructions will assume that you will be installing the
+additional software.
+
+<p>
+
+It is possible (and not too difficult) to run multiple instances of the
+third-party software packages (e.g., Nagios, <b>nagiosgraph</b>) on a single
+host, but care must be taken when configuring, building, and installing the
+software.  Without careful work, an existing installation may be overwritten
+by a later installation.  These instructions assume that only one instance of
+each package will be installed on the manager host.
+
+<p>
+
+Below is a diagram of the flow of Owl sensor data on the Owl manager.  The
+details may not make sense at this stage, but this will show how the various
+pieces fit together.
+
+<p>
+
+<center>
+<img src="owl-manager-data.png">
+</center>
+
+<p>
+
+<!----------------------------------->
+
+<a name="ig-manager-2.1.1."></a>
+<h3>2.1.1. Preparatory Steps</h3>
+
+Several actions must be taken on the manager host to prepare it for installing
+the required software.  These steps are listed below.  During the installation
+procedures, don't be shy about backing up things; it might not be necessary,
+but better safe than sorry.
+
+<p>
+
+<ul>
+
+<li>It is advisable to run a backup of your system before starting.  Depending
+on your level of paranoia, it couldn't hurt to run an incremental backup after
+completing each step of the installation.
+
+<p>
+
+<li>An unprivileged user account must be created for the Owl manager software.
+An existing account may be used, but it would probably be best to use a new
+account as this will segregate files and processes from existing users.  The
+user's name and group are not required to be any particular values.
+
+<p>
+
+You may want to create two unprivileged users for use by the Owl manager.
+One would run the various Owl commands, and the other would be used for
+sensor data transfers (in the case that the sensor is to initiate transfers.)
+The first user will need <i>rwx</i> permission to all the Owl directories and
+files.  The second user will need to be able to write data into the Owl data
+directories.
+
+<p>
+
+In the following instructions, it is assumed that a single user will created
+for the Owl manager and it will be referred to as the Owl User.
+
+<p>
+
+<li>SSH utilities and a web server must be installed on the manager host.
+These instructions assume that the OpenSSH and the Apache web server will be
+used.  Others may be used instead, but the you must determine the appropriate
+commands and options to use.  Apache support is included in Nagios.
+
+<p>
+
+<li>Install the <b>rrsync</b> utility.  This is a front-end to <b>rsync</b> that restricts the locations to which <b>rsync</b> may copy data.  This tool is available here:  <b>http://ftp.samba.org/pub/unpacked/rsync/support/rrsync</b>
+
+<p>
+
+<li>Create the directories required for each sensor.  There must be a data
+repository and a data archive.  Each sensor will have their own subdirectory
+in the repository and in the archive.  There must be a <b>data</b> and a
+<b>history</b> directory within each sensor's repository directory.
+
+<p>
+
+The following is a possible set of directories:
+<table>
+<tr><td width=40>&nbsp;<td><b>/owl/data</b><td>top-level data repository
+<tr><td width=40>&nbsp;<td><b>/owl/old.data</b><td>top-level data archive
+<tr><td width=40>&nbsp;<td><b>/owl/data/sensor-portland/dnstimer</b>&nbsp;&nbsp;<td>sensor-portland's DNS timer-data directory
+<tr><td width=40>&nbsp;<td><b>/owl/data/sensor-portland/history</b><td>sensor-portland's monitoring history (for Nagios)
+<tr><td width=40>&nbsp;<td><b>/owl/old.data/sensor-portland</b><td>sensor-portland's data archive
+<tr><td width=40>&nbsp;<td><b>/owl/data/sensor-oslo/dnstimer</b><td>sensor-oslo's DNS timer-data directory
+<tr><td width=40>&nbsp;<td><b>/owl/data/sensor-oslo/history</b><td>sensor-oslo's monitoring history (for Nagios)
+<tr><td width=40>&nbsp;<td><b>/owl/old.data/sensor-oslo</b><td>sensor-oslo's data archive
+</table>
+
+<p>
+
+<li>Create an SSH key for the Owl user.  This is commonly done with the
+<b>ssh-keygen</b> command.
+
+<p>
+
+<li>Consider the users you want to access your Owl monitor, as well as the
+types of access they should be allowed.  These users will be added to the
+Owl-specific password file used by Apache and the users and access rights
+will be added to a Nagios configuration file.  These users are web-based
+users only, and are not (necessarily) related to users on the Owl manager
+host.
+
+<p>
+
+<li>Install the software as described in the following sections.  The Owl
+software will be installed <i>after</i> all the third-party software, since
+some of the Owl software will be installed in directories created by the
+third-party software.
+
+<p>
+
+</ul>
+
+<!----------------------------------->
+
+<a name="ig-manager-2.1.2."></a>
+<h3>2.1.2. Installing Third-Party Software</h3>
+
+The third-party software packages should be built and installed as specified
+by each package.  Owl-specific notes for each will be given below.  While many
+of these packages are available as pre-built distributions, configuring and
+building them yourself will provide for additional control that may be useful.
+This includes the installation location and the user and group that will be
+used for executing the commands.
+
+<p>
+
+Nagios, along with a web server, should be installed such that they will be
+restarted at system boot time.
+
+<p>
+
+This table shows the most recent software versions that were tested with the
+Owl Monitor. 
+<table>
+<tr>
+   <td width=80>&nbsp;
+   <td width=120><b>Package</b>
+   <td><b>Version Tested with Owl</b>
+</tr>
+<tr><td>&nbsp;<td>Nagios Core<td align=center>3.4.1</tr>
+<tr><td>&nbsp;<td>Nagios Plugins<td align=center>1.4.16</tr>
+<tr><td>&nbsp;<td>nagiosgraph<td align=center>1.4.4</tr>
+<tr><td>&nbsp;<td>rrdtool<td align=center>1.4.7</tr>
+<tr><td>&nbsp;<td>drraw.cgi<td align=center>2.2b2</tr>
+</table>
+
+<p>
+
+<!------------------------->
+
+<a name="ig-manager-2.1.2.1."></a>
+<h3>2.1.2.1. Nagios Core and Plugins</h3>
+
+If building Nagios Core and Nagios Plugins from source, it is recommended that
+the <b>configure</b> command be given arguments that will allow specification
+of the installation-path prefix, the Nagios user, and the Nagios group.  A
+possible command line could be:
+
+<pre>
+    $ ./configure --with-command-group --prefix=/owl --with-nagios-user=owl-monitor --with-nagios-group=owl-monitor
+</pre>
+
+<p>
+
+The same prefix, username, and groupname must be used when building Nagios
+Core and Nagios Plugins.
+
+<p>
+
+Multiple instances of Nagios can be installed on a single machine.  This can
+be useful for segregating different things being monitored.  However, you must
+be careful when doing this.  In particular, even if the <i>--prefix</i> option
+was given to <b>configure</b>, the "make install-init" and "make
+install-webconf" commands will overwrite existing Nagios files.
+
+<p>
+
+<!------------------------->
+
+<a name="ig-manager-2.1.2.2."></a>
+<h3>2.1.2.2. <b>nagiosgraph</b></h3>
+
+The <b>README</b> file for <b>nagiosgraph</b> contains instructions for
+automated installation (using <b>install.pl</b>) and for manual installation.
+You should read this file and decide which method you want to use.
+
+<p>
+
+If you choose the manual installation, you may skip most of this section and
+pick up at the discussion of the <b>map</b> file.
+
+<p>
+
+If you choose to install with <b>install.pl</b>, you must know that it looks
+like several of the steps are not performed by the script.  After running
+<b>install.pl</b> you must verify that the manual steps from "Restart nagios"
+to the end have actually been taken.
+
+<p>
+
+<b>install.pl</b> will configure the package, install its files in the
+appropriate places, and modify Nagios and <b>httpd</b> files as needed.
+A variety of options allow for site-specific installation layouts.  In
+addition, you will be prompted for many directory and file names prior to
+<b>install.pl</b> completing its work.  If it can't find one or another file
+that it must update, then at the end of execution it will provide a set of
+steps that you must manually perform in order to complete the installation.
+
+<p>
+
+The <i>--dry-run</i> option will show you what <b>install.pl</b> would do, so
+that you may verify where things are being copied.  It isn't required, but it
+wouldn't be a bad idea to use this option prior to the actual install.
+
+<p>
+
+One thing <b>install.pl</b> is likely to say is that you must add a Nagios
+command file.  This file probably already exists, and you must find it.  It
+is likely to be called something like <b>commands.cfg</b> and be located in
+the <b>etc/objects</b> directory in your Nagios installation.  Check names
+carefully when making this modification, as <b>commands.cfg</b> already has
+a <i>process-service-perfdata</i> command and <b>install.pl</b> will have
+you add a <i>process-service-perfdata-by-nagiosgraph</i> command.
+
+<p>
+
+<b>install.pl</b> logs all its actions, including the manual-intervention
+actions, in the <b>install-log</b> file.  Unfortunately, the command line is
+not recorded in the log file, so it might be useful to save that somewhere
+yourself.
+
+<p>
+
+I have used this command to successfully install <b>nagiosgraph</b>:
+
+<pre>
+    $ install.pl --prefix /owl/nagiosgraph --nagios-user owl-manager --nagios-cgi-url /nagios-owl/cgi-bin \
+    --nagios-perfdata-file /owl/var/service-perfdata.out --log-dir /owl/var --layout standalone
+</pre>
+
+I do not let <b>install.pl</b> update the Nagios or Apache configurations,
+which it will prompt for; I prefer to make those modifications myself.
+Refer to the <b>install-log</b> file to see what remains to be done.
+
+<p>
+
+The <b>README</b> file contains steps for manual installation and it looks
+like several of the steps are not performed by <b>install.pl</b>.  If you use
+<b>install.pl</b> to install <b>nagiosgraph</b>, verify that the manual steps
+from "Restart nagios" to the end have actually been taken.
+
+<p>
+
+You may have to manually copy the <b>nagiosgraph.ssi</b> file into place.
+This file is in <b>.../nagiosgraph/examples/nagiosgraph.ssi</b> and it
+should be copied into your equivalent of <b>/owl/share/nagiosgraph.ssi</b>.
+
+<p>
+
+Before <b>nagiosgraph</b> can be used by the Owl manager, the <b>map</b>
+file must be modified to recognize data from the Owl plugins for Nagios.
+The required modifications are discussed in
+<a href="full-install-guide.html#ig-manager-2.2.7.">section 2.2.7</a>.
+
+<p>
+
+<!------------------------->
+
+<a name="ig-manager-2.1.2.3."></a>
+<h3>2.1.2.3. <b>rrdtool</b></h3>
+
+No Owl-specific configuration or actions were required for building and
+installing <b>rrdtool</b>.
+
+<p>
+
+<!------------------------->
+
+<a name="ig-manager-2.1.2.4."></a>
+<h3>2.1.2.4. <b>drraw.cgi</b></h3>
+
+To install <b>drraw.cgi</b>, copy the <b>drraw.cgi</b> and the
+<b>drraw.conf</b> files into the Nagios <b>sbin/</b> directory.  So, if you
+have installed Nagios in <b>/owl/nagios</b>, then you should copy the two
+<b>drraw</b> files into <b>/owl/nagios/sbin</b>.
+
+<p>
+
+The <b>drraw.conf</b> must be edited for this installation.  Some of these
+edits are required and some are optional.  Each will be marked as to whether
+or not you must make the change.  This file is a Perl file, so the
+configuration values are set according to Perl's language rules.
+
+<p>
+
+<ul>
+
+<li>Set the <i>$title</i> variable if you don't want the default page title
+in the Nagios-displayed graphing pages.
+<br><i>(optional)</i>
+
+<p>
+
+<li>Set the <i>%datadirs</i> variable to hold the paths to your sensors' RRD
+databases.  There are two fields required for each entry.  The first is the
+path to that sensor's database files, and should not have a terminating
+slash.  The second is a name by which those databases will be identified when
+defining new graphs.
+
+<pre>
+    '/owl/nagiosgraph/var/rrd/sensor1%20h-root%20foo.com%20A'  => '[Kyoto H foo A]',
+    '/owl/nagiosgraph/var/rrd/sensor1%20h-root%20foo.com%20NS' => '[Kyoto H foo NS]',
+    '/owl/nagiosgraph/var/rrd/sensor5%20h-root%20foo.com%20A'  => '[Cairo H foo A]',
+</pre>
+
+The identifier should be unique for each database directory.
+<br><i>(required)</i>
+
+<p>
+
+<li>Set the <i>vrefresh</i> variable for the number of seconds the graph
+viewer will wait before automatically refreshing its display.
+<br><i>(optional)</i>
+
+<p>
+
+<li>Set the <i>drefresh</i> variable for the number of seconds the dashboard
+viewer will wait before automatically refreshing its display.
+<br><i>(optional)</i>
+
+<p>
+
+<li>Set the <i>@dv_def</i>, @<i>dv_name</i>, and @<i>dv_secs</i> array
+variables for the graphs that will be generated each time a predefined graph
+is displayed.  These are time based values and a particular element of one
+array is directly related to that same element in the other arrays.
+
+<p>
+
+The <i>@dv_def</i> array is used to select data from the database.
+The <i>@dv_name</i> array is used to provide titles for each graph.
+The <i>@dv_secs</i> array is used to provide the count of seconds for
+each graph.
+
+<p>
+
+The following example values show the relation between the three arrays.
+<pre>
+    @dv_def  = ( 'end - 15 minutes', 'end - 60 minutes', 'end - 4 hours',
+		 'end - 12 hours',   'end - 24 hours',   'end - 1 week' ,
+		 'end - 1 month',    'end - 1 year');
+
+    @dv_name = (
+	'Past&nbsp;15&nbsp;Minutes',
+	'Past&nbsp;60&nbsp;Minutes',
+	'Past&nbsp;4&nbsp;Hours',
+	'Past&nbsp;12&nbsp;hours',
+	'Past&nbsp;24&nbsp;Hours',
+	'Past&nbsp;Week',
+	'Past&nbsp;Month',
+	'Past&nbsp;Year'
+    );
+
+    @dv_secs = ( 900, 3600, 14400, 43200, 86400, 604800, 2419200, 31536000 );
+</pre>
+<i>(optional)</i>
+
+<p>
+
+<li>The <i>$saved_dir</i> variable defines where definitions for your
+predefined graphs will be stored.  It must be set to match your path
+configuration and it must exist and be writable by the web server.
+It might be something like:
+
+<pre>
+    $saved_dir = '/owl/nagios/var/drraw/saved';
+</pre>
+<i>(required)</i>
+
+<p>
+
+<li>The <i>$tmp_dir</i> variable defines where cached graphing file will be
+stored until they time out and are deleted.  It must be set to match your path
+configuration and it must exist and be writable by the web server.  It might
+be something like:
+
+<pre>
+    $tmp_dir = '/owl/nagios/var/drraw/tmp';
+</pre>
+<i>(required)</i>
+
+<p>
+
+<li>The <i>$ERRLOG</i> variable defines where graphing errors will be logged.
+It must be set to match your path configuration and it must exist and be
+writable by the web server.  It might be something like:
+
+<pre>
+    $ERRLOG = '/owl/nagios/var/drraw/errors.log';
+</pre>
+<i>(required)</i>
+
+<p>
+
+</ul>
+
+<p>
+
+<!------------------------->
+
+<a name="ig-manager-2.1.2.5."></a>
+<h3>2.1.2.5. Perl modules</h3>
+
+There is a set of Perl modules required by the Owl manager and the third-party
+software packages.  Some of the software packages may install these packages
+themselves, but you must ensure that these are available.  These should be
+available through CPAN.
+
+<p>
+
+Modules required by the Owl manager:
+<ul>
+<li>Cwd.pm
+<li>Fcntl.pm
+<li>File::Path.pm
+<li>Getopt::Long.pm
+<li>Time::Local.pm
+</ul>
+
+<p>
+
+It is likely that some of the third-party software may require other Perl
+modules.  The installation documentation or process <i>should</i> inform you
+of what must be installed on your system.
+
+<p>
+
+<!----------------------------------->
+
+<a name="ig-manager-2.1.3."></a>
+<h3>2.1.3. Installing the Owl Monitor Software</h3>
+
+There is a small amount of manager-specific software in the Owl Monitor.  Most
+of the work on the manager is performed by Nagios and the other third-party
+software.  The Owl Monitor software on the manager host consists of two Nagios
+plugins that will interpret Owl sensor data for Nagios and add Owl sensor data
+to graphing databases.  There is also a small number of administrator
+programs for managing the large amounts of Owl sensor data.
+
+<p>
+
+<!------------------------->
+
+<a name="ig-manager-2.1.3.1."></a>
+<h3>2.1.3.1. Unpacking the Owl Monitor Software</h3>
+
+The Owl Monitor software comes in a <b>bzip2</b>'d <b>tar</b> file.  In most
+modern Unix systems, this can be unpacked with this command:
+
+<pre>
+        $ tar xzf owl-monitor.tar.gz
+</pre>
+
+This command unpacks the Owl distribution in the current directory.  This
+can be unpacked anywhere you want, but it is a good idea to do it in the Owl
+manager's home directory.
+
+<p>
+
+Most of the Owl commands will be in the <b>owl-manager/bin</b> directory.
+These commands can stay in that directory or be moved elsewhere.  If they
+remain in their own directory, it would be helpful to add the directory
+to your shell's path.
+
+<p>
+
+<!------------------------->
+
+<a name="ig-manager-2.1.3.2."></a>
+<h3>2.1.3.2. <b>owl-dnswatch</b></h3>
+
+The <b>owl-dnswatch</b> command is a Nagios plugin that reads Owl monitoring
+data and reports the latest results to Nagios.  Each execution of
+<b>owl-dnswatch</b> requires an Owl sensor name, a target host, a DNS server,
+and a DNS query type.  The appropriate monitor datafile is consulted based on
+those inputs.  The following actions must be taken to install
+<b>owl-dnswatch</b>.
+
+<p>
+
+<ul>
+
+<li>Set the <i>$OWLDATA</i> value in <b>owl-dnswatch</b> to the top-level
+directory that holds the Owl monitoring data.  This path will depend on
+your installation hierarchy, but it will likely look something like:
+
+<pre>
+        my $OWLDATA = "/owl/data";
+</pre>
+
+<p>
+
+<li>Copy <b>owl-dnswatch</b> to the Nagios plugin directory.  This directory
+is probably something like <b>/owl/nagios/libexec</b>.
+
+<p>
+
+</ul>
+
+<p>
+
+<!------------------------->
+
+<a name="ig-manager-2.1.3.3."></a>
+<h3>2.1.3.3. <b>owl-perfdata</b></h3>
+
+The <b>owl-perfdata</b> command is a Nagios plugin that acts as a front-end
+for inserting Owl monitoring data into an RRD database.  These databases are
+used for graphing the monitoring data.  The following actions must be taken
+to install <b>owl-perfdata</b>.
+
+<ul>
+
+<li>Set the <i>$GRAPHINSERT</i> value in <b>owl-perfdata</b> to the path
+to the <b>insert.pl</b> command.  This path will depend on where you have
+installed <b>nagiosgraph</b>, but it will likely look something like:
+
+<pre>
+        my $GRAPHINSERT = "/owl/nagiosgraph/bin/insert.pl";
+</pre>
+
+<p>
+
+<li>Copy <b>owl-perfdata</b> to the Nagios plugin directory.  This directory
+is probably something like <b>/owl/nagios/libexec</b>.
+
+<p>
+
+</ul>
+
+<p>
+
+<!------------------------->
+
+<a name="ig-manager-2.1.3.4."></a>
+<h3>2.1.3.4. <b>owl-newsensor</b></h3>
+
+There are a set of Nagios objects that must be created for each Owl
+sensor.  Once the Owl manager has sensor data files in its data directory,
+the <b>owl-newsensor</b> program can be used to create these objects.
+The actions required for this are described in
+<a href="full-install-guide.html#ig-manager-4.7.">section 4.7</a>.
+
+<p>
+
+No local modifications are required for <b>owl-newsensor</b>.
+
+<p>
+
+Copy <b>owl-newsensor</b> to a directory which will be its home.
+This could be anything that is convenient for you; e.g., <b>/usr/bin</b>,
+<b>/usr/local/bin</b>, <b>~/mystuff</b>, or <b>/owl/scripts</b>.
+
+<p>
+
+<!------------------------->
+
+<a name="ig-manager-2.1.3.5."></a>
+<h3>2.1.3.5. <b>owl-transfer-mgr</b></h3>
+
+If the Owl manager transfers data from a sensor, it will use the
+<b>owl-transfer-mgr</b> to retrieve the data.
+
+<p>
+
+No local modifications are required for <b>owl-newsensor</b>.
+
+<p>
+
+<!------------------------->
+
+<a name="ig-manager-2.1.3.6."></a>
+<h3>2.1.3.6. Data-Archiving Programs</h3>
+
+The following programs assist the administrator with managing the large amount
+of Owl monitoring data that accumulates on the Owl manager host.  These
+programs work together to create a two-stage archival process.  It is helpful
+to have <b>cron</b> run these programs, though this is not essential.
+
+<p>
+
+The first stage of the archive process moves old data from the sensor's data
+directory to the sensor's archive directory.  Data is considered old if the
+file's timestamp (in its name) is older than two days.  This part of the data
+archiving should be performed once per day, depending on how frequently the
+sensors perform their own data archiving.
+
+<p>
+
+The second stage of the archive process combines a month's worth of sensor
+data into a single compressed tarfile.  This should be performed several days
+after the end of the previous month.
+
+<p>
+
+The Owl data-archival programs assume that all sensor data are stored in a
+common directory and all the archived data are stored in a common directory.
+They will segregate data by sensor in order to prevent it from getting mixed
+together.  For example, when handling data for the sensors <b>dresden</b> and
+<b>kvothe</b>, these programs might expect the following directories to exist:
+
+<p>
+
+<pre>
+    /owl/data/dresden
+    /owl/data/kvothe
+    /owl/data-archive/dresden
+    /owl/data-archive/kvothe
+</pre>
+
+<p>
+
+This first set of programs will archive data for all the sensors that report
+to an Owl manager.  They must be told where the sensor data are stored and
+where the data archive is kept.
+
+<ul>
+
+<li><b>owl-archdata</b> - Archives data for all sensors without having to name
+them explicitly.  The sensors in the given data directory will be archived.
+The data are stored in year-month subdirectories in the sensor's archive.
+<b>owl-archdata</b> is used in the first stage of the archival process.
+
+<p>
+
+<li><b>owl-monthly</b> - Archives all sensors' archived data in a compressed
+tarfile, in order to minimize space taken by the archive.  The tarfiles are
+stored in another subdirectory, divided by year.
+<b>owl-monthly</b> is used in the second stage of the archival process.
+
+<p>
+
+</ul>
+
+<p>
+
+This second set of programs will archive data for a single sensor that reports
+to an Owl manager.  They must be told where the sensor data are stored and
+where the data archive is kept.
+
+<ul>
+<li><b>owl-dataarch-mgr</b> - Archives data for a single sensor.  This is
+intended to be run by <b>owl-archdata</b>, and it is a slightly modified
+version of the Owl sensor's <b>owl-dataarch</b> utility.
+
+<p>
+
+<li><b>owl-archold</b> - Archives a sensor's archive data in a compressed
+tarfile.  This is intended to be run by <b>owl-monthly</b>.  The Owl manager's
+version of <b>owl-archold</b> is exactly same as the Owl sensor's utility of
+the same name.
+
+<p>
+
+</ul>
+
+<p>
+
+More information about each of these programs is available in their man pages.
+
+<p>
+
+Copy these archiving programs to a directory which will be their home.
+This could be anything that is convenient for you; e.g., <b>/usr/bin</b>,
+<b>/usr/local/bin</b>, <b>~/mystuff</b>, or <b>/owl/scripts</b>.
+
+<p>
+
+<!------------------------------------------------------->
+
+<a name="ig-manager-2.2."></a>
+<h3>2.2. Modifying Configuration Files</h3>
+
+Several files must be modified in order to provide Nagios monitoring and
+graphing.  These files belong to Nagios, Apache, and <b>nagiosgraph</b>.
+This section describes the required modifications.  These modifications
+do not provide any monitoring of Owl sensor data; further steps to supply
+that functionality will be given later.
+
+<p>
+
+In the basic Nagios installation, <b>/nagios/etc</b> holds sample
+configuration files, which can be modified for use.
+
+<p>
+
+<!----------------------------------->
+
+<a name="ig-manager-2.2.1."></a>
+<h3>2.2.1. Save Files!</h3>
+
+Before starting to modify any existing file -- e.g., Nagios object files and
+Apache configuration files -- it would be a <i>very</i> good idea to make a
+back-up copy of the files.  This will provide reference copies of the files
+in case they might be needed later.
+
+<p>
+
+<!----------------------------------->
+
+<a name="ig-manager-2.2.2."></a>
+<h3>2.2.2. <b>nagios.cfg</b> (Nagios)</h3>
+
+This file is the primary configuration file for Nagios.  There are quite a
+few changes that must be made to this file.  The modifications listed in this
+section will not incorporate monitoring of Owl sensor data.  That will be
+described in
+<a href="full-install-guide.html#ig-manager-4.8.1.">section 4.8.1</a>.
+
+<p>
+
+The various configuration parameters for Nagios could be included in a small
+number of files, but the standard arrangement groups the parameters into
+separate files.  The <b>nagios.cfg</b> file is the primary configuration file
+for Nagios, and at run-time it acts as the focal point to collect the disparate
+configuration files for the Nagios daemon.
+
+<p>
+
+A <i>cfg_file</i> line is used to tell Nagios to include the specified line.
+Adding or deleting these lines will control which files are included in the
+Nagios configuration.
+
+<p>
+
+As a result of the Nagios build and installation process, the <b>nagios.cfg</b>
+file should be mostly configured already.  The Nagios configuration file is
+well-documented, so figuring out how to adjust its fields shouldn't be too
+difficult.  There are a few things that must be done to prepare it for Owl
+monitoring.  These directions assume that Owl monitoring is the only
+monitoring that will be performed by this installation.
+
+<ul>
+
+<p>
+
+<li>Make sure these <i>cfg_file</i> lines are deleted or commented out:
+<ul>
+<li><b>localhost.cfg</b>
+<li><b>printer.cfg</b>
+<li><b>switch.cfg</b>
+<li><b>windows.cfg</b>
+</ul>
+(This is not strictly necessary.  These files may provide some monitoring
+information that you would find useful.)
+
+<p>
+
+</ul>
+
+To allow for graphing of monitoring results, several performance-processing
+fields must be set in <b>nagios.cfg</b>.  Unless otherwise stated, do not
+include the double quotes when setting these fields.
+
+<ul>
+
+<li>Find the <i>process_performance_data</i> line and change it to:
+"process_performance_data=1"
+
+<p>
+
+<li>Find the <i>service_perfdata_file</i> line and change it to:
+"service_perfdata_file=/owl/var/service-perfdata.out"
+
+<p>
+
+<li>Add this line:  "service_perfdata_file_template=$LASTSERVICECHECK$||$HOSTNAME$||$SERVICEDESC$
+||$SERVICEOUTPUT$||$SERVICEPERFDATA$"
+
+<br>
+
+(This line was split to accomodate document formatting.  Add it as a single,
+unbroken line without any spaces or newlines.)
+
+<p>
+
+<li>Find the <i>service_perfdata_file_mode</i> line and change it to:
+"service_perfdata_file_mode=a"
+
+<p>
+
+<li>Add this line:  "service_perfdata_file_processing_interval=30"
+
+</ul>
+
+<!----------------------------------->
+
+<a name="ig-manager-2.2.3."></a>
+<h3>2.2.3. <b>cgi.cfg</b> (Nagios)</h3>
+
+This is the configuration file for CGI scripts run by Nagios.  Most of it is
+set up during the Nagios configuration process.  The following things must be
+set to ensure your installation's needs are met.
+
+<ul>
+
+<li>The <i>url_html_path</i> field contains the path portion of the URL
+for the Nagios monitor.  For example, if the desired URL to reach your
+Nagios monitor is <b>http://www.example.com/owl-dns-monitor</b>, then
+<i>url_html_path</i> must be set to <b>/owl-dns-monitor</b>.
+Check this field to ensure it is set as required.
+
+<p>
+
+<li>The <b>cgi.cfg</b> file allows you to specify different types of
+information and actions that can be taken by different users.  The
+<i>authorized_for_</i> values may be set for multiple users.  The user
+names are those in the <b>htpasswd.users</b> file.
+
+</ul>
+
+<p>
+
+<!----------------------------------->
+
+<a name="ig-manager-2.2.4."></a>
+<h3>2.2.4. <b>resource.cfg</b> (Nagios)</h3>
+
+Ensure USER1 points to the plugins directory.  This should be something
+like <b>/owl/libexec</b>.
+
+<p>
+
+<!----------------------------------->
+
+<a name="ig-manager-2.2.5."></a>
+<h3>2.2.5. <b>share/config.inc.php</b> (Nagios)</h3>
+
+<p>
+
+Nagios uses this file to hold a small amount of file-location data.  
+The following actions must be taken:
+
+<ul>
+
+<li>Ensure that has the correct path for the <i>$cfg[]</i> fields.  If your
+configuration doesn't use the default paths, this may not be set properly.
+<p>
+
+<li>Add an entry for the <i>$cfg['ng_cgi_base_url']</i> field to be set to
+the path of the <b>nagiosgraph</b> CGI directory.  This will depend on how
+you installed <b>nagiosgraph</b>, and should look something like this:
+<pre>
+    $cfg['ng_cgi_base_url']='/nagiosgraph/cgi-bin';
+    $cfg['ng_cgi_base_url']='/nagiosgraph-owl/cgi-bin';
+</pre>
+<p>
+
+</ul>
+
+<p>
+
+<!----------------------------------->
+
+<a name="ig-manager-2.2.6."></a>
+<h3>2.2.6. <b>nagiosgraph.conf</b> (nagiosgraph)</h3>
+
+<p>
+
+This is the configuration file for Nagiosgraph.  Several settings must be
+checked and some Owl-specific setting copied in.  The following actions
+must be taken:
+
+<ul>
+
+<p>
+
+<li>Copy the contents of <b>ng-owl-conf</b> After the lines setting
+<i>xffs</i>.  These are reasonable values, but don't change them unless
+you know what you're doing.
+<p>
+
+<li>Ensure that <i>nagiosgraphcgiurl</i> path points to the appropriate
+directory, as defined by your web server's configuration.
+<p>
+
+<li>Ensure that <i>javascript</i> path points to the appropriate
+directory, as defined by your web server's configuration.
+<p>
+
+<li>Ensure that <i>stylesheet</i> path points to the appropriate
+directory, as defined by your web server's configuration.
+<p>
+
+</ul>
+
+<p>
+
+<!----------------------------------->
+
+<a name="ig-manager-2.2.7."></a>
+<h3>2.2.7. <b>map</b> (nagiosgraph)</h3>
+
+<p>
+
+<b>nagiosgraph</b> uses a file of data definitions that describe how to
+extract data from Nagios plugins and how to handle the extracted data.
+The file is a collection of Perl expressions that are evaluated by
+<b>nagiosgraph</b>.  This file is named something like
+<b>/owl/nagiosgraph/etc/map</b>.
+
+<p>
+
+The Owl manager distribution contains a set of additional, Owl-specific
+definitions that must be added to the <b>map</b> file.  These definitions
+are in <b>ng-owl-map</b>.  Copy the contents of this file into the
+<b>map</b>.
+
+<p>
+
+<!----------------------------------->
+
+<a name="ig-manager-2.2.8."></a>
+<h3>2.2.8. <b>htpasswd.users</b> (Apache)</h3>
+
+<p>
+
+Strictly speaking, this file is not a Nagios file, but is instead an
+<b>httpd</b> file.  The Nagios configuration file for <b>httpd</b> gives the
+name of an <b>htpasswd.users</b> file.  Use the <b>htpasswd</b> command to
+create and populate this file with the users that should be allowed to access
+the Owl monitor.  These users must have their permissions defined in the
+Nagios <b>cgi.cfg</b> file.
+
+<p>
+
+
+<!*****************************************************************************>
+
+<a name="ig-manager-3."></a>
+<h3>3. An Interlude on Sensor Queries</h3>
+
+<p>
+
+<!------------------------------------------------------------>
+
+Before running your Owl Monitoring System, you must consider a number of
+questions.  How many Owl sensors will be providing data to the Owl manager?
+How many queries will the sensors be performing?  What queries will the
+sensors be performing?  Will each sensor be performing the same queries?  Will
+the sensor be providing "heartbeat" information to the manager?  Who will
+transfer the sensor data to the manager?  These questions are important for
+the sensor administrator, but they are critical for the manager administrator.
+
+<p>
+
+<!*********************************************************>
+
+<a name="ig-manager-3.1."></a>
+<h3>3.1. Gathering and Storing Sensor Data</h3>
+
+A query consists of three parts:  a nameserver, a target host, and a query
+type.  Responses to each query will be kept in their own datafile.  The
+amount of data generated by each sensor will depend on the number of queries
+and the frequency with which the queries are performed.
+
+<p>
+
+The sensors will have to gather the data and more queries will result in more
+data that will be collected.  The data will all have to be transferred from
+the sensor to the manager.  If the manager is configured for graphing, then
+data from each query will be stored in its own database.  These databases can
+be quite large, so the manager host must have a good amount of available disk
+space.
+
+<p>
+
+The administrators of an Owl sensor and the Owl manager (if they are different
+people) must coordinate the queries that the sensor will be performing.  The
+manager's administrator can request that a set of queries be performed, but it
+is up to the sensor's administrator to actually configure the sensor for the
+queries.  The manager is effectively at the mercy of the sensor.
+
+<p>
+
+Sensor data filenames contain metadata about the sensor data contained
+therein.  Therefore, the filenames will reflect the queries that generated
+the files.  The fields are separated by commas and have this format:
+
+<pre>
+        121129.1701,seattle-sensor,example.com,a.root-servers.net,A.dns
+        121129.1701,seattle-sensor,example.com,m.root-servers.net,A.dns
+        121129.1701,seattle-sensor,example.com,m.root-servers.net,NS.dns
+        121129.1701,portland-sensor,example.com,a.root-servers.net,A.dns
+</pre>
+
+<p>
+
+Breaking out the fields of the last example above gives this table:
+
+<p>
+
+<table>
+
+<tr>
+<td valign=top width=50>&nbsp;
+<td valign=top><b>Field</b>
+<td valign=top width=20>&nbsp;
+<td valign=top><b>Purpose</b>
+<td valign=top width=20>&nbsp;
+<td valign=top><b>Example</b>
+
+<tr>
+<td valign=top>&nbsp;
+<td valign=top>Timestamp
+<td valign=top>&nbsp;
+<td valign=top>File creation timestamp; (YYMMDD.hhmm)
+<td valign=top>&nbsp;
+<td valign=top>121129.1701
+
+<tr>
+<td valign=top>&nbsp;
+<td valign=top>Sensor Name
+<td valign=top>&nbsp;
+<td valign=top>Name of sensor that recorded data
+<td valign=top>&nbsp;
+<td valign=top>portland-sensor
+
+<tr>
+<td valign=top>&nbsp;
+<td valign=top>Target Name
+<td valign=top>&nbsp;
+<td valign=top>Host whose name was target of DNS lookups
+<td valign=top>&nbsp;
+<td valign=top>example.com
+
+<tr>
+<td valign=top>&nbsp;
+<td valign=top>Nameserver Name
+<td valign=top>&nbsp;
+<td valign=top>Name of queried nameserver
+<td valign=top>&nbsp;
+<td valign=top>a.root-servers.net
+
+<tr>
+<td valign=top>&nbsp;
+<td valign=top>Query Type
+<td valign=top>&nbsp;
+<td valign=top>Type of DNS query
+<td valign=top>&nbsp;
+<td valign=top>A
+
+<tr>
+<td valign=top>&nbsp;
+<td valign=top>File suffix
+<td valign=top>&nbsp;
+<td valign=top>File suffix
+<td valign=top>&nbsp;
+<td valign=top>.dns
+
+</table>
+
+<p>
+
+<!*********************************************************>
+
+<a name="ig-manager-3.2."></a>
+<h3>3.2. Transferring Sensor Data</h3>
+
+<p>
+
+The Owl Monitoring System provides utilities to transfer sensor data from
+the sensor to the manager.  One utility, <b>owl-transfer</b> runs on the
+sensor and transfers the data to the manager.  The other utility,
+<b>owl-transfer-mgr</b> runs on the manager and transfers the data from
+the sensor.  Both utilities are front-ends for the <b>rsync</b> program
+and run using an <b>ssh</b>-initiated connection.
+
+<p>
+
+In both cases, the transferring host <u>must</u> be able to <b>ssh</b> into
+the remote host without a password.  The FOSS <b>rrsync</b> ("restricted
+rsync", written by Joe Smith, modified by Wayne Davison) is used to restrict
+the transferring host's access to the remote host.
+
+<p>
+
+The administrators of the sensor and the manager must agree on which host
+will be transferring data to the manager.  The appropriate SSH public keys
+from the transferring host must be placed on the other host, so that the
+password-less <b>ssh</b> (as described above) may be performed.
+
+<p>
+
+An Owl system with multiple sensors may have a mixed transfer configuration.
+In such a system, some sensors will transfer their data to the manager, while
+the manager will transfer data from other sensors.
+
+<p>
+
+<!*********************************************************>
+
+<a name="ig-manager-3.3."></a>
+<h3>3.3. Sensor Heartbeats</h3>
+
+The "heartbeat" facility allows an Owl sensor to periodically contact a
+manager to let it know that the sensor is still alive and network accessible.
+The heartbeat is sent by contacting a particular webpage on the Owl manager.
+
+<p>
+
+The heartbeat facility is not necessary for Owl operation and Owl runs
+perfectly well without it.  However, it can provide a useful assurance to
+the manager administrator that the sensor is still working.  Enabling this
+facility on the sensor is at the discretion of the sensor administrator.
+Since this requires a webserver to be running on the manager host, that
+aspect is at the discretion of the manager administrator.
+
+<p>
+
+<!*****************************************************************************>
+
+
+<!*****************************************************************************>
+
+<a name="ig-manager-4."></a>
+<h3>4. Adding Owl Sensors to an Existing Owl Installation</h3>
+
+<p>
+
+<!------------------------------------------------------------>
+
+Whenever a new Owl sensor is added to those handled by an Owl manager, there
+are a number of actions that must take place on both the sensor and the
+manager.  These actions should be followed consecutively within each section.
+However, there is some amount of necessary interleaving of actions.  For
+example, a particular sensor action may be required before a particular
+manager action.
+
+<p>
+
+It is acceptable for the Owl sensor and Owl manager to be under completely
+different administrative control.  Each host may even be owned by different
+commercial, educational, governmental, or other such entity.  All that is
+required is that there be some initial coordination between administrators
+when the sensor is first configured, along with (probably) aperiodic support
+from time to time later.
+
+<p>
+
+The discussions on adding Owl sensors assumes that the sensor and manager
+are under different administrative control.  Required actions will not change
+if they are under unified administrative control, but they may be easier to
+accomplish. 
+
+<p>
+
+This section describes the various actions that must be performed on the
+Owl manager in order to configure a new sensor for it.  This assumes the
+installation and configuration procedures detailed in
+<a href="full-install-guide.html#ig-manager-2.">section 2</a>
+have been completed.
+
+<p>
+
+<!----------------------------------->
+
+<a name="ig-manager-4.1."></a>
+<h3>4.1. Create Directories and Files for Sensor's Data</h3>
+
+<p>
+
+A set of directories and files must be created for a new sensor.  These are
+the sensor directory, the sensor's data directory, the history directory, the
+data archive directory.  The heartbeat file, if the sensor will be providing
+heartbeats, must also be created.
+
+<p>
+
+These files are best created by the <b>owl-initsensor</b> command, but they
+may also be created manually.  If they are created manually, you <b>must</b>
+use the names and organization as given in the examples below.  The locations
+of the directories may change (i.e., the <b>/owl/data</b> and
+<b>/owl/archive</b> portions), but that's it.
+
+<p>
+
+For example, when adding the new sensors <b>helsinki</b> and <b>canberra</b>,
+you might create the following sets of directories:
+
+<center>
+<table>
+<tr>
+<td>
+sensor directory<br>
+data directory<br>
+heartbeat file<br>
+history directory<br>
+archive directory<br>
+<td width=50>&nbsp;
+
+<td>
+<b>/owl/data/helsinki/</b><br>
+<b>/owl/data/helsinki/data/</b><br>
+<b>/owl/data/helsinki/heartbeat</b><br>
+<b>/owl/data/helsinki/history/</b><br>
+<b>/owl/archive/helsinki/</b><br>
+<td width=50>&nbsp;
+
+<td>
+<b>/owl/data/canberra/</b><br>
+<b>/owl/data/canberra/data/</b><br>
+<b>/owl/data/canberra/heartbeat</b><br>
+<b>/owl/data/canberra/history/</b><br>
+<b>/owl/archive/canberra/</b><br>
+</td>
+</tr>
+</table>
+</center>
+
+<p>
+
+The archive directory must be writable by the manager's Owl user, but the
+others must be writable by the manager's Owl user and the manager's web
+server.
+
+<p>
+
+<!----------------------------------->
+
+<a name="ig-manager-4.2."></a>
+<h3>4.2. Firewall Configuration</h3>
+
+<p>
+
+The Owl manager and the Owl sensor communicate by way of SSH and HTTP.  If the
+Owl manager is protected by a firewall (either on the manager host itself or
+by an enterprise-level firewall) then the firewall must be configured to allow
+data to be transferred between the manager and the sensor.  The direction of
+this transfer (initiated by sensor or initiated by manager) depends on the Owl
+configuration.  These firewall modifications are far beyond the scope of this
+document.
+
+<p>
+
+<!----------------------------------->
+
+<a name="ig-manager-4.3."></a>
+<h3>4.3. SSH Set-up</h3>
+
+<p>
+
+First, you must generate a new SSH key for the manager's Owl user.
+
+<p>
+
+If the manager will be pulling data from the sensor, then the you must provide
+the sensor administrator with your Owl user's public key.  This key will allow
+<b>owl-transfer-mgr</b> to retrieve Owl sensor data.  You must generate your
+key in compliance with particular key requirements (e.g., length and type)
+specified by the sensor administrator.
+
+<p>
+
+If the sensor will be transferring data to the manager, then the sensor
+administrator must provide you with the public key of their Owl sensor user.
+This key will allow <b>owl-transfer</b> to pass Owl sensor data to the your
+manager.  You must add this key to your <b>.ssh/authorized_keys</b> file.
+The key must be generated with key characteristics (e.g., length and type)
+that are acceptable to you.  See the example below.
+
+<p>
+
+The <b>authorized_keys</b> file restricts access to known sensor hosts and
+controls where each Owl sensor's data are stored.  This file should only have
+one entry per sensor, and each sensor should have a unique data directory.
+
+<p>
+
+Example entries (with abbreviated keys):
+
+<pre>
+    command="/usr/local/bin/rrsync /owl/data/sensor1" ssh-rsa AAAA...Qw== sensor@sensor1.example.com
+    command="/usr/local/bin/rrsync /owl/data/sensor8" ssh-rsa AAAA...gM== sensor@sensor8.example.au
+</pre>
+
+The parts of the line from "ssh-rsa " to the end of the line are the public
+SSH key provided by the sensor's administrator.  You will add everything
+before the "ssh-rsa ", using the proper paths for <b>rrsync</b> and the
+sensor's data directory.
+
+<p>
+
+<!----------------------------------->
+
+<a name="ig-manager-4.4."></a>
+<h3>4.4. Configuration Settings</h3>
+
+<p>
+
+With Owl's capability of having either the sensor or the manager transfer
+sensor data to the manager, there are configuration settings that must be
+made to allow the transfer. These are described in the subsections below.
+Regardless of how your Owl installation handles data transfer, you should
+read both subsections to ensure you are making all the required settings.
+
+<p>
+
+It would be a good idea for you and the sensor administrator to agree on a
+name for the sensor.  This isn't required, but it will probably make things
+easier for you both in the long run to refer to the sensor by the same name.
+
+<p>
+
+The sensor name can be very generic, such as <i>sensor42</i>, <i>sensor-d</i>,
+or <i>owl-us-east</i>.  It can also be very specific, such as
+<i>washdc-1600-penn-ave-nw</i> or <i>cheltenham-bldg4</i>.  The intent is
+to provide distinguishing information to the intended audience of the DNS
+monitoring data.  You should use names that easily distinguish sensors and
+are acceptable to the manager and sensor administrators.
+
+<p>
+
+<!------------------------->
+
+<a name="ig-manager-4.4.1."></a>
+<h3>4.4.1. Provide Configuration Information to Sensor Administrator</h3>
+
+<p>
+
+If the Owl sensor will be transferring data to the manager, then you must
+provide the sensor administrator with an SSH user.  All Owl sensors may
+use this single SSH user, and the data will be distinguished by the SSH
+key used to connect from the sensor.
+
+<p>
+
+The sensor will use the heartbeat URL to provide a heartbeat to the manager.
+If this is to be used, it must be set on the sensor regardless of who
+initiates sensor data transfer.
+
+<p>
+
+The data values will be added to the sensor's configuration file.
+
+<p>
+
+The following example data will allow the sensor to work with the Owl manager
+as expected.  These data are used, in conjunction with the <i>remote</i>
+keyword, in the sensor's configuration file.
+
+<p>
+
+<table>
+
+<tr>
+<td valign=top>Configuration&nbsp;Field
+<td valign=top width=20>&nbsp;
+<td valign=top>Purpose
+<td valign=top width=20>&nbsp;
+<td valign=top>Example
+
+<tr>
+<td valign=top><i>ssh-user</i>
+<td width=20>&nbsp;
+<td valign=top>user on Owl manager with which <b>owl-transfer</b> will connect via <b>ssh</b>
+<td width=20>&nbsp;
+<td valign=top>sensor-ottawa@owl-manager.example.com
+
+<tr>
+<td valign=top><i>heartbeat</i>
+<td width=20>&nbsp;
+<td valign=top>URL to provide "heartbeat" data to manager
+<td width=20>&nbsp;
+<td valign=top>http://owl.example.com/cgi-bin/owl-sensor-heartbeat.cgi
+
+</table>
+
+<p>
+
+<!------------------------->
+
+<a name="ig-manager-4.4.2."></a>
+<h3>4.4.2. Receive Configuration Information from Sensor Administrator</h3>
+
+<p>
+
+If the Owl manager will be pulling data from the sensor, then the sensor
+administrator must provide you with an SSH user.  The <b>owl-transfer-mgr</b>
+program will use this SSH user to copy data from the sensor.
+
+<p>
+
+The following data will allow the manager to connect to the Owl sensor as
+expected.  These data are used, in conjunction with the <i>remote</i>
+keyword, in the sensor's configuration file.
+
+<p>
+
+<table>
+
+<tr>
+<td valign=top>Configuration&nbsp;Field
+<td valign=top width=20>&nbsp;
+<td valign=top width="40%">Purpose
+<td valign=top width=20>&nbsp;
+<td valign=top>Example
+
+<tr>
+<td valign=top><i>ssh-user</i>
+<td width=20>&nbsp;
+<td valign=top>user on Owl sensor with which <b>owl-transfer-mgr</b> will connect via <b>ssh</b>
+<td width=20>&nbsp;
+<td valign=top>sensor-meatcove@owl-sensor.example.com
+
+</table>
+
+<p>
+
+<!----------------------------------->
+
+<a name="ig-manager-4.5."></a>
+<h3>4.5. Test Transfer from Sensor</h3>
+
+<p>
+
+At this point, you are ready to test your Owl manager.  When the sensor
+administrator reaches
+<a href="full-install-guide.html#ig-sensor-4.5.">section 4.5</a>
+in their installation instructions, both sensor and manager are ready to test
+the data transfer.
+
+<p>
+
+Coordinate with the sensor administrator to test data transfer.  The sensor
+administrator must put a data file (of any sort, it doesn't have to be an Owl
+data file) in their data directory.  If the manager will be transferring data,
+you must run <b>owl-transfer-mgr</b> to attempt to retrieve the test file.  If
+the sensor will be transferring data, the sensor administrator must run
+<b>owl-transfer</b> to attempt to retrieve the test file.  After the transfer
+command <i>appears</i> to have transferred the file without error, you must
+check that sensor's data directory on the manager to ensure the file has
+arrived as expected.
+
+<p>
+
+Once the test file successfully appears in the new sensor's data directory,
+the sensor is ready to start collecting data and transferring it to the
+manager.  You must inform the sensor administrator of this, so they can start
+the Owl sensor daemons.
+
+<p>
+
+<!----------------------------------->
+
+<a name="ig-manager-4.6."></a>
+<h3>4.6. Wait for Sensor Data</h3>
+
+<p>
+
+The sensor should now be in the process of collecting DNS response data.
+Whichever host will be transferring data must have the appropriate transfer
+daemon executing.  You must now wait for sensor data to show up in the
+sensor's data directory.  The time this takes will depend on how frequently
+the data is transferred to the manager.  This is set in the configuration
+file.
+
+<p>
+
+You will know when the sensor is transferring data because the new sensor's
+data directory will start holding files whose names reflect the queries you
+are expecting.  You may proceed when you have found files for all the
+queries the sensor will be performing.
+
+<p>
+
+<!----------------------------------->
+
+<a name="ig-manager-4.7."></a>
+<h3>4.7. Build Nagios Sensor Objects</h3>
+
+<p>
+
+Once all the sensor's data directory contains files for all the queries
+expected from the new sensor, Nagios objects must be built for those queries.
+This may be done automatically using the <b>owl-newsensor</b> command.
+A file containing these Nagios objects must be created, and it will be
+added to the Nagios environment in
+<a href="full-install-guide.html#ig-manager-4.8.1.">section 4.8.1</a>.
+
+<p>
+
+<b>owl-newsensor</b> can be used like this to create the Nagios objects:
+
+<pre>
+    $ owl-newsensor -out sensor8.cfg /owl/data/sensor8/data
+</pre>
+
+<p>
+
+Passing <b>owl-newsensor</b> the <i>-heartbeat</i> option will cause an
+object to be created that will allow Nagios to display heartbeat information
+about the new sensor.
+
+<p>
+
+<!----------------------------------->
+
+<a name="ig-manager-4.8."></a>
+<h3>4.8. Nagios Modifications</h3>
+
+<p>
+
+Several Nagios configuration files must be modified to account for the new
+sensor.  These changes will allow Nagios to start reporting current status
+of the new sensor as well as saving historical data to be used in graphing.
+
+<p>
+
+<!------------------------->
+
+<a name="ig-manager-4.8.1."></a>
+<h3>4.8.1. <b>nagios.cfg</b></h3>
+
+<p>
+
+The following modifications must be made to the <b>nagios.cfg</b> file to
+prepare Nagios for monitoring Owl sensor data.
+
+<ul>
+
+<li>Add the following entries to <b>nagios.cfg</b>:
+
+<pre>
+    cfg_file=/owl/nagios/etc/objects/owl-contacts.cfg
+    cfg_file=/owl/nagios/etc/objects/owl-hosts.cfg
+    cfg_file=/owl/nagios/etc/objects/owl-commands.cfg
+    cfg_file=/owl/nagios/etc/objects/owl-services.cfg
+</pre>
+
+These files contain basic Nagios object definitions used by the Owl sensor
+objects.  They should follow all the other standard <i>cfg_file</i> lines.
+
+<p>
+
+<li>Once Nagios object configuration files have been created for your sensors
+(as described in
+<a href="full-install-guide.html#ig-manager-4.7.">section 4.7</a>),
+<b>nagios.cfg</b> must be modified to include
+the new files.  Add a new <i>cfg_file</i> entry for each of the sensor object
+files.  These entries will look something like this:
+<pre>
+    cfg_file=/owl/nagios/etc/objects/owl-sensor21.cfg
+    cfg_file=/owl/nagios/etc/objects/sensor-london.cfg
+</pre>
+The sensor lines should follow all four of the <i>cfg_file</i> lines listed
+in the previous point.
+
+<p>
+
+<li>Add the following line after the sensor <i>cfg_file</i> lines described
+in the previous point.
+<pre>
+    cfg_file=/owl/etc/objects/owl-hostgroups.cfg
+</pre>
+Modification of the <b>owl-hostgroups.cfg</b> file is described below.
+
+<p>
+
+<li>Find the <i>service_perfdata_command</i> line and change it to:
+"service_perfdata_command=service-perfdata-for-owl"
+
+<p>
+
+<li>Find the <i>service_perfdata_file_processing_command</i> line and change
+it to:  "service_perfdata_file_processing_command=service-perfdata-for-owl"
+
+<p>
+
+</ul>
+
+<p>
+
+Examples for the <i>cfg_file</i> modifications may be found in
+<b>nagios.cfg-owl.mods</b> in the Owl manager distribution.
+
+<p>
+
+<!------------------------->
+
+<a name="ig-manager-4.8.2."></a>
+<h3>4.8.2. <b>owl-hostgroups.cfg</b></h3>
+
+<p>
+
+This file contains the "<i>DNS Response Time Sensors</i>" Nagios
+<i>hostgroup</i> object that lists the Owl sensor hosts.  All your Owl
+sensors should be listed in the "<i>DNS Response Time Sensors</i>" object.
+
+<p>
+
+<ul>
+
+<li>Add the new sensor name to the <i>members</i> field in the "<i>DNS Response
+Time Sensors</i>" object.  The names must be separated by commas.
+
+</ul>
+
+<p>
+
+You may add your own <i>hostgroup</i> objects to this file.  Use the "<i>DNS
+Response Time Sensors</i>" object as a guide to create custom groups.  This
+can be used, for example, to group all the sensors in a geographical region
+or those that are running a particular operating system.  The <i>hostgroup</i>
+object allows you to group a set of hosts in a manner that makes sense for
+your purposes.
+
+<p>
+
+<!----------------------------------->
+
+<a name="ig-manager-4.9."></a>
+<h3>4.9. Graphing Modifications</h3>
+
+<p>
+
+The new sensor's data must be made available to the <b>drraw.cgi</b> script.
+To do this, the new sensor's data sources must be added to the <i>%datadirs</i>
+hash in the <b>drraw.conf</b> file.
+See <a href="full-install-guide.html#ig-manager-2.1.2.4.">2.1.2.4.</a>&nbsp;<b>drraw.cgi</b>
+for more details.
+
+<p>
+
+<!----------------------------------->
+
+<a name="ig-manager-4.10."></a>
+<h3>4.10. Restart Nagios</h3>
+
+<p>
+
+Nagios must be restarted in order for it to see your new sensor's objects.
+
+<p>
+
+Prior to the restart, verify that your object modifications won't cause
+a problem for Nagios.  Execute this command (assuming you are in the
+directory containing the Nagios files):
+
+<pre>
+    $ nagios -v nagios.cfg
+</pre>
+
+It will read the configuration files and ensure they all look okay.
+If there are problems, they must be resolved before Nagios is started.
+
+<p>
+
+Once the Nagios configuration file is validated and without problems, Nagios
+may be restarted:
+
+<pre>
+    $ nagios stop
+    $ nagios start
+</pre>
+
+<p>
+
+It will probably take several minutes for Nagios to check all its services.
+Clicking on the "Services" link in the left-hand sidebar will bring up the
+configured services and you can watch the status of your new sensor.
+
+<p>
+
+<!*****************************************************************************>
+
+<br><br>
+
+
+<!*****************************************************************************>
+
+<a name="ig-manager-5."></a>
+<h3>5. Defining Graphs</h3>
+
+<p>
+
+<!------------------------------------------------------------>
+
+After Owl sensor data has been gathered for several hours and <b>rrdtool</b>
+has been adding it to the RRD databases, you can consider how you will graph
+the data.  Graphing capabilities are provided by <b>nagiosgraph</b> and
+<b>drraw.cgi</b>.  Both are very useful and have their place in your Owl
+monitor.  It isn't a question of which to use; the question is how you want
+to use each and how you want to display your monitoring data.
+
+<p>
+
+<!----------------------------------->
+
+<a name="ig-manager-5.1."></a>
+<h3>5.1. Graphing with <b>nagiosgraph</b></h3>
+
+<b>nagiosgraph</b> provides menus for easy selection of data, available
+through three CGI scripts.  These are simple graphs that only display a
+single sensor/root server/DNS record per graph.  For these scripts, the
+host is an Owl sensor and the service is a root server/DNS record type.
+Links for these scripts are included in the <b>example-side.php</b> file.
+
+<ul>
+<li><b>show.cgi</b> - Provides graphs for a user-selected host/service pair.
+A graph is provided for the current day, week, month, and year.
+<p>
+
+<li><b>showhost.cgi</b> - Provides graphs for a user-selected host.
+A graph will be displayed for any service with that host.
+A graph is provided for the current day, week, and month.
+<p>
+
+<li><b>showservice.cgi</b> - Provides graphs for a user-selected service.
+A graph will be displayed for any host with that service.
+A graph is provided for the current day, week, and month.
+<p>
+
+</ul>
+
+<!----------------------------------->
+
+<a name="ig-manager-5.2."></a>
+<h3>5.2. Graphing with <b>drraw.cgi</b></h3>
+
+<p>
+
+<b>drraw.cgi</b> provides a much more complex graphing capability than is
+available through <b>nagiosgraph</b>.  It allows data from multiple
+sensor/root server/DNS record groups to be displayed on a single graph.
+Set-up for the graphs is not difficult and is done through a browser-based
+interface.  However,  there are a number of things that must be specified
+before the graph can be displayed.
+
+<p>
+
+The graph-definition webpage talks about selecting data sources to be
+displayed.  This is referring to the group of RRD databases you want
+<b>drraw.cgi</b> to use for this particular graph.
+
+<p>
+
+Defining simple graphs, even those with multiple data sources, is not
+complicated.  However, you can define fairly involved graphs (e.g.,
+averaging data from different databases) with <b>drraw.cgi</b>.
+
+<p>
+
+<!----------------------------------->
+
+<a name="ig-manager-5.3."></a>
+<h3>5.3. Adding Graphs to the Nagios Sidebar</h3>
+
+The <b>share/side.php</b> script builds the left sidebar of links on
+the Nagios page.  Several simple modifications will improve access to
+the graphing facilities.  Obviously, this step must wait until after
+the system has been set up and site-specific graphs have been defined.
+
+<p>
+
+The <b>example-side.php</b> file (in the Owl manager distribution) contains
+sample lines for both <b>drraw.cgi</b> and <b>nagiosgraph</b>.  Add the
+contents of this file to the <b>share/side.php</b> file after the "Quick
+Search" text-entry box.
+
+<p>
+
+The sample lines must be modified for your installation in the following ways:
+
+<ul>
+<li>The paths in the links must match the way you installed it.
+
+<p>
+
+<li>If links to specific <b>drraw.cgi</b> graphs are to be included in the
+sidebar, then the graph id in the link must be set.  The id for a particular
+graph may be found from the graph's URL, and is the field following "Graph=".
+
+<p>
+
+</ul>
+
+<p>
+
+<!*****************************************************************************>
+
+<br><br>
+
+
+<!*****************************************************************************>
+
+<a name="ig-manager-6."></a>
+<h3>6. Changing Queries on Existing Owl Sensors</h3>
+
+<p>
+
+<!------------------------------------------------------------>
+
+From time to time, you might decide to change the queries being performed
+by the Owl sensors.  This could be adding new queries to some or all of the
+sensors, stopping some of the queries from being performed, or modifying
+existing queries.  Regardless of the changes, there are actions that must
+be taken on the Owl manager and all affected Owl sensors.
+
+<p>
+
+<!---------------------------------------->
+
+<a name="ig-manager-6.1."></a>
+<h3>6.1. Adding New Queries</h3>
+
+<p>
+
+Adding new queries to the Owl manager is a matter of informing Nagios that it
+should report on new data.  This is accomplished by adding new Nagios objects
+for the sensor.  The following actions must be performed:
+
+<p>
+
+<ol>
+
+<li>Wait for the query changes to take place in the Owl sensor.  You will
+know this has happened when new sensor data files start appearing in the
+sensor's data directory, if you are adding queries, or fewer data files
+are arriving, if you are removing queries.
+
+<p>
+
+<li>Build new Nagios objects for the new queries' data files.  This may be
+most simply accomplished by rerunning <b>owl-newsensor</b> for the affected
+sensor.  This will rebuild <u>all</u> the sensor's Nagios objects, so you
+must take this into account if you have made manual changes to the object
+file.  See <a href="full-install-guide.html#ig-manager-4.7.">section 4.7</a>
+and <a href="full-install-guide.html#ig-manager-4.8.">section 4.8</a>
+for more information on creating new Nagios objects.
+
+<p>
+
+<li>Perform the actions in
+<a href="full-install-guide.html#ig-manager-4.10.">section 4.10.</a>
+in order to restart Nagios.
+
+<p>
+
+<li>With  sensor query data arriving, you might want to consider modifying
+your graphs to display the changes in sensor data.  See
+<a href="full-install-guide.html#ig-manager-5.">section 5</a>
+for information on defining graphs.
+
+<p>
+
+</ol>
+
+<p>
+
+<!---------------------------------------->
+
+<a name="ig-manager-6.2."></a>
+<h3>6.2. Deleting Old Queries</h3>
+
+<p>
+
+Deleting existing queries to the Owl manager is a matter of informing Nagios
+that it should stop reporting on existing data.  This is accomplished by
+deleting Nagios objects for the sensor.  The following actions must be
+performed:
+
+<p>
+
+<ol>
+
+<li>Edit the Nagios object files to delete the objects for the unwanted
+queries.  See <a href="full-install-guide.html#ig-manager-4.7.">section
+4.7</a> and <a href="full-install-guide.html#ig-manager-4.8.">section
+4.8</a> for more information on Nagios objects.
+
+<p>
+
+<li>Perform the actions in
+<a href="full-install-guide.html#ig-manager-4.10.">section 4.10</a>
+in order to restart Nagios.
+
+<p>
+
+</ol>
+
+After performing these steps, the old data files will still exist on the
+manager.  They can be archived or deleted as desired.
+
+<p>
+
+<!*****************************************************************************>
+
+<br><br>
+
+
+<!*****************************************************************************>
+
+<a name="ig-manager-7."></a>
+<h3>7. Owl Manager Commands</h3>
+
+<p>
+
+<!------------------------------------------------------------>
+
+The Owl manager has a number of Owl-specific commands required for its
+operation.  This section provides a brief overview of the commands available
+to it.  These are all Perl scripts and have self-contained man pages, which
+contain greater details about their use.  These scripts are intended to run
+as an unprivileged user.
+
+<!------------------------------------------------------->
+
+<p>
+
+This section briefly describes the software used on the Owl manager.
+
+<ul>
+
+<!--------------------------------------------->
+
+<li><b>owl-archdata</b><br>
+This script archives Owl sensor data for all the defined sensors.  Old data
+are moved from the Owl data directory to an archive directory.
+<b>owl-archdata</b> runs the <b>owl-dataarch-mgr</b> script for each sensor.
+<br>
+This script is assumed to live in the Owl user's home or <b>bin</b> directory.
+
+<p>
+
+<!--------------------------------------------->
+
+<li><b>owl-archold</b><br>
+This script archives previously archived Owl sensor data into monthly
+archives.  A compressed <b>tar</b> file is created that contains the archived
+data files from a particular month.  It should only be run on a particular
+month's archive after the month has been completed.  This script is exactly
+the same as the <b>owl-archold</b> on the Owl sensor hosts.  <b>owl-archold</b>
+is executed by <b>owl-monthly</b>, but may be used on its own.
+<br>
+This script is assumed to live in the Owl user's home or <b>bin</b> directory.
+
+<p>
+
+<!--------------------------------------------->
+
+<li><b>owl-dataarch-mgr</b><br>
+This script archives Owl sensor data for a single sensor.  Old data are moved
+from the Owl data directory to an archive directory.  <b>owl-dataarch-mgr</b>
+is executed by <b>owl-archdata</b>, but may be used on its own.
+<br>
+This script is assumed to live in the Owl user's home or <b>bin</b> directory.
+
+<p>
+
+<!--------------------------------------------->
+
+<li><b>owl-dnswatch</b><br>
+This script retrieves Owl sensor DNS response data and makes it available to
+the Nagios monitoring system.
+<br>
+This script should live in the Nagios <b>libexec</b> directory of plugins.
+
+<p>
+
+<!--------------------------------------------->
+
+<li><b>owl-initsensor</b><br>
+This script creates the required directories and heartbeat file when adding a
+new Owl sensor.
+<br>
+This script is assumed to live in the Owl user's home or <b>bin</b> directory.
+
+<p>
+
+<!--------------------------------------------->
+
+<li><b>owl-monthly</b><br>
+This script archives previously archived Owl sensor data for all the sensors
+defined for an Owl manager.  Compressed <b>tar</b> files are created that
+contain the archived data files from a particular months, one <b>tar</b> file
+for each sensor.  <b>owl-monthly</b> executes <b>owl-archold</b> to perform
+the actually archiving.
+<br>
+This script is assumed to live in the Owl user's home or <b>bin</b> directory.
+
+<p>
+
+<!--------------------------------------------->
+
+<li><b>owl-newsensor</b><br>
+This script creates required Nagios objects for a new Owl sensor.  The
+objects to be created are based on the data files from the new sensor that
+have arrived on the Owl manager. 
+<br>
+This script is assumed to live in the Owl user's home or <b>bin</b> directory.
+
+<p>
+
+<!--------------------------------------------->
+
+<li><b>owl-perfdata</b><br>
+This script is translates Owl sensor data from the format provided to Nagios
+into the format required by the graphing and database software.
+<br>
+This script should live in the Nagios <b>libexec</b> directory of plugins.
+
+<p>
+
+<!--------------------------------------------->
+
+<li><b>owl-sensor-heartbeat.cgi</b><br>
+This script records a "heartbeat" for Owl sensors.  When a sensor runs this
+script (by way of the Owl manager's web server), the time of the execution
+will be recorded for that sensor.
+<br>
+This script should live in the <b>cgi-bin</b> directory for either the web
+server or for Nagios.
+
+<p>
+
+<!--------------------------------------------->
+
+<li><b>owl-stethoscope</b><br>
+This script gathers Owl sensor "heartbeat" data and makes it available to the
+Nagios monitoring system.
+<br>
+This script should live in the Nagios <b>libexec</b> directory of plugins.
+
+<p>
+
+<!--------------------------------------------->
+
+<li><b>owl-transfer-mgr</b><br>
+This script periodically transfers Owl sensor data from the sensor host to
+the manager host.
+<br>
+This script is assumed to live in the Owl user's home or <b>bin</b> directory.
+
+<br>
+
+<p>
+
+<!--------------------------------------------->
+
+</ul>
+
+<p>
+
+<!*****************************************************************************>
+
+<br><br>
+
+
+<hr>
+
+<p>
+
+<!*****************************************************************************>
+
+<br><br>
+
+<h3>Sponsors:</h3>
+
+<p>
+
+This work was implemented by the following organizations:
+
+<p>
+
+&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="http://www.parsons.com/markets/Pages/sparta.aspx">Parsons</a>
+
+<p>
+
+This work is funded in part by the following organizations:<br>
+
+<p>
+
+&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="http://www.dhs.gov">U.S. Department of Homeland Security/Science & Technology (S&T)</a>
+
+<p>
+
+The Owl logo is copyright &copy; 2012 by Wayne Morrison (Wayne@WayneMorrison.com).
+All Rights Reserved.<br>
+This logo is used for the Owl Monitoring System by the DNSSEC-Tools Project
+(dnssec-tools.org) by permission.
+
+<p>
+
+<!-------------------------------------->
+
+<center>
+
+<hr width="70%">
+
+<p>
+
+<!-------------------------------------->
+<table width="100%">
+<tr>
+<td width="33%" align=left>
+&nbsp;
+<td width="33%" align=center>
+<a href="full-install-guide.html">Owl Monitoring System<br>Full Installation Manual</a>
+<td width="33%" align=right>
+&nbsp;
+</tr>
+</table>
+<p>
+<!-------------------------------------->
+
+<a href="http:www.dnssec-tools.org">DNSSEC Tools</a>
+
+</center>
+
+<p>
+
+</body>
+</html>

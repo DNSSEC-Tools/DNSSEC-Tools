@@ -1,0 +1,254 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>I&lt;val_async_submit&gt; - submits a request for asynchronous processing of
+DNS queries.</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:assp@beta.macosforge.org" />
+</head>
+
+<body style="background-color: white">
+
+
+<!-- INDEX BEGIN -->
+<div name="index">
+<p><a name="__index__"></a></p>
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<li><a href="#description">DESCRIPTION</a></li>
+	<li><a href="#return_values">RETURN VALUES</a></li>
+	<li><a href="#copyright">COPYRIGHT</a></li>
+	<li><a href="#authors">AUTHORS</a></li>
+	<li><a href="#see_also">SEE ALSO</a></li>
+</ul>
+
+<hr name="index" />
+</div>
+<!-- INDEX END -->
+
+<p>
+</p>
+<hr />
+<h1><a name="name">NAME</a></h1>
+<p><em>val_async_submit()</em> - submits a request for asynchronous processing of
+DNS queries.</p>
+<p><em>val_async_select_info()</em> - set the appropriate file descriptors for
+outstanding asynchronous requests.</p>
+<p><em>val_async_check_wait()</em> - handle timeouts or processes DNS
+responses to outstanding queries.</p>
+<p><em>val_async_cancel()</em> - cancel an asynchronous query request.</p>
+<p><em>val_async_cancel_all()</em> - cancel all asynchronous queries for a given
+context.</p>
+<p>
+</p>
+<hr />
+<h1><a name="synopsis">SYNOPSIS</a></h1>
+<p>#include &lt;validator/validator.h&gt;</p>
+<p>typedef int (*val_async_event_cb)(val_async_status *async_status,
+                    int event, val_context_t *context,
+                    void *cb_data, val_cb_params_t *cbp);</p>
+<p>int val_async_submit(val_context_t *context,
+                    const char * name, int class,
+                    int type, unsigned int flags,
+                    val_async_event_cb callback, void *cb_data,
+                    val_async_status **async_status);</p>
+<p>int val_async_select_info(val_context_t *context,
+                    fd_set *fds,
+                    int *num_fds,
+                    struct timeval *timeout);</p>
+<p>int val_async_check_wait(val_context_t *context,
+                    fd_set *pending_desc, int *nfds,
+                    struct timeval *tv, unsigned int flags);</p>
+<p>int val_async_cancel(val_context_t *context,
+                    val_async_status *as,
+                    unsigned int flags);</p>
+<p>int val_async_cancel_all(val_context_t *context,
+                    unsigned int flags);</p>
+<p>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p>The asynchronous DNSSEC validator API allows an
+application to submit multiple requests, which can be processed
+in parallel. In most cases, this will result in validation
+completing much sooner than a series of synchronous requests.</p>
+<p>The <em>ctx</em> parameter in the various functions below specifies the
+validation context, which can be set to NULL for default values (see
+<em>libval(3)</em> and <em>dnsval.conf</em> for more details on validation contexts
+and alidation policy).</p>
+<p>The <em>val_async_submit()</em> function submits a request for
+asynchronous processing of DNS queries for the data associated
+with the given domain <em>name</em>, <em>class</em> and <em>type</em>. 
+The <em>async_status</em> object uniquely identifies a particular 
+request and provides a handle for future operations on that 
+asynchronous request, including cancelling it prior to
+lookup completion.</p>
+<p>The <em>flags</em> parameter affects when and how often the 
+callback is called. The following flags are defined.</p>
+<dl>
+<dt><strong><a name="val_as_ignore_cache" class="item"><strong>VAL_AS_IGNORE_CACHE</strong></a></strong></dt>
+
+<dd>
+<p>Don't use any internal cache for answers to this query.</p>
+</dd>
+<dt><strong><a name="val_as_no_new_queries" class="item"><strong>VAL_AS_NO_NEW_QUERIES</strong></a></strong></dt>
+
+<dd>
+<p>Don't send any new queries. Answers will be returned 
+from the internal cache.</p>
+</dd>
+<dt><strong><a name="val_as_no_answers" class="item"><strong>VAL_AS_NO_ANSWERS</strong></a></strong></dt>
+
+<dd>
+<p>Caller doesn't care about the answer results. 
+This can be used for priming the cache.</p>
+</dd>
+<dt><strong><a name="val_as_no_callbacks" class="item"><strong>VAL_AS_NO_CALLBACKS</strong></a></strong></dt>
+
+<dd>
+<p>Don't call any callbacks.</p>
+</dd>
+<dt><strong><a name="val_as_no_cancel_callbacks" class="item"><strong>VAL_AS_NO_CANCEL_CALLBACKS</strong></a></strong></dt>
+
+<dd>
+<p>Call callbacks with results, but don't call any callbacks when the
+request is canceled.</p>
+</dd>
+<dt><strong><a name="val_as_interim_callbacks" class="item"><strong>VAL_AS_INTERIM_CALLBACKS</strong></a></strong></dt>
+
+<dd>
+<p>Call the callback function with interim results. If this flag is not
+specified, the callback function will only be called when all validation
+results are ready.</p>
+</dd>
+</dl>
+<p>When results from the asynchronous call become available, the 
+<em>callback</em> function (if non-NULL) will be called with 
+the <em>cb_data</em> value, originally supplied to the <em>val_async_submit()</em> 
+call, as one of its arguments.
+The results from the lookup are returned in <em>cb_data</em>, which is a
+pointer to the <em>val_cb_params_t</em> structure shown below.</p>
+<pre>
+    typedef struct val_cb_params_s {
+        val_status_t             val_status;
+        char                    *name;
+        int                      class_h;
+        int                      type_h;
+        int                      retval;
+        struct val_result_chain *results;
+        struct val_answer_chain *answers;
+    } val_cb_params_t;</pre>
+<p>The <em>val_cb_params_t</em> structure contains the orginal query parameters
+in <em>name</em>, <em>class_h</em> and <em>type_h</em> respectively, the 
+return value for the lookup operation in <em>retval</em>, pointers
+to the <em>results</em> and <em>answers</em> chains (see <code>libval(3)</code> for more details), 
+and the final validation status of the lookup operation in <em>val_status</em>.
+The application must release the memory associated with <em>results</em> and
+<em>answers</em> using the <em>val_free_result_chain()</em> and
+<em>val_free_answer_chain()</em> respectively (see <code>libval(3)</code> for more details).</p>
+<p>On completion of the asynchronous lookup operation, an event code is
+returned in <em>event</em>.  The following event types are defined:</p>
+<dl>
+<dt><strong><a name="val_as_event_completed" class="item"><strong>VAL_AS_EVENT_COMPLETED</strong></a></strong></dt>
+
+<dd>
+<p>The request was completed.</p>
+</dd>
+<dt><strong><a name="val_as_event_interim" class="item"><strong>VAL_AS_EVENT_INTERIM</strong></a></strong></dt>
+
+<dd>
+<p>The request is still being processed, but some interim results are
+available.</p>
+</dd>
+<dt><strong><a name="val_as_event_canceled" class="item"><strong>VAL_AS_EVENT_CANCELED</strong></a></strong></dt>
+
+<dd>
+<p>The request was canceled. The val_status, results and answers members of
+the callback parameter structure are undefined.</p>
+</dd>
+</dl>
+<p>The <em>val_async_select_info()</em> function examines all outstanding
+asynchronous requests for the given context and sets the
+appropriate file descriptors, timeout value and
+maximum file descriptor value in preparation for a call to <em>select(3)</em>.</p>
+<p>The file descriptor for each socket awating a response is set
+in the <em>fds</em> parameter and <em>max_fd</em> is set to the highest
+file descriptor number of any pending asynchronous request unless
+that value is less than the current vaule of <em>max_fd</em>, in which case it
+is left unchanged. The <em>timeout</em> field is set to the lowest timeout
+value of any pending asynchronous query timeout which is less than the
+current value in this field by the application.</p>
+<p>After the application calls <em>select(3)</em>, it must also call 
+<em>val_async_check_wait()</em> with the <em>fd_set</em> and the number of ready file 
+descriptors, <em>ndfs</em>, returned by <em>select()</em>. The
+<em>val_async_check_wait()</em> function handles timeouts or processes DNS
+responses to outstanding queries.  It also call callbacks for completed
+requests.</p>
+<p><em>val_async_check_wait()</em> provides two modes of operation. 
+The first is for use with an application that has its own <em>select()</em> loop. 
+The applications sets its own file descriptors, calls
+<em>val_async_select_info()</em> to set file descriptors for pending queries
+and calls <em>select(</em>). The <em>fds</em> and <em>nfds</em> parameters from select are
+passed in to val_async_check_wait and the timeout value is ignored. 
+If responses for a file descriptor are processed, the 
+the appropriate file descriptor in <em>fds</em> is cleared and <em>nfds</em> is
+decremented.</p>
+<p>In the second mode of operation, the application can set <em>fds</em> and
+<em>nfds</em> to NULL specify a value for <em>timeout</em>. Here,  
+<em>val_async_select_info()</em> and <em>select()</em> are called internally
+and any responses received before the timeout value expires are
+processed.</p>
+<p>The <em>val_async_cancel()</em> function can be used to cancel the
+asynchronous request identified by its handle <em>as</em>, while
+<em>val_async_cancel_all()</em> can be used to cancel all asynchronous 
+requests associated with a given context. The following flag may be set
+for the cancellation request.</p>
+<dl>
+<dt><strong><a name="val_as_cancel_no_callbacks" class="item"><strong>VAL_AS_CANCEL_NO_CALLBACKS</strong></a></strong></dt>
+
+<dd>
+<p>Do not call completed or cancelled callbacks.</p>
+</dd>
+</dl>
+<p>
+</p>
+<hr />
+<h1><a name="return_values">RETURN VALUES</a></h1>
+<p>The <em>val_async_submit()</em> function returns <strong>VAL_NO_ERROR</strong> on success 
+and one of <strong>VAL_RESOURCE_UNAVAILABLE</strong>, <strong>VAL_BAD_ARGUMENT</strong> or
+<strong>VAL_INTERNAL_ERROR</strong> on failure.</p>
+<p><em>val_async_select_info()</em> returns <strong>VAL_NO_ERROR</strong> on success
+and <strong>VAL_BAD_ARGUMENT</strong> if an illegal argument was passed to the
+function.</p>
+<p><em>val_async_check_wait()</em> returns 0 when no pending requests are
+found and a positive integer when requests are still pending.
+A value less than zero on error.</p>
+<p><em>val_async_cancel()</em> and <em>val_async_cancel_all()</em> return
+<strong>VAL_NO_ERROR</strong> on success.</p>
+<p>
+</p>
+<hr />
+<h1><a name="copyright">COPYRIGHT</a></h1>
+<p>Copyright 2004-2013 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.</p>
+<p>
+</p>
+<hr />
+<h1><a name="authors">AUTHORS</a></h1>
+<p>Robert Story</p>
+<p>
+</p>
+<hr />
+<h1><a name="see_also">SEE ALSO</a></h1>
+<p><em>libval(3)</em></p>
+<p>draft-hayatnagarkar-dnsext-validator-api</p>
+<p><a href="http://www.dnssec-tools.org">http://www.dnssec-tools.org</a></p>
+
+<!--#include virtual="/page-bottom.html" -->
+</body>
+
+</html>

@@ -21,7 +21,7 @@ use Net::DNS::SEC::Tools::tooloptions;
 # Version information.
 #
 my $NAME   = "rollset";
-my $VERS   = "$NAME version: 2.0.0";
+my $VERS   = "$NAME version: 2.0.1";
 my $DTVERS = "DNSSEC-Tools Version: 2.0";
 
 #######################################################################
@@ -54,6 +54,7 @@ my $deladm	= 0;
 my $deldir	= 0;
 my $dellog	= 0;
 my $delzsa	= 0;
+my $delzg	= 0;
 my $rstzn	= 0;
 
 my %options = ();			# Filled option array.
@@ -76,6 +77,7 @@ my @opts =
 	'del-admin',			# Delete the administrator line.
 	'del-directory',		# Delete the directory line.
 	'del-loglevel',			# Delete the logging level line.
+	'del-zg',			# Delete the zonegroup line.
 	'del-zsargs',			# Delete the zonesigner arguments.
 	'reset-zonename',		# Reset the zonename fields.
 
@@ -152,6 +154,7 @@ sub doopts
 	$deladm	   = $options{'del-admin'};
 	$deldir	   = $options{'del-directory'};
 	$dellog	   = $options{'del-loglevel'};
+	$delzg	   = $options{'del-zg'};
 	$delzsa	   = $options{'del-zsargs'};
 	$rstzn	   = $options{'reset-zonename'};
 
@@ -181,6 +184,16 @@ sub doopts
 	if(defined($zsargs) && $delzsa)
 	{
 		print STDERR "-zsargs and -del-zsargs are mutually exclusive\n";
+		exit(1);
+	}
+	if(defined($loglvl) && $dellog)
+	{
+		print STDERR "-loglevel and -del-loglevel are mutually exclusive\n";
+		exit(1);
+	}
+	if(defined($zonegroup) && $delzg)
+	{
+		print STDERR "-zg and -del-zg are mutually exclusive\n";
 		exit(1);
 	}
 	if(defined($zonename) && $rstzn)
@@ -236,6 +249,20 @@ sub doopts
 		exit(5);
 	}
 
+	#
+	# Remove leading and trailing whitespace, then ensure the name is
+	# still there.
+	#
+	if(defined($zonegroup))
+	{
+		$zonegroup =~ s/^\s*//;
+		$zonegroup =~ s/\s*$//;
+		if(length($zonegroup) == 0)
+		{
+			print STDERR "you must specify a zonegroup that isn't all blanks\n";
+			exit(6);
+		}
+	}
 
 	#
 	# Delete the non-command options and ensure that we were given
@@ -298,10 +325,8 @@ sub chkphase
 #-----------------------------------------------------------------------------
 # Routine:	editrrf()
 #
-# Purpose:	This routine reads a rollrec file and copies the rollrec
-#		records into either the roll hash or the skip hash,
-#		depending on each record's type.  Any unrecognized rollrec
-#		entries are reported. 
+# Purpose:	This routine reads a rollrec file and performs the requested
+#		record updates.
 #
 sub editrrf
 {
@@ -314,6 +339,15 @@ sub editrrf
 		rollrec_unlock();
 		print STDERR "unable to read rollrec file \"$rrf\"\n";
 		exit(-1);
+	}
+
+	#
+	# Ensure the specified rollrec name exists.
+	#
+	if(!$doall && (rollrec_exists($name) == 0))
+	{
+		print STDERR "invalid rollrec name \"$name\"\n";
+		exit(7);
 	}
 
 	#
@@ -382,12 +416,19 @@ sub editrrf
 		deleter($deladm,$rname,'administrator');
 		deleter($deldir,$rname,'directory');
 		deleter($dellog,$rname,'loglevel');
+		deleter($delzg,$rname,'zonegroup');
 		deleter($delzsa,$rname,'zsargs');
 
 		#
 		# Reset some fields.
 		#
 		changer($rstzn,$rname,'zonename',$rname);
+
+		#
+		# If we aren't messing with all the rollrecs then we're
+		# done because we've found the requested record.
+		#
+		last if(!$doall);
 	}
 
 	#
@@ -395,6 +436,7 @@ sub editrrf
 	#
 	rollrec_close();
 	rollrec_unlock();
+
 }
 
 #----------------------------------------------------------------------
@@ -457,6 +499,7 @@ sub changer
 	# Change the rollrec field's value.
 	#
 	rollrec_setval($rname,$field,$val);
+
 }
 
 #----------------------------------------------------------------------
@@ -537,6 +580,7 @@ sub usage
 	print STDERR "		-del-admin\n";
 	print STDERR "		-del-directory\n";
 	print STDERR "		-del-loglevel\n";
+	print STDERR "		-del-zg\n";
 	print STDERR "		-del-zsargs\n";
 	print STDERR "		-reset-zonename\n";
 
@@ -600,6 +644,11 @@ The B<-directory> and B<-del-directory> options are mutually exclusive.
 
 The I<loglevel> line is deleted.
 The B<-loglevel> and B<-del-loglevel> options are mutually exclusive.
+
+=item B<-del-zg>
+
+The I<zonegroup> line is deleted.
+The B<-zg> and B<-del-zg> options are mutually exclusive.
 
 =item B<-del-zsargs>
 
@@ -665,7 +714,13 @@ This option is mutually exclusive of the B<-roll> option.
 =item B<-zg zonegroup-name>
 
 The zonegroup in the selected I<rollrec> records is modified to be
-I<zonegroup-name>.
+I<zonegroup-name>.  This field may contain a single zonegroup name or a
+comma-separated list of names.  If a list is given, then there may be
+whitespace before or after each name, but it is not recognized as being part
+of the zonegroup name itself.  Whitespace I<within> the name is considered
+part of the name.  Zonegroup names are considered case insensitive.  The
+names may be given with whatever case the user desires, but names whose only
+differences are the case of the letters are considered to be the same name.
 
 =item B<-zonename zone-name>
 

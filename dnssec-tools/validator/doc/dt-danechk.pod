@@ -1,0 +1,113 @@
+=pod
+
+=head1 NAME
+
+dt-danechk - validate TLSA records against SSL certificates. 
+
+=head1 SYNOPSIS
+
+  dt-danechk [options] DOMAIN_NAME
+
+=head1 DESCRIPTION
+
+B<dt-danechk> is a diagnostic tool that can be used to test the validity
+of an SSL/TLS certificate against the TLSA record published in the DNS.
+For more information on TLSA and DANE see RFC 6698.
+
+=head1 OPTIONS
+
+=over
+
+=item -h, --help
+
+Display usage and exit.
+
+=item -l I<label>, --label=I<label>
+
+This option can be used to specify the validation policy label. 
+If this option is not given, the default validator policy is used.  
+
+=item -x I<proto>, --proto I<proto>
+
+Specifies the protocol associated with the TLSA certificate. 
+Possible values for the I<proto> field are:
+
+=over
+
+=item * B<tcp>   TCP protocol 
+
+=item * B<udp>   UDP protocol 
+
+=item * B<sc>    SCTP protocol (not supported)
+
+=back
+
+The default value for I<proto> is B<tcp>.
+
+=item -p I<port>, --port=I<port>
+
+Specifies the port associated with the TLSA certificate. 
+The default value for I<port> is B<443>.
+
+=item -o, --output=<debug-level>:<dest-type>[:<dest-options>]
+
+<debug-level> is 1-7, corresponding to syslog levels ALERT-DEBUG
+<dest-type> is one of file, net, syslog, stderr, stdout
+<dest-options> depends on <dest-type>
+    file:<file-name>   (opened in append mode)
+    net[:<host-name>:<host-port>] (127.0.0.1:1053
+    syslog[:facility] (0-23 (default 1 USER))
+
+
+=item -s, --sync
+
+Perform synchronous lookups. The default is to perform asynchronous
+lookups.
+
+
+=item -v I<FILE>, --dnsval-conf=I<FILE>
+
+This option can be used to specify the location of the B<dnsval.conf>
+configuration file.
+
+=item -r I<FILE>, --resolv-conf=I<FILE>
+
+This option can be used to specify the location of the B<resolv.conf>
+configuration file containing the name servers to use for lookups.
+
+=item -i I<FILE>, --root-hints=I<FILE>
+
+This option can be used to specify the location of the root.hints
+configuration file, containing the root name servers.  This is only
+used when no name server is found, and B<dt-validate> must do recursive
+lookups itself.
+
+=item -V, --version
+
+Display the version and exit.
+
+=back
+
+=head1 PRE-REQUISITES
+
+B<libval>
+
+=head1 COPYRIGHT
+
+Copyright 2005-2013 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHORS
+
+Suresh Krishnaswamy
+
+=head1 SEE ALSO
+
+B<libval(3)>
+
+B<dnsval.conf(5)>
+
+http://www.dnssec-tools.org
+
+=cut
+

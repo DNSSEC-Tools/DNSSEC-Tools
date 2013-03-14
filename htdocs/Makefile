@@ -53,20 +53,24 @@ MODS=\
 
 LIBS=\
 	validator/doc/dnsval.conf\
-	validator/doc/getaddr\
-	validator/doc/gethost\
-	validator/doc/getname\
-	validator/doc/getquery\
-	validator/doc/getrrset\
+	validator/doc/dt-danechk\
+	validator/doc/dt-getaddr\
+	validator/doc/dt-gethost\
+	validator/doc/dt-getname\
+	validator/doc/dt-getquery\
+	validator/doc/dt-getrrset\
+	validator/doc/dt-libval_check_conf\
+	validator/doc/dt-validate\
 	validator/doc/libsres\
 	validator/doc/libval\
-	validator/doc/libval_check_conf\
+	validator/doc/libval_async\
 	validator/doc/libval_shim\
 	validator/doc/val_get_rrset\
 	validator/doc/val_getaddrinfo\
+	validator/doc/val_getdaneinfo\
 	validator/doc/val_gethostbyname\
-	validator/doc/val_res_query\
-	validator/doc/validate
+	validator/doc/val_res_query
+
 
 tools:
 	for i in $(TOOLS) ; do \
@@ -89,7 +93,7 @@ libs:
 		ibase=`basename $$i` ; \
 		echo creating docs/tool-description/$$ibase.html ; \
 		pod2html $(TOOLSDIR)/$$i.pod > docs/tool-description/$$ibase.html ; \
-		$(FIXBOT) docs/$$ibase.html ; \
+		$(FIXBOT) docs/tool-description/$$ibase.html ; \
 	done
 
 help-txt:
@@ -103,3 +107,7 @@ help-txt:
 stepbystep:
 	wvHtml --targetdir=docs/step-by-step docs/step-by-step-guide-draft-v0.4.doc step-by-step-guide-draft-v0.4.html
 	$(FIXBOT) docs/step-by-step/step-by-step-guide-draft-v0.4.html
+
+owl:
+	cp $(TOOLSDIR)/apps/owl-monitor/docs/* ./docs/owl-monitor
+

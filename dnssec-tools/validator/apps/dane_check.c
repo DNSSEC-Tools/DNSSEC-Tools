@@ -24,6 +24,9 @@ static struct option prog_options[] = {
     {"port", 1, 0, 'p'},
     {"output", 1, 0, 'o'},
     {"sync", 0, 0, 's'},
+    {"dnsval-conf", 1, 0, 'v'},
+    {"root-hints", 1, 0, 'i'},
+    {"resolv-conf", 1, 0, 'r'},
     {"Version", 0, 0, 'V'},
     {0, 0, 0, 0}
 };
@@ -33,7 +36,7 @@ void
 usage(char *progname)
 {
     fprintf(stderr,
-            "Usage: %s [options] <hostname|IPv4 address|IPv6 address>\n",
+            "Usage: %s [options] <hostname>\n",
             progname);
     fprintf(stderr, "Options:\n");
     fprintf(stderr,
@@ -54,6 +57,14 @@ usage(char *progname)
             "\t              syslog[:facility] (0-23 (default 1 USER))\n" );
     fprintf(stderr,
             "\t-s, --sync                      perform synchronous lookup\n");
+    fprintf(stderr,
+            "\t-v, --dnsval-conf=<file> Specifies a dnsval.conf\n");
+    fprintf(stderr,
+            "\t-r, --resolv-conf=<file> Specifies a resolv.conf to search\n"
+            "\t                         for nameservers\n");
+    fprintf(stderr,
+            "\t-i, --root-hints=<file> Specifies a root.hints to search\n" 
+            "\t                        for root nameservers\n");
     fprintf(stderr,
             "\t-V, --Version                   display version and exit\n");
 
@@ -127,7 +138,7 @@ _aicallback(void *callback_data, int eai_retval, struct addrinfo *res,
 int
 main(int argc, char *argv[])
 {
-    const char     *allowed_args = "sl:o:Vv:r:i:nx:p:";
+    const char     *allowed_args = "hl:x:p:o:sv:i:r:V";
     char           *node = NULL;
     int             retval;
     int             async = 1;

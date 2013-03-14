@@ -1,0 +1,803 @@
+#!/usr/bin/perl
+#
+# Copyright 2013 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details.
+#
+# docula
+#
+#	This script unifies a group of files into a single file.
+#	A configuration file guides the shmooshing of files.
+#
+
+use strict;
+
+#
+# Version information.
+#
+my $NAME   = 'docula';
+my $VERS   = "$NAME version: 2.0.0";
+my $DTVERS = "DNSSEC-Tools version: 2.0";
+
+use Getopt::Long qw(:config no_ignore_case_always);
+
+#------------------------------------------------------------------------
+
+#
+# Data required for command line options.
+#
+my %options = ();			# Filled option array.
+my @opts =
+(
+	'labels',				# Print inclusion labels.
+	'overwrite',				# Overwrite the output file.
+	'out=s',				# Output file.
+
+	'help',					# Give help message.
+	'Version',				# Give version info.
+	'verbose',				# Give verbose output.
+);
+
+my $labels = 0;					# File-inclusion labels flag.
+my $outfile = '';				# Output file.
+my $overwrite = 0;				# Overwrite outfile flag.
+my $verbose = 0;				# Verbose flag.
+
+#------------------------------------------------------------------------
+
+my $DOCULA_FILE		= '<!---\s+{docula file=".*"}\s+--->';
+my $DOCULA_COMMENT	= '<!---\s+{docula com=".*"}\s+--->';
+my $DOCULA_ALERT	= '<!---\s+{docula alert=".*"}\s+--->';
+my $DOCULA_START	= '<!---\s+{docula start}\s+--->';
+my $DOCULA_END		= '<!---\s+{docula end}\s+--->';
+
+my $DOCULA_TAG		= '<!---\s+{docula';
+
+#------------------------------------------------------------------------
+
+main();
+exit(0);
+
+#------------------------------------------------------------------------------
+# Routine:	main()
+#
+sub main
+{
+	$| = 1;
+
+	#
+	# Check for options.
+	#
+	doopts();
+
+	#
+	# Set up input and output handles for our docula control file
+	# and the output file.
+	#
+	opener();
+
+	#
+	# Read the docula control file.
+	#
+	read_docula();
+}
+
+#------------------------------------------------------------------------------
+# Routine:	doopts()
+#
+sub doopts
+{
+	#
+	# Parse the options.
+	#
+	GetOptions(\%options,@opts) || usage();
+
+	#
+	# Handle a few immediate flags.
+	#
+	version()   if(defined($options{'Version'}));
+	usage(1)    if(defined($options{'help'}));
+
+
+	#
+	# Set our option variables based on the parsed options.
+	#
+	$verbose   = $options{'verbose'};
+	$labels	   = $options{'labels'};
+	$overwrite = $options{'overwrite'};
+	$outfile   = $options{'out'} if(defined($options{'out'}));
+
+}
+
+#------------------------------------------------------------------------------
+# Routine:	opener()
+#
+# Purpose:	Open the input file and output file.
+#		If a file wasn't specified on the command line, then we'll
+#		read from stdin.
+#		If an output file wasn't specified by the -out option,
+#		then we'll write to stdout.
+#
+sub opener
+{
+	#
+	# Set up the input file.
+	#
+	if(@ARGV == 0)
+	{
+		open(DOCULAFN, "<& STDIN");
+	}
+	else
+	{
+		if(open(DOCULAFN, "< $ARGV[0]") == 0)
+		{
+			print STDERR "unable to open \"$ARGV[0]\"\n";
+			exit(1);
+		}
+	}
+
+	#
+	# Set up the output file.  If an output file was given, we'll use
+	# it if we aren't going to overwrite it.
+	#
+	if($outfile eq '')
+	{
+		open(OUT, ">& STDOUT");
+	}
+	else
+	{
+		if((-e $outfile) && (! $overwrite))
+		{
+			print STDERR "output file \"$outfile\" already exists\n";
+			exit(2);
+		}
+
+		if(open(OUT, "> $outfile") == 0)
+		{
+			print STDERR "unable to open \"$outfile\"\n";
+			exit(1);
+		}
+	}
+}
+
+#------------------------------------------------------------------------------
+# Routine:	read_docula()
+#
+# Purpose:	Read the contents of the docula file.  A few docula-specific
+#		tags are handled, but everything else passes through without
+#		any processing.
+#
+sub read_docula
+{
+	#
+	# Handle each line in the file separately.  If a line contains our
+	# docula-specific file-inclusion tag, then we'll include that file
+	# in place.
+	#
+	while(<DOCULAFN>)
+	{
+		my $line = $_;				# The line to process.
+
+		if($line =~ /$DOCULA_FILE/)
+		{
+			my $pre	   = $`;	# Stuff before our tag.
+			my $marker = $&;	# Our file-inclusion tag.
+			my $post   = $';	# Stuff after our tag.
+			my $fn;			# Filename to include.
+			my $fncont;		# Contents of file.
+
+			#
+			# Print anything that was on line before the docula-
+			# file tag.
+			#
+			print OUT "$pre\n" if($pre ne '');
+
+			#
+			# Pull out the filename from our file-inclusion tag.
+			#
+			$marker =~ /file="(.*?)"/;
+			$fn = $1;
+			print "including file \"$fn\"\n" if($verbose);
+			$fncont = fileparse($fn);
+			print OUT "$fncont";
+
+			#
+			# Print anything that was on line after the docula-
+			# file tag.
+			#
+			print OUT "$post" if($post ne '');
+		}
+		elsif($line =~ /$DOCULA_ALERT/)
+		{
+			my $pre	   = $`;	# Stuff before our tag.
+			my $marker = $&;	# Our alert tag.
+			my $post   = $';	# Stuff after our tag.
+
+			my $txt;		# Alert message to include.
+
+			#
+			# Print anything that was on the line before the
+			# docula alert tag.
+			#
+			print OUT "$pre\n" if($pre ne '');
+
+			#
+			# Pull the alert text from our file-inclusion tag.
+			#
+			$marker =~ /alert="(.*?)"/;
+			$txt = addalert($1);
+			print OUT "$txt";
+			print "alert:  $1\n";
+
+			#
+			# Print anything that was on the line after the
+			# docula alert tag.
+			#
+			print OUT "$post" if($post ne '');
+		}
+		elsif($line =~ /$DOCULA_COMMENT/)
+		{
+			my $pre	   = $`;	# Stuff before our tag.
+			my $marker = $&;	# Our comment tag.
+			my $post   = $';	# Stuff after our tag.
+
+			my $txt;		# Comment to include.
+
+			#
+			# Print anything that was on the line before the
+			# docula comment tag.
+			#
+			print OUT "$pre\n" if($pre ne '');
+
+			#
+			# Pull the comment text from our file-inclusion tag.
+			#
+			$marker =~ /com="(.*?)"/;
+			$txt = addline($1);
+			print OUT "$txt";
+			print "comment:  $1\n" if($verbose);
+
+			#
+			# Print anything that was on the line after the
+			# docula message tag.
+			#
+			print OUT "$post" if($post ne '');
+		}
+		else
+		{
+			#
+			# Print the contents of this line.
+			#
+			print OUT "$line";
+		}
+
+	}
+}
+
+#------------------------------------------------------------------------------
+# Routine:	fileparse()
+#
+# Purpose:	Build a buffer of all the pieces of a specified file that
+#		are labelled for docula inclusion.  Everything outside the
+#		labelling brackets is ignored.  The buffer is then returned
+#		to the caller.
+#
+sub fileparse
+{
+	my $fn = shift;				# File to read.
+	my $contents;				# String of file contents.
+	my $keeper = '';			# Parsed file contents.
+	my $inblock = 0;			# In-inclusion-block flag.
+
+	#
+	# Open the inclusion file.
+	#
+	if(open(FN,"< $fn") == 0)
+	{
+		print STDERR "unable to open $fn, $?\n";
+		return('');
+	}
+
+	#
+	# Get the file's contents in one long string.
+	#
+	$contents = join '', <FN>;
+	close(FN);
+
+	#
+	# Print a file-start label.
+	#
+	$keeper .= addline("start of included file \"$fn\"") if($labels);
+
+	#
+	# Go through the file contents and put all the bits labelled for
+	# inclusion into one big buffer.
+	#
+# print "---> about to start processing $fn\n";
+
+	while($contents =~ /(.*?)$DOCULA_TAG\s+(.*?)}\s+--->/si)
+	{
+		my $pretag  = $1;		# Text prior to docula tag.
+		my $match = $&;			# Matching text in tag.
+		my $tagarg = $2;		# Argument to docula tag.
+
+# print "---> docula match - " . length($match) . " @ $match @\n";
+
+		#
+		# Delete the docula tag and whatever preceded it from the
+		# contents buffer.
+		#
+		$contents = substr $contents, length($match);
+		$match = $&;
+
+# print "---> docula tag - @ $tagarg @\n";
+
+		#
+		# DOCULA_START 	<!--- {docula start} --->
+		#
+		#	Turn on the flag indicating we've entered an
+		#	inclusion block.
+		#
+		if($tagarg =~ /^start/i)
+		{
+#			print "$fn:  docula start tag\t(inblock - $inblock)\n";
+
+			print "$fn:  unclosed docula inclusion block\n" if($inblock);
+			$inblock = 1;
+		}
+		#
+		# DOCULA_END   	<!--- {docula end} --->
+		#
+		#	Turn off the flag indicating we're in an
+		#	inclusion block.
+		#
+		elsif($tagarg =~ /^end/i)
+		{
+#			print "$fn:  docula stop tag\t(inblock - $inblock)\n";
+
+			if(! $inblock)
+			{
+				print "$fn:  unopened docula inclusion block\n";
+				$pretag = addalert("unopened inclusion block; skipping");
+			}
+
+			$inblock = 0;
+
+			$keeper .= $pretag;
+		}
+		#
+		# DOCULA_ALERT 	<!--- {docula alert=".*"} --->
+		#
+		elsif($tagarg =~ /^alert/i)
+		{
+			my $alert;			# Alert message.
+
+#			print "$fn:  docula alert tag - <$tagarg>\n";
+
+			#
+			# Pull the alert text from our buffer.
+			#
+			$tagarg =~ /alert="(.*?)"/;
+			$alert = addalert($1);
+
+			#
+			# Add the alert to our output.  If we're in the
+			# middle of an inclusion block, we'll also add
+			# any text that preceded this alert.
+			#
+			print "alert:  $1\n";
+			$keeper .= $pretag if($inblock);
+			$keeper .= $alert;
+		}
+		#
+		# DOCULA_COMMENT  	<!--- {docula com=".*"} --->
+		#
+		elsif($tagarg =~ /^com/i)
+		{
+			my $txt;			# Comment text.
+
+#			print "$fn:  docula com tag - <$tagarg>\n";
+
+			#
+			# Pull the comment text from our buffer.
+			#
+			$tagarg =~ /com="(.*?)"/;
+			$txt = addline($1);
+
+			#
+			# Add the comment to our output.  If we're in the
+			# middle of an inclusion block, we'll also add any
+			# text that preceded this comment.
+			#
+			print "comment:  $1\n" if($verbose);
+			$keeper .= $pretag if($inblock);
+			$keeper .= $txt;
+		}
+		elsif($tagarg =~ /^file/i)
+		{
+			print STDERR "$fn:  nested file inclusion not allowed\n";
+		}
+		else
+		{
+			print STDERR "$fn:  unrecognized tag @ $tagarg @\n";
+		}
+
+	}
+
+	if(($contents ne '') && $inblock)
+	{
+		$keeper .= $contents;
+	}
+
+	#
+	# Print a file-end label.
+	#
+	$keeper .= addline("end of included file \"$fn\"") if($labels);
+
+	#
+	# Return the buffer of included bits.
+	#
+	return($keeper);
+}
+
+#------------------------------------------------------------------------------
+# Routine:      addalert()
+#
+# Purpose:      Build a line for inclusion in the final output.  The text
+#		is a bolded, centered line of text passed by the caller.
+#
+#		This assumes the output will be an HTML file.  Line build 
+#		is performed here in case we ever want to enhance docula
+#		to produce output in other formats.
+#
+sub addalert
+{
+	my $str = shift;		# Text to be included.
+	my $line;			# Constructed line to be included.
+
+	$line = "\n<center><b>$str</b></center>\n";
+	return($line);
+}
+
+#------------------------------------------------------------------------------
+# Routine:      addline()
+#
+# Purpose:      Build a line for inclusion in the final output.  The text
+#		is inserted as an HTML comment.
+#
+#		This assumes the output will be an HTML file.  Line build 
+#		is performed here in case we ever want to enhance docula
+#		to produce output in other formats.
+#
+sub addline
+{
+	my $str = shift;		# Text to be included.
+	my $line;			# Constructed line to be included.
+
+	$line = "\n<!--------   $str   -------->\n";
+	return($line);
+}
+
+#------------------------------------------------------------------------------
+# Routine:      version()
+#
+# Purpose:      Print the version number(s) and exit.
+#
+sub version
+{
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+	exit(0);
+}
+
+#------------------------------------------------------------------------------
+# Routine:      usage()
+#
+sub usage
+{
+	print STDERR "usage:  $0 [options]\n";
+
+	print STDERR "\t\where options are:\n";
+	print STDERR "\t\t-label\n";
+	print STDERR "\t\t-out <file>\n";
+	print STDERR "\t\t-overwrite\n";
+	print STDERR "\t\t-help\n";
+	print STDERR "\t\t-verbose\n";
+	print STDERR "\t\t-Version\n";
+
+
+	exit(0);
+}
+
+#------------------------------------------------------------------------------
+
+=pod
+
+=head1 NAME
+
+docula - sucks content from the jugulars of HTML files to create a unified HTML file
+
+=head1 SYNOPSIS
+
+  docula [options] <config file>
+
+=head1 DESCRIPTION
+
+B<docula> unifies a group of files into a single file.  A configuration file
+directs B<docula> to include a particular set of files.  The included files
+have B<docula-specific> markers that bracket the sections of the file that
+must be included.  This allows, for example, a group of HTML files to to be
+collected into a single HTML file, with only selected content from each file
+included.
+
+Several B<docula>-specific control tags control B<docula>'s behavior.  This
+script was initially written for creating a single HTML file from a set of
+HTML files.  Consequently, control tags are in HTML format and this manpage
+discusses behavior with the assumption that the files are HTML files.  It is
+possible to use B<docula> with non-HTML files, but some post-execution
+adjustment might be required to get the final file into necessary form.
+
+B<docula>'s configuration file is an enhanced HTML file that provides a list
+of files to be included in B<docula>'s output.  The files are specified with
+B<docula>'s I<file inclusion> tag, and they may be surrounded by additional
+HTML to properly display the unified HTML file.  Portions of an included file
+must be marked with B<docula>'s I<block start>/I<block end> tags to indicate
+the contents to be included in the output.  Everything else in the included
+file will be left out of the B<docula> output.
+
+When preparing HTML files for inclusion, you must carefully plan what should
+be included from each file.  The output file is unlikely to need multiple
+I<title> or I<head> sections.  The output file most likely will not need
+multiple versions of the "footer" sort of lines that many HTML files have.
+
+After B<docula> has run, it would be wise to examine the resulting output
+file carefully.  Some things may need adjusting, such as anchor names and
+navigation links between the original set of HTML files.  Hardcoded section
+numbers will also need adjustment.
+
+As stated above, the current implementation is focussed specifically on
+condensing HTML files.  B<docula> may be extended in future to handle other
+file types, but there are no immediate plans to do so.
+
+=head1 DOCULA CONTROL TAGS
+
+B<docula> uses several special HTML comment tags to control its behavior.
+
+=over 4
+
+=item file inclusion:   <!--- {docula file="filename"} --->
+
+This tag is used in the configuration file given to B<docula>.  It is I<only>
+used in this file, and will be ignored if it is used in the HTML files
+specified for inclusion.
+
+I<configuration file only>
+
+=item block start:      <!--- {docula start} --->
+
+This tag marks the beginning of a portion of the included file to be included
+in B<docula>'s output.  Only those parts of the included file that are
+bracketed by I<block start>/I<block end> tags will be included in the output.
+Multiple I<block start>/I<block end> blocks may be used, but they should not
+be nested.
+
+I<included HTML files only>
+
+=item block end:        <!--- {docula end} --->
+
+This tag marks the end of a portion of the included file to be included in
+B<docula>'s output.  Only those parts of the included file that are bracketed
+by I<block start>/I<block end> tags will be included in the output.  Multiple
+I<block start>/I<block end> blocks may be used, but they should not be nested.
+
+I<included HTML files only>
+
+=item alerts:   <!--- {docula alert="alert text"} --->
+
+This tag allows alert messages to be included in the output file.  The alert
+will be included as a centered, bold line of text.  An alert may be given
+inside or outside of I<block start>/I<block end> tags.  The alert text will
+also be printed to STDOUT.
+
+I<configuration file or included HTML files>
+
+=item comments:   <!--- {docula com="comment text"} --->
+
+This tag allows informational messages to be included in the output file.
+The message will be included as an HTML comment.  A B<docula> comment may be
+given inside or outside of I<block start>/I<block end> tags.  If the
+B<-verbose> option is given, the comment text will also be printed to STDOUT.
+
+I<configuration file or included HTML files>
+
+=back
+
+=head1 OPTIONS
+
+=over 4
+
+=item B<-labels>
+
+Add comments to the output that mark the beginning and end of an
+included file.
+
+=item B<-out>
+
+Specify the file to which B<docula>'s output will be written.
+This file must not already exist, unless the B<-overwrite> option is given.
+
+=item B<-overwrite>
+
+Overwrite an existing output file.
+
+=item B<-help>
+
+Prints a help message.
+
+=item B<-verbose>
+
+Prints verbose output.
+
+=item B<-Version>
+
+Prints B<docula>'s version and exit.
+
+=back
+
+=head1 EXAMPLE
+
+This example shows how B<docula> will include three HTML files into a single
+file.  A configuration file, B<config.html>, is used to control B<docula>'s
+operation.  The whole body section of the B<example1.html> file will be
+included in the output file, along with one B<docula> comment.  A single line
+from B<example2.html> will be included, along with one B<docula> comment.
+Nothing from B<example3.html> will be included in the output file, except for
+an alert message.   There
+
+Configuration file B<config.html>:
+
+    <html>
+    <head> <title>docula example</title> </head>
+
+    <body>
+
+    <p>
+    Collecting three files with docula.
+    <p>
+
+    <!--- {docula alert="Remember to check for problems!"} --->
+
+    <!--- {docula file="example1.html"} --->
+    <!--- {docula file="example2.html"} --->
+    <!--- {docula file="example3.html"} --->
+
+    <p>
+
+    After including all three files.
+
+    <!--- {docula com="nothing left to do"} --->
+
+    </body>
+    </html>
+
+Inclusion file B<example1.html>:
+
+    <html>
+    <head> <title>docula inclusion file 1</title> </head>
+
+    <body>
+
+    <!--- {docula start} --->
+    <h2>This is inclusion file 1.</h2>
+
+    <p>
+
+    We're getting all of inclusion file 1's body.
+
+    <p>
+
+    <!--- {docula end} --->
+
+    <!--- {docula com="but not inclusion file 1's html, head, or body tags"} --->
+    </body>
+    </html>
+
+Inclusion file B<example2.html>:
+
+    <html>
+    <head> <title>docula inclusion file 2</title> </head>
+
+    <body>
+
+    <!--- {docula start} --->
+    <h2>This is inclusion file 2.</h2>
+    <!--- {docula com="This line is the only thing being included from inclusion
+    file 2."} --->
+    <!--- {docula end} --->
+
+    <p>
+
+    This line should not be included from inclusion file 2!
+
+    <p>
+
+    </body>
+    </html>
+
+Inclusion file B<example3.html>:
+
+    <!--- {docula alert="Inclusion file 3 has no start/end block, so nothing
+    should be included."} --->
+    <html>
+    <head> <title>docula inclusion file 3</title> </head>
+
+    <body>
+
+    <h2>This is inclusion file 3.</h2>
+
+    <p>
+
+    Nothing from inclusion file 3 should be included, except the alert.
+
+    <p>
+
+    </body>
+    </html>
+
+B<docula> will gather these files as directed using this command.  Alert
+output is included.
+
+    $ docula -out 3files.html config.html
+    alert:  Remember to check for problems!
+    alert:  Inclusion file 3 has no start/end block, so nothing
+    should be included.
+    $
+
+The B<3files.html> output file looks like this:
+
+    <html>
+    <head> <title>docula example</title> </head>
+
+    <body>
+
+    <p>
+    Collecting three files with docula.
+    <p>
+
+    <center><b>Remember to check for problems!</b></center>
+
+
+    <h2>This is inclusion file 1.</h2>
+
+    <p>
+
+    We're getting all of inclusion file 1's body.
+
+    <p>
+
+    <!--------   but not inclusion file 1's html, head, or body tags   -------->
+
+    <h2>This is inclusion file 2.</h2>
+
+    <!--------   This line is the only thing being included from inclusion file 2.   -------->
+
+    <center><b>Inclusion file 3 has no start/end block, so nothing should be included.</b></center>
+
+    <p>
+
+    After including all three files.
+
+    <!--------   nothing left to do   -------->
+
+    </body>
+    </html>
+
+=head1 COPYRIGHT
+
+Copyright 2013 SPARTA, Inc.  All rights reserved.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@tislabs.com
+
+=cut
+

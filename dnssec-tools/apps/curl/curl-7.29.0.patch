@@ -1,0 +1,151 @@
+diff -ur curl-7.29.0.orig/configure.ac curl-7.29.0.dane/configure.ac
+--- curl-7.29.0.orig/configure.ac	2013-02-06 04:47:19.000000000 -0500
++++ curl-7.29.0.dane/configure.ac	2013-03-07 11:57:50.000000000 -0500
+@@ -701,6 +701,12 @@
+ 
+ CURL_CHECK_LIB_XNET
+ 
++AC_CHECK_LIB(val-threads, val_getdaneinfo,
++             [
++             LIBS="$LIBS -lval-threads -lsres -lpthread"
++             AC_DEFINE([HAVE_DNSVAL_DANE], [1], [Perform local DANE Validation using dnsval])
++             ])
++
+ dnl gethostbyname without lib or in the nsl lib?
+ AC_CHECK_FUNC(gethostbyname,
+               [HAVE_GETHOSTBYNAME="1"
+diff -ur curl-7.29.0.orig/lib/sslgen.c curl-7.29.0.dane/lib/sslgen.c
+--- curl-7.29.0.orig/lib/sslgen.c	2013-01-16 17:05:56.000000000 -0500
++++ curl-7.29.0.dane/lib/sslgen.c	2013-03-07 11:57:50.000000000 -0500
+@@ -157,6 +157,9 @@
+   Curl_safefree(sslc->cipher_list);
+   Curl_safefree(sslc->egdsocket);
+   Curl_safefree(sslc->random_file);
++#ifdef HAVE_DNSVAL_DANE
++  val_free_dane(sslc->danestatus);
++#endif
+ }
+ 
+ #ifdef USE_SSL
+diff -ur curl-7.29.0.orig/lib/ssluse.c curl-7.29.0.dane/lib/ssluse.c
+--- curl-7.29.0.orig/lib/ssluse.c	2013-01-17 16:40:43.000000000 -0500
++++ curl-7.29.0.dane/lib/ssluse.c	2013-03-07 11:57:50.000000000 -0500
+@@ -67,6 +67,11 @@
+ #include <md5.h>
+ #endif
+ 
++#ifdef HAVE_DNSVAL_DANE
++#include <validator/validator.h>
++#include <validator/val_dane.h>
++#endif
++
+ #include "warnless.h"
+ #include "curl_memory.h"
+ #include "non-ascii.h" /* for Curl_convert_from_utf8 prototype */
+@@ -1379,6 +1384,13 @@
+ #endif
+ #endif
+ 
++#ifdef HAVE_DNSVAL_DANE
++  int dane_retval;
++  int dane_verify;
++  struct val_daneparams daneparams;
++  struct val_danestatus *danestatus = NULL;
++#endif
++
+   DEBUGASSERT(ssl_connect_1 == connssl->connecting_state);
+ 
+   /* Make funny stuff to get random input */
+@@ -1621,12 +1633,38 @@
+           data->set.str[STRING_SSL_CRLFILE]: "none");
+   }
+ 
++#ifdef HAVE_DNSVAL_DANE
++  /*
++   * Check if a TLSA record is available. If yes, then don't try to
++   * verify the peer at the time of the SSL_connect().
++   */
++  dane_verify = 0;
++  daneparams.port = conn->port;
++  daneparams.proto = DANE_PARAM_PROTO_TCP;
++
++  dane_retval = val_getdaneinfo(NULL, conn->host.name,
++                      &daneparams, &(data->set.ssl.danestatus));
++  if (VAL_DANE_NOERROR == dane_retval) {
++    dane_verify = 1;
++    infof (data, "DANE: TLSA record for %s exists.\n", conn->host.name);
++  } else if (VAL_DANE_IGNORE_TLSA != dane_retval) {
++    /* Error condition */
++    failf(data, "DANE: TLSA record for %s could not be validated.\n",
++            conn->host.name);
++    return CURLE_PEER_FAILED_VERIFICATION;
++  } 
++#endif
++
+   /* SSL always tries to verify the peer, this only says whether it should
+    * fail to connect if the verification fails, or if it should continue
+    * anyway. In the latter case the result of the verification is checked with
+    * SSL_get_verify_result() below. */
+   SSL_CTX_set_verify(connssl->ctx,
+-                     data->set.ssl.verifypeer?SSL_VERIFY_PEER:SSL_VERIFY_NONE,
++                     data->set.ssl.verifypeer 
++#ifdef HAVE_DNSVAL_DANE
++                     && dane_verify == 0 
++#endif
++                     ? SSL_VERIFY_PEER:SSL_VERIFY_NONE,
+                      cert_verify_callback);
+ 
+   /* give application a chance to interfere with SSL set up. */
+@@ -2382,6 +2420,26 @@
+   }
+ #endif
+ 
++#ifdef HAVE_DNSVAL_DANE
++  /* 
++   * Check if we can validate the cert through the DANE protocol
++   */
++  if (data->set.ssl.danestatus) {
++    int do_certchk = 1;
++    if (VAL_DANE_NOERROR != val_dane_check(NULL, connssl->handle, 
++                    data->set.ssl.danestatus, &do_certchk)) {
++      connssl->connecting_state = ssl_connect_done;
++      return CURLE_PEER_FAILED_VERIFICATION;
++    }
++    infof (data, "DANE: SSL certificate verified using DANE.\n");
++    if (do_certchk == 0) {
++        infof (data, "DANE: Skipping additional ceritificate checks.\n");
++        connssl->connecting_state = ssl_connect_done;
++        return CURLE_OK;
++    }
++  }
++#endif
++
+   /*
+    * We check certificates to authenticate the server; otherwise we risk
+    * man-in-the-middle attack; NEVERTHELESS, if we're told explicitly not to
+diff -ur curl-7.29.0.orig/lib/urldata.h curl-7.29.0.dane/lib/urldata.h
+--- curl-7.29.0.orig/lib/urldata.h	2013-01-17 16:40:43.000000000 -0500
++++ curl-7.29.0.dane/lib/urldata.h	2013-03-07 11:57:50.000000000 -0500
+@@ -150,6 +150,11 @@
+ #include <netinet/in.h>
+ #endif
+ 
++#ifdef HAVE_DNSVAL_DANE
++#include <validator/validator.h>
++#include <validator/val_dane.h>
++#endif
++
+ #include "timeval.h"
+ 
+ #ifdef HAVE_ZLIB_H
+@@ -353,6 +358,10 @@
+   char *password; /* TLS password (for, e.g., SRP) */
+   enum CURL_TLSAUTH authtype; /* TLS authentication type (default SRP) */
+ #endif
++
++#ifdef HAVE_DNSVAL_DANE
++  struct val_danestatus *danestatus;
++#endif
+ };
+ 
+ /* information stored about one single SSL session */

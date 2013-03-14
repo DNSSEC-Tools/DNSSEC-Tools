@@ -21,7 +21,7 @@ use Net::DNS::SEC::Tools::tooloptions;
 # Version information.
 #
 my $NAME   = "lsroll";
-my $VERS   = "$NAME version: 2.0.0";
+my $VERS   = "$NAME version: 2.0.1";
 my $DTVERS = "DNSSEC-Tools Version: 2.0";
 
 #######################################################################
@@ -557,10 +557,13 @@ sub getrollrecs
 		next if($rn eq '');
 
 		#
-		# Add quotes to the rollrec and zonegroup names.
+		# Add quotes to the rollrec and zonegroup names.  We'll
+		# also remove leading and trailing whitespace from the
+		# zonegroups string.
 		#
 		$rollrecs{$rn}{'rollrec_name'} = "\"$rollrecs{$rn}{'rollrec_name'}\""; 
-		$rollrecs{$rn}{'zonegroup'} = "\"$rollrecs{$rn}{'zonegroup'}\""; 
+		$rollrecs{$rn}{'zonegroup'} =~ s/^\s*/"/;
+		$rollrecs{$rn}{'zonegroup'} =~ s/\s*$/"/;
 		$zonegroups{$rollrecs{$rn}{'zonegroup'}}++;
 
 		#
@@ -1151,7 +1154,9 @@ of the default output.
 =item B<-zg>
 
 The record's zonegroup is included in the output, enclosed in double quotes.
-If a I<rollrec> does not contain a zonegroup, then the value "" is given.
+If a I<rollrec> entry does not contain a zonegroup, then the value "" is given.
+If a record's zonegroup contains leading or trailing whitespace, it will be
+deleted from the output.
 
 =item B<-keyrec>
 

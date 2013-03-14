@@ -1,0 +1,241 @@
+=pod
+
+=head1 NAME
+
+
+I<val_async_submit()> - submits a request for asynchronous processing of
+DNS queries.
+
+I<val_async_select_info()> - set the appropriate file descriptors for
+outstanding asynchronous requests.
+
+I<val_async_check_wait()> - handle timeouts or processes DNS
+responses to outstanding queries.
+
+I<val_async_cancel()> - cancel an asynchronous query request.
+
+I<val_async_cancel_all()> - cancel all asynchronous queries for a given
+context.
+
+=head1 SYNOPSIS
+
+
+#include <validator/validator.h>
+
+typedef int (*val_async_event_cb)(val_async_status *async_status,
+                    int event, val_context_t *context,
+                    void *cb_data, val_cb_params_t *cbp);
+
+int val_async_submit(val_context_t *context,
+                    const char * name, int class,
+                    int type, unsigned int flags,
+                    val_async_event_cb callback, void *cb_data,
+                    val_async_status **async_status);
+
+int val_async_select_info(val_context_t *context,
+                    fd_set *fds,
+                    int *num_fds,
+                    struct timeval *timeout);
+
+int val_async_check_wait(val_context_t *context,
+                    fd_set *pending_desc, int *nfds,
+                    struct timeval *tv, unsigned int flags);
+
+int val_async_cancel(val_context_t *context,
+                    val_async_status *as,
+                    unsigned int flags);
+
+int val_async_cancel_all(val_context_t *context,
+                    unsigned int flags);
+
+
+=head1 DESCRIPTION
+
+The asynchronous DNSSEC validator API allows an
+application to submit multiple requests, which can be processed
+in parallel. In most cases, this will result in validation
+completing much sooner than a series of synchronous requests.
+
+The I<ctx> parameter in the various functions below specifies the
+validation context, which can be set to NULL for default values (see
+I<libval(3)> and I<dnsval.conf> for more details on validation contexts
+and alidation policy).
+
+The I<val_async_submit()> function submits a request for
+asynchronous processing of DNS queries for the data associated
+with the given domain I<name>, I<class> and I<type>. 
+The I<async_status> object uniquely identifies a particular 
+request and provides a handle for future operations on that 
+asynchronous request, including cancelling it prior to
+lookup completion.
+
+The I<flags> parameter affects when and how often the 
+callback is called. The following flags are defined.
+
+=over 4
+
+=item B<VAL_AS_IGNORE_CACHE>
+
+Don't use any internal cache for answers to this query.
+
+=item B<VAL_AS_NO_NEW_QUERIES>
+
+Don't send any new queries. Answers will be returned 
+from the internal cache.
+
+=item B<VAL_AS_NO_ANSWERS>
+
+Caller doesn't care about the answer results. 
+This can be used for priming the cache.
+
+=item B<VAL_AS_NO_CALLBACKS>
+
+Don't call any callbacks.
+
+=item B<VAL_AS_NO_CANCEL_CALLBACKS>
+
+Call callbacks with results, but don't call any callbacks when the
+request is canceled.
+
+=item B<VAL_AS_INTERIM_CALLBACKS>
+
+Call the callback function with interim results. If this flag is not
+specified, the callback function will only be called when all validation
+results are ready.
+
+=back
+
+When results from the asynchronous call become available, the 
+I<callback> function (if non-NULL) will be called with 
+the I<cb_data> value, originally supplied to the I<val_async_submit()> 
+call, as one of its arguments.
+The results from the lookup are returned in I<cb_data>, which is a
+pointer to the I<val_cb_params_t> structure shown below.
+
+    typedef struct val_cb_params_s {
+        val_status_t             val_status;
+        char                    *name;
+        int                      class_h;
+        int                      type_h;
+        int                      retval;
+        struct val_result_chain *results;
+        struct val_answer_chain *answers;
+    } val_cb_params_t;
+
+
+The I<val_cb_params_t> structure contains the orginal query parameters
+in I<name>, I<class_h> and I<type_h> respectively, the 
+return value for the lookup operation in I<retval>, pointers
+to the I<results> and I<answers> chains (see libval(3) for more details), 
+and the final validation status of the lookup operation in I<val_status>.
+The application must release the memory associated with I<results> and
+I<answers> using the I<val_free_result_chain()> and
+I<val_free_answer_chain()> respectively (see libval(3) for more details). 
+
+On completion of the asynchronous lookup operation, an event code is
+returned in I<event>.  The following event types are defined:
+
+=over 4
+
+=item B<VAL_AS_EVENT_COMPLETED>
+
+The request was completed.
+
+=item B<VAL_AS_EVENT_INTERIM>
+
+The request is still being processed, but some interim results are
+available.
+
+=item B<VAL_AS_EVENT_CANCELED>
+
+The request was canceled. The val_status, results and answers members of
+the callback parameter structure are undefined.
+
+=back
+
+The I<val_async_select_info()> function examines all outstanding
+asynchronous requests for the given context and sets the
+appropriate file descriptors, timeout value and
+maximum file descriptor value in preparation for a call to I<select(3)>.
+
+The file descriptor for each socket awating a response is set
+in the I<fds> parameter and I<max_fd> is set to the highest
+file descriptor number of any pending asynchronous request unless
+that value is less than the current vaule of I<max_fd>, in which case it
+is left unchanged. The I<timeout> field is set to the lowest timeout
+value of any pending asynchronous query timeout which is less than the
+current value in this field by the application. 
+
+After the application calls I<select(3)>, it must also call 
+I<val_async_check_wait()> with the I<fd_set> and the number of ready file 
+descriptors, I<ndfs>, returned by I<select()>. The
+I<val_async_check_wait()> function handles timeouts or processes DNS
+responses to outstanding queries.  It also call callbacks for completed
+requests.
+
+I<val_async_check_wait()> provides two modes of operation. 
+The first is for use with an application that has its own I<select()> loop. 
+The applications sets its own file descriptors, calls
+I<val_async_select_info()> to set file descriptors for pending queries
+and calls I<select(>). The I<fds> and I<nfds> parameters from select are
+passed in to val_async_check_wait and the timeout value is ignored. 
+If responses for a file descriptor are processed, the 
+the appropriate file descriptor in I<fds> is cleared and I<nfds> is
+decremented.
+
+In the second mode of operation, the application can set I<fds> and
+I<nfds> to NULL specify a value for I<timeout>. Here,  
+I<val_async_select_info()> and I<select()> are called internally
+and any responses received before the timeout value expires are
+processed.
+
+The I<val_async_cancel()> function can be used to cancel the
+asynchronous request identified by its handle I<as>, while
+I<val_async_cancel_all()> can be used to cancel all asynchronous 
+requests associated with a given context. The following flag may be set
+for the cancellation request.
+
+=over 4
+
+=item B<VAL_AS_CANCEL_NO_CALLBACKS>
+
+Do not call completed or cancelled callbacks.
+
+=back
+
+=head1 RETURN VALUES
+
+The I<val_async_submit()> function returns B<VAL_NO_ERROR> on success 
+and one of B<VAL_RESOURCE_UNAVAILABLE>, B<VAL_BAD_ARGUMENT> or
+B<VAL_INTERNAL_ERROR> on failure. 
+
+I<val_async_select_info()> returns B<VAL_NO_ERROR> on success
+and B<VAL_BAD_ARGUMENT> if an illegal argument was passed to the
+function.
+
+I<val_async_check_wait()> returns 0 when no pending requests are
+found and a positive integer when requests are still pending.
+A value less than zero on error.
+
+I<val_async_cancel()> and I<val_async_cancel_all()> return
+B<VAL_NO_ERROR> on success.
+
+=head1 COPYRIGHT
+
+Copyright 2004-2013 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+
+=head1 AUTHORS
+
+Robert Story
+
+=head1 SEE ALSO
+
+I<libval(3)>
+
+draft-hayatnagarkar-dnsext-validator-api
+
+http://www.dnssec-tools.org
+
+=cut

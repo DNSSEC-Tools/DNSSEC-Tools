@@ -52,6 +52,8 @@ LOBJ=  	val_resquery.lo \
 	val_gethostbyname.lo \
     val_dane.lo
 
+LSRES=../libsres/libsres.la
+
 LIBVAL=libval$(LIBVAL_SUFFIX).la
 
 LT_DIR= .libs
@@ -63,7 +65,7 @@ clean:
 	$(RM) -rf $(LT_DIR)
 
 $(LIBVAL): $(LOBJ)
-	$(LIBTOOLLD) -o $@ $(LOBJ)
+	$(LIBTOOLLD) -o $@ $(LOBJ) $(LSRES)
 
 install:
 	$(MKPATH) $(DESTDIR)$(libdir)

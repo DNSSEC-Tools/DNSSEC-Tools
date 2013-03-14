@@ -519,6 +519,8 @@ res_nsfallback_ea(struct expected_arrival *ea, struct timeval *closest_event,
                   const u_int16_t class_h, const u_int16_t type_h)
 {
     const static int edns0_fallback[] = { 4096, 1492, 512, 0 };
+    int fallback_max_index = 3; /* This must match the array above */
+
     long             i, old_size;
     struct expected_arrival *temp = ea;
 
@@ -563,7 +565,7 @@ res_nsfallback_ea(struct expected_arrival *ea, struct timeval *closest_event,
     old_size = temp->ea_ns->ns_edns0_size;
     if ((temp->ea_ns->ns_options & SR_QUERY_VALIDATING_STUB_FLAGS) && 
         (temp->ea_ns->ns_edns0_size > 0)) {
-        for (i = 0; i < sizeof(edns0_fallback); i++) {
+        for (i = 0; i < fallback_max_index; i++) {
             if (temp->ea_ns->ns_edns0_size > edns0_fallback[i]) {
                 /* try using a lower edns0 value */
                 temp->ea_ns->ns_edns0_size = edns0_fallback[i];

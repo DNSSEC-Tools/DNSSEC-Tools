@@ -1,10 +1,12 @@
 LIBVAL_MAN=libval.3
+LIBVAL_ASYNC_MAN=libval_async.3
 LIBVAL_SHIM_MAN=libval_shim.3
 GHBN_MAN=val_gethostbyname.3
 GADDR_MAN=val_getaddrinfo.3
 QUERY_MAN=val_res_query.3
 GETRRSET_MAN=val_get_rrset.3
 POLICY_MAN=dnsval.conf.3
+DANE_MAN=val_getdaneinfo.3
 
 LIBVAL_SYMLINKS=\
     val_resolve_and_check.3	\
@@ -24,6 +26,13 @@ LIBVAL_SYMLINKS=\
 	p_ac_status.3	\
 	p_val_status.3
 
+LIBVAL_ASYNC_SYMLINKS=\
+	val_async_submit.3\
+	val_async_select_info.3\
+	val_async_check_wait.3\
+	val_async_cancel.3\
+	val_async_cancel_all.3
+
 GHBN_SYMLINKS=\
 	val_gethostbyname2.3 \
 	val_gethostbyname_r.3 \
@@ -37,15 +46,20 @@ GADDR_SYMLINKS=\
 
 QUERY_SYMLINKS=\
     val_free_response.3 \
-    val_res_query.3 \
     val_res_search.3 
 
 GETRRSET_SYMLINKS=\
-    val_get_rrset.3 \
     val_free_answer_chain.3 
 
 POLICY_SYMLINKS=\
 	val_add_valpolicy.3
+
+DANE_SYMLINKS=\
+	val_dane_submit.3\
+	val_dane_match.3\
+	val_dane_check.3\
+	val_free_dane.3\
+	p_dane_error.3
 
 MAN3PAGES=\
 	  $(GADDR_MAN) \
@@ -54,7 +68,9 @@ MAN3PAGES=\
 	  $(GETRRSET_MAN) \
 	  $(POLICY_MAN) \
 	  $(LIBVAL_MAN) \
+	  $(LIBVAL_ASYNC_MAN) \
 	  $(LIBVAL_SHIM_MAN) \
+	  $(DANE_MAN) \
 	  libsres.3
 
 MAN1PAGES=\
@@ -64,6 +80,7 @@ MAN1PAGES=\
 	dt-getname.1 \
 	dt-getquery.1 \
 	dt-getrrset.1 \
+    dt-danechk.1 \
     dt-libval_check_conf.1
 
 all: $(MAN1PAGES) $(MAN3PAGES) 
@@ -91,6 +108,10 @@ install:
 	  $(RM) -f $(DESTDIR)/$(man3dir)/$$i ;	\
 	  echo ".so $(LIBVAL_MAN)" > $(DESTDIR)/$(man3dir)/$$i  ;	\
 	done
+	for i in $(LIBVAL_ASYNC_SYMLINKS) ; do		\
+	  $(RM) -f $(DESTDIR)/$(man3dir)/$$i ;	\
+	  echo ".so $(LIBVAL_ASYNC_MAN)" > $(DESTDIR)/$(man3dir)/$$i  ;	\
+	done
 	for i in $(GHBN_SYMLINKS) ; do		\
 	  $(RM) -f $(DESTDIR)/$(man3dir)/$$i ;	\
 	  echo ".so $(GHBN_MAN)" > $(DESTDIR)/$(man3dir)/$$i  ;	\
@@ -110,6 +131,10 @@ install:
 	for i in $(POLICY_SYMLINKS) ; do		\
 	  $(RM) -f $(DESTDIR)/$(man3dir)/$$i ;	\
 	  echo ".so $(POLICY_MAN)" > $(DESTDIR)/$(man3dir)/$$i  ;	\
+	done
+	for i in $(DANE_SYMLINKS) ; do		\
+	  $(RM) -f $(DESTDIR)/$(man3dir)/$$i ;	\
+	  echo ".so $(DANE_MAN)" > $(DESTDIR)/$(man3dir)/$$i  ;	\
 	done
 
 

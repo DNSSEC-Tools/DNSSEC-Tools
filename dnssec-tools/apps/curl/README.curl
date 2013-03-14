@@ -5,8 +5,12 @@ libsres) from the dnssec-tools package. The validation of the SSL/TLS
 certificate against the certificate provided in the TLSA record is 
 currently enabled only when openssl is used as the crypto engine.
 
+After applying the patch execute the following commands before running 'make':
+$ autoconf
+$ autoheader
+
 The DANE support can be tested as follows:
-$ curl -v https://www.dnssec-tools.org/readme/README.curl
+$ curl -v https://www.dnssec-tools.org/readme/README.curl -o outfile
 ...
 * DANE: TLSA record for www.dnssec-tools.org exists.
 ...

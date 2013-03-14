@@ -22,34 +22,36 @@
 
 <p>
 
+<!--- {docula start} --->
 <!*****************************************************************************>
 
-<a name="4."></a>
+<a name="ig-manager-4."></a>
 <h3>4. Adding Owl Sensors to an Existing Owl Installation</h3>
 
 <p>
 
 <!------------------------------------------------------------>
+<!--- {docula end} --->
 
 <table align=right width="35%">
 
 <tr valign=top>
 <td valign=top>
 
-<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#4.1.">4.1.</a><td>&nbsp;<td>Create Directories and Files for Sensor's Data</tr>
-<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#4.2.">4.2.</a><td>&nbsp;<td>Firewall Configuration</tr>
-<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#4.3.">4.3.</a><td>&nbsp;<td>SSH Set-up</tr>
-<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#4.4.">4.4.</a><td>&nbsp;<td>Configuration Settings</tr>
-<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#4.4.1.">4.4.1.</a><td>&nbsp;<td>Provide Configuration Information to Sensor Administrator</tr>
-<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#4.4.2.">4.4.2.</a><td>&nbsp;<td>Receive Configuration Information from Sensor Administrator</tr>
-<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#4.5.">4.5.</a><td>&nbsp;<td>Test Transfer from Sensor</tr>
-<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#4.6.">4.6.</a><td>&nbsp;<td>Wait for Sensor Data</tr>
-<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#4.7.">4.7.</a><td>&nbsp;<td>Build Nagios Sensor Objects</tr>
-<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#4.8.">4.8.</a><td>&nbsp;<td>Nagios Modifications</tr>
-<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#4.8.1.">4.8.1.</a><td>&nbsp;<td><b>nagios.cfg</tr>
-<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#4.8.2.">4.8.2.</a><td>&nbsp;<td><b>owl-hostgroups.cfg</b></tr>
-<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#4.9.">4.9.</a><td>&nbsp;<td>Graphing Modifications</tr>
-<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#4.10.">4.10.</a><td>&nbsp;<td>Restart Nagios</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#ig-manager-4.1.">4.1.</a><td>&nbsp;<td>Create Directories and Files for Sensor's Data</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#ig-manager-4.2.">4.2.</a><td>&nbsp;<td>Firewall Configuration</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#ig-manager-4.3.">4.3.</a><td>&nbsp;<td>SSH Set-up</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#ig-manager-4.4.">4.4.</a><td>&nbsp;<td>Configuration Settings</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#ig-manager-4.4.1.">4.4.1.</a><td>&nbsp;<td>Provide Configuration Information to Sensor Administrator</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#ig-manager-4.4.2.">4.4.2.</a><td>&nbsp;<td>Receive Configuration Information from Sensor Administrator</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#ig-manager-4.5.">4.5.</a><td>&nbsp;<td>Test Transfer from Sensor</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#ig-manager-4.6.">4.6.</a><td>&nbsp;<td>Wait for Sensor Data</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#ig-manager-4.7.">4.7.</a><td>&nbsp;<td>Build Nagios Sensor Objects</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#ig-manager-4.8.">4.8.</a><td>&nbsp;<td>Nagios Modifications</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#ig-manager-4.8.1.">4.8.1.</a><td>&nbsp;<td><b>nagios.cfg</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#ig-manager-4.8.2.">4.8.2.</a><td>&nbsp;<td><b>owl-hostgroups.cfg</b></tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#ig-manager-4.9.">4.9.</a><td>&nbsp;<td>Graphing Modifications</tr>
+<tr valign=top><td>&nbsp;<td><a href="install-manager-4-adding-sensor.html#ig-manager-4.10.">4.10.</a><td>&nbsp;<td>Restart Nagios</tr>
 <tr valign=top><td width=20>&nbsp;<td width=20>&nbsp;<td>&nbsp;<td>&nbsp;</tr>
 
 </table>
@@ -58,6 +60,7 @@
 
 <!------------------------------------------------------------>
 
+<!--- {docula start} --->
 Whenever a new Owl sensor is added to those handled by an Owl manager, there
 are a number of actions that must take place on both the sensor and the
 manager.  These actions should be followed consecutively within each section.
@@ -93,7 +96,7 @@ have been completed.
 
 <!----------------------------------->
 
-<a name="4.1."></a>
+<a name="ig-manager-4.1."></a>
 <h3>4.1. Create Directories and Files for Sensor's Data</h3>
 
 <p>
@@ -156,7 +159,7 @@ server.
 
 <!----------------------------------->
 
-<a name="4.2."></a>
+<a name="ig-manager-4.2."></a>
 <h3>4.2. Firewall Configuration</h3>
 
 <p>
@@ -173,7 +176,7 @@ document.
 
 <!----------------------------------->
 
-<a name="4.3."></a>
+<a name="ig-manager-4.3."></a>
 <h3>4.3. SSH Set-up</h3>
 
 <p>
@@ -221,7 +224,7 @@ sensor's data directory.
 
 <!----------------------------------->
 
-<a name="4.4."></a>
+<a name="ig-manager-4.4."></a>
 <h3>4.4. Configuration Settings</h3>
 
 <p>
@@ -251,7 +254,7 @@ are acceptable to the manager and sensor administrators.
 
 <!------------------------->
 
-<a name="4.4.1."></a>
+<a name="ig-manager-4.4.1."></a>
 <h3>4.4.1. Provide Configuration Information to Sensor Administrator</h3>
 
 <p>
@@ -308,7 +311,7 @@ keyword, in the sensor's configuration file.
 
 <!------------------------->
 
-<a name="4.4.2."></a>
+<a name="ig-manager-4.4.2."></a>
 <h3>4.4.2. Receive Configuration Information from Sensor Administrator</h3>
 
 <p>
@@ -347,16 +350,16 @@ keyword, in the sensor's configuration file.
 
 <!----------------------------------->
 
-<a name="4.5."></a>
+<a name="ig-manager-4.5."></a>
 <h3>4.5. Test Transfer from Sensor</h3>
 
 <p>
 
 At this point, you are ready to test your Owl manager.  When the sensor
 administrator reaches
-<a href="install-manager-4-adding-sensor.html#4.5.">section 4.5</a> in their
-installation instructions, both sensor and manager are ready to test the data
-transfer.
+<a href="install-sensor-4-adding-sensor.html#ig-sensor-4.5.">section 4.5</a>
+in their installation instructions, both sensor and manager are ready to test
+the data transfer.
 
 <p>
 
@@ -381,7 +384,7 @@ the Owl sensor daemons.
 
 <!----------------------------------->
 
-<a name="4.6."></a>
+<a name="ig-manager-4.6."></a>
 <h3>4.6. Wait for Sensor Data</h3>
 
 <p>
@@ -404,7 +407,7 @@ queries the sensor will be performing.
 
 <!----------------------------------->
 
-<a name="4.7."></a>
+<a name="ig-manager-4.7."></a>
 <h3>4.7. Build Nagios Sensor Objects</h3>
 
 <p>
@@ -414,7 +417,7 @@ expected from the new sensor, Nagios objects must be built for those queries.
 This may be done automatically using the <b>owl-newsensor</b> command.
 A file containing these Nagios objects must be created, and it will be
 added to the Nagios environment in
-<a href="install-manager-4-adding-sensor.html#4.8.1.">section 4.8.1</a>.
+<a href="install-manager-4-adding-sensor.html#ig-manager-4.8.1.">section 4.8.1</a>.
 
 <p>
 
@@ -434,7 +437,7 @@ about the new sensor.
 
 <!----------------------------------->
 
-<a name="4.8."></a>
+<a name="ig-manager-4.8."></a>
 <h3>4.8. Nagios Modifications</h3>
 
 <p>
@@ -447,7 +450,7 @@ of the new sensor as well as saving historical data to be used in graphing.
 
 <!------------------------->
 
-<a name="4.8.1."></a>
+<a name="ig-manager-4.8.1."></a>
 <h3>4.8.1. <b>nagios.cfg</b></h3>
 
 <p>
@@ -473,7 +476,7 @@ objects.  They should follow all the other standard <i>cfg_file</i> lines.
 
 <li>Once Nagios object configuration files have been created for your sensors
 (as described in
-<a href="install-manager-4-adding-sensor.html#4.7.">section 4.7</a>),
+<a href="install-manager-4-adding-sensor.html#ig-manager-4.7.">section 4.7</a>),
 <b>nagios.cfg</b> must be modified to include
 the new files.  Add a new <i>cfg_file</i> entry for each of the sensor object
 files.  These entries will look something like this:
@@ -516,7 +519,7 @@ Examples for the <i>cfg_file</i> modifications may be found in
 
 <!------------------------->
 
-<a name="4.8.2."></a>
+<a name="ig-manager-4.8.2."></a>
 <h3>4.8.2. <b>owl-hostgroups.cfg</b></h3>
 
 <p>
@@ -547,7 +550,7 @@ your purposes.
 
 <!----------------------------------->
 
-<a name="4.9."></a>
+<a name="ig-manager-4.9."></a>
 <h3>4.9. Graphing Modifications</h3>
 
 <p>
@@ -555,14 +558,14 @@ your purposes.
 The new sensor's data must be made available to the <b>drraw.cgi</b> script.
 To do this, the new sensor's data sources must be added to the <i>%datadirs</i>
 hash in the <b>drraw.conf</b> file.
-See <a href="install-manager-2-installation.html#2.1.2.4.">2.1.2.4.</a><td>&nbsp;<td><b>drraw.cgi</b>
+See <a href="install-manager-2-installation.html#ig-manager-2.1.2.4.">2.1.2.4.</a>&nbsp;<b>drraw.cgi</b>
 for more details.
 
 <p>
 
 <!----------------------------------->
 
-<a name="4.10."></a>
+<a name="ig-manager-4.10."></a>
 <h3>4.10. Restart Nagios</h3>
 
 <p>
@@ -603,6 +606,7 @@ configured services and you can watch the status of your new sensor.
 <!*****************************************************************************>
 
 <br><br>
+<!--- {docula end} --->
 
 <center>
 
