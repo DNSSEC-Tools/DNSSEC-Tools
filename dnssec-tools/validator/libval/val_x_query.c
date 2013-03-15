@@ -24,16 +24,21 @@
  * Calculate rrset length 
  */
 static size_t
-find_rrset_len(struct val_rrset_rec *rrset, u_char *name_n)
+find_rrset_len(struct val_rrset_rec *rrset)
 {
     struct val_rr_rec  *rr;
     size_t resp_len = 0;
     size_t rrset_name_n_len;
+    u_char name_n[NS_MAXCDNAME];
 
-    if (rrset == NULL || name_n == NULL)
+    if (rrset == NULL)
         return 0;
 
+    if (ns_name_pton(rrset->val_rrset_name, name_n, sizeof(name_n)) == -1) {
+        return 0;
+    }
     rrset_name_n_len = wire_name_length(name_n);
+
     /* data */
     for (rr = rrset->val_rrset_data; rr; rr = rr->rr_next) {
         resp_len +=
@@ -55,22 +60,22 @@ find_rrset_len(struct val_rrset_rec *rrset, u_char *name_n)
  * determine the size of the response from individual rrsets
  */  
 static size_t
-determine_size(struct val_result_chain *res, u_char *name_n)
+determine_size(struct val_result_chain *res)
 {
     size_t resp_len = 0;
 
-    if (res == NULL || name_n == NULL)
+    if (res == NULL)
         return 0;
     
     if (res->val_rc_rrset) {
-        resp_len += find_rrset_len(res->val_rc_rrset, name_n);
+        resp_len += find_rrset_len(res->val_rc_rrset);
     }
     if (res->val_rc_proof_count) {
         int             i;
         for (i = 0; i < res->val_rc_proof_count; i++) {
             if (res->val_rc_proofs[i])
                 resp_len +=
-                    find_rrset_len(res->val_rc_proofs[i]->val_ac_rrset, name_n);
+                    find_rrset_len(res->val_rc_proofs[i]->val_ac_rrset);
         }
     }
     return resp_len;
@@ -88,7 +93,6 @@ determine_size(struct val_result_chain *res, u_char *name_n)
  */
 static int
 encode_response_rrset(struct val_rrset_rec *rrset,
-                      u_char * name_n,
                       val_status_t val_rc_status,
                       size_t resp_len,
                       u_char **anbuf,
@@ -110,8 +114,9 @@ encode_response_rrset(struct val_rrset_rec *rrset,
     size_t *count;
     u_int16_t class_h, type_h;
     u_int32_t ttl_h;
+    u_char name_n[NS_MAXCDNAME];
 
-    if (rrset == NULL || name_n == NULL)
+    if (rrset == NULL)
         return 0;
 
     /* 
@@ -123,6 +128,10 @@ encode_response_rrset(struct val_rrset_rec *rrset,
         rrset->val_rrset_ttl < 0) {
         return 0;
     } 
+
+    if (ns_name_pton(rrset->val_rrset_name, name_n, sizeof(name_n)) == -1) {
+        return 0;
+    }
 
     rrset_name_n_len = wire_name_length(name_n);
     class_h = (u_int16_t) rrset->val_rrset_class;
@@ -206,7 +215,7 @@ encode_response_rrset(struct val_rrset_rec *rrset,
 
     }                           // end for each rr
 
-    *bufindex += find_rrset_len(rrset, name_n);
+    *bufindex += find_rrset_len(rrset);
     if (*bufindex > resp_len) {
         /** log error message?  */
         return -1;
@@ -301,7 +310,7 @@ compose_answer(const char * name,
     }
 
     for (res = results; res; res = res->val_rc_next) {
-        resp_len += determine_size(res, name_n);
+        resp_len += determine_size(res);
     }
 
     f_resp->vr_val_status = VAL_UNTRUSTED_ANSWER;
@@ -312,6 +321,7 @@ compose_answer(const char * name,
             f_resp->vr_length = 0;
             return VAL_OUT_OF_MEMORY;
     }
+    memset(f_resp->vr_response, 0, f_resp->vr_length * sizeof(u_char));
     
     /*
      * Header 
@@ -365,7 +375,7 @@ compose_answer(const char * name,
         if (res->val_rc_rrset) {
             rrset = res->val_rc_rrset;
             if (-1 ==
-                encode_response_rrset(rrset, name_n,
+                encode_response_rrset(rrset,
                                       res->val_rc_status, resp_len,
                                       &anbuf, &anbufindex, &ancount,
                                       &nsbuf, &nsbufindex, &nscount,
@@ -374,12 +384,14 @@ compose_answer(const char * name,
                 retval = VAL_BAD_ARGUMENT;
                 goto err;
             }
-        } else if (res->val_rc_proof_count) {
+        } 
+
+        if (res->val_rc_proof_count) {
             int             i;
             for (i = 0; i < res->val_rc_proof_count; i++) {
                 rrset = res->val_rc_proofs[i]->val_ac_rrset;
                 if (-1 ==
-                    encode_response_rrset(rrset, name_n,
+                    encode_response_rrset(rrset,
                                           res->val_rc_status,
                                           resp_len, &anbuf, &anbufindex,
                                           &ancount, &nsbuf, &nsbufindex,
