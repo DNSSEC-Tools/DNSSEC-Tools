@@ -2273,7 +2273,7 @@ transform_outstanding_results(val_context_t *context,
 
             if (w_res->val_rc_is_proof && !val_istrusted(proof_status)) {
                 val_log(context, LOG_INFO, 
-                        "transform_outstanding_results(): Discarding untrusted proof of non-existance");
+                        "transform_outstanding_results(): Discarding untrusted proof of non-existence");
             } else if (VAL_NO_ERROR !=
                 (retval =
                  transform_single_result(context, w_res, queries, results, *proof_res,
@@ -5878,12 +5878,12 @@ check_wildcard_sanity(val_context_t * context,
 
                 /* Use the closest enclosure from the RRSIG */
                 size_t sig_labels = res->val_rc_rrset->val_ac_rrset.ac_data->rrs_sig->rr_rdata[RRSIGLABEL] + 1;
-                size_t name_labels = wire_name_labels(top_q->qc_original_name); 
+                size_t name_labels = wire_name_labels(top_q->qc_name_n); 
                 u_char *ce = NULL;
                 int i;
 
                 if (sig_labels < name_labels) {
-                    ce = top_q->qc_original_name;
+                    ce = top_q->qc_name_n;
                     for (i = sig_labels; i < name_labels; i++) {
                         ce = ce + ce[0] + 1; 
                     } 
@@ -5895,7 +5895,7 @@ check_wildcard_sanity(val_context_t * context,
                 if (VAL_NO_ERROR != 
                         (retval = 
                          prove_nonexistence(context, w_results, queries, &target_res,
-                                            results, top_q->qc_original_name, top_q->qc_type_h,
+                                            results, top_q->qc_name_n, top_q->qc_type_h,
                                             top_q->qc_class_h, ce, 
                                             top_q->qc_proof, &status,
                                             &ttl_x)))
@@ -5917,7 +5917,7 @@ check_wildcard_sanity(val_context_t * context,
                     target_res->val_rc_answer->val_ac_status = VAL_AC_VERIFIED;
                 } else {
                     val_log(context, LOG_INFO,
-                            "check_wildcard_sanity(): Could not prove non-existance of name that was wildcard expanded");
+                            "check_wildcard_sanity(): Could not prove non-existence of name that was wildcard expanded");
                     target_res->val_rc_status = VAL_BOGUS;
                 }
             } else {
@@ -5925,7 +5925,7 @@ check_wildcard_sanity(val_context_t * context,
                  * Can't prove wildcard 
                  */
                 val_log(context, LOG_INFO,
-                            "check_wildcard_sanity(): Missing data for proving non-existance of name that was wildcard expanded");
+                            "check_wildcard_sanity(): Missing data for proving non-existence of name that was wildcard expanded");
                 target_res->val_rc_status = VAL_BOGUS;
             }
         }
