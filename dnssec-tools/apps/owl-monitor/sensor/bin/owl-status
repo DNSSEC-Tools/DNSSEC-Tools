@@ -13,7 +13,10 @@
 #
 #
 # Revision History:
-#	1.0	121201	Initial version.
+#	1.0	Initial version.				121201
+#
+#	2.0	Released as part of DNSSEC-Tools 2.0.		130301
+#	2.0.1	Modified to allow multiple types of queries.	130319
 #
 
 use strict;
@@ -29,7 +32,7 @@ use Getopt::Long qw(:config no_ignore_case_always);
 # Version information.
 #
 my $NAME   = "owl-status";
-my $VERS   = "$NAME version: 2.0.0";
+my $VERS   = "$NAME version: 2.0.1";
 my $DTVERS = "DNSSEC-Tools version: 2.0";
 
 #------------------------------------------------------------------------
@@ -82,9 +85,10 @@ my %owldaemons =
 	'owl-transfer'	=> 0,
 );
 
+my @owlqueries = ();				# Owl queries.
+my @targets  = ();				# Query targets.
 my @nservers = ();				# Nameservers we check.
-my @targets = ();				# Query targets.
-my @qtypes = ();				# Query types.
+my @qargs = ();					# List of query arguments.
 
 my @intervals;					# Query intervals.
 my @timeouts;					# Query timeouts.
@@ -198,9 +202,10 @@ sub startup
 	#
 	# Pick up the configuration data.
 	#
-	@nservers  = @owlutils::cf_servers;
-	@targets   = @owlutils::cf_targets;
-	@qtypes	   = @owlutils::cf_qtypes;
+	@owlqueries = @owlutils::cf_owlqueries;
+	@nservers   = @owlutils::cf_servers;
+	@targets    = @owlutils::cf_targets;
+	@qargs	    = @owlutils::cf_qargs;
 
 	$datadir   = $owlutils::datadir		if($datadir eq '');
 
@@ -244,15 +249,30 @@ sub printqueries
 	return if(! $qflag);
 
 	print "\nqueries:\n";
-	for(my $ind=0; $ind < @nservers; $ind++)
+	foreach my $oq (sort(keys(%owlutils::owlqueries)))
 	{
-		my $ns = $nservers[$ind];
+		print "  $oq queries:\n";
 
-		printf "    $ns:  $targets[$ind]/$qtypes[$ind]\tinterval %d, timeout %d, %s, rollint %d\n",
-				$intervals[$ind],
-				$timeouts[$ind],
-				$rollints[$ind] ? 'active' : 'inactive',
-				$states[$ind];
+		for(my $ind=0; $ind < @nservers; $ind++)
+		{
+			my $ns = $nservers[$ind];
+
+			if($owlqueries[$ind] eq 'dnstimer')
+			{
+
+				printf "\t$ns:  $targets[$ind]/$qargs[$ind]\tinterval %d, timeout %d, %s, rollint %d\n",
+						$intervals[$ind],
+						$timeouts[$ind],
+						$rollints[$ind] ? 'active' : 'inactive',
+						$states[$ind];
+			}
+			elsif($owlqueries[$ind] eq 'rrdata')
+			{
+				print "\t$targets[$ind]\n";
+			}
+		}
+
+		print "\n"
 	}
 }
 
