@@ -12,6 +12,12 @@
 #	taken to fulfill the request is recorded for later transfer to the Owl
 #	manager.
 #
+# Revision History:
+#	1.0	Initial version.				121201
+#
+#	2.0	Released as part of DNSSEC-Tools 2.0.		130301
+#	2.0.1	Modified to allow multiple types of queries.	130319
+#
 
 use strict;
 
@@ -19,7 +25,7 @@ use strict;
 # Version information.
 #
 my $NAME   = "owl-dnstimer";
-my $VERS   = "$NAME version: 2.0.0";
+my $VERS   = "$NAME version: 2.0.1";
 my $DTVERS = "DNSSEC-Tools version: 2.0";
 
 use FindBin;
@@ -157,13 +163,14 @@ my $sensorname;				# Sensor's name from config file.
 # Threads and queries.
 #
 
-our @cf_targets	  = ();				# List of targets.
-our @cf_servers	  = ();				# List of nameservers.
-our @cf_qtypes	  = ();				# List of query types.
-our @cf_intervals = ();				# List of query intervals.
-our @cf_timeouts  = ();				# List of query timeouts.
-our @cf_rollints  = ();				# Datafile rollover interval.
-our @cf_states	  = ();				# State of targets.
+our @cf_owlqueries = ();			# List of targets.
+our @cf_targets	   = ();			# List of targets.
+our @cf_servers	   = ();			# List of nameservers.
+our @cf_qargs	   = ();			# List of query arguments.
+our @cf_intervals  = ();			# List of query intervals.
+our @cf_timeouts   = ();			# List of query timeouts.
+our @cf_rollints   = ();			# Datafile rollover interval.
+our @cf_states	   = ();			# State of targets.
 
 my @seekers = ();				# Query entity objects.
 my @resolvers = ();				# Resolver objects.
@@ -230,7 +237,8 @@ sub main
 	{
 		$datafds[$ind] = -1;
 
-		next if($cf_states[$ind] == 0);
+		next if(($cf_owlqueries[$ind] ne 'dnstimer') ||
+			($cf_states[$ind] == 0));
 
 		push @seekers, forge($ind);
 
@@ -340,13 +348,14 @@ sub startup
 	$logdir	    = $owlutils::logdir;
 	$sensorname = $owlutils::hostname;
 
-	@cf_targets   = @owlutils::cf_targets;
-	@cf_servers   = @owlutils::cf_servers;
-	@cf_qtypes    = @owlutils::cf_qtypes;
-	@cf_intervals = @owlutils::cf_intervals;
-	@cf_timeouts  = @owlutils::cf_timeouts;
-	@cf_rollints  = @owlutils::cf_rollints;
-	@cf_states    = @owlutils::cf_states;
+	@cf_owlqueries = @owlutils::cf_owlqueries;
+	@cf_targets    = @owlutils::cf_targets;
+	@cf_servers    = @owlutils::cf_servers;
+	@cf_qargs      = @owlutils::cf_qargs;
+	@cf_intervals  = @owlutils::cf_intervals;
+	@cf_timeouts   = @owlutils::cf_timeouts;
+	@cf_rollints   = @owlutils::cf_rollints;
+	@cf_states     = @owlutils::cf_states;
 
 	#
 	# Give some extra-tasty output.
@@ -375,6 +384,11 @@ sub makeresolvers
 		my $nsname;				# Name server's name.
 		my $res;				# Resolver object.
 		my $timeout;				# Query timeout value.
+
+		#
+		# Skip entries that aren't ours.
+		#
+		next if($cf_owlqueries[$ind] ne 'dnstimer');
 
 		$nsname  = $cf_servers[$ind];
 		$timeout = $cf_timeouts[$ind];
@@ -446,8 +460,8 @@ sub forge
 			# logging for negative values, query thread for
 			# other values.
 			#
-			$sensorlog->warning("starting query-proc ($$) for $cf_targets[$qind]/$cf_servers[$qind]/$cf_qtypes[$qind]") if($verbose);
-			print STDERR "starting query-proc (pid $$) for $cf_targets[$qind]/$cf_servers[$qind]/$cf_qtypes[$qind]\n" if($verbose);
+			$sensorlog->warning("starting query-proc ($$) for $cf_targets[$qind]/$cf_servers[$qind]/$cf_qargs[$qind]") if($verbose);
+			print STDERR "starting query-proc (pid $$) for $cf_targets[$qind]/$cf_servers[$qind]/$cf_qargs[$qind]\n" if($verbose);
 
 			questor($qind);
 
@@ -552,7 +566,7 @@ sub getdatafile
 	#
 	$ns = $cf_servers[$qind];
 	$tg = $cf_targets[$qind];
-	$qt = $cf_qtypes[$qind];
+	$qt = $cf_qargs[$qind];
 	@cronos = gmtime($ctime);
 	$datafiles[$qind] = sprintf("%02d%02d%02d.%02d%02d,$sensorname,$tg,$ns,$qt.dns",
 						$cronos[5] % 100,
@@ -629,7 +643,7 @@ sub nstimer
 	#
 	$ns	  = $cf_servers[$qind];
 	$target   = $cf_targets[$qind];
-	$qtype	  = $cf_qtypes[$qind];
+	$qtype	  = $cf_qargs[$qind];
 	$resolver = $resolvers[$qind];
 
 	#
@@ -710,7 +724,7 @@ sub savedatum
 	#
 	# Get some data -- local variable for quick-access.
 	#
-	$qtype = $cf_qtypes[$qind];
+	$qtype = $cf_qargs[$qind];
 
 	#
 	# If the anycast request was successful, we'll get the anycast
@@ -861,6 +875,11 @@ sub printnss
 	{
 		my $msg;
 
+		#
+		# Skip entries that aren't ours.
+		#
+		next if($cf_owlqueries[$qind] ne 'dnstimer');
+
 		$msg = sprintf("%10s/%10s:  interval %d, timeout %d, state %s, rollint %d",
 				$cf_targets[$qind],
 				$cf_servers[$qind],
@@ -953,13 +972,15 @@ this:
     conf/owl.conf
     data/<data files>
     log/<log files>
+    perllib/owlutils.pm
 
-These directories maybe be in the home directory of the executing user,
+These directories may be in the home directory of the executing user,
 or they may be located in another directory elsewhere.  However, the four
 directories should be kept together.
 
-Several options are available that alter this behavior.  If these options are
-used, then this default file hierarchy need not be followed.
+Several options are available that alter this behavior.  They allow you to
+specify the location of the B<conf>, B<data>, and B<log> directories.  If
+these options are used, then this default file hierarchy need not be followed.
 
 =head1 OPTIONS
 
@@ -969,27 +990,27 @@ used, then this default file hierarchy need not be followed.
 
 =item B<-cd config-directory>
 
-Specifies the directory that holds the B<owl-dnstimer> configuration file.  If
-this is not given, then the default B<conf> name will be used.  If this is a
-relative path, it will be relative from the point of execution.
+Specifies the directory that holds the Owl configuration file.  If this is
+not given, then the default B<conf> name will be used.  If this is a relative
+path, it will be relative from the point of execution.
 
-The B<owl-dnstimer.pid> file is stored in this directory.
+The B<owl-dnstimer.pid> file is also stored in this directory.
 
 =item B<-config config-file>
 
 =item B<-cf config-file>
 
-Specifies the B<owl-dnstimer> configuration file.  If I<config-file> does not
-contain any directory nodes, then the specified name will be prefixed with the
-configuration directory.  If it does contain directory nodes, the configuration
-directory (default or option-specified) will be ignored.  If this is not
-given, then the default B<owl.conf> name will be used.
+Specifies the Owl configuration file.  If I<config-file> does not contain
+any directory nodes, then the specified name will be prefixed with the
+configuration directory.  If it does contain directory nodes, the
+configuration directory (default or option-specified) will be ignored.
+If this is not given, then the default B<owl.conf> name will be used.
 
 =item B<-datadir data-directory>
 
 Specifies the directory that will hold the B<owl-dnstimer> data files.  If
-this is not given, then the default B<data> name will be used.  If this is a
-relative path, it will be relative from the point of execution.  If this
+this is not given, then the default B<data> name will be used.  If this is
+a relative path, it will be relative from the point of execution.  If this
 directory doesn't exist, it will be created.
 
 =item B<-defaults>
@@ -1031,6 +1052,7 @@ Prints B<owl-dnstimer>'s version and exit.
 
 =head1 SEE ALSO
 
+B<owl-rrdata(1)>,
 B<owl-sensord(1)>
 
 B<owl-config(5)>,

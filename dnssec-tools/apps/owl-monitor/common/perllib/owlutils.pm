@@ -8,7 +8,10 @@
 #       This module contains routines used by the Owl scripts.
 #
 # Revision History:
-#	1.0	121201	Initial version.
+#	1.0	Initial version.				121201
+#
+#	2.0	Released as part of DNSSEC-Tools 2.0		131301
+#	2.0.1	Modified to allow multiple types of queries.	131319
 #
 
 package owlutils;
@@ -24,7 +27,8 @@ use Log::Dispatch::FileRotate;
 # Version information.
 #
 my $NAME   = 'owlutils.pm';
-my $VERS   = "$NAME version: 2.0";
+my $VERS   = "$NAME version: 2.0.1";
+my $DTVERS = "DNSSEC-Tools version: 2.0";
 
 our @ISA = qw(Exporter);
 
@@ -89,8 +93,8 @@ my $MIN_ROLLINT = 60 * 10;		#  Minimum file rollover interval.
 #
 # The default and valid DNS queries.
 #
-my $DEF_QUERYTYPE = 'A';
-my %dnsqueries =
+my $DEF_DNSTIMER_QUERY = 'A';
+my %dnstimer_queries =
 (
 	'A'		=> 1,
 	'AAAA'		=> 1,
@@ -118,13 +122,40 @@ my $owllog;					# The log object.
 my $OWL_SENSOR	= 1;				# Owl sensor daemon.
 my $OWL_MANAGER	= 2;				# Owl manager.
 
+#
+# Owl program/Owl host mapping.
+# The hash key is the Owl program.
+# The hash value is a flag indicating if it runs on the sensor or manager.
+#
 my %owldaemons =				# Owl daemons.
 (
 	'owl-dnstimer'		=> $OWL_SENSOR,
+	'owl-rrdata'		=> $OWL_SENSOR,
 	'owl-sensord'		=> $OWL_SENSOR,
 	'owl-transfer'		=> $OWL_SENSOR,
 
 	'owl-transfer-mgr'	=> $OWL_MANAGER,
+);
+
+#
+# Valid Owl queries.
+# The hash key is the Owl-query in the config file on the "query" lines.
+#     The keys will be used the values in @cf_owlqueries.
+# The hash value is the actual program that runs for that query.
+#
+our %owlqueries =
+(
+	'dnstimer'	=> 'owl-dnstimer',
+	'rrdata'	=> 'owl-rrdata',
+);
+
+#
+# The default argument for each Owl query.
+#
+my %DEF_QUERYARG =
+(
+	'dnstimer'	=> $DEF_DNSTIMER_QUERY,
+	'rrdata'	=> ''
 );
 
 #------------------------------------------------------------------------
@@ -168,13 +199,14 @@ our $quickseconds;			# Seconds that make a quick execution.
 # Exported fields from the Owl configuration file.
 #
 
-our @cf_targets	  = ();				# List of targets.
-our @cf_servers	  = ();				# List of nameservers.
-our @cf_qtypes	  = ();				# List of DNS query types.
-our @cf_intervals = ();				# List of query intervals.
-our @cf_timeouts  = ();				# List of query timeouts.
-our @cf_rollints  = ();				# Datafile rollover interval.
-our @cf_states	  = ();				# State of targets.
+our @cf_owlqueries = ();			# List of Owl queries.
+our @cf_targets	   = ();			# List of targets.
+our @cf_servers	   = ();			# List of nameservers.
+our @cf_qargs	   = ();			# List of query arguments.
+our @cf_intervals  = ();			# List of query intervals.
+our @cf_timeouts   = ();			# List of query timeouts.
+our @cf_rollints   = ();			# Datafile rollover interval.
+our @cf_states	   = ();			# State of targets.
 
 #----------------------------------------------------
 
@@ -322,7 +354,7 @@ sub owl_printdefs
 	print "default query interval                $DEF_QUINT\n";
 	print "minimum query interval                $MININT\n";
 	print "minimum query timeout                 $MINTO\n";
-	print "default query type                    $DEF_QUERYTYPE\n";
+	print "default query type                    $DEF_DNSTIMER_QUERY\n";
 	print "default datafile rollover interval    $DEF_ROLLINT\n";
 	print "minimum datafile rollover interval    $MIN_ROLLINT\n";
 	print "default interval between transfers    $DEF_INTERVAL\n";
@@ -952,20 +984,22 @@ sub conf_logline
 #
 #		Type target config values:
 #			0 - "query" (keyword)
-#			1 - hostname of target
-#			2 - nameserver to query for target
-#			3 - type of query (optional)
-#			4 - keyword (optional)
-#			5 - value (optional)
+#			1 - type of Owl query
+#			2 - hostname of target
+#			3 - nameserver to query for target
+#			4 - query argument (optional)
+#			5 - keyword (optional)
+#			6 - value (optional)
 #
 sub conf_queryline
 {
 	my @atoms = @_;			# Components of the log config line.
 	my $atoms = @atoms;		# Count of line's atoms.
 
+	my $owlquery;			# Type of Owl query.
 	my $target;			# Target name.
 	my $nsname;			# Nameserver's name.
-	my $qtype;			# Query type.
+	my $qarg;			# Query argument.
 	my $interval;			# Entry's query interval.
 	my $timeout;			# Entry's query timeout.
 	my $rollint;			# Datafile rollover interval.
@@ -973,21 +1007,26 @@ sub conf_queryline
 	#
 	# Ensure we've got at least target and nameserver names for this entry.
 	#
-	if($atoms < 2)
+	if($atoms < 4)
 	{
-		print STDERR "owl_readconfig:  no target or nameserver given for \"target\" line\n";
+		print STDERR "owl_readconfig:  each query line MUST have an Owl query, a target, and a nameserver; \"target\"\n";
 		return(1);
 	}
-	elsif($atoms < 3)
+
+	#
+	# Get the Owl query type and ensure it's okay.
+	#
+	shift @atoms;
+	$owlquery = shift @atoms;
+	if(!defined($owlqueries{$owlquery}))
 	{
-		print STDERR "owl_readconfig:  no nameserver name given for \"target\" line\n";
+		print STDERR "owl_readconfig:  invalid Owl query type \"$owlquery\"\n";
 		return(1);
 	}
 
 	#
 	# Get the target.
 	#
-	shift @atoms;
 	$target = shift @atoms;
 
 	#
@@ -997,16 +1036,20 @@ sub conf_queryline
 	$nsname = "$nsname.$NSBASE" if($nsname =~ /^[a-m]$/i);
 
 	#
-	# Get the query type and ensure it's okay.
+	# Get the query argument and ensure it's okay.
 	#
 	if(@atoms > 0)
 	{
-		$qtype = shift @atoms;
-		$qtype = uc($qtype);
-		if(! defined($dnsqueries{$qtype}))
+		$qarg = shift @atoms;
+		$qarg = uc($qarg);
+
+		if($owlquery eq 'dnstimer')
 		{
-			print STDERR "owl_readconfig:  invalid query type \"$qtype\" for $target:$nsname target\n";
-			return(1);
+			if(! defined($dnstimer_queries{$qarg}))
+			{
+				print STDERR "owl_readconfig:  invalid query type \"$qarg\" for dnstimer $target:$nsname target\n";
+				return(1);
+			}
 		}
 	}
 
@@ -1018,11 +1061,11 @@ sub conf_queryline
 	$rollint  = shift @atoms if(@atoms > 0);
 
 	#
-	# Account for default query type and missing query type.
+	# Account for default query argument and missing query argument.
 	#
-	if(($qtype eq '') || ($qtype eq '-'))
+	if(($qarg eq '') || ($qarg eq '-'))
 	{
-		$qtype = $DEF_QUERYTYPE;
+		$qarg = $DEF_QUERYARG{$owlquery};
 	}
 
 	#
@@ -1056,9 +1099,10 @@ sub conf_queryline
 	#
 	# Save the data for this entry.
 	#
+	push @cf_owlqueries, $owlquery;
 	push @cf_targets, $target;
 	push @cf_servers, $nsname;
-	push @cf_qtypes,  $qtype;
+	push @cf_qargs,  $qarg;
 	push @cf_intervals, $interval;
 	push @cf_timeouts,  $timeout;
 	push @cf_rollints,  $rollint;
@@ -1276,15 +1320,16 @@ The associated arrays of Owl configuration data hold the contents of the
 I<query> lines from the configuration file.  They are associated in that
 a particular I<query> line has its data distributed across the arrays all
 at the same index.  Therefore, I<$cf_servers[4]> holds a datum for the same
-I<query> line as I<$cf_targets[4]> and I<$cf_qtypes[4]>.  If a I<query>
+I<query> line as I<$cf_targets[4]> and I<$cf_qargs[4]>.  If a I<query>
 line does not contain data fields for each array, then a default value
 will be used.  
 
 Data set from a I<query> line:
 
+    @cf_owlqueries           List of Owl queries.
     @cf_targets	             List of targets.
     @cf_servers	             List of nameservers.
-    @cf_qtypes	             List of DNS query types.
+    @cf_qargs	             List of DNS query types.
     @cf_intervals            List of query intervals.
     @cf_timeouts             List of query timeouts.
     @cf_rollints             Datafile rollover interval.
@@ -1426,13 +1471,14 @@ Data from "log" lines:
 
 Data from "query" lines:
 
-    @owlutils::cf_intervals - query intervals from "query" lines
-    @owlutils::cf_qtypes    - DNS query types from "query" lines
-    @owlutils::cf_rollints  - interval from "query" lines
-    @owlutils::cf_servers   - nameservers from "query" lines
-    @owlutils::cf_states    - targets from "query" lines
-    @owlutils::cf_targets   - targets from "query" lines
-    @owlutils::cf_timeouts  - query timeouts from "query" lines
+    @owlutils::cf_intervals  - query intervals from "query" lines
+    @owlutils::cf_owlqueries - Owl queries from "query" lines
+    @owlutils::cf_qargs      - query arguments from "query" lines
+    @owlutils::cf_rollints   - interval from "query" lines
+    @owlutils::cf_servers    - nameservers from "query" lines
+    @owlutils::cf_states     - targets from "query" lines
+    @owlutils::cf_targets    - targets from "query" lines
+    @owlutils::cf_timeouts   - query timeouts from "query" lines
 
 Data from "remote" lines:
 
