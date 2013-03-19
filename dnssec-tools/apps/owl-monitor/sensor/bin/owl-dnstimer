@@ -953,13 +953,15 @@ this:
     conf/owl.conf
     data/<data files>
     log/<log files>
+    perllib/owlutils.pm
 
-These directories maybe be in the home directory of the executing user,
+These directories may be in the home directory of the executing user,
 or they may be located in another directory elsewhere.  However, the four
 directories should be kept together.
 
-Several options are available that alter this behavior.  If these options are
-used, then this default file hierarchy need not be followed.
+Several options are available that alter this behavior.  They allow you to
+specify the location of the B<conf>, B<data>, and B<log> directories.  If
+these options are used, then this default file hierarchy need not be followed.
 
 =head1 OPTIONS
 
