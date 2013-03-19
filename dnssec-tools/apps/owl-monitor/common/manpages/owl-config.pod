@@ -9,7 +9,10 @@
 #	file used by the Owl scripts.
 #
 # Revision History:
-#	1.0	121201	Initial version.
+#	1.0	Initial version.				121201
+#
+#	2.0	Released as part of DNSSEC-Tools 2.0.		131301
+#	2.0.1	Modified to allow multiple types of queries.	131319
 #
 
 1;
@@ -143,18 +146,24 @@ The configuration file must contain at least one B<query> line.
 
 The B<query> lines have the following format:
 
-        query <target> <server> <query> <interval> <timeout> <rollover>
+        query <type> <target> <server> <arg> <interval> <timeout> <rollover>
+
+The I<type> field specifies the type of query which will be performed.
+If I<dnstimer> is given, then a DNS timing query will be done.  If I<rrdata>
+is given, then a DNS resource record will be displayed.
 
 The I<target> field specifies the target host for which a nameserver will
 be queried.
 
 The I<server> field specifies the nameserver that will be queried.  If
 this is a single letter from 'a' to 'm', then it will be appended with
-'.root-servers.net'.
+'.root-servers.net'.  At present, this field is not used for I<rrdata>
+I<type> queries.
 
-The I<query> field specifies the DNS resource record that the nameserver will
-be queried for.  If this is not included or is given as '-', then an 'A'
-query will be performed.
+The I<arg> field specifies an argument to the query.  For I<dnstimer> and
+I<rrdata> query types, this is the DNS resource record that the nameserver
+will be queried for.  If this is not included or is given as '-', then an
+'A' query will be performed.
 
 The I<interval> field specifies the interval between nameserver queries, in
 seconds.  If this is not included or is given as '-', then the interval will
@@ -220,12 +229,14 @@ The following is an example configuration file:
     host    dnstimer-args  -config /owl/conf/owl.conf
     host    transfer-args  -config /owl/conf/owl.conf
 
-    query    .                d
-    query    example.com      d   AAAA  -  42
-    query    www.example.com  d   -  -  -  60
+    query    dnstimer .                d
+    query    dnstimer example.com      d   AAAA  -  42
+    query    dnstimer www.example.com  d   -  -  -  60
 
-    query    .                ns1.local
-    query    example.com      ns1.local   AAAA  -  42
+    query    dnstimer .                ns1.local
+    query    dnstimer example.com      ns1.local   AAAA  -  42
+
+    query    rrdata example.com      dummy.field   NS  -  30
 
     data   archive    /owl/archived-data
     data   dir        /owl/data-files
