@@ -20,6 +20,9 @@
 #		This was adapted from the uem-dnsresp plugin from
 #		the original UEM system.
 #
+#	2.0	Released as part of DNSSEC-Tools 2.0.		130301
+#	2.0.1	Added -rotate option.				130321
+#
 
 use strict;
 
@@ -32,7 +35,7 @@ use File::Path;
 # Version information.
 #
 my $NAME   = "owl-dnswatch";
-my $VERS   = "$NAME version: 2.0.0";
+my $VERS   = "$NAME version: 2.0.1";
 my $DTVERS = "DNSSEC-Tools version: 2.0";
 
 #######################################################################
@@ -88,10 +91,13 @@ my $CRITICAL_THRESHOLD = 9;	# Critical threshold for averaged errors.
 my %options = ();			# Filled option array.
 my @opts =
 (
+	'rotate',			# Performing a data rotation.
 	'paths',			# Display the paths.
 	'Version',			# Display the version number.
 	'help',				# Give a usage message and exit.
 );
+
+my $rotator = 0;			# Data-rotation flag.
 
 #######################################################################
 #
@@ -103,6 +109,8 @@ my $server = '';				# Nameserver host.
 my $query = '';					# Type of DNS query.
 
 my $tetrad = '';				# Combination of arguments.
+
+my $ngmapname = 'owl-dnswatch';			# Map field for nagiosgraph.
 
 #######################################################################
 
@@ -173,6 +181,34 @@ sub main
 	@fns = getfns($lasts[$LASTFILE]);
 
 	#
+	# If -rotate was given, we won't update the history file and
+	# we'll dig out the last data value only.
+	#
+	if($rotator == 1)
+	{
+		for(my $ind = (@fns - 1) ; $ind >= 0; $ind--)
+		{
+			my $fn = $fns[$ind];		# Filename to check.
+			my $ret;			# Invocation's return.
+
+			($ret,$kronos) = timerdata($fn,$lasts[$LASTTIME]);
+
+			$retcode = $ret if($ret != $RC_NORMAL);
+
+			#
+			# Drop out if we've gotten any data.
+			#
+			last if($outstr ne '');
+		}
+
+		#
+		# Write a line of data to Nagios and exit.
+		#
+		nagiout($retcode);
+		return($retcode);
+	}
+
+	#
 	# Get the DNS timer data for this tetrad from the recent files.
 	#
 	foreach my $fn (@fns)
@@ -236,6 +272,17 @@ sub doopts
 	showpaths() if(defined($options{'paths'}));
 
 	usage() if(@ARGV != 4);
+
+	#
+	# If -rotate was given, we'll set up for doing rotation processing.
+	# We won't update the history file and we'll do some reverse array
+	# traversals.
+	#
+	if(defined($options{'rotate'}))
+	{
+		$rotator = 1;
+		$ngmapname = 'owl-dnswatch-rotate';
+	}
 
 	#
 	# Set a few parameters.
@@ -468,6 +515,125 @@ sub timerdata
 	}
 
 	#
+	# Get either the last data line or a collection of data lines,
+	# depending on the -rotate command-line flag.
+	#
+	if($rotator)
+	{
+		$tempus = getdatum(@lines);
+	}
+	else
+	{
+		$tempus = getdata($lasttime,@lines);
+	}
+
+	#
+	# Convert error codes into a Nagios value.
+	#
+	$rc = $RC_WARNING if($rc ne $RC_NORMAL);
+
+	#
+	# Return the response data.
+	#
+	return($rc,$tempus);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	getdatum()
+#
+# Purpose:	Retrieve the last line from the input file.
+#
+sub getdatum
+{
+	my @lines = @_;				# Input lines.
+	my $tempus;				# Timestamp to return.
+
+	#
+	# Handle any file entries more recent than the last time we ran.
+	#
+	for(my $ind = (@lines - 1) ; $ind >= 0; $ind--)
+	{
+		my $line = $lines[$ind];	# Line to check.
+		my $kronos;			# Timestamp from file.
+		my $thost;			# Target host from file.
+		my $nsrvr;			# Nameserver from file.
+		my $qtype;			# Query type from file.
+		my $resptime;			# DNS response time from file.
+		my $errval;			# Error value from file.
+
+#    1349291568.73732 .  h.root-servers.net A 0.011641979217529 NOERROR
+
+		#
+		# Split the line into its atoms.
+		#
+		$line =~ /^([0-9]+).[0-9]+\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)/;
+		$kronos	  = $1;
+		$thost	  = $2;
+		$nsrvr	  = $3;
+		$qtype	  = $4;
+		$resptime = $5;
+		$errval	  = $6;
+
+		#
+		# Skip the line on a few conditions.
+		#
+		next if($errval eq 'UNANSWERED');
+		next if($kronos eq '');
+
+		#
+		# Convert the response time to milliseconds and make it a
+		# reasonable number.
+		#
+		$resptime *= 1000;
+		$resptime = sprintf("%.0f", $resptime);
+
+		#
+		# Keep a running total of response time, for later averaging.
+		#
+		$totalresp += $resptime;
+
+		#
+		# Add shtuff to the output string and bump our entry count.
+		#
+		if($nohist)
+		{
+			$outstr .= "$ngmapname=$resptime ms;";
+		}
+		else
+		{
+			$outstr .= "$ngmapname=$kronos:$resptime ms;";
+		}
+		$count++;
+
+		#
+		# Save a valid timestamp.
+		#
+		$tempus = $kronos;
+
+		#
+		# Drop out and finish up.
+		#
+		last;
+	}
+
+	#
+	# Return the timestamp of the entry.
+	#
+	return($tempus);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	getdata()
+#
+# Purpose:	Retrieve a bunch of lines from the input file.
+#
+sub getdata
+{
+	my $lasttime = shift;			# Timestamp of last entry.
+	my @lines = @_;				# Data lines.
+	my $tempus;				# Timestamp to return.
+
+	#
 	# Handle any file entries more recent than the last time we ran.
 	#
 	foreach my $line (@lines)
@@ -522,11 +688,11 @@ sub timerdata
 		#
 		if($nohist)
 		{
-			$outstr .= "owl-dnswatch=$resptime ms;";
+			$outstr .= "$ngmapname=$resptime ms;";
 		}
 		else
 		{
-			$outstr .= "owl-dnswatch=$kronos:$resptime ms;";
+			$outstr .= "$ngmapname=$kronos:$resptime ms;";
 		}
 		$count++;
 
@@ -537,14 +703,9 @@ sub timerdata
 	}
 
 	#
-	# Convert error codes into a Nagios value.
+	# Return the timestamp of the last entry.
 	#
-	$rc = $RC_WARNING if($rc ne $RC_NORMAL);
-
-	#
-	# Return the response data.
-	#
-	return($rc,$tempus);
+	return($tempus);
 }
 
 #-----------------------------------------------------------------------------
@@ -694,6 +855,7 @@ This script retrieves the DNS timer data gathered by a Owl sensor.
 
 usage:  owl-dnswatch [options] <sensor> <target> <server> <query>
 	options:
+		-rotate         don't update history or save graphing info
 		-paths          display paths to be used
 		-Version        display program version
 		-help           display this message
@@ -711,7 +873,7 @@ usage:  owl-dnswatch [options] <sensor> <target> <server> <query>
 
 =head1 NAME
 
-owl-dnswatch - Nagios plugin to retrieve DNS response data from an Owl sensor
+owl-dnswatch - Nagios plugin to display DNS response data from an Owl sensor
 
 =head1 SYNOPSIS
 
@@ -719,7 +881,11 @@ owl-dnswatch - Nagios plugin to retrieve DNS response data from an Owl sensor
 
 =head1 DESCRIPTION
 
-B<owl-dnswatch> retrieves DNS response-time data from an Owl sensor node.
+B<owl-dnswatch> display DNS response-time data from an Owl sensor node.
+The sensor data are read from files already transferred to the manager
+and B<owl-dnswatch> does not transfer the files itself.  The data are
+formatted for use in Nagios' own display and for adding to the
+B<nagiosgraph> databases for display in time-based graphs.
 
 The data directories are hard-coded in B<owl-dnswatch>.  DNS response time
 data are in B</owl/data/<sensor>/data>.
@@ -747,11 +913,65 @@ objects should be defined:
     }
 
     define service {
-         service_description     d.root-servers.net example.com A          
+         service_description     d.root-servers.net example.com A
          host_name               sensor3
          check_command		 owl-dnswatch!sensor3!example.com!d.root-servers.net!A           
          active_checks_enabled   1 
          ...
+    }
+
+
+Nagios orders its output by I<host>.  These object definitions will order
+the data according to the sensor name.  Alternate methods of organizing the
+data may be used in the Nagios object definitions.  For example, using the
+nameserver as the I<host> will order the Nagios data display by server names.
+The arguments of the I<check_command> will not change; it is only the
+I<host_name> and I<service_description> fields that will be adjusted.
+
+    define service {
+         service_description     sensor3 example.com A
+         host_name               d root
+         check_command		 owl-dnswatch!sensor3!example.com!d.root-servers.net!A           
+         active_checks_enabled   1 
+         ...
+    }
+
+Only one I<service> should be created with the specific definitions for
+the I<host_name> and I<service_description> fields.  Duplicated I<service>
+entries can be created that modify the ordering of the sensor, nameserver,
+target host, and query.  However, the B<owl-dnswatch> should only be used
+in the command portion of a single I<check_command> instance for those
+duplicated entries.  The B<owl-dnswatch-rotate> command should be used
+in the other instances.  For example, the following four I<service> objects
+will refer to the same sensor data, but only the first will be used for
+building graphs.
+
+    define service {
+         service_description     d.root-servers.net example.com A
+         host_name               sensor3
+         check_command		 owl-dnswatch!sensor3!example.com!d.root-servers.net!A           
+         active_checks_enabled   1 
+    }
+
+    define service {
+         service_description     sensor3 example.com A
+         host_name               d root
+         check_command		 owl-dnswatch-rotate!sensor3!example.com!d.root-servers.net!A           
+         active_checks_enabled   1 
+    }
+
+    define service {
+         service_description     sensor3 d.root-servers.net A
+         host_name               example.com
+         check_command		 owl-dnswatch-rotate!sensor3!example.com!d.root-servers.net!A           
+         active_checks_enabled   1 
+    }
+
+    define service {
+         service_description     sensor3 d.root-servers.net example.com
+         host_name               A query
+         check_command		 owl-dnswatch-rotate!sensor3!example.com!d.root-servers.net!A           
+         active_checks_enabled   1 
     }
 
 
@@ -760,6 +980,10 @@ objects should be defined:
 The following options are recognized by B<owl-dnswatch>:
 
 =over 4
+
+=item I<-rotate>
+
+Do not update the history and databases for the given data fields.
 
 =item I<-paths>
 
@@ -774,6 +998,10 @@ Display the program version and exit.
 Display a usage message and exit.
 
 =back
+
+=head1 SEE ALSO
+
+Nagios
 
 =head1 COPYRIGHT
 
