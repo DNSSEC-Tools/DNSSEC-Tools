@@ -1,0 +1,929 @@
+#!/usr/bin/perl
+#
+# Copyright 2013 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details.
+#
+# owl-rrdata						Owl Monitoring System
+#
+#	This script returns DNS resource record information.  It starts a query
+#	entity (thread or subprocess) for each of a set of queries defined in
+#	the Owl configuration file.  Each thread periodically sends a DNS
+#	request for a specified host to a particular nameserver.  Response data
+#	from the request is recorded for later transfer to the Owl manager.
+#
+
+use strict;
+
+#
+# Version information.
+#
+my $NAME   = "owl-rrdata";
+my $VERS   = "$NAME version: 2.0.0";
+my $DTVERS = "DNSSEC-Tools version: 2.0";
+
+use FindBin;
+
+use lib "$FindBin::Bin/../perllib";
+use owlutils;
+
+use Getopt::Long qw(:config no_ignore_case_always);
+
+use Net::DNS;
+use Net::DNS::Packet;
+use Net::DNS::Resolver;
+
+#
+# Before including the threads module, we'll make sure we're able to.
+# If we can, we'll be happy campers.
+# If we can't, we'll continue and be forky instead of thready.
+#
+my $runthreaded;				# Flag for running threaded.
+if(eval { require threads } == 1)
+{
+	require threads;
+	$runthreaded = 1;
+}
+else
+{
+	$runthreaded = 0;
+}
+
+use threads::shared;
+
+use Log::Dispatch;
+use Log::Dispatch::FileRotate;
+
+use Date::Format;
+use POSIX qw(setsid SIGUSR1 SIGUSR2);
+use Time::HiRes qw(time);
+
+#------------------------------------------------------------------------
+# Defaults and some constants.
+
+my $NSBASE = 'root-servers.net';		# Base name for root servers.
+
+my $DEF_CONFIG	= $owlutils::DEF_CONFIG;	# Default config file nodename.
+my $DEF_CONFDIR	= $owlutils::DEF_CONFDIR;	# Default config directory.
+my $DEF_DATADIR	= $owlutils::DEF_DATADIR;	# Default data directory.
+my $DEF_LOGDIR	= $owlutils::DEF_LOGDIR;	# Default log directory.
+
+my $PIDFILE	= "$NAME.pid";			# Filename of process-id file.
+
+#------------------------------------------------------------------------
+
+#
+# Data required for command line options.
+#
+my %options = ();			# Filled option array.
+my @opts =
+(
+	"confdir|cd=s",				# Specify config directory.
+	"config|cf=s",				# Specify config file.
+	"datadir=s",				# Specify data directory.
+	"logdir=s",				# Specify log directory.
+
+	"defaults",				# Print defaults.
+	"foreground|fg",			# Run in foreground.
+	"stop",					# Stop execution.
+
+	"help",					# Give help message.
+	"Version",				# Give version info.
+	"verbose",				# Give verbose output.
+);
+
+my $verbose = 0;
+my $confdir;					# Config directory.
+my $config;					# Config file.
+my $datadir;					# Data directory.
+my $foreground;					# Foreground-execution flag.
+my $logdir;					# Log directory.
+my $logfile;					# Log file.
+my $stopper;					# Stop-execution flag.
+
+#------------------------------------------------------------------------
+#
+# Error strings for log messages.  This is indexed by a code set in askaway().
+#
+my @errors =
+(
+	'NOERROR',		# 0
+	'FORMERR',		# 1
+	'SERVFAIL',		# 2
+	'NXDOMAIN',		# 3
+	'NOTIMP',		# 4
+	'REFUSED',		# 5
+	'YXDOMAIN',		# 6
+	'YXRRSET',		# 7
+	'NXRRSET',		# 8
+	'NOTAUTH',		# 9
+	'NOTZONE',		# 10
+	'UNASSIGNED',		# 11
+	'UNASSIGNED',		# 12
+	'UNASSIGNED',		# 13
+	'UNASSIGNED',		# 14
+	'UNASSIGNED',		# 15
+	'BADVERS/BADSIG',	# 16
+	'BADKEY',		# 17
+	'BADTIME',		# 18
+	'BADMODE',		# 19
+	'BADNAME',		# 20
+	'BADALG',		# 21
+	'BADTRUNC',		# 22
+);
+
+my $MAXERR = 22;				# Maximum error.
+
+#------------------------------------------------------------------------
+#
+# Constants for configuration data.
+#
+
+my $idletime = 1 * 60;			# Main thread wait time.
+
+#------------------------------------------------------------------------
+# Data and log message data.
+#
+
+my $sensorlog;				# Sensor's log object.
+my %loginfo = ();			# Logging information.
+
+my $nextroll = 0;			# Time of next datafile rollover.
+
+my $pidfile;				# Name of process-id file.
+my $sensorname;				# Sensor's name from config file.
+
+#------------------------------------------------------------------------
+# Threads and queries.
+#
+
+our @cf_owlqueries = ();			# List of targets.
+our @cf_targets	   = ();			# List of targets.
+our @cf_servers	   = ();			# List of nameservers.
+our @cf_qargs	   = ();			# List of query arguments.
+our @cf_intervals  = ();			# List of query intervals.
+our @cf_timeouts   = ();			# List of query timeouts.
+our @cf_rollints   = ();			# Datafile rollover interval.
+our @cf_states	   = ();			# State of targets.
+
+my @seekers = ();				# Query entity objects.
+my @datafiles = ();				# Datafiles for queries.
+my @datafds = ();				# Descriptors for datafiles.
+
+#------------------------------------------------------------------------
+
+main();
+exit(0);
+
+#------------------------------------------------------------------------
+# Routine:	main()
+#
+sub main
+{
+	my $qecount = 0;		# Number of query entities started.
+
+	#
+	# Check our options and read the configuration file.
+	#
+	doopts();
+	owl_setup($NAME,$confdir,$datadir,$logdir);
+	if(owl_readconfig($config,$datadir,$logdir) != 0)
+	{
+		exit(2);
+	}
+
+	#
+	# Perform initialization steps.
+	#
+	startup();
+
+	exit(1) if(owl_chkdir('data', $datadir) == 1);
+	exit(1) if(owl_chkdir('log', $logdir) == 1);
+
+	#
+	# Daemonize ourself.
+	# 
+	if((! $foreground) && fork())
+	{
+		print "$NAME started and running as daemon\n";
+		exit(0);
+	}
+	POSIX::setsid() if(! $foreground);
+	owl_writepid();
+
+	#
+	# Start a query entity for each nameserver that has a valid entry.
+	#
+	$sensorlog->warning("creating queries for each target/nameserver pair");
+	print STDERR "master starting query-entities\n" if($verbose);
+	for(my $ind=0; $ind < @cf_targets; $ind++)
+	{
+		$datafds[$ind] = -1;
+
+		next if(($cf_owlqueries[$ind] ne 'rrdata') ||
+			($cf_states[$ind] == 0));
+
+		$seekers[$ind] = forge($ind);
+
+		$qecount++;
+	}
+
+	#
+	# Complain and exit if we didn't start any query entities.
+	#
+	if($qecount == 0)
+	{
+		$sensorlog->warning("no rrdata query entities started");
+		print STDERR "no owl-rrdata query entities started\n";
+		exit(4);
+	}
+
+	#
+	# Master will just sit here twiddling its thumbs.
+	#
+	while(42)
+	{
+		select(undef,undef,undef,$idletime);
+	}
+
+}
+
+#------------------------------------------------------------------------
+# Routine:	doopts()
+#
+sub doopts
+{
+	#
+	# Parse the options.
+	#
+	GetOptions(\%options,@opts) || usage();
+
+	#
+	# Handle a few immediate flags.
+	#
+	version()	if(defined($options{'Version'}));
+	usage(1)	if(defined($options{'help'}));
+	owl_printdefs()	if(defined($options{'defaults'}));
+
+	#
+	# Set our option variables based on the parsed options.
+	#
+	$confdir    = $options{'confdir'}    || $DEF_CONFDIR;
+	$config	    = $options{'config'}     || $DEF_CONFIG;
+	$foreground = $options{'foreground'} || 0;
+	$stopper    = $options{'stop'}       || 0;
+	$verbose    = $options{'verbose'};
+
+	$datadir    = $options{'datadir'};
+	$logdir	    = $options{'logdir'};
+
+	#
+	# Moosh together a few variables to build the config file.
+	#
+	$config = "$confdir/$config" if($config !~ /\//);
+
+}
+
+#------------------------------------------------------------------------
+# Routine:	startup()
+#
+sub startup
+{
+	#
+	# Set up our signal handlers.
+	#
+	sigurd();
+
+	#
+	# Set up our log file..
+	#
+	$sensorlog = owl_setlog($NAME);
+
+	#
+	# Shutdown any owl-rrdata instances that are running.
+	#
+	if($stopper)
+	{
+		owl_halt('owl-rrdata');
+		exit(0);
+	}
+
+	#
+	# Make sure we're the only owl-rrdata running.  We'll also allow a
+	# user to signal the other owl-rrdata to shut down.
+	#
+	if(owl_singleton(0) == 0)
+	{
+		#
+		# If we're not the only owl-rrdata running, we'll
+		# complain and exit.
+		#
+		$sensorlog->warning("$NAME already running");
+		print STDERR "$NAME already running\n";
+		exit(2);
+	}
+
+	#
+	# Get some data set in our utilities.
+	#
+	$pidfile    = $owlutils::pidfile;
+	$datadir    = $owlutils::datadir;
+	$logdir	    = $owlutils::logdir;
+	$sensorname = $owlutils::hostname;
+
+	@cf_owlqueries = @owlutils::cf_owlqueries;
+	@cf_targets    = @owlutils::cf_targets;
+	@cf_servers    = @owlutils::cf_servers;
+	@cf_qargs      = @owlutils::cf_qargs;
+	@cf_intervals  = @owlutils::cf_intervals;
+	@cf_timeouts   = @owlutils::cf_timeouts;
+	@cf_rollints   = @owlutils::cf_rollints;
+	@cf_states     = @owlutils::cf_states;
+
+	#
+	# Give some extra-tasty output.
+	#
+	if($verbose)
+	{
+		print "confdir - $confdir\n";
+		print "config  - $config\n";
+		print "datadir - $datadir\n";
+		print "logdir  - $logdir\n";
+		print "\n";
+	}
+
+}
+
+#------------------------------------------------------------------------
+# Routine:	forge()
+#
+# Purpose:	This routine creates a new query entity.  If the system and
+#		Perl support threads, we'll create a new thread.  If threads
+#		aren't supported, we'll create a new child process.
+#
+#		Most calls will be to start a DNS-query entity, and the
+#		argument is the array index for query information.  If
+#		the argument is -1, then a special entity will be created
+#		to handle logging.
+#
+sub forge
+{
+	my $qind = shift;				# Query's array index.
+	my $ret;					# Return value.
+
+	if($runthreaded)
+	{
+		#
+		# We're running threaded, so we'll create a thread for
+		# queries or logging.
+		#
+		$ret = threads->create(\&questor,$qind);
+	}
+	else
+	{
+		#
+		# We're not running threaded, so we'll create a process
+		# for queries.
+		#
+		if(($ret=fork()) == 0)
+		{
+			#
+			# We'll set up for clean exits at shutdown.
+			#
+			$SIG{USR1} = \&sigend;
+
+			#
+			# Do the Right Thing depending on the index --
+			# logging for negative values, query thread for
+			# other values.
+			#
+			$sensorlog->warning("starting query-proc ($$) for $cf_targets[$qind]/$cf_servers[$qind]/$cf_qargs[$qind]") if($verbose);
+			print STDERR "starting query-proc (pid $$) for $cf_targets[$qind]/$cf_servers[$qind]/$cf_qargs[$qind]\n" if($verbose);
+
+			questor($qind);
+
+			#
+			# We should never get here, but just in case...
+			#
+			exit(0);
+		}
+	}
+
+	#
+	# The master entity will return either the thread object or the
+	# process id.
+	#
+	return($ret);
+}
+
+#------------------------------------------------------------------------
+# Routine:	questor()
+#
+# Purpose:	This routine runs the nameserver timing queries.  It is run
+#		in a separate entity (thread or process) for each target/
+#		nameserver/query-type triplet.
+#
+sub questor
+{
+	my $qind = shift;				# Query's array index.
+	my $target;					# Query's target host.
+	my $ns;						# Query's name server.
+	my $dfn = '';					# Datafile name.
+
+	$target = $cf_targets[$qind];
+	$ns = $cf_servers[$qind];
+
+	while(42)
+	{
+		my $now;				# Current time.
+		my $later;				# Next time to run.
+		my $naptime;				# Time to sleep.
+
+		#
+		# Get the name of the current data file and save it in the
+		# @datafiles array.  We may roll the data file.
+		#
+		getdatafile($qind,$ns);
+
+		#
+		# Give some verbose output about the change in datafile.
+		#
+		if($verbose && ($dfn ne $datafiles[$qind]))
+		{
+			print STDERR "new datafile - $datafiles[$qind]\n";
+			$sensorlog->warning("new datafile - $datafiles[$qind]");
+			$dfn = $datafiles[$qind];
+		}
+
+		#
+		# Get the time we're supposed to check again.
+		#
+		$later = time() + $cf_intervals[$qind];
+
+		#
+		# Run our query.
+		#
+		askaway($qind);
+
+		#
+		# Calculate how much time we need to sleep, based on
+		# how much time we spent in the ns timing check.
+		#
+		$now = time();
+		$naptime = sprintf("%1.0f", ($later - $now));
+
+		#
+		# And let's wait for our next checkup time.
+		#
+		sleep($naptime);
+	}
+}
+
+#------------------------------------------------------------------------
+# Routine:	getdatafile()
+#
+sub getdatafile
+{
+	my $qind = shift;	# Query index.
+	my $ns;			# Nameserver on whose behalf we're working.
+	my $tg;			# Target we're querying.
+	my $qt;			# Query type.
+	my $ctime = time();	# Current time.
+	my @cronos;		# Current GMT time, broken out into atoms.
+	my $datafn;		# Full data path to new data file.
+	my $datafd;		# File descriptor to new data file.
+
+	#
+	# Use the current datafile if the next rollover time is yet to come.
+	#
+	return if($nextroll > $ctime);
+
+	#
+	# Build the filename for the next datafile.
+	#
+	$ns = $cf_servers[$qind];
+	$tg = $cf_targets[$qind];
+	$qt = $cf_qargs[$qind];
+	@cronos = gmtime($ctime);
+	$datafiles[$qind] = sprintf("%02d%02d%02d.%02d%02d,$sensorname,$tg,$ns,$qt.rrec",
+						$cronos[5] % 100,
+						$cronos[4] + 1,
+						$cronos[3],
+						$cronos[2],
+						$cronos[1]);
+
+	#
+	# Create a new data file.
+	#
+	$datafn = "$datadir/$datafiles[$qind]";
+	if(($datafd=new IO::File "> $datafn") == 0)
+	{
+		logmsg("$tg:$ns:  unable to open $datafn : $!");
+
+		$seekers[$qind]->join() if($runthreaded);
+	}
+
+	#
+	# Close the old data file.
+	#
+	if($datafds[$qind] != -1)
+	{
+		my $dfd;				# Datafile descriptor.
+
+		$dfd = $datafds[$qind];
+		$dfd = $$dfd;
+
+		$dfd->close();
+	}
+
+	#
+	# Save the new file descriptor.
+	#
+	autoflush $datafd, 1;
+	$datafds[$qind] = \$datafd;
+	logmsg("$tg:$ns:  changing to new datafile $datafn");
+
+	#
+	# Calculate the time for the next datafile rollover.
+	#
+	$nextroll = $ctime + $cf_rollints[$qind];
+
+}
+
+#------------------------------------------------------------------------
+# Routine:	askaway()
+#
+# Purpose:	We'll look up a DNS record for a target host and time how
+#		long it takes for a response to arrive.  We'll then log the
+#		message and response time for use by a monitor.  This is
+#		timing how long it takes a nameserver to respond to a request.
+#
+sub askaway
+{
+	my $qind = shift;				# Query index.
+	my $target;					# Target host.
+	my $reply = 'undefined response';		# Reply message.
+	my $rcode = -1;					# send() error code.
+
+	my $qarg;					# Query argument.
+
+	my $time0;					# Start time.
+	my $time1;					# Stop time.
+	my $timediff;					# Time difference.
+
+	#
+	# Get some objects.
+	#
+	$target   = $cf_targets[$qind];
+	$qarg	  = $cf_qargs[$qind];
+
+	#
+	# Send the query to the nameserver, and time the query.
+	#
+	$time0 = time();
+	$reply = `dig +short $target $qarg`;
+	$rcode = $? >> 8;
+
+	$time1 = time();
+	$timediff = $time1 - $time0;
+
+	#
+	# Send the answer off to be logged.
+	#
+	$reply =~ s/\s*$//g;
+	poc_savedatum($qind,$reply,$rcode,$time0,$timediff);
+
+}
+
+#------------------------------------------------------------------------
+# Routine:	poc_savedatum()
+#
+# Purpose:	Proof of Concept...
+#
+sub poc_savedatum
+{
+	my $qind = shift;			# Query index.
+	my $reply = shift;			# Nameserver's reply.
+	my $rcode = shift;			# Success value of query.
+	my $cronos = shift;			# Time test was run.
+	my $td = shift;				# Time to run test.
+
+	my $qarg;				# Query argument.
+	my $succstr;				# Success code string.
+	my $msg;				# Formatted message to send.
+	my $dfd;				# Datafile descriptor.
+
+	#
+	# Get the type of resource record we just fetched.
+	#
+	$qarg = $cf_qargs[$qind];
+
+	#
+	# Get the success string for the query.
+	#
+	$succstr = $rcode;
+
+	$msg = sprintf("%10.5f $cf_targets[$qind] $qarg %10.15f $succstr %d",$cronos,$td,(length($reply)+1));
+
+
+	#
+	# Send the message to our log file.
+	#
+	logmsg($msg);
+
+	$dfd = $datafds[$qind];
+	$dfd = $$dfd;
+
+	print $dfd "$msg\n$reply\n";
+
+}
+
+#------------------------------------------------------------------------
+# Routine:	logmsg()
+#
+# Purpose:	Send the message to our log file -- via the log thread if
+#		we're threaded, directly if not.
+#
+sub logmsg
+{
+	my $msg = shift;				# Message to log.
+
+	$sensorlog->log(level => 'info', message => $msg);
+}
+
+#------------------------------------------------------------------------
+# Routine:	sigurd()
+#
+# Purpose:	Set up signal handlers.
+#
+sub sigurd
+{
+	$SIG{HUP}  = \&cleanup;
+	$SIG{INT}  = \&cleanup;
+	$SIG{QUIT} = \&cleanup;
+	$SIG{TERM} = \&cleanup;
+	$SIG{USR1} = 'IGNORE';
+	$SIG{USR2} = \&sigmund;
+
+}
+
+#------------------------------------------------------------------------
+# Routine:	sigmund()
+#
+# Purpose:	Dummy signal handler for SIGUSR2.
+#
+sub sigmund
+{
+	print "$NAME:  use \"$NAME -stop\" to shutdown\n";
+}
+
+#------------------------------------------------------------------------
+# Routine:	sigend()
+#
+# Purpose:	Signal handler for SIGUSR2 for query subprocs.  This is
+#		only used if we're unthreaded.
+#
+sub sigend
+{
+	exit(0);
+}
+
+#------------------------------------------------------------------------
+# Routine:	cleanup()
+#
+# Purpose:	Close down query entities.
+#
+sub cleanup
+{
+
+	if($runthreaded)
+	{
+		#
+		# Shut down the query threads.
+		#
+		$sensorlog->warning("shutting down query-threads");
+		for(my $qind=0; $qind < @seekers; $qind++)
+		{
+			my $qt = $seekers[$qind];
+			my $tid = $qt->tid(); 
+
+			next if($qt == 0);
+
+			$sensorlog->warning("shutting down query-entity for $cf_targets[$qind]/$cf_servers[$qind]") if($verbose);
+			$qt->kill('SIGUSR2')->detach();
+		}
+	}
+	else
+	{
+		#
+		# Shut down the query subprocesses.
+		#
+		$sensorlog->warning("shutting down query-procs");
+		for(my $qind=0; $qind < @seekers; $qind++)
+		{
+			my $qp = $seekers[$qind];
+
+			next if($qp == 0);
+
+			$sensorlog->warning("shutting down query-proc for $cf_targets[$qind]/$cf_servers[$qind]") if($verbose);
+			kill(SIGUSR1, $qp);
+		}
+
+	}
+
+
+	#
+	# Remove the process-id file.
+	#
+	$sensorlog->warning("unlinking pidfile $pidfile") if($verbose);
+	print STDERR "\n\nunlinking pidfile \"$pidfile\"\n" if($verbose);
+	unlink($pidfile);
+
+	#
+	# Wait a moment for the final log message to be written.
+	#
+	$sensorlog->warning("shutting down...");
+	print STDERR "$NAME shutting down...\n" if($verbose);
+	sleep(1);
+	exit(0);
+}
+
+#----------------------------------------------------------------------
+# Routine:      version()
+#
+# Purpose:      Print the version number(s) and exit.
+#
+sub version
+{
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+	exit(0);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:      usage()
+#
+sub usage
+{
+	print STDERR "usage:  $0 [options]\n";
+
+	print STDERR "\t\where options are:\n";
+	print STDERR "\t\t-confdir config-directory\n";
+	print STDERR "\t\t-cd config-directory\n";
+	print STDERR "\t\t-config config-file\n";
+	print STDERR "\t\t-cf config-file\n";
+	print STDERR "\t\t-datadir data-directory\n";
+	print STDERR "\t\t-defaults\n";
+	print STDERR "\t\t-foreground\n";
+	print STDERR "\t\t-fg\n";
+	print STDERR "\t\t-logdir log-directory\n";
+	print STDERR "\t\t-stop\n";
+	print STDERR "\t\t-help\n";
+	print STDERR "\t\t-verbose\n";
+	print STDERR "\t\t-Version\n";
+
+
+	exit(0);
+}
+
+#--------------------------------------------------------------------------
+
+=pod
+
+=head1 NAME
+
+owl-rrdata - Fetches DNS Resource Records for the Owl Monitoring System
+
+=head1 SYNOPSIS
+
+  owl-rrdata [options]
+
+=head1 DESCRIPTION
+
+B<owl-rrdata> retrieves a specified set of DNS resource records for the Owl
+sensor.  The I<rrdata> queries from the Owl configuration file specify a
+target host and the type of DNS resource records that should be retrieved.
+The response data from these queries are transferred to the Owl manager.
+B<owl-rrdata> runs periodically, according to the configuration file.
+
+It starts a set of threads, each of which periodically sends the B<dig>
+command for a specified target host.  The DNS query type and target are
+defined in the Owl configuration file.  Along with the query's resource
+records, the time taken from query to response is saved in a file
+specifically for that target and query type.
+
+The B<owl-rrdata> configuration file defines which target hosts are contacted,
+as well as how often they are contacted.  B<owl-rrdata> maintains a log file
+that tracks the status of requests.  B<owl-rrdata>'s configuration and data
+files, as well as the layout for the environment, are described in their own
+man pages.
+
+B<owl-rrdata> will run threaded if the operating system or the installed
+version of Perl allow.  In this case, each query will be handled by its own
+thread.  If threaded execution is not allowed, then each query will be
+handled by its own process.
+
+=head2 FILE ORGANIZATION
+
+B<owl-rrdata> assumes that the file hierarchy for the sensor is arranged like
+this:
+
+    bin/owl-rrdata
+    conf/owl.conf
+    data/<data files>
+    log/<log files>
+    perllib/owlutils.pm
+
+These directories may be in the home directory of the executing user,
+or they may be located in another directory elsewhere.  However, the five
+directories should be kept together.
+
+Several options are available that alter this behavior.  They allow you to
+specify the location of the B<conf>, B<data>, and B<log> directories.  If
+these options are used, then this default file hierarchy need not be followed.
+
+=head1 OPTIONS
+
+=over 4
+
+=item B<-confdir config-directory>
+
+=item B<-cd config-directory>
+
+Specifies the directory that holds the Owl configuration file.  If this is
+not given, then the default B<conf> name will be used.  If this is a relative
+path, it will be relative from the point of execution.
+
+The B<owl-rrdata.pid> file is also stored in this directory.
+
+=item B<-config config-file>
+
+=item B<-cf config-file>
+
+Specifies the Owl configuration file.  If I<config-file> does not contain
+any directory nodes, then the specified name will be prefixed with the
+configuration directory.  If it does contain directory nodes, the
+configuration directory (default or option-specified) will be ignored.
+If this is not given, then the default B<owl.conf> name will be used.
+
+=item B<-datadir data-directory>
+
+Specifies the directory that will hold the B<owl-rrdata> data files.  If
+this is not given, then the default B<data> name will be used.  If this is
+a relative path, it will be relative from the point of execution.  If this
+directory doesn't exist, it will be created.
+
+=item B<-defaults>
+
+Print the query default values for B<owl-rrdata> and exit.  These are the
+program defaults, not the configuration- and option-enhanced values.
+
+=item B<-foreground>
+
+=item B<-fg>
+
+B<owl-rrdata> will run as a foreground process if either of these options is
+given.  Otherwise, it will run as a daemon.
+
+=item B<-logdir log-directory>
+
+Specifies the directory that will hold the B<owl-rrdata> log files.
+If this is not given, then the default B<log> name will be used.  If this
+is a relative path, it will be relative from the point of execution.  If
+this directory doesn't exist, it will be created.
+
+=item B<-stop>
+
+Stops the execution of an existing B<owl-rrdata> process.
+
+=item B<-help>
+
+Prints a help message.
+
+=item B<-verbose>
+
+Prints verbose output.
+
+=item B<-Version>
+
+Prints B<owl-rrdata>'s version and exit.
+
+=back
+
+=head1 SEE ALSO
+
+B<owl-dnstimer(1)>
+B<owl-sensord(1)>,
+
+B<owl-config(5)>,
+B<owl-data(5)>
+
+=head1 COPYRIGHT
+
+Copyright 2013 SPARTA, Inc.  All rights reserved.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@tislabs.com
+
+=cut
+
