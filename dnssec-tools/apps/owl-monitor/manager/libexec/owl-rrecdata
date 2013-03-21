@@ -1,0 +1,826 @@
+#!/usr/bin/perl
+#
+# Copyright 2013 SPARTA, Inc.  All rights reserved.
+# See the COPYING file distributed with this software for details.
+#
+# owl-rrecdata
+#
+#	This script retrieves the resource-record response data gathered by
+#	an Owl sensor.  It runs on the Owl manager and provides data for use
+#	by a Nagios monitoring environment.
+#
+#	File organization:
+#		/owl/data/owldev1/data/
+#		/owl/data/owldev1/history/
+#		/owl/data/owldev1/history/rrdata
+#
+#
+# Revision History
+#	1.0	Initial version.				3/15/2013
+#		This was adapted from the owl-dnstimer plugin.
+#
+
+use strict;
+
+use Getopt::Long qw(:config no_ignore_case_always);
+use Fcntl ':flock';
+use File::Path;
+
+#######################################################################
+#
+# Version information.
+#
+my $NAME   = "owl-rredata";
+my $VERS   = "$NAME version: 2.0.0";
+my $DTVERS = "DNSSEC-Tools version: 2.0";
+
+#######################################################################
+#
+# Paths.
+#
+#	The installer must set the value of $OWLDIR to reflect the
+#	desired file hierarchy.
+#	The $sub_data and $subhist values may be set, but the values
+#	given below are sufficient.
+#
+
+my $OWLDIR	 = '/owl';		# Owl directory.
+
+my $sub_data = 'data';			# Subdirectory for rrdata data.
+my $sub_hist = 'history';		# Subdirectory for history data.
+
+#####
+
+my $OWLDATA	= "$OWLDIR/data";	# Owl DNS resource-record data dir.
+
+my $hist_rrdata	= 'rrdata';		# History file for rrdata data.
+
+my $historydir;				# History data directory.
+my $datadir;				# Data directory.
+
+#
+# Array indices into history file's data.
+#
+my $LASTSVC  = 0;
+my $LASTFILE = 1;
+my $LASTTIME = 2;
+
+my $nohist = 1;					# History file not-found flag.
+
+#######################################################################
+#
+# Nagios return codes.
+#
+my $RC_NORMAL	= 0;		# Normal return code.
+my $RC_WARNING	= 1;		# Warning return code.
+my $RC_CRITICAL	= 2;		# Critical return code.
+my $RC_UNKNOWN	= 3;		# Unknown return code.
+
+
+my $WARNING_THRESHOLD  = 0;	# Warning threshold for averaged errors.
+my $CRITICAL_THRESHOLD = 9;	# Critical threshold for averaged errors.
+
+######################################################################r
+#
+# Data required for command line options.
+#
+my %options = ();			# Filled option array.
+my @opts =
+(
+	'paths',			# Display the paths.
+	'Version',			# Display the version number.
+	'help',				# Give a usage message and exit.
+);
+
+#######################################################################
+#
+# Data from command line.
+
+my $sensor = '';				# Owl sensor host.
+my $target = '';				# Target host.
+my $query = '';					# Type of DNS query.
+
+my $triad = '';					# Combination of arguments.
+
+#######################################################################
+
+my $rc = $RC_UNKNOWN;			# Command's return code.
+my $outstr = '';			# Accumulated DNS response data.
+my $rrdata = '';			# Accumulated resource-record data.
+my $count  = 0;				# Count of response lines handled.
+my $errors = 0;				# Count of errors encountered.
+
+my $totalresp  = 0;			# Accumulated total response times.
+my $totalprobs = 0;			# Total count of reported problems.
+my $totaldrops = 0;			# Total count of drops.
+my $totalerrs  = 0;			# Total count of errors.
+
+#
+# If a particular sensor tries to update a large number of response entries
+# at a single time, the whole system could get bogged down.  Some Nagios
+# services might appear to be timing out and not returning data.  In order
+# to prevent a single sensor from consuming a huge amount of processor time,
+# we'll restrict the maximum number of entries we'll handle at a time.
+# This number isn't very large, but given the behavior seen so far, it should
+# be sufficient to allow things to catch up.  Eventually.
+
+my $MAXENTRIES = 20;
+
+################################################################################
+
+#
+# Run shtuff.
+#
+$rc = main();
+exit($rc);
+
+#-----------------------------------------------------------------------------
+# Routine:	main()
+#
+# Purpose:	Main controller routine for owl-rredata.
+#
+sub main
+{
+	my $srvc;				# Service to check.
+	my $retcode = 0;			# Service's return code.
+
+	my @fns = ();				# Filenames to check.
+	my @lasts = ();				# Last file and record checked.
+	my $lastfn = '';			# Last filename we checked.
+	my $kronos;				# Last time checked.
+
+	#
+	# Check our options.
+	#
+	doopts();
+
+	#
+	# Get the names of our directories.
+	#
+	getdirs(1);
+
+	#
+	# Get the last file and entry checked for this sensor/name server
+	# pair.
+	#
+	@lasts = getlast();
+	$lasts[$LASTFILE] = '' if(@lasts == 0);
+
+	#
+	# Get the names of the files to check for response lines.
+	#
+	@fns = getfns($lasts[$LASTFILE]);
+
+	#
+	# Get the DNS timer data for this triad from the recent files.
+	#
+	foreach my $fn (@fns)
+	{
+		my $ret;			# This invocation's return.
+
+		($ret,$kronos) = rrecdata($fn,$lasts[$LASTTIME]);
+
+		$retcode = $ret if($ret != $RC_NORMAL);
+# print "$kronos:  $ret\t<$retcode>\n";
+
+		#
+		# Save the last filename we examined.
+		#
+		$lastfn = $fn;
+
+		#
+		# Make sure we don't exceed the maximum number of entries
+		# we can handle at a time.
+		#
+		last if($count == $MAXENTRIES);
+	}
+
+	#
+	# Write a line of data to Nagios.
+	#
+	nagiout($retcode);
+
+	#
+	# We'll move to now if no final time was returned.
+	#
+	$kronos = time() if($kronos eq '');
+
+	#
+	# Update the history file.
+	#
+#	updatehist($lastfn,$kronos);
+
+	#
+	# Exit with the command's return code.
+	#
+	return($retcode);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	doopts()
+#
+# Purpose:	This routine shakes and bakes our command line options.
+#
+sub doopts
+{
+	#
+	# Parse the command line.
+	#
+	GetOptions(\%options,@opts) || usage();
+
+	#
+	# Show the version number or usage if requested.
+	#
+	version()   if(defined($options{'Version'}));
+	usage()     if(defined($options{'help'}));
+	showpaths() if(defined($options{'paths'}));
+
+	usage() if(@ARGV != 3);
+
+	#
+	# Set a few parameters.
+	#
+	$sensor	= $ARGV[0];
+	$target	= $ARGV[1];
+	$query	= $ARGV[2];
+
+	#
+	# Combine the arguments.
+	#
+	$triad = "$sensor,$target,example.com,$query.rrec";
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	getdirs()
+#
+# Purpose:	Build the data and history directories' names. 
+#		If they don't exist, we'll try to create them.
+#		If we can't create a directory, exit with a critical error.
+#
+sub getdirs
+{
+	my $mkflag = shift;			# Flag for creating directories.
+
+	#
+	# Build the directory names we'll need.
+	#
+	$datadir    = "$OWLDATA/$sensor/$sub_data";
+	$historydir = "$OWLDATA/$sensor/$sub_hist";
+
+	#
+	# Ensure the data directory exists.
+	#
+	if(! -e $datadir)
+	{
+		if($mkflag)
+		{
+			if(mkpath($datadir) == 0)
+			{
+				print "data directory \"$datadir\" does not exist\n";
+				exit($RC_CRITICAL);
+			}
+		}
+	}
+
+	#
+	# Ensure the history directory exists.
+	#
+	if(! -e $historydir)
+	{
+		if($mkflag)
+		{
+			if(mkpath($historydir) == 0)
+			{
+				print "history directory \"$historydir\" does not exist\n";
+				exit($RC_CRITICAL);
+			}
+		}
+	}
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	getlast()
+#
+# Purpose:	Get the last file and entry for this sensor/service pair.
+#
+sub getlast
+{
+	my $lfn;				# Last file for this server.
+	my @lasts = ();				# Files matching this service.
+	my @lines;				# Lines in last file.
+
+	#
+	# Get the history file for this sensor.  
+	#
+	$lfn = "$historydir/$hist_rrdata";
+
+	#
+	# If the history doesn't exist, we'll create it and return.
+	#
+	if(! -e $lfn)
+	{
+		open(LFN,">$lfn");
+		close(LFN);
+		return(@lasts);
+	}
+
+	#
+	# Get the lines from the sensor's history file.
+	#
+	open(LFN,"<$lfn");
+	flock(LFN,LOCK_EX);
+	@lines = <LFN>;
+	flock(LFN,LOCK_UN);
+	close(LFN);
+
+	#
+	# Search the file contents to find the line for this service.
+	#
+	foreach my $line (@lines)
+	{
+		chomp $line;
+		next if($line eq '');
+
+		$line =~ /(\S+)\s+(\S+)\s+(\S+)/;
+
+		#
+		# Grab some data if this is the server's line.
+		#
+		if($target eq $1)
+		{
+			$lasts[$LASTSVC]  = $1;
+			$lasts[$LASTFILE] = $2;
+			$lasts[$LASTTIME] = $3;
+			$nohist = 0;
+
+			last;
+		}
+	}
+
+	#
+	# Return whatever we found -- if anything.
+	#
+	return(@lasts);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	getfns()
+#
+# Purpose:	Get the data files for this server needs to deal with.
+#
+sub getfns
+{
+	my $lfile = shift;			# Last file.
+	my @files;				# Files matching this service.
+	my @newfiles;				# Subset of files.
+	my $ind;				# Loop index.
+
+	#
+	# Get the list of extant files for this triad.  Give an unknown
+	# error if there aren't any.
+	#
+	@files = sort(glob("$datadir/*,$triad"));
+	if(@files == 0)
+	{
+		print "no data available for \"$triad\"|$outstr";
+		exit($RC_UNKNOWN);
+	}
+
+	#
+	# If we didn't find a last file in the history file, we'll return
+	# the last file that matches this triad.
+	#
+	if($lfile eq '')
+	{
+		return($files[0]);
+	}
+
+	$lfile = "$lfile,$triad";
+
+	#
+	# Look for the last file accessed or the first one written after
+	# that file.
+	#
+	for($ind=0; $ind < @files; $ind++)
+	{
+		my @pathbits = split /\//, $files[$ind];
+		last if($pathbits[-1] ge $lfile);
+	}
+
+	#
+	# Get the latest files from the last accessed to the most recent
+	# written.
+	#
+	@newfiles = splice @files, $ind;
+
+	#
+	# Return the most recent file from our sorted list.
+	#
+	return(@newfiles);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	rrecdata()
+#
+# Purpose:	Get the DNS resource-record info from a sensor's data file.
+#		The relevant data are stored in $outstr.
+#
+sub rrecdata
+{
+	my $fn = shift;				# Service's last data file.
+	my $lasttime = shift;			# Timestamp of last entry.
+
+	my $qarg;				# Query type from file.
+	my @lines;				# Files matching this service.
+	my $tempus;				# Timestamp to return.
+	my $rrtmp = '';				# Temporary rrec data.
+	my $rc = $RC_NORMAL;			# Return value.
+
+	#
+	# Open our data file.
+	#
+# print "rrecdata:  reading - <$fn>\n";
+	if(open(SF,"<$fn") == 0)
+	{
+		return($RC_NORMAL,'');
+	}
+
+	#
+	# Get the list of extant files for this triad.
+	#
+	@lines = <SF>;
+	close(SF);
+
+	#
+	# Return if the file is empty.  It isn't necessarily an error, so
+	# we won't complain.
+	#
+	return($RC_NORMAL,'') if(@lines == 0);
+
+	$lasttime = 0 if((!defined($lasttime)) || ($lasttime eq ''));
+
+	#
+	# Handle any file entries more recent than the last time we ran.
+	#
+	for(my $ind=0; $ind < @lines; $ind++)
+	{
+		my $line = $lines[$ind];	# Line to examine.
+		my $kronos;			# Timestamp from file.
+		my $thost;			# Target host from file.
+		my $resptime;			# DNS response time from file.
+		my $errval;			# Error value from file.
+		my $datalen;			# Length of rrec data.
+		my $rcnt = 0;			# Count of rrec data read.
+
+		#
+		# Make sure we don't exceed the maximum number of entries
+		# we can handle at a time.
+		#
+		last if($count == $MAXENTRIES);
+
+#    1349291568.73732 dnssec-tools.org A 0.011641979217529 0 142
+#    <142 bytes of data follow>
+
+# print "rrecdata:  $ind  line - <$line>\n";
+		#
+		# Split the line into its atoms.
+		#
+		$line =~ /^([0-9]+).[0-9]+\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)/;
+		$kronos	  = $1;
+		$thost	  = $2;
+		$qarg	  = $3;
+		$resptime = $4;
+		$errval	  = $5;
+		$datalen  = $6;
+
+# print "rrecdata:  <$thost> <$qarg> <$resptime> <$errval> <$datalen>\n";
+		#
+		# Skip the line on a few conditions.
+		#
+		next if($errval eq 'UNANSWERED');
+		next if($kronos eq '');
+		next if($lasttime ge $kronos);
+
+		#
+		# Convert the response time to milliseconds and make it a
+		# reasonable number.
+		#
+		$resptime *= 1000;
+		$resptime = sprintf("%.0f", $resptime);
+
+		#
+		# Keep a running total of response time, for later averaging.
+		#
+		$totalresp += $resptime;
+
+		#
+		# Add shtuff to the output string and bump our entry count.
+		#
+		if($nohist)
+		{
+			$outstr = "owl-rrdata=$resptime ms;";
+		}
+		else
+		{
+			$outstr = "owl-rrdata=$kronos:$resptime ms;";
+		}
+		$count++;
+
+		#
+		# If this entry has data to be read, we'll grab it and
+		# pop it onto the end of our resource-record buffer.
+		if($datalen > 0)
+		{
+			#
+			# We'll look at all the subsequent lines,
+			# up to the end of the file.  However, we
+			# won't go past the data sent by the sensor.
+			#
+			$rrtmp = "$qarg RRec Data:  ";
+			for($ind++; $ind < @lines; $ind++)
+			{
+				$rrtmp .= $lines[$ind];
+				$rcnt += length($lines[$ind]);
+				last if($rcnt >= $datalen);
+			}
+		}
+
+		#
+		# Save a valid timestamp.
+		#
+		$tempus = $kronos;
+	}
+
+	chomp $rrtmp;
+	$rrdata = $rrtmp;
+	$rrdata =~ s/\n/, /g if($qarg =~ /^ns$/i);
+
+	#
+	# Convert error codes into a Nagios value.
+	#
+	$rc = $RC_WARNING if($rc ne $RC_NORMAL);
+
+	#
+	# Return the response data.
+	#
+	return($rc,$tempus);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	nagiout()
+#
+# Purpose:	Generate a line of DNS timer output for Nagios.
+#
+sub nagiout
+{
+	my $rc	     = shift;			# Command's return code.
+
+	$outstr =~ s/;$//g;
+
+	if($rc == $RC_NORMAL)
+	{
+		$totalresp /= $count if($count != 0);
+		$totalresp = sprintf("%.1f", $totalresp);
+
+		print "$rrdata|$outstr\n";
+	}
+	else
+	{
+		print "$totalprobs problems found|$outstr\n";
+	}
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	updatehist()
+#
+# Purpose:	Update the history file for this execution.
+#
+sub updatehist
+{
+	my $file = shift;			# New last file.
+	my $kron = shift;			# New last time.
+
+	my $filetime;				# Time from file's name.
+	my @nodes;				# Nodes in new last file name.
+	my $lfn;				# Last file for this server.
+	my @lines;				# Lines in history file.
+	my $line;				# Line from @lines.
+	my $added = 0;				# Added-line flag.
+
+	#
+	# Do nothing if we found nothing.
+	#
+	return if($count == 0);
+
+	#
+	# Get the node of the new history file.
+	#
+	@nodes = split '/', $file;
+	$file = $nodes[-1];
+
+	#
+	# Get the timestamp from the last file's name.
+	#
+	$file =~ /^([0-9]+\.[0-9]+),/;
+	$filetime = $1;
+
+	#
+	# Get the history file for this sensor.  
+	#
+	$lfn = "$historydir/$hist_rrdata";
+
+	#
+	# Open and lock the sensor's history file.
+	#
+	open(LFN,"+<$lfn");
+	flock(LFN,LOCK_EX);
+
+	#
+	# Read the file's contents and then zap it.
+	#
+	@lines = <LFN>;
+	seek LFN, 0, 0;
+	truncate LFN, 0;
+
+	#
+	# Copy the old contents to the file, replacing the appropriate line.
+	#
+	foreach $line (@lines)
+	{
+		if($line =~ /^$target/)
+		{
+			$line = "$target\t$filetime\t$kron\n";
+			$added++;
+		}
+
+		print LFN "$line";
+	}
+
+	if($added == 0)
+	{
+		print LFN "$target\t$filetime,$triad\t$kron\n";
+	}
+
+	#
+	# Unlock and close the file.
+	#
+	flock(LFN,LOCK_UN);
+	close(LFN);
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	showpaths()
+#
+# Purpose:	Display the data and history directories' names. 
+#
+sub showpaths
+{
+	#
+	# We'll use a dummy sensor name.
+	#
+	$sensor = '<sensor>';
+	getdirs(0);
+
+	print "Owl directory		$OWLDATA\n";
+	print "Owl data directory	$datadir\n";
+	print "Owl history directory	$historydir\n";
+
+	exit(0);
+}
+
+#----------------------------------------------------------------------
+# Routine:	version()
+#
+sub version
+{
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+	exit(1);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	usage()
+#
+sub usage
+{
+	print STDERR "$VERS
+$DTVERS
+Copyright 2012-2013 SPARTA, Inc.  All rights reserved.
+
+This script retrieves the DNS timer data gathered by a Owl sensor.
+
+
+usage:  owl-rrecdata [options] <sensor> <target> <rrec-type>
+	options:
+		-paths          display paths to be used
+		-Version        display program version
+		-help           display this message
+
+";
+
+	exit(1);
+}
+
+1;
+
+###############################################################################
+
+
+
+=pod
+
+=head1 NAME
+
+owl-rrecdata - Nagios plugin to display DNS resource-record data from an Owl sensor
+
+=head1 SYNOPSIS
+
+  owl-rrecdata [options] <sensor> <target> <rrec-type>
+
+=head1 DESCRIPTION
+
+B<owl-rrecdata>
+
+displays DNS resource-record data collected by an Owl sensor node.
+The sensor data are read from files already transferred to the manager
+and B<owl-rrecdata> does not transfer the files itself.  The data are
+formatted for use in Nagios' own display.
+
+The current set of Nagios objects and configuration files are B<not>
+set up to provide time-based graphing of DNS resource-record data.
+
+The data directories are hard-coded in B<owl-rrecdata>.  DNS response time
+data are in B</owl/data/<sensor>/data>.
+
+The specified service name determines which file will be selected from the
+appropriate data directory.  The file names in the data directory have this
+format:
+
+    timestamp,sensor,target,nameserver,query.rrec
+
+The I<nameserver> field is currently a dummy field, used as a placeholder
+to support the naming scheme for other Owl sensor files.
+
+For example, if the sensor "sensor3" was monitoring NS records for 
+the target domain "example.com", then a datafile would be named
+something like this:
+
+    130401.0215,sensor3,example.com,NS.rrec
+
+The most recent file whose I<servicename> matches the service name given on
+the command line will be consulted.  The DNS response data will be taken from
+the last entry in that file.
+
+B<owl-rrecdata> is expected to only be run by the Nagios monitoring system.
+
+=head1 NAGIOS USE
+
+B<owl-rrecdata> is run from a Nagios I<command> object.  These are examples
+of how the objects should be defined:
+
+    define command {
+         command_name    dnsresp
+         command_line    $USER1$/owl-rrecdata $ARG1$ $ARG2$ $ARG3$
+    }
+
+    define service {
+         service_description     example.com NS          
+         host_name               sensor3
+         check_command		 owl-rrecdata!sensor3!example.com!NS           
+         active_checks_enabled   1 
+         ...
+    }
+
+=head1 OPTIONS
+
+The following options are recognized by B<owl-rrecdata>:
+
+=over 4
+
+=item I<-paths>
+
+Display the paths B<owl-rrecdata> will use.
+
+=item I<-Version>
+
+Display the program version and exit.
+
+=item I<-help>
+
+Display a usage message and exit.
+
+=back
+
+=head1 COPYRIGHT
+
+Copyright 2013 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@tislabs.com
+
+=cut
+
