@@ -279,6 +279,10 @@ err:
 static int
 val_create_context_internal( char *label, 
                              unsigned int flags,
+                             unsigned int polflags,
+                             global_opt_t *valpolopt,
+                             char *valpol,
+                             char **res_nslist,
                              char *dnsval_conf, 
                              char *resolv_conf, 
                              char *root_conf, 
@@ -286,6 +290,16 @@ val_create_context_internal( char *label,
 {
     int             retval;
     char *base_dnsval_conf = NULL;
+    struct policy_overrides *dyn_valpol;
+    global_opt_t *dyn_valpolopt;
+    struct name_server *dyn_nslist;
+    struct name_server *ns;
+    struct name_server *ns_tail;
+    char *buf_ptr, *end_ptr;
+    int  line_number;
+    struct policy_fragment *pol_frag;
+    int g_opt_seen;
+    int include_seen;
 
 #ifdef WIN32 
     if (!wsaInitialized) {
@@ -296,9 +310,75 @@ val_create_context_internal( char *label,
     }
 #endif
 
-
     if (newcontext == NULL)
         return VAL_BAD_ARGUMENT;
+
+    /*
+     * Process any dynamic policy components
+     */ 
+    dyn_valpolopt = NULL;
+    dyn_valpol = NULL;
+    dyn_nslist = NULL;
+
+    if (valpolopt != NULL) {
+        if (VAL_NO_ERROR != 
+                (retval = clone_global_options(&dyn_valpolopt,
+                    valpolopt))) {
+            return retval;
+        }
+    }
+    if (valpol != NULL) {
+        buf_ptr = valpol;
+        end_ptr = valpol + strlen(valpol) + 1;
+        pol_frag = NULL;
+        line_number = 1;
+        g_opt_seen = 0;
+        include_seen = 0;
+        while (VAL_NO_ERROR == (retval =
+                    get_next_policy_fragment(&buf_ptr, end_ptr,
+                                             label,
+                                             &pol_frag,
+                                             &line_number,
+                                             &g_opt_seen,
+                                             &include_seen))) {
+            if (!g_opt_seen && !include_seen) {
+                store_policy_overrides(&dyn_valpol, &pol_frag);
+                pol_frag = NULL;
+            }
+            if (buf_ptr >= end_ptr) {
+                /* done reading policy string */
+                break;
+            }
+        }
+        if (retval != VAL_NO_ERROR)
+            return VAL_CONF_PARSE_ERROR;
+    }
+    if (res_nslist != NULL) {
+        ns_tail = NULL;
+        while (*res_nslist != NULL) {
+            ns = parse_name_server(*res_nslist, NULL);
+            /* Disable recursion if required */
+            if (polflags & CTX_DYN_POL_RES_NORD) {
+                if (ns->ns_options & SR_QUERY_RECURSE)
+                    ns->ns_options ^= SR_QUERY_RECURSE;
+            }
+
+            /* Ignore name servers that we don't understand */
+            if (ns != NULL) {
+                if (ns_tail == NULL) {
+                    dyn_nslist = ns;
+                    ns_tail = ns;
+                } else {
+                    ns_tail->ns_next = ns;
+                    ns_tail = ns;
+                }
+            }
+            *(res_nslist++);
+        }
+        if (dyn_nslist == NULL) {
+            return VAL_CONF_PARSE_ERROR;
+        }
+    }
 
     LOCK_DEFAULT_CONTEXT();
     /* Check if the request is for the default context, and we have one available */
@@ -311,6 +391,21 @@ val_create_context_internal( char *label,
          (the_default_context->g_opt && 
           (the_default_context->g_opt->env_policy == VAL_POL_GOPT_OVERRIDE || 
            the_default_context->g_opt->app_policy == VAL_POL_GOPT_OVERRIDE)))) {
+
+        /* Update the dynamic policies */
+        if (the_default_context->dyn_valpolopt != NULL) {
+            FREE(the_default_context->dyn_valpolopt);
+            the_default_context->dyn_valpolopt = dyn_valpolopt;
+        }
+        if (the_default_context->dyn_valpol != NULL) {
+            destroy_valpolovr(&the_default_context->dyn_valpol);
+            the_default_context->dyn_valpol = dyn_valpol;
+        }
+        if (the_default_context->dyn_nslist != NULL) {
+            free_name_servers(&the_default_context->dyn_nslist);
+            the_default_context->dyn_nslist = dyn_nslist;
+        }
+        the_default_context->dyn_polflags = polflags;
 
         *newcontext = the_default_context;
 
@@ -384,6 +479,10 @@ val_create_context_internal( char *label,
 
     (*newcontext)->root_ns = NULL; 
     (*newcontext)->nslist = NULL; 
+    (*newcontext)->dyn_polflags = polflags;
+    (*newcontext)->dyn_valpolopt = dyn_valpolopt;
+    (*newcontext)->dyn_valpol = dyn_valpol;
+    (*newcontext)->dyn_nslist = dyn_nslist;
 
     (*newcontext)->e_pol =
         (policy_entry_t **) MALLOC(MAX_POL_TOKEN * sizeof(policy_entry_t *));
@@ -415,24 +514,7 @@ val_create_context_internal( char *label,
      * Read the validator configuration file 
      */
     (*newcontext)->q_list = NULL;
-    base_dnsval_conf = dnsval_conf? strdup(dnsval_conf) : dnsval_conf_get();
-    if (base_dnsval_conf == NULL) {
-        val_log(*newcontext, LOG_ERR, "val_create_context_with_conf(): No dnsval.conf file configured");
-        retval = VAL_CONF_NOT_FOUND;
-        goto err;
-    }
-
-    /* Add a single node in the dnsval_list structure */
-    if (NULL == ((*newcontext)->dnsval_l = 
-                (struct dnsval_list *) MALLOC (sizeof(struct dnsval_list))))  {
-        FREE(base_dnsval_conf);
-        retval = VAL_OUT_OF_MEMORY;
-        goto err;
-    }
-    (*newcontext)->dnsval_l->dnsval_conf = base_dnsval_conf; 
-    (*newcontext)->dnsval_l->v_timestamp = 0;
-    (*newcontext)->dnsval_l->next = NULL;
-    
+    (*newcontext)->base_dnsval_conf = dnsval_conf? strdup(dnsval_conf) : dnsval_conf_get();
     if ((retval =
          read_val_config_file(*newcontext, label)) != VAL_NO_ERROR) {
         goto err;
@@ -444,10 +526,9 @@ val_create_context_internal( char *label,
         (*newcontext)->def_cflags |= VAL_QUERY_AC_DETAIL;
     }
 
-
     val_log(*newcontext, LOG_DEBUG, 
             "val_create_context_with_conf(): Context created with %s %s %s", 
-            (*newcontext)->dnsval_l->dnsval_conf,
+            (*newcontext)->base_dnsval_conf,
             (*newcontext)->resolv_conf,
             (*newcontext)->root_conf);
 
@@ -485,7 +566,7 @@ val_create_context_with_conf(char *label,
                              char *root_conf, 
                              val_context_t ** newcontext)
 {
-    return val_create_context_internal(label, 0,
+    return val_create_context_internal(label, 0, 0, NULL, NULL, NULL,
                 dnsval_conf, resolv_conf, root_conf, newcontext); 
 }
 
@@ -503,8 +584,14 @@ val_create_context_ex(char *label,
         return VAL_BAD_ARGUMENT;
 
     return val_create_context_internal(label, 
-                opt->vc_flags, opt->vc_val_conf, 
-                opt->vc_res_conf, opt->vc_root_conf, 
+                opt->vc_qflags, 
+                opt->vc_polflags, 
+                opt->vc_valpolopt,
+                opt->vc_valpol,
+                opt->vc_nslist,
+                opt->vc_val_conf, 
+                opt->vc_res_conf, 
+                opt->vc_root_conf, 
                 newcontext); 
 }
 
@@ -516,8 +603,8 @@ int
 val_create_context(char *label, 
                    val_context_t ** newcontext)
 {
-    return val_create_context_internal(label, 0,
-                NULL, NULL, NULL, newcontext);
+    return val_create_context_internal(label, 0, 0, NULL, NULL, 
+                NULL, NULL, NULL, NULL, newcontext);
 }
 
 /*
@@ -624,6 +711,15 @@ val_free_context(val_context_t * context)
     if (context->root_ns)
         free_name_servers(&context->root_ns);
     
+    if (context->dyn_valpolopt)
+        FREE(context->dyn_valpolopt);
+
+    if (context->dyn_valpol)
+        destroy_valpolovr(&context->dyn_valpol);
+
+    if (context->dyn_nslist)
+        free_name_servers(&context->dyn_nslist);
+
     destroy_respol(context);
     destroy_valpol(context);
     FREE(context->e_pol);
@@ -721,3 +817,4 @@ val_context_ip6(val_context_t * context)
 
     return 0;
 }
+
