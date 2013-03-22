@@ -256,7 +256,7 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
     int ret;
     // XXX: use the type string to look up a user defined type
     ret = val_resolve_and_check(NULL, name.toAscii().data(), 1, DNSResources::RRNameToType(type),
-                                VAL_QUERY_RECURSE | VAL_QUERY_AC_DETAIL |
+                                VAL_QUERY_ITERATE | VAL_QUERY_AC_DETAIL |
                                 VAL_QUERY_SKIP_CACHE,
                                 &results);
     if (ret != 0 || !results) {
