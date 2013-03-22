@@ -724,7 +724,7 @@ find_nslist_for_query(val_context_t * context,
         FREE(next_q->qc_zonecut_n);
     next_q->qc_zonecut_n = NULL;
 
-    if (!(next_q->qc_flags & VAL_QUERY_RECURSE) &&
+    if (!(next_q->qc_flags & VAL_QUERY_ITERATE) &&
          context->nslist != NULL) {
         /* 
          * if we have a default name server in our resolv.conf file, send
@@ -752,10 +752,11 @@ find_nslist_for_query(val_context_t * context,
                 "find_nslist_for_query(): Found cached ns_list with cred = %d.", ns_cred);
             /* 
              * If our answer was from an authoritative server, we
-             * also set the flag to denote that we are doing recursion
+             * also set the flag to denote that we are doing an
+             * iterative lookup
              */
             if (ns_cred < SR_CRED_NONAUTH)
-                next_q->qc_flags |= VAL_QUERY_RECURSE;
+                next_q->qc_flags |= VAL_QUERY_ITERATE;
             goto done; 
         } 
     } 
@@ -771,7 +772,7 @@ find_nslist_for_query(val_context_t * context,
                 "find_nslist_for_query(): Trying to answer query recursively, but no root hints file found.");
         return VAL_CONF_NOT_FOUND;
     }
-    next_q->qc_flags |= VAL_QUERY_RECURSE;
+    next_q->qc_flags |= VAL_QUERY_ITERATE;
     clone_ns_list(&next_q->qc_ns_list, context->root_ns);
     next_q->qc_zonecut_n = (u_char *) MALLOC(sizeof(u_char));
     if (next_q->qc_zonecut_n == NULL) {
@@ -840,7 +841,7 @@ bootstrap_referral(val_context_t *context,
         }
         clone_ns_list(ref_ns_list, context->root_ns);
         matched_q->qc_state = Q_INIT;
-        matched_q->qc_flags |= VAL_QUERY_RECURSE;
+        matched_q->qc_flags |= VAL_QUERY_ITERATE;
         return VAL_NO_ERROR;
     }
     
@@ -1061,7 +1062,7 @@ follow_referral_or_alias_link(val_context_t * context,
         return VAL_NO_ERROR;
     } 
 
-    matched_q->qc_flags |= VAL_QUERY_RECURSE;
+    matched_q->qc_flags |= VAL_QUERY_ITERATE;
 
     res_sq_free_rrset_recs(proofs);
     *proofs = NULL;
@@ -1736,10 +1737,10 @@ digest_response(val_context_t * context,
             isrelv = 0;
         }
 
-        authoritive = (matched_q->qc_flags & VAL_QUERY_RECURSE) &&
+        authoritive = (matched_q->qc_flags & VAL_QUERY_ITERATE) &&
                       (header->aa == 1);
 
-        iterative = matched_q->qc_flags & VAL_QUERY_RECURSE;
+        iterative = matched_q->qc_flags & VAL_QUERY_ITERATE;
         /*
          * If it is from the answer section, it may be an alias 
          * If it is from the authority section, it may be a proof or a referral 

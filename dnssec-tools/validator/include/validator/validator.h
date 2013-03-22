@@ -68,8 +68,10 @@ struct timeval;
  * not requested 
  */
 #define VAL_QFLAGS_CACHE_PREF_MASK  0x00ff0000
-#define VAL_QUERY_RECURSE           0x00010000
+#define VAL_QUERY_ITERATE           0x00010000
 #define VAL_QUERY_SKIP_CACHE        0x00020000
+/* for backwards compatibility */
+#define VAL_QUERY_RECURSE VAL_QUERY_ITERATE
 
 /*
  * Flags in this bit mask are ignored when finding

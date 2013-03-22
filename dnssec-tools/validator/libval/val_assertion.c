@@ -80,7 +80,7 @@ extern const char *p_query_status(int err);
 
 /* 
  * The flags in VAL_QFLAGS_CACHE_PREF_MASK: 
- * (VAL_QUERY_RECURSE, VAL_QUERY_SKIP_CACHE) are special 
+ * (VAL_QUERY_ITERATE, VAL_QUERY_SKIP_CACHE) are special 
  * If we are not looking for these flags, then return what ever we find 
  * If we are looking for this flag, only return a node that has this 
  * flag set
@@ -4802,7 +4802,7 @@ int switch_to_root(val_context_t * context,
         snprintf(name_p, sizeof(name_p), "unknown/error");
     }
 
-    if ((matched_q->qc_flags & VAL_QUERY_RECURSE) ||
+    if ((matched_q->qc_flags & VAL_QUERY_ITERATE) ||
         (context->root_ns == NULL)) {
         /*
          * No root hints configured or 
@@ -4822,12 +4822,12 @@ int switch_to_root(val_context_t * context,
 
     /* reset the flags that are not in the user mask */
     matched_q->qc_flags &= VAL_QFLAGS_USERMASK;
-    matched_q->qc_flags |= (VAL_QUERY_RECURSE|VAL_QUERY_SKIP_CACHE);
+    matched_q->qc_flags |= (VAL_QUERY_ITERATE|VAL_QUERY_SKIP_CACHE);
     /*
-     * Recurse from root for all additional queries sent in
+     * Iteratively lookup from root for all additional queries sent in
      * in relation to this query; e.g. queries for DNSKEYs, DS etc 
      */
-    matched_qfq->qfq_flags |= (VAL_QUERY_RECURSE|VAL_QUERY_SKIP_CACHE);
+    matched_qfq->qfq_flags |= (VAL_QUERY_ITERATE|VAL_QUERY_SKIP_CACHE);
     val_log(context, LOG_INFO,
             "switch_to_root(): Re-initiating query from root for {%s %s %s}",
             name_p,
