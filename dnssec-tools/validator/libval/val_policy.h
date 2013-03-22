@@ -129,6 +129,17 @@ struct policy_fragment {
     policy_entry_t  *pol;
 };
 
+int
+get_next_policy_fragment(char **buf_ptr, char *end_ptr, char *scope,
+                         struct policy_fragment **pol_frag,
+                         int *line_number, int *g_opt_seen, 
+                         int *include_seen);
+int store_policy_overrides(struct policy_overrides **overrides,
+                               struct policy_fragment **pfrag);
+void destroy_valpolovr(struct policy_overrides **po);
+
+int clone_global_options(global_opt_t **g_new, global_opt_t *g);
+
 struct policy_conf_element {
     const char     *keyword;
     int             (*parse) (char **, char *, policy_entry_t *, int *, int *);

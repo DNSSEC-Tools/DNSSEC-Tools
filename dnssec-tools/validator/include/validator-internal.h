@@ -229,17 +229,6 @@ extern          "C" {
         long ttl;
     } libval_policy_definition_t;
 
-    typedef struct global_opt {
-        int local_is_trusted;
-        long edns0_size;
-        int env_policy;
-        int app_policy;
-        char *log_target;
-        int closest_ta_only;
-        int rec_fallback;
-    } global_opt_t;
-
-
     struct val_policy_handle {
         policy_entry_t *pe;
         int index;
@@ -329,6 +318,14 @@ extern          "C" {
         char  *label;
 
         /*
+         * Dynamic policy
+         */
+        unsigned int dyn_polflags;
+        global_opt_t *dyn_valpolopt;
+        struct policy_overrides *dyn_valpol;
+        struct name_server *dyn_nslist;
+
+        /*
          * root_hints
          */
         char   *root_conf;
@@ -346,6 +343,7 @@ extern          "C" {
         /*
          * validator policy 
          */
+        char   *base_dnsval_conf;
         struct dnsval_list *dnsval_l;
         policy_entry_t **e_pol;
         global_opt_t *g_opt;

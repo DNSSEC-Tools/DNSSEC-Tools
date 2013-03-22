@@ -63,7 +63,7 @@ struct timeval;
 #define VAL_QUERY_IGNORE_SKEW       0x00000100
 
 /*
- * Flags in this bit mask are MUST match if they
+ * Flags in this bit mask MUST match if they
  * are requested, they MAY match if these flags are
  * not requested 
  */
@@ -71,7 +71,7 @@ struct timeval;
 #define VAL_QUERY_ITERATE           0x00010000
 #define VAL_QUERY_SKIP_CACHE        0x00020000
 /* for backwards compatibility */
-#define VAL_QUERY_RECURSE VAL_QUERY_ITERATE
+#define VAL_QUERY_RECURSE VAL_QUERY_ITERATE 
 
 /*
  * Flags in this bit mask are ignored when finding
@@ -118,12 +118,34 @@ typedef struct val_log val_log_t;
 struct queries_for_query;
 
 /* validator context options */
+typedef struct global_opt {
+    int local_is_trusted;
+    long edns0_size;
+    int env_policy;
+    int app_policy;
+    char *log_target;
+    int closest_ta_only;
+    int rec_fallback;
+} global_opt_t;
+
+/*
+ * Dynamic policy can be configured with the following flags
+ */
+#define CTX_DYN_POL_VAL_OVR  0x00000001
+#define CTX_DYN_POL_RES_OVR  0x00000002
+#define CTX_DYN_POL_RES_NORD 0x00000004
+
 typedef struct val_context_opt {
-    unsigned int vc_flags;
+    unsigned int vc_qflags;
+    unsigned int vc_polflags;
+    global_opt_t *vc_valpolopt;
+    char *vc_valpol;
+    char **vc_nslist;
     char *vc_val_conf;
     char *vc_res_conf;
     char *vc_root_conf;
 } val_context_opt_t;
+
 
 /*
  * Validator policies can be one of the following
