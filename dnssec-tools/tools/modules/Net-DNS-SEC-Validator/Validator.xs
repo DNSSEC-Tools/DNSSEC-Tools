@@ -459,6 +459,8 @@ pval_create_context_ex(optref)
     gopt.closest_ta_only = (SvOK(*closest_ta_only_svp) ?  SvIV(*closest_ta_only_svp) : -1);
     SV **rec_fallback_svp = hv_fetch((HV*)SvRV(optref), "rec_fallback", 12, 1);
     gopt.rec_fallback = (SvOK(*rec_fallback_svp) ?  SvIV(*rec_fallback_svp) : -1);
+    gopt.env_policy = 0;
+    gopt.app_policy = 0;
 
     // Context options
     SV **vc_qflags_svp = hv_fetch((HV*)SvRV(optref), "qflags", 6, 1);
