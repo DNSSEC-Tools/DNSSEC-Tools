@@ -138,8 +138,7 @@ int store_policy_overrides(struct policy_overrides **overrides,
                                struct policy_fragment **pfrag);
 void destroy_valpolovr(struct policy_overrides **po);
 
-int update_global_options(val_global_opt_t **g_new, val_global_opt_t *g, 
-                          int clone);
+int update_dynamic_gopt(val_global_opt_t **g_new, val_global_opt_t *g);
 
 struct policy_conf_element {
     const char     *keyword;

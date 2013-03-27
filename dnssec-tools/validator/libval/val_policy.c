@@ -230,7 +230,7 @@ int free_policy_entry(policy_entry_t *pol_entry, int index)
 }
 
 int 
-update_global_options(val_global_opt_t **g_new, val_global_opt_t *g, int clone)
+update_dynamic_gopt(val_global_opt_t **g_new, val_global_opt_t *g)
 {
     if (g_new == NULL || g == NULL)
         return VAL_BAD_ARGUMENT;
@@ -243,28 +243,15 @@ update_global_options(val_global_opt_t **g_new, val_global_opt_t *g, int clone)
         memset(*g_new, 0, sizeof(val_global_opt_t));
     }
 
-    if (clone) {
-        memcpy(*g_new, g, sizeof(val_global_opt_t));
-    } else {
-        if (g->local_is_trusted != -1)
-            (*g_new)->local_is_trusted = g->local_is_trusted;        
-        if (g->edns0_size != -1)
-            (*g_new)->edns0_size = g->edns0_size;        
-        if (g->env_policy != -1)
-            (*g_new)->env_policy = g->env_policy;        
-        if (g->app_policy != -1)
-            (*g_new)->app_policy = g->app_policy;        
-        if (g->closest_ta_only != -1)
-            (*g_new)->closest_ta_only = g->closest_ta_only;        
-        if (g->rec_fallback != -1)
-            (*g_new)->rec_fallback = g->rec_fallback;        
-    }
-
-    if (g->log_target) {
-        if ((*g_new)->log_target)
-            FREE((*g_new)->log_target);
-        (*g_new)->log_target = strdup(g->log_target);
-    }
+    // Don't update env_policy, app_policy or log_target
+    if (g->local_is_trusted != -1)
+        (*g_new)->local_is_trusted = g->local_is_trusted;        
+    if (g->edns0_size != -1)
+        (*g_new)->edns0_size = g->edns0_size;        
+    if (g->closest_ta_only != -1)
+        (*g_new)->closest_ta_only = g->closest_ta_only;        
+    if (g->rec_fallback != -1)
+        (*g_new)->rec_fallback = g->rec_fallback;        
 
     return VAL_NO_ERROR;
 }
@@ -1963,16 +1950,6 @@ skipfileread:
             STORE_POLICY_ENTRY_IN_LIST(c->pol, ctx->e_pol[c->index]);
         }
     }
-    /* 
-     * Process dynamic global options 
-     */
-    ctx->g_opt = g_opt;
-    if (ctx->dyn_valpolopt) {
-        if (VAL_NO_ERROR != 
-                (retval = update_global_options(&ctx->g_opt,
-                                               ctx->dyn_valpolopt, 0)))
-            goto err;
-    }
 
     /* free up older log targets */
     while (ctx->val_log_targets) {
@@ -1982,7 +1959,26 @@ skipfileread:
     }
     ctx->val_log_targets = NULL;
     
-    /* enable logging */
+    ctx->g_opt = g_opt;
+
+    /* 
+     * Process dynamic global options 
+     */
+    if (ctx->dyn_valpolopt) {
+        if (VAL_NO_ERROR != 
+                (retval = update_dynamic_gopt(&ctx->g_opt, ctx->dyn_valpolopt)))
+            goto err;
+        /*
+         * Add any log targets that might have been specified in the
+         * dynamic policy
+         */
+        if (ctx->dyn_valpolopt && ctx->dyn_valpolopt->log_target) {
+            val_log_add_optarg_to_list(&ctx->val_log_targets,
+                                       ctx->dyn_valpolopt->log_target, 1);
+        }
+    }
+
+    /* enable logging as specified by global options */
     if (ctx->g_opt && ctx->g_opt->log_target) {
         val_log_add_optarg_to_list(&ctx->val_log_targets, ctx->g_opt->log_target, 1);
     }
