@@ -1,0 +1,776 @@
+#!/usr/bin/perl
+#
+# Copyright 2013 SPARTA, Inc.  All rights reserved.
+# See the COPYING file distributed with this software for details.
+#
+# owl-comp-dnswatch
+#
+#	This script compares DNS response data gathered by a set of Owl
+#	sensors.  It runs on the Owl manager and provides data for use by
+#	a Nagios monitoring environment.
+#
+#	File organization:
+#		/owl/data/<sensor>/data/
+#		/owl/data/<sensor>/history/
+#		/owl/data/<sensor>/history/dnstimer
+#
+# Revision History
+#	2.0	Initial version.				130327
+#
+
+use strict;
+
+use Getopt::Long qw(:config no_ignore_case_always);
+use Fcntl ':flock';
+use File::Path;
+
+#######################################################################
+#
+# Version information.
+#
+my $NAME   = "owl-comp-dnswatch";
+my $VERS   = "$NAME version: 2.0.0";
+my $DTVERS = "DNSSEC-Tools version: 2.0";
+
+#######################################################################
+#
+# Paths.
+#
+#	The installer must set the value of $OWLDIR to reflect the
+#	desired file hierarchy.
+#	The $subdata value may be set, but the values given below
+#	are sufficient.
+#
+
+my $OWLDIR	 = '/owl';		# Owl directory.
+
+my $subdata = 'data';			# Subdirectory for dnstimer data.
+
+my $OWLDATA	 = "$OWLDIR/data";	# Owl DNS data directory.
+
+my $datadir;				# Data directory.
+
+#######################################################################
+#
+# Nagios return codes.
+#
+my $RC_NORMAL	= 0;		# Normal return code.
+my $RC_WARNING	= 1;		# Warning return code.
+my $RC_CRITICAL	= 2;		# Critical return code.
+my $RC_UNKNOWN	= 3;		# Unknown return code.
+
+######################################################################r
+#
+# Data required for command line options.
+#
+my %options = ();		# Filled option array.
+my @opts =
+(
+	'w|warning=i',		# Upper bound for warnings.
+	'c|critical=i',		# Upper bound for critical errors.
+	'maxquery=f',		# Maximum difference between query times.
+
+	'Version',		# Display the version number.
+	'help',			# Give a usage message and exit.
+);
+
+my $rtwarn;			# Lower bound for response time warnings.
+my $rtcrit;			# Lower bound for response time critical errors.
+my $maxquery;			# Maximum time difference between queries.
+
+my $MAXQUERYDIFF  = 300;	# Queries should be within five minutes.
+my $WARNING_THRESHOLD  = 2000;	# Millisecond difference that gives a warning.
+my $CRITICAL_THRESHOLD = 5000;	# Millisecond difference that gives an error.
+
+#######################################################################
+#
+# Data from command line.
+#
+
+my @sensors = ();		# Sensor names.
+my @targets = ();		# Target names.
+my @servers = ();		# Nameserver names.
+my @queries = ();		# Query types.
+my @tetrads = ();		# Query groups.
+
+#######################################################################
+#
+# Data taken from data files, and calculated from those files.
+#
+
+my %sensorfiles	= ();		# Lists of sensors' files.
+
+my @tstmps	= ();		# Sensors' timestamps.  (for fast reference)
+my @resptimes	= ();		# Response times.	(for fast reference)
+
+my $rc;				# Command's return code.
+my $outstr = '';		# Accumulated DNS response data.
+
+my $qterrs = 0;			# Count of "unreasonable query times" errors.
+my $respok = 0;			# Count of acceptable response differences.
+my $respwarn = 0;		# Count of warning response differences.
+my $respcrit = 0;		# Count of critical response differences.
+
+################################################################################
+
+#
+# Run shtuff.
+#
+$rc = main();
+exit($rc);
+
+#-----------------------------------------------------------------------------
+# Routine:	main()
+#
+# Purpose:	Main controller routine for owl-comp-dnswatch.
+#
+sub main
+{
+	my $srvc;				# Service to check.
+	my $retcode = 0;			# Service's return code.
+	my $mqdiff = 0;				# Maximum query difference.
+
+	#
+	# Check our options.
+	#
+	doopts();
+
+	#
+	# Zap our arguments into their constituent atoms.
+	#
+	atomizer();
+
+	#
+	# Get the data files for each query group.
+	#
+	for(my $ind = 0; $ind < @sensors; $ind++)
+	{
+		getfns($ind);
+	}
+
+	#
+	# Get the most recent successful entry for each sensor.
+	#
+	getlasts();
+
+	#
+	# Calculate differences between all the query response times to
+	# figure out what result we should give.
+	#
+	$mqdiff = difftimes();
+
+	#
+	# Build and write our output line and figure out our exit code.
+	#
+	$retcode = buildout($mqdiff);
+
+	#
+	# Exit with the command's return code.
+	#
+	return($retcode);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	doopts()
+#
+# Purpose:	This routine shakes and bakes our command line options.
+#
+sub doopts
+{
+	#
+	# Parse the command line.
+	#
+	GetOptions(\%options,@opts) || usage();
+
+	#
+	# Show the version number or usage if requested.
+	#
+	version()   if(defined($options{'Version'}));
+	usage()     if(defined($options{'help'}));
+
+	#
+	# Set a few options.
+	#
+	$rtwarn	= defined($options{'w'}) ? $options{'w'} : $WARNING_THRESHOLD;
+	$rtcrit	= defined($options{'c'}) ? $options{'c'} : $CRITICAL_THRESHOLD;
+	$maxquery = defined($options{'m'}) ? $options{'m'} : $MAXQUERYDIFF;
+
+	if($rtwarn > $rtcrit)
+	{
+		print "warning threshold ($rtwarn) must not exceed critical threshold ($rtcrit)\n";
+		exit($RC_UNKNOWN);
+	}
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	atomizer()
+#
+# Purpose:	This routine shakes and bakes our command line options.
+#
+sub atomizer
+{
+	my %tetrads = ();			# Query groups.
+	my $errs = 0;				# Error count.
+
+	#
+	# Make sure we have some query groups to check.
+	#
+	usage() if(@ARGV < 2);
+
+	foreach my $arg (@ARGV)
+	{
+		my $found = 0;			# Arguments-found flag.
+
+		$found = $arg =~ /(^\S+),(\S+),(\S+),(\S+)$/;
+
+		#
+		# Ensure the argument looks right.
+		#
+		if(! $found)
+		{
+			print "invalid format:  \"$arg\"\n";
+			$errs++;
+			next;
+		}
+
+		#
+		# Get the parameters.
+		#
+		push @sensors, $1;
+		push @targets, $2;
+		push @servers, $3;
+		push @queries, $4;
+
+		#
+		# Save the combined form.
+		#
+		push @tetrads, $arg;
+
+	
+		$tetrads{lc($arg)}++;
+	}
+
+	#
+	# Ensure each query group was only given once.
+	#
+	foreach my $tet (sort(keys(%tetrads)))
+	{
+		next if($tetrads{$tet} == 1);
+
+		print "duplicated query group - \"$tet\"\n";
+		$errs++;
+	}
+
+	#
+	# Bail if there were any errors.
+	#
+	exit($RC_UNKNOWN) if($errs);
+
+if(0)
+{
+	print "atoms:\n";
+	for(my $ind=0; $ind < @sensors; $ind++)
+	{
+		print "\t$ind:  <$sensors[$ind]>\t<$targets[$ind]>\t<$servers[$ind]>\t<$queries[$ind]>\n";
+	}
+	print "\n";
+
+	print "tetrads:\n";
+	foreach my $tet (@tetrads)
+	{
+		print "\t<$tet>\n";
+	}
+	print "\n";
+}
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	getfns()
+#
+# Purpose:	Get the data files for this query.
+#
+sub getfns
+{
+	my $ind = shift;			# Index for query data.
+	my $sensor = $sensors[$ind];		# Sensor we're looking for.
+	my $tetrad = $tetrads[$ind];		# This sensor's tetrad.
+	my @files;				# Files matching service.
+
+	#
+	# Build the data directory name.
+	#
+	$datadir    = "$OWLDATA/$sensor/$subdata";
+
+	#
+	# Ensure the data directory exists.
+	#
+	if(! -e $datadir)
+	{
+		print "data directory \"$datadir\" does not exist\n";
+		exit($RC_CRITICAL);
+	}
+
+	#
+	# Get the list of extant files for this tetrad.  Give an unknown
+	# error if there aren't any.
+	#
+	@files = sort(glob("$datadir/*,$tetrad.dns"));
+	if(@files == 0)
+	{
+		print "datadir - <$datadir>\n";
+		print "tetrad  - <$tetrad>\n";
+		print "glob($datadir/*,$tetrad.dns) failed\n\n";
+		print "no data available for \"$tetrad.dns\"|$outstr";
+		exit($RC_UNKNOWN);
+	}
+
+	#
+	# Save this query's files.
+	#
+	$sensorfiles{$tetrad}{'index'} = $ind;
+	$sensorfiles{$tetrad}{'files'} = \@files;
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	getlasts()
+#
+# Purpose:	Get the last successful entry for each of the sensors.
+#
+sub getlasts
+{
+	my $lfn;				# Last file for this server.
+	my @lasts = ();				# Files matching this service.
+	my @lines;				# Lines in last file.
+
+	#
+	# Get data for each sensor.
+	#
+	foreach my $tetrad (sort(keys(%sensorfiles)))
+	{
+		my $files = $sensorfiles{$tetrad}{'files'};
+		my $tind = $sensorfiles{$tetrad}{'index'};
+		my @files = @$files;
+
+		#
+		# Dig through the sensor's data files, going from last
+		# to first.
+		#
+		for(my $fnind = (@files - 1); $fnind >= 0; $fnind--)
+		{
+			my $fn = $files[$fnind];	# Filename to check.
+			my @data;			# Data lines from file.
+			my $gotit = 0;			# All-done flag.
+
+			#
+			# Get the contents of this data file.
+			#
+			open(DFN, "< $fn") || next;
+			@data = <DFN>;
+			close(DFN);
+
+# 1363964725.03472 example.com q.root-servers.net A 0.008613109588623 NOERROR
+
+			#
+			# Examine this file's data lines, last to first.
+			# We'll ignore lines that aren't NOERROR lines, as
+			# well as lines that don't fit our preconceived
+			# notions of what a data line should look like.
+			#
+			for(my $dlind = (@data - 1); $dlind >= 0; $dlind--)
+			{
+				my $line;		# Data line.
+				my $found;		# Found flag.
+
+				#
+				# Split the line into its atoms.
+				#
+				$line = $data[$dlind];
+				$found = $line =~ /^([0-9]+).[0-9]+\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)/;
+
+				#
+				# If this line didn't follow the format,
+				# go on to the preceding line.
+				#
+				next if(! $found);
+
+				#
+				# Go to the preceding line if this query had
+				# an error.
+				#
+				next if($6 ne 'NOERROR');
+
+				#
+				# Get the line components.
+				#
+				$tstmps[$tind] = $1;
+				$resptimes[$tind] = $5 * 1000;
+
+				#
+				# We can stop looking if we got this far.
+				#
+				$gotit = 1;
+				last;
+
+			}
+
+			last if($gotit);
+		}
+	}
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	difftimes()
+#
+# Purpose:	Calculate differences between all the query response times to
+#		figure out which result band they fit in -- okay, warning, or
+#		critical.  The appropriate counter will be incremented and
+#		the maximum query difference will be saved and returned.
+#
+#		Also, we'll ensure that all the queries were performed within
+#		a reasonable time of each other.
+#
+sub difftimes
+{
+	my $mqdiff = 0;				# Maximum query difference.
+
+	for(my $ind = 0; $ind < @tstmps; $ind++)
+	{
+		for(my $jnd = ($ind + 1); $jnd < @tstmps; $jnd++)
+		{
+			my $tdiff;		# Difference in query times.
+			my $rdiff;		# Difference in response times.
+
+			#
+			# Ensure the queries were close enough together
+			# so that it makes sense to compare them.
+			#
+			$tdiff = abs($tstmps[$ind] - $tstmps[$jnd]);
+			if($tdiff > $maxquery)
+			{
+				my $slow;	# Index of slow-responder.
+				my $ndiff;	# Time since last response.
+
+				$slow = ($tstmps[$ind] > $tstmps[$jnd]) ? $jnd : $ind;
+				$ndiff = time() - $tstmps[$slow];
+				$outstr = "excessive time since last query from $sensors[$slow]:  $ndiff seconds";
+
+				$qterrs++;
+				last;
+			}
+
+			#
+			# Calculate the difference time between these response
+			# times for the queries.
+			#
+			$rdiff = abs($resptimes[$ind] - $resptimes[$jnd]);
+
+			#
+			# Save the maximum difference between query responses.
+			# The max will be used in the Nagios display.
+			#
+			$mqdiff = $rdiff if($rdiff > $mqdiff);
+
+			#
+			# Adjust the result counters accordingly.
+			#
+			if($rdiff < $rtwarn)
+			{
+				$respok++;
+			}
+			elsif($rdiff < $rtcrit)
+			{
+				$respwarn++;
+			}
+			else
+			{
+				$respcrit++;
+			}
+
+		}
+	}
+
+	#
+	# Return the maximum query difference.
+	#
+	return($mqdiff);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	buildout()
+#
+# Purpose:	Build our output.  Our output line is constructed and
+#		written.  We'll also figure out what return code to give.
+#
+sub buildout
+{
+	my $mqdiff = shift;			# Maximum query difference.
+	my $retcode;				# Plugin's return code.
+
+	#
+	# Set the output string and return code based on whether or not
+	# there were any warnings or critical errors.
+	#
+	if($respok)
+	{
+		$outstr .= "good comparisons:  $respok; ";
+		$retcode = $RC_NORMAL;
+	}
+	if($respwarn)
+	{
+		$outstr .= "warning comparisons:  $respwarn; ";
+		$retcode = $RC_WARNING;
+	}
+	if($respcrit)
+	{
+		$outstr .= "critical comparisons:  $respcrit; ";
+		$retcode = $RC_CRITICAL;
+	}
+	if($qterrs)
+	{
+		nagierr($outstr);
+		$retcode = $RC_UNKNOWN;
+	}
+	$outstr =~ s/; $//;
+
+	#
+	# Write a line of data for Nagios.
+	#
+	nagiout($retcode,$mqdiff);
+
+	return($retcode);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	nagiout()
+#
+# Purpose:	Generate a line of DNS timer comparison output for Nagios.
+#
+sub nagiout
+{
+	my $rc = shift;			# Command's return code.
+	my $mqdiff = shift;		# Maximum difference between queries.
+	my $probs = 0;			# Count of all problems.
+
+	#
+	# Get the count of all the problems we've found.
+	$probs = $qterrs + $respwarn + $respcrit;
+
+	$outstr =~ s/;$//g;
+
+	if($rc == $RC_NORMAL)
+	{
+		printf("DNS response time difference:  %5.2f ms|$outstr\n", $mqdiff);
+	}
+	else
+	{
+		printf("DNS response time difference:  %5.2f ms|$outstr\n", $mqdiff);
+#		print "$probs problems found|$outstr\n";
+	}
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	nagierr()
+#
+# Purpose:	Generate an error message for Nagios.
+#
+sub nagierr
+{
+	my $rc = shift;			# Command's return code.
+	my $minutes;			# Count of minutes.
+
+	#
+	# Replace the seconds count with the minutes count.
+	#
+	$outstr =~ s/(\d+) seconds$//;
+	$minutes = $1 / 60;
+
+	printf("$outstr %5.1f minutes|$outstr\n", $minutes);
+}
+
+#----------------------------------------------------------------------
+# Routine:	version()
+#
+sub version
+{
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+	exit($RC_UNKNOWN);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	usage()
+#
+sub usage
+{
+	print STDERR "$VERS
+$DTVERS
+Copyright 2013 SPARTA, Inc.  All rights reserved.
+
+This script retrieves the DNS timer data gathered by a Owl sensor.
+
+
+usage:  owl-comp-dnswatch [options] <target> <server> <query> <sensor1> ... <sensorN>
+	options:
+		-warning milliseconds   lower bound for responses for warnings
+		-critical milliseconds  lower bound for responses for errors
+		-maxquery seconds       maximum time between queries
+		-Version                display program version
+		-help                   display this message
+
+";
+
+	exit(1);
+}
+
+1;
+
+###############################################################################
+
+=pod
+
+=head1 NAME
+
+owl-comp-dnswatch - Nagios plugin to compare DNS response data from Owl sensors
+
+=head1 SYNOPSIS
+
+  owl-comp-dnswatch [options] <query-group1> ... <query-groupN>
+
+=head1 DESCRIPTION
+
+B<owl-comp-dnswatch> compares DNS response-time data from a set of Owl sensor
+nodes.  The difference -- given in milliseconds -- between the sensors is
+reported to Nagios.
+
+The queries to compare are specified in "query group" format.  This format
+combines a sensor name, target hostname, nameserver, and query type, with
+commas separating each field.  For example:
+
+    owl-sensor-1,example.com,m.root-servers.net,NS
+
+B<owl-comp-dnswatch> uses data gathered by the B<owl-dnswatch> sensor.
+It does not retrieve or collect any data itself.  The most recent successful
+data points reported for each group of sensor/target/nameserver/query will
+be considered.
+
+If the difference is below a warning limit, then the difference is
+considered acceptable.  If it exceeds a warning threshold, but does not
+reach a critical threshold, then a warning will be reported to Nagios.
+If the critical threshold is exceeded, then Nagios will be warned of the
+critical condition.
+
+The times at which to the compared data were collected are also taken into
+consideration.  If the data were collected too far apart, the relevance
+of the comparison is questionable.  In this case, B<owl-comp-dnswatch>
+reports the "unknown" error to Nagios.
+
+The default warning threshold is 2 seconds and the default critical
+threshold is 5 seconds.  The default maximum query time is 5 minutes.
+These default values were chosen after watching B<owl-dnswatch> sensor
+results.  They may be adjusted with additional experience.
+
+The data directories are hard-coded in B<owl-comp-dnswatch>.  DNS response
+time data are in B</owl/data/E<lt>sensorE<gt>/data>.  The same directories
+used by B<owl-dnswatch> must be used by B<owl-comp-dnswatch>.
+
+The specified service name determines which file will be selected from the
+appropriate data directory.  The file names in the data directory have this
+format:
+
+    timestamp,sensor,target,nameserver,query.dns
+
+The most recent file whose I<servicename> matches the service name given on
+the command line will be consulted.  The DNS response data will be taken from
+the last entry in that file.
+
+B<owl-comp-dnswatch> is expected to only be run by the Nagios monitoring system.
+
+=head1 IMPORTANT CONSIDERATION
+
+It is B<essential> for the sensors to have synchronized system clocks.
+It is assumed that the sensors support the Network Time Protocol in order
+to have accurate clocks.  This particular protocol isn't required, nor is
+a particular time zone.  However, the system clocks must be synchronized.
+
+=head1 NAGIOS USE
+
+This script is run from a Nagios I<command> object.  These are examples of
+how the objects should be defined:
+
+    define command {
+         command_name    owl-comp-dnswatch
+         command_line    $USER1$/owl-comp-dnswatch $ARG1$ $ARG2$ $ARG3$
+    }
+
+    define service {
+         service_description    example.com a.root m.root A
+         host_name              comparison of sensor 1 / sensor 3
+         check_command		owl-comp-dnswatch!sensor1,example.com,a.root-servers.net,A!sensor1,example.com,m.root-servers.net,A!sensor3,example.com,m.root-servers.net,A
+         ...
+         active_checks_enabled   1 
+    }
+
+=head1 OPTIONS
+
+The following options are recognized by B<owl-comp-dnswatch>:
+
+=over 4
+
+=item I<-w milliseconds>
+
+=item I<-warning milliseconds>
+
+The difference in milliseconds between query response tiems that results
+in a warning.  This is the lower bound for warnings; anything below this
+is considered acceptable.
+The default value for this is 2000 milliseconds (2 seconds.)
+
+=item I<-c milliseconds>
+
+=item I<-critical milliseconds>
+
+The difference in milliseconds between query response tiems that results
+in a critical error.  This is the lower bound for such errors; anything
+below this is considered either acceptable or results in a warning.
+The default value for this is 5000 milliseconds (5 seconds.)
+
+=item I<-m seconds>
+
+=item I<-maxquery seconds>
+
+This is the maximum number of seconds allowed between queries before they
+are considered too far apart for a comparison to be relevant.  
+The default maximum is 300 seconds (five minutes.)
+
+=item I<-Version>
+
+Display the program version and exit.
+
+=item I<-help>
+
+Display a usage message and exit.
+
+=back
+
+=head1 SEE ALSO
+
+B<owl-dnstimer(1)>,
+B<owl-dnswatch(1)>
+
+Nagios
+
+=head1 COPYRIGHT
+
+Copyright 2013 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@tislabs.com
+
+=cut
+
