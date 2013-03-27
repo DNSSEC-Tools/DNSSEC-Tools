@@ -453,10 +453,6 @@ pval_create_context_ex(optref)
     gopt.local_is_trusted = (SvOK(*local_is_trusted_svp) ?  SvIV(*local_is_trusted_svp) : -1);
     SV **edns0_size_svp = hv_fetch((HV*)SvRV(optref), "edns0_size", 10, 1);
     gopt.edns0_size = (SvOK(*edns0_size_svp) ? SvIV(*edns0_size_svp) : -1);
-    SV **env_policy_svp = hv_fetch((HV*)SvRV(optref), "env_policy", 10, 1);
-    gopt.env_policy = (SvOK(*env_policy_svp) ? SvIV(*env_policy_svp) : -1);
-    SV **app_policy_svp = hv_fetch((HV*)SvRV(optref), "app_policy", 10, 1);
-    gopt.app_policy = (SvOK(*app_policy_svp) ? SvIV(*app_policy_svp) : -1);
     SV **log_target_svp = hv_fetch((HV*)SvRV(optref), "log_target", 10, 1);
     gopt.log_target = (SvOK(*log_target_svp) ? SvPV_nolen(*log_target_svp) : NULL);
     SV **closest_ta_only_svp = hv_fetch((HV*)SvRV(optref), "closest_ta_only", 15, 1);
