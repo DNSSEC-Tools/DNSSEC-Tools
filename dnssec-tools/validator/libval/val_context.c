@@ -278,11 +278,11 @@ err:
  */
 static int
 val_create_context_internal( char *label, 
+                             val_global_opt_t *valpolopt,
                              unsigned int flags,
                              unsigned int polflags,
-                             global_opt_t *valpolopt,
                              char *valpol,
-                             char **res_nslist,
+                             char *res_nslist,
                              char *dnsval_conf, 
                              char *resolv_conf, 
                              char *root_conf, 
@@ -291,7 +291,7 @@ val_create_context_internal( char *label,
     int             retval;
     char *base_dnsval_conf = NULL;
     struct policy_overrides *dyn_valpol;
-    global_opt_t *dyn_valpolopt;
+    val_global_opt_t *dyn_valpolopt;
     struct name_server *dyn_nslist;
     struct name_server *ns;
     struct name_server *ns_tail;
@@ -300,6 +300,10 @@ val_create_context_internal( char *label,
     struct policy_fragment *pol_frag;
     int g_opt_seen;
     int include_seen;
+    char *resptr;
+    char *resend;
+    char *rescur;
+    char token[TOKEN_MAX];
 
 #ifdef WIN32 
     if (!wsaInitialized) {
@@ -322,8 +326,8 @@ val_create_context_internal( char *label,
 
     if (valpolopt != NULL) {
         if (VAL_NO_ERROR != 
-                (retval = clone_global_options(&dyn_valpolopt,
-                    valpolopt))) {
+                (retval = update_global_options(&dyn_valpolopt,
+                                                valpolopt, 1))) {
             return retval;
         }
     }
@@ -354,11 +358,35 @@ val_create_context_internal( char *label,
             return VAL_CONF_PARSE_ERROR;
     }
     if (res_nslist != NULL) {
+        strncpy(token, res_nslist, sizeof(token));
+        resptr = token;
+        resend = resptr+strlen(token)+1;
+        rescur = resptr;
         ns_tail = NULL;
-        while (*res_nslist != NULL) {
-            ns = parse_name_server(*res_nslist, NULL);
+
+        while (rescur < resend) {
+            /* 
+             * parse the string of name servers
+             * into individual name server structures
+             */
+            if ((*rescur == ' ') || (*rescur == '\t') || (*rescur == ';')) {
+                if (rescur == resptr) {
+                    /* read past leading spaces */
+                    rescur++;
+                    resptr = rescur;
+                    continue;
+                }
+            } else if (*rescur != '\0'){
+                rescur++;
+                continue;
+            }
+
+            *rescur = '\0';
+            rescur++;
+ 
+            ns = parse_name_server(resptr, NULL);
             /* Disable recursion if required */
-            if (polflags & CTX_DYN_POL_RES_NORD) {
+            if (polflags & CTX_DYN_POL_RES_NRD) {
                 if (ns->ns_options & SR_QUERY_RECURSE)
                     ns->ns_options ^= SR_QUERY_RECURSE;
             }
@@ -374,6 +402,7 @@ val_create_context_internal( char *label,
                 }
             }
             *(res_nslist++);
+            resptr = rescur;
         }
         if (dyn_nslist == NULL) {
             return VAL_CONF_PARSE_ERROR;
@@ -566,7 +595,7 @@ val_create_context_with_conf(char *label,
                              char *root_conf, 
                              val_context_t ** newcontext)
 {
-    return val_create_context_internal(label, 0, 0, NULL, NULL, NULL,
+    return val_create_context_internal(label, NULL, 0, 0, NULL, NULL,
                 dnsval_conf, resolv_conf, root_conf, newcontext); 
 }
 
@@ -576,6 +605,7 @@ val_create_context_with_conf(char *label,
  */
 int
 val_create_context_ex(char *label, 
+                      val_global_opt_t *gopt,
                       val_context_opt_t *opt,
                       val_context_t ** newcontext)
 {
@@ -584,9 +614,9 @@ val_create_context_ex(char *label,
         return VAL_BAD_ARGUMENT;
 
     return val_create_context_internal(label, 
+                gopt,
                 opt->vc_qflags, 
                 opt->vc_polflags, 
-                opt->vc_valpolopt,
                 opt->vc_valpol,
                 opt->vc_nslist,
                 opt->vc_val_conf, 
@@ -603,7 +633,7 @@ int
 val_create_context(char *label, 
                    val_context_t ** newcontext)
 {
-    return val_create_context_internal(label, 0, 0, NULL, NULL, 
+    return val_create_context_internal(label, NULL, 0, 0, NULL, 
                 NULL, NULL, NULL, NULL, newcontext);
 }
 

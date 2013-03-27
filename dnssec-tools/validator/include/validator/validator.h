@@ -118,7 +118,7 @@ typedef struct val_log val_log_t;
 struct queries_for_query;
 
 /* validator context options */
-typedef struct global_opt {
+typedef struct val_global_opt {
     int local_is_trusted;
     long edns0_size;
     int env_policy;
@@ -126,21 +126,21 @@ typedef struct global_opt {
     char *log_target;
     int closest_ta_only;
     int rec_fallback;
-} global_opt_t;
+} val_global_opt_t;
 
 /*
  * Dynamic policy can be configured with the following flags
+ * in vc_polflags
  */
 #define CTX_DYN_POL_VAL_OVR  0x00000001
 #define CTX_DYN_POL_RES_OVR  0x00000002
-#define CTX_DYN_POL_RES_NORD 0x00000004
+#define CTX_DYN_POL_RES_NRD  0x00000004
 
 typedef struct val_context_opt {
     unsigned int vc_qflags;
     unsigned int vc_polflags;
-    global_opt_t *vc_valpolopt;
     char *vc_valpol;
-    char **vc_nslist;
+    char *vc_nslist;
     char *vc_val_conf;
     char *vc_res_conf;
     char *vc_root_conf;
@@ -457,6 +457,7 @@ typedef struct val_context_opt {
                                                  char *root_conf,
                                                  val_context_t ** newcontext);
     int             val_create_context_ex(char *label,
+                                          val_global_opt_t *gopt,
                                           val_context_opt_t *opt,
                                           val_context_t ** newcontext);
     int             val_create_context(char *label,
