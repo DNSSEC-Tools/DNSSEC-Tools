@@ -230,22 +230,47 @@ int free_policy_entry(policy_entry_t *pol_entry, int index)
 }
 
 int 
-clone_global_options(global_opt_t **g_new, global_opt_t *g)
+update_global_options(val_global_opt_t **g_new, val_global_opt_t *g, int clone)
 {
     if (g_new == NULL || g == NULL)
         return VAL_BAD_ARGUMENT;
 
-    *g_new = (global_opt_t *) MALLOC (sizeof (global_opt_t));
     if (*g_new == NULL) {
-        return VAL_OUT_OF_MEMORY;
+        *g_new = (val_global_opt_t *) MALLOC (sizeof (val_global_opt_t));
+        if (*g_new == NULL) {
+            return VAL_OUT_OF_MEMORY;
+        }
+        memset(*g_new, 0, sizeof(val_global_opt_t));
     }
-    memcpy(*g_new, g, sizeof(global_opt_t));
-    (*g_new)->log_target = strdup(g->log_target);
+
+    if (clone) {
+        memcpy(*g_new, g, sizeof(val_global_opt_t));
+    } else {
+        if (g->local_is_trusted != -1)
+            (*g_new)->local_is_trusted = g->local_is_trusted;        
+        if (g->edns0_size != -1)
+            (*g_new)->edns0_size = g->edns0_size;        
+        if (g->env_policy != -1)
+            (*g_new)->env_policy = g->env_policy;        
+        if (g->app_policy != -1)
+            (*g_new)->app_policy = g->app_policy;        
+        if (g->closest_ta_only != -1)
+            (*g_new)->closest_ta_only = g->closest_ta_only;        
+        if (g->rec_fallback != -1)
+            (*g_new)->rec_fallback = g->rec_fallback;        
+    }
+
+    if (g->log_target) {
+        if ((*g_new)->log_target)
+            FREE((*g_new)->log_target);
+        (*g_new)->log_target = strdup(g->log_target);
+    }
+
     return VAL_NO_ERROR;
 }
 
 void
-free_global_options(global_opt_t *g)
+free_global_options(val_global_opt_t *g)
 {
     if (g) {
         if (g->log_target)
@@ -817,7 +842,7 @@ check_relevance(char *label, char *scope, int *label_count, int *relevant)
 
 static int
 parse_local_answer_gopt(char **buf_ptr, char *end_ptr, int *line_number, 
-                        int *endst, global_opt_t *g_opt) 
+                        int *endst, val_global_opt_t *g_opt) 
 {
     char            token[TOKEN_MAX];
     int retval;
@@ -849,7 +874,7 @@ parse_local_answer_gopt(char **buf_ptr, char *end_ptr, int *line_number,
 
 static int
 parse_edns0_size_gopt(char **buf_ptr, char *end_ptr, int *line_number, 
-                      int *endst, global_opt_t *g_opt) 
+                      int *endst, val_global_opt_t *g_opt) 
 {
     char            token[TOKEN_MAX];
     int retval;
@@ -876,7 +901,7 @@ parse_edns0_size_gopt(char **buf_ptr, char *end_ptr, int *line_number,
     
 static int
 parse_enable_disable_gopt(int *type, char **buf_ptr, char *end_ptr, int *line_number,
-                          int *endst, global_opt_t *g_opt)
+                          int *endst, val_global_opt_t *g_opt)
 {
     char            token[TOKEN_MAX];
     int retval;
@@ -911,7 +936,7 @@ parse_enable_disable_gopt(int *type, char **buf_ptr, char *end_ptr, int *line_nu
 
 static int
 parse_log_target_gopt(char **buf_ptr, char *end_ptr, int *line_number,
-                      int *endst, global_opt_t *g_opt)
+                      int *endst, val_global_opt_t *g_opt)
 {
     char            token[TOKEN_MAX];
     int retval;
@@ -941,7 +966,7 @@ parse_log_target_gopt(char **buf_ptr, char *end_ptr, int *line_number,
 
 static int
 parse_closest_ta_target_gopt(char **buf_ptr, char *end_ptr, int *line_number,
-                      int *endst, global_opt_t *g_opt)
+                      int *endst, val_global_opt_t *g_opt)
 {
     char            token[TOKEN_MAX];
     int retval;
@@ -974,7 +999,7 @@ parse_closest_ta_target_gopt(char **buf_ptr, char *end_ptr, int *line_number,
 
 static int
 parse_rec_fallback(char **buf_ptr, char *end_ptr, int *line_number,
-                   int *endst, global_opt_t *g_opt)
+                   int *endst, val_global_opt_t *g_opt)
 {
     char            token[TOKEN_MAX];
     int retval;
@@ -1007,7 +1032,7 @@ parse_rec_fallback(char **buf_ptr, char *end_ptr, int *line_number,
 
 static int
 get_global_options(char **buf_ptr, char *end_ptr, 
-                   int *line_number, global_opt_t **g_opt) 
+                   int *line_number, val_global_opt_t **g_opt) 
 {
     int endst = 0;
     char            token[TOKEN_MAX];
@@ -1017,7 +1042,7 @@ get_global_options(char **buf_ptr, char *end_ptr,
         (g_opt == NULL) || (line_number == NULL))
         return VAL_BAD_ARGUMENT;
 
-    *g_opt = (global_opt_t *) MALLOC (sizeof (global_opt_t));
+    *g_opt = (val_global_opt_t *) MALLOC (sizeof (val_global_opt_t));
     if (*g_opt == NULL)
         return VAL_OUT_OF_MEMORY;
     (*g_opt)->local_is_trusted = 0;
@@ -1460,7 +1485,7 @@ read_next_val_config_file(val_context_t *ctx,
                           struct dnsval_list *dlist, 
                           struct dnsval_list **added_files,
                           struct policy_overrides **overrides,
-                          global_opt_t **g_opt)
+                          val_global_opt_t **g_opt)
 {
     int    fd = -1;
 #ifdef HAVE_FLOCK
@@ -1596,7 +1621,7 @@ read_next_val_config_file(val_context_t *ctx,
                                              &include_seen))) {
             if (g_opt_seen) {
                 /* next policy fragment contains global options */ 
-                global_opt_t *gt_opt = NULL;
+                val_global_opt_t *gt_opt = NULL;
                 g_opt_seen = 0;
                 if (VAL_NO_ERROR != (retval =
                         get_global_options(&buf_ptr, end_ptr, 
@@ -1833,12 +1858,14 @@ read_val_config_file(val_context_t * ctx, char *scope)
     char *newctxlab;
     struct val_query_chain *q;
     char *logtarget = NULL;
-    global_opt_t *g_opt = NULL;
+    val_global_opt_t *g_opt = NULL;
     struct dnsval_list *dlist = NULL;
     struct policy_overrides *overrides = NULL;
    
     if (ctx == NULL)
         return VAL_BAD_ARGUMENT;
+
+    label = scope;
 
     /*
      * Use any dynamic policies that may be available
@@ -1847,8 +1874,6 @@ read_val_config_file(val_context_t * ctx, char *scope)
         goto skipfileread;
     
     if (ctx->base_dnsval_conf == NULL) {
-
-
         goto skipfileread;
     }
    
@@ -1861,7 +1886,6 @@ read_val_config_file(val_context_t * ctx, char *scope)
     dlist->v_timestamp = 0;
     dlist->next = NULL; 
     dnsval_c = dlist;
-    label = scope;
 
     while(dnsval_c) {
         struct dnsval_list *added_list = NULL;
@@ -1930,7 +1954,6 @@ skipfileread:
         }
     }
     destroy_valpolovr(&overrides);
-    ctx->g_opt = g_opt;
 
     /* Apply any dynamic policies */
     for (t = ctx->dyn_valpol; t != NULL; t = t->next) {
@@ -1941,19 +1964,14 @@ skipfileread:
         }
     }
     /* 
-     * If we have dynamic globlal options, prefer them to ones in the
-     * config file
+     * Process dynamic global options 
      */
+    ctx->g_opt = g_opt;
     if (ctx->dyn_valpolopt) {
-        if (ctx->g_opt != NULL) {
-            free_global_options(ctx->g_opt);
-            FREE(ctx->g_opt);
-        }
         if (VAL_NO_ERROR != 
-                (retval = clone_global_options(&ctx->g_opt,
-                                               ctx->dyn_valpolopt))) {
+                (retval = update_global_options(&ctx->g_opt,
+                                               ctx->dyn_valpolopt, 0)))
             goto err;
-        }
     }
 
     /* free up older log targets */
@@ -1965,8 +1983,8 @@ skipfileread:
     ctx->val_log_targets = NULL;
     
     /* enable logging */
-    if (g_opt && g_opt->log_target) {
-        val_log_add_optarg_to_list(&ctx->val_log_targets, g_opt->log_target, 1);
+    if (ctx->g_opt && ctx->g_opt->log_target) {
+        val_log_add_optarg_to_list(&ctx->val_log_targets, ctx->g_opt->log_target, 1);
     }
 
     /* set the log target from environment */

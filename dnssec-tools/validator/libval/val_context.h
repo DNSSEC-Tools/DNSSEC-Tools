@@ -73,6 +73,7 @@ int             val_create_context_with_conf(char *label,
                                              char *root_conf,
                                              val_context_t ** newcontext);
 int             val_create_context_ex(char *label, 
+                                      val_global_opt_t *gopt,
                                       val_context_opt_t *opt,
                                       val_context_t ** newcontext);
 int             val_create_context(char *label,

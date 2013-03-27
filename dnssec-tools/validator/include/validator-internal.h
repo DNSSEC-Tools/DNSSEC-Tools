@@ -321,7 +321,7 @@ extern          "C" {
          * Dynamic policy
          */
         unsigned int dyn_polflags;
-        global_opt_t *dyn_valpolopt;
+        val_global_opt_t *dyn_valpolopt;
         struct policy_overrides *dyn_valpol;
         struct name_server *dyn_nslist;
 
@@ -346,7 +346,7 @@ extern          "C" {
         char   *base_dnsval_conf;
         struct dnsval_list *dnsval_l;
         policy_entry_t **e_pol;
-        global_opt_t *g_opt;
+        val_global_opt_t *g_opt;
         struct val_log *val_log_targets;
         
         /* Query cache */
