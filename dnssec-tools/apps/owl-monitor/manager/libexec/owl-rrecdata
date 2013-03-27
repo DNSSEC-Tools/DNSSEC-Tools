@@ -707,10 +707,9 @@ sub usage
 {
 	print STDERR "$VERS
 $DTVERS
-Copyright 2012-2013 SPARTA, Inc.  All rights reserved.
+Copyright 2013 SPARTA, Inc.  All rights reserved.
 
-This script retrieves the DNS timer data gathered by a Owl sensor.
-
+This script retrieves the DNS resource-record data gathered by a Owl sensor.
 
 usage:  owl-rrecdata [options] <sensor> <target> <rrec-type>
 	options:
@@ -727,8 +726,6 @@ usage:  owl-rrecdata [options] <sensor> <target> <rrec-type>
 
 ###############################################################################
 
-
-
 =pod
 
 =head1 NAME
@@ -741,22 +738,20 @@ owl-rrecdata - Nagios plugin to display DNS resource-record data from an Owl sen
 
 =head1 DESCRIPTION
 
-B<owl-rrecdata>
-
-displays DNS resource-record data collected by an Owl sensor node.
-The sensor data are read from files already transferred to the manager
-and B<owl-rrecdata> does not transfer the files itself.  The data are
-formatted for use in Nagios' own display.
+B<owl-rrecdata> displays DNS resource-record data collected by an Owl
+sensor node.  The sensor data are read from files already transferred
+to the manager and B<owl-rrecdata> does not transfer the files itself.
+The data are formatted for use in Nagios' own display.
 
 The current set of Nagios objects and configuration files are B<not>
 set up to provide time-based graphing of DNS resource-record data.
 
-The data directories are hard-coded in B<owl-rrecdata>.  DNS response time
-data are in B</owl/data/<sensor>/data>.
+To improve performance, the data directories are hard-coded in
+B<owl-rrecdata>.  DNS response time data are in B</owl/data/<sensor>/data>.
 
-The specified service name determines which file will be selected from the
-appropriate data directory.  The file names in the data directory have this
-format:
+The specified service name determines which file will be selected from
+the appropriate data directory.  The file names in the data directory
+have this format:
 
     timestamp,sensor,target,nameserver,query.rrec
 
