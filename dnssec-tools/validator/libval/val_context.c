@@ -326,10 +326,12 @@ val_create_context_internal( char *label,
 
     if (valpolopt != NULL) {
         if (VAL_NO_ERROR != 
-                (retval = update_global_options(&dyn_valpolopt,
-                                                valpolopt, 1))) {
+                (retval = update_dynamic_gopt(&dyn_valpolopt,
+                                              valpolopt))) {
             return retval;
         }
+        if (valpolopt->log_target)
+            dyn_valpolopt->log_target = strdup(valpolopt->log_target);
     }
     if (valpol != NULL) {
         buf_ptr = valpol;
