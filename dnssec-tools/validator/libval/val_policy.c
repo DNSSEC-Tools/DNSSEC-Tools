@@ -241,6 +241,7 @@ update_dynamic_gopt(val_global_opt_t **g_new, val_global_opt_t *g)
             return VAL_OUT_OF_MEMORY;
         }
         memset(*g_new, 0, sizeof(val_global_opt_t));
+        (*g_new)->log_target = NULL;
     }
 
     // Don't update env_policy, app_policy or log_target
