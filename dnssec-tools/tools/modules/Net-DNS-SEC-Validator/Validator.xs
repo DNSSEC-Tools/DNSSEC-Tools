@@ -23,6 +23,8 @@
 #define VAL_ADDRINFO_TYPE	1
 
 typedef struct libval_context ValContext;
+typedef struct val_global_opt ValContextGlOpt;
+typedef struct val_context_opt ValContextOpt;
 
 #if 0
 static void
@@ -131,14 +133,14 @@ static struct addrinfo *ainfo_sv2c(SV *ainfo_ref, struct addrinfo *ainfo_ptr)
       ainfo_ptr->ai_socktype = (SvOK(*socktype_svp) ? SvIV(*socktype_svp) : 0);
       ainfo_ptr->ai_protocol = (SvOK(*protocol_svp) ? SvIV(*protocol_svp) : 0);
       if (SvOK(*addr_svp)) {
-	ainfo_ptr->ai_addr = (struct sockaddr *) SvPV(*addr_svp,PL_na); // borrowed
+	ainfo_ptr->ai_addr = (struct sockaddr *) SvPV_nolen(*addr_svp); // borrowed
 	ainfo_ptr->ai_addrlen = SvLEN(*addr_svp);
       } else {
 	ainfo_ptr->ai_addr = NULL;
 	ainfo_ptr->ai_addrlen = 0;
       }
       ainfo_ptr->ai_canonname = (SvOK(*canonname_svp) ? 
-				 SvPV(*canonname_svp,PL_na) : NULL); // borrowed
+				 SvPV_nolen(*canonname_svp) : NULL); // borrowed
 
       // fprintf(stderr, "ainfo_ptr->ai_flags = %d\n", ainfo_ptr->ai_flags);
       // fprintf(stderr, "ainfo_ptr->ai_family = %d\n", ainfo_ptr->ai_family);
@@ -409,10 +411,10 @@ pval_create_context(policy)
 
 ValContext *
 pval_create_context_with_conf(policy,dnsval_conf,resolv_conf,root_hints)
-	char * policy = (SvOK($arg) ? (char *)SvPV($arg,PL_na) : NULL);
-        char *	dnsval_conf = (SvOK($arg) ? (char *)SvPV($arg,PL_na) : NULL);
-	char *	resolv_conf = (SvOK($arg) ? (char *)SvPV($arg,PL_na) : NULL);
-	char *	root_hints = (SvOK($arg) ? (char *)SvPV($arg,PL_na) : NULL);
+	char * policy = (SvOK($arg) ? (char *)SvPV_nolen($arg) : NULL);
+        char *	dnsval_conf = (SvOK($arg) ? (char *)SvPV_nolen($arg) : NULL);
+	char *	resolv_conf = (SvOK($arg) ? (char *)SvPV_nolen($arg) : NULL);
+	char *	root_hints = (SvOK($arg) ? (char *)SvPV_nolen($arg) : NULL);
 	CODE:
 	{
 	ValContext *vc_ptr=NULL;
@@ -432,12 +434,70 @@ pval_create_context_with_conf(policy,dnsval_conf,resolv_conf,root_hints)
 	OUTPUT:
 	RETVAL
 
+ValContext *
+pval_create_context_ex(optref)
+	SV * optref = (SvOK($arg) ? $arg : NULL);
+	CODE:
+	{
+	ValContext *vc_ptr=NULL;
+    ValContextGlOpt gopt;
+    ValContextOpt opt;
+    char *label;
+
+    // Find the policy label
+    SV **label_svp = hv_fetch((HV*)SvRV(optref), "policy", 6, 1);
+    label = (SvOK(*label_svp) ? SvPV_nolen(*label_svp) : NULL);
+
+    // Global options
+    SV **local_is_trusted_svp = hv_fetch((HV*)SvRV(optref), "local_is_trusted", 16, 1);
+    gopt.local_is_trusted = (SvOK(*local_is_trusted_svp) ?  SvIV(*local_is_trusted_svp) : -1);
+    SV **edns0_size_svp = hv_fetch((HV*)SvRV(optref), "edns0_size", 10, 1);
+    gopt.edns0_size = (SvOK(*edns0_size_svp) ? SvIV(*edns0_size_svp) : -1);
+    SV **env_policy_svp = hv_fetch((HV*)SvRV(optref), "env_policy", 10, 1);
+    gopt.env_policy = (SvOK(*env_policy_svp) ? SvIV(*env_policy_svp) : -1);
+    SV **app_policy_svp = hv_fetch((HV*)SvRV(optref), "app_policy", 10, 1);
+    gopt.app_policy = (SvOK(*app_policy_svp) ? SvIV(*app_policy_svp) : -1);
+    SV **log_target_svp = hv_fetch((HV*)SvRV(optref), "log_target", 10, 1);
+    gopt.log_target = (SvOK(*log_target_svp) ? SvPV_nolen(*log_target_svp) : NULL);
+    SV **closest_ta_only_svp = hv_fetch((HV*)SvRV(optref), "closest_ta_only", 15, 1);
+    gopt.closest_ta_only = (SvOK(*closest_ta_only_svp) ?  SvIV(*closest_ta_only_svp) : -1);
+    SV **rec_fallback_svp = hv_fetch((HV*)SvRV(optref), "rec_fallback", 12, 1);
+    gopt.rec_fallback = (SvOK(*rec_fallback_svp) ?  SvIV(*rec_fallback_svp) : -1);
+
+    // Context options
+    SV **vc_qflags_svp = hv_fetch((HV*)SvRV(optref), "qflags", 6, 1);
+    opt.vc_qflags = (SvOK(*vc_qflags_svp) ? SvIV(*vc_qflags_svp) : 0);
+    SV **vc_polflags_svp = hv_fetch((HV*)SvRV(optref), "polflags", 8, 1);
+    opt.vc_polflags = (SvOK(*vc_polflags_svp) ? SvIV(*vc_polflags_svp) : 
+                                                CTX_DYN_POL_RES_OVR);
+    SV **vc_valpol_svp = hv_fetch((HV*)SvRV(optref), "valpol", 6, 1);
+    opt.vc_valpol = (SvOK(*vc_valpol_svp) ? SvPV_nolen(*vc_valpol_svp) : NULL);
+    SV **vc_nslist_svp = hv_fetch((HV*)SvRV(optref), "nslist", 6, 1);
+    opt.vc_nslist = (SvOK(*vc_nslist_svp) ? SvPV_nolen(*vc_nslist_svp) : NULL);
+    SV **dnsval_conf_svp = hv_fetch((HV*)SvRV(optref), "dnsval_conf", 11, 1);
+    opt.vc_val_conf = (SvOK(*dnsval_conf_svp) ?  SvPV_nolen(*dnsval_conf_svp) : NULL);
+    SV **resolv_conf_svp = hv_fetch((HV*)SvRV(optref), "resolv_conf", 11, 1);
+    opt.vc_res_conf = (SvOK(*resolv_conf_svp) ?  SvPV_nolen(*resolv_conf_svp) : NULL);
+    SV **root_conf_svp = hv_fetch((HV*)SvRV(optref), "root_hints", 10, 1);
+    opt.vc_root_conf = (SvOK(*root_conf_svp) ?  SvPV_nolen(*root_conf_svp) : NULL);
+
+	int result = val_create_context_ex(label, 
+                          &gopt,
+                          &opt,
+						  &vc_ptr);
+	//	fprintf(stderr,"pval_create_context_with_confresult=%d):%lx\n",result,vc_ptr);
+
+	RETVAL = (result ? NULL : vc_ptr);
+	}
+	OUTPUT:
+	RETVAL
+
 
 SV *
 pval_getaddrinfo(self,node=NULL,service=NULL,hints_ref=NULL)
 	SV *	self
-        char *	node = (SvOK($arg) ? (char *)SvPV($arg,PL_na) : NULL);
-	char *	service = (SvOK($arg) ? (char *)SvPV($arg,PL_na) : NULL);
+        char *	node = (SvOK($arg) ? (char *)SvPV_nolen($arg) : NULL);
+	char *	service = (SvOK($arg) ? (char *)SvPV_nolen($arg) : NULL);
 	SV *	hints_ref = (SvOK($arg) ? $arg : NULL);
 	CODE:
 	{
@@ -492,7 +552,7 @@ pval_getaddrinfo(self,node=NULL,service=NULL,hints_ref=NULL)
 SV *
 pval_gethostbyname(self,name,af=AF_INET)
 	SV *	self
-	char *	name = (SvOK($arg) ? (char *)SvPV($arg,PL_na) : "localhost");
+	char *	name = (SvOK($arg) ? (char *)SvPV_nolen($arg) : "localhost");
 	int	af = (SvOK($arg) ? SvIV($arg) : AF_INET);
 	CODE:
 	{

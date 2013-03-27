@@ -16,8 +16,8 @@ require Net::hostent; # return type from gethost*
 use Net::DNS; # to interpret DNS classes and types
 use Carp;
 
-our $VERSION = '1.10';   # current release version number
-our $DNSSECTOOLSVERSION = "DNSSEC-Tools Version: 1.9";
+our $VERSION = '1.11';   # current release version number
+our $DNSSECTOOLSVERSION = "DNSSEC-Tools Version: 2.0";
 
 use Exporter;
 use DynaLoader;
@@ -37,6 +37,9 @@ our @ISA = qw(Exporter DynaLoader);
 
 
 our @EXPORT = qw(
+    CTX_DYN_POL_RES_NRD
+    CTX_DYN_POL_RES_OVR
+    CTX_DYN_POL_VAL_OVR
 	LIBSRES_NS_STAGGER
 	LOG_ALERT
 	LOG_CRIT
@@ -217,12 +220,14 @@ sub new {
 
     $self->{policy} ||= undef; # passing NULL uses default policy
 
+#    $self->{_ctx_ptr} = 
+#    	Net::DNS::SEC::Validator::_create_context_with_conf(
+#          $self->{policy},
+#	      $self->{dnsval_conf},
+#	      $self->{resolv_conf},
+#  	      $self->{root_hints});
     $self->{_ctx_ptr} = 
-	Net::DNS::SEC::Validator::_create_context_with_conf(
-	   $self->{policy},
-	   $self->{dnsval_conf},
-	   $self->{resolv_conf},
-    	   $self->{root_hints});
+    	Net::DNS::SEC::Validator::_create_context_ex($self);
 
     return undef unless $self->{_ctx_ptr};
 
