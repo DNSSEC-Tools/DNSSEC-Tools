@@ -229,6 +229,21 @@ int free_policy_entry(policy_entry_t *pol_entry, int index)
 
 }
 
+static void
+set_global_opt_defaults(val_global_opt_t *gopt)
+{
+    if (gopt == NULL)
+        return;
+
+    gopt->local_is_trusted = 0;
+    gopt->edns0_size = RES_EDNS0_DEFAULT;
+    gopt->env_policy = VAL_POL_GOPT_DISABLE;
+    gopt->app_policy = VAL_POL_GOPT_DISABLE;
+    gopt->log_target = NULL;
+    gopt->closest_ta_only = 0;
+    gopt->rec_fallback = 1;
+}
+
 int 
 update_dynamic_gopt(val_global_opt_t **g_new, val_global_opt_t *g)
 {
@@ -240,15 +255,19 @@ update_dynamic_gopt(val_global_opt_t **g_new, val_global_opt_t *g)
         if (*g_new == NULL) {
             return VAL_OUT_OF_MEMORY;
         }
-        memset(*g_new, 0, sizeof(val_global_opt_t));
-        (*g_new)->log_target = NULL;
+        set_global_opt_defaults(*g_new);
     }
 
-    // Don't update env_policy, app_policy or log_target
+    /* NOTE: We must not update log_target */
+
     if (g->local_is_trusted != -1)
         (*g_new)->local_is_trusted = g->local_is_trusted;        
     if (g->edns0_size != -1)
         (*g_new)->edns0_size = g->edns0_size;        
+    if (g->env_policy != -1)
+        (*g_new)->env_policy = g->env_policy;        
+    if (g->app_policy != -1)
+        (*g_new)->app_policy = g->app_policy;        
     if (g->closest_ta_only != -1)
         (*g_new)->closest_ta_only = g->closest_ta_only;        
     if (g->rec_fallback != -1)
@@ -1018,6 +1037,7 @@ parse_rec_fallback(char **buf_ptr, char *end_ptr, int *line_number,
     return VAL_NO_ERROR;
 }
 
+
 static int
 get_global_options(char **buf_ptr, char *end_ptr, 
                    int *line_number, val_global_opt_t **g_opt) 
@@ -1033,14 +1053,7 @@ get_global_options(char **buf_ptr, char *end_ptr,
     *g_opt = (val_global_opt_t *) MALLOC (sizeof (val_global_opt_t));
     if (*g_opt == NULL)
         return VAL_OUT_OF_MEMORY;
-    (*g_opt)->local_is_trusted = 0;
-    (*g_opt)->edns0_size = RES_EDNS0_DEFAULT;
-    (*g_opt)->env_policy = VAL_POL_GOPT_DISABLE;
-    (*g_opt)->app_policy = VAL_POL_GOPT_DISABLE;
-    (*g_opt)->log_target = NULL;
-    (*g_opt)->closest_ta_only = 0;
-    (*g_opt)->rec_fallback = 1;
-    
+    set_global_opt_defaults(*g_opt);
     while (!endst) {
         /*
          * read the option type 
@@ -1856,9 +1869,11 @@ read_val_config_file(val_context_t * ctx, char *scope)
     label = scope;
 
     /*
-     * Use any dynamic policies that may be available
+     * If our dynamic policies override existing policies
+     * we don't need to read any of the config files 
      */
-    if (ctx->dyn_polflags & CTX_DYN_POL_VAL_OVR)
+    if ((ctx->dyn_polflags & CTX_DYN_POL_VAL_OVR) &&
+        (ctx->dyn_polflags & CTX_DYN_POL_GLO_OVR))
         goto skipfileread;
     
     if (ctx->base_dnsval_conf == NULL) {
@@ -1933,14 +1948,18 @@ skipfileread:
 
     destroy_valpol(ctx);
 
-    /* Replace policies */
-    for (t = overrides; t != NULL; t = t->next) {
-        struct policy_list *c;
-        for (c = t->plist; c; c = c->next){
-            /* Override elements in e_pol[c->index] with what's in c->pol */
-            STORE_POLICY_ENTRY_IN_LIST(c->pol, ctx->e_pol[c->index]);
+    /* process overrides unless we want to override them */
+    if (!(ctx->dyn_polflags & CTX_DYN_POL_VAL_OVR)) {
+        /* Replace policies */
+        for (t = overrides; t != NULL; t = t->next) {
+            struct policy_list *c;
+            for (c = t->plist; c; c = c->next){
+                /* Override elements in e_pol[c->index] with what's in c->pol */
+                STORE_POLICY_ENTRY_IN_LIST(c->pol, ctx->e_pol[c->index]);
+            }
         }
     }
+
     destroy_valpolovr(&overrides);
 
     /* Apply any dynamic policies */
@@ -1952,6 +1971,9 @@ skipfileread:
         }
     }
 
+    /* Process Global options */
+    ctx->g_opt = g_opt;
+
     /* free up older log targets */
     while (ctx->val_log_targets) {
         val_log_t *temp = ctx->val_log_targets->next;
@@ -1960,34 +1982,28 @@ skipfileread:
     }
     ctx->val_log_targets = NULL;
     
-    ctx->g_opt = g_opt;
+    /* enable logging as specified by global options */
+    if (ctx->g_opt && ctx->g_opt->log_target) {
+        val_log_add_optarg_to_list(&ctx->val_log_targets, ctx->g_opt->log_target, 1);
+    }
+    /* enable logging as specified by dynamic policy */
+    if (ctx->dyn_valpolopt && ctx->g_opt->log_target) {
+        val_log_add_optarg_to_list(&ctx->val_log_targets,
+                ctx->dyn_valpolopt->log_target, 1);
+    }
+    /* set the log target from environment */
+    logtarget = getenv(VAL_LOG_TARGET);
+    if (logtarget) {
+        val_log_add_optarg_to_list(&ctx->val_log_targets, logtarget, 1);
+    }
 
     /* 
-     * Process dynamic global options 
+     * Merge other dynamic global options into the context 
      */
     if (ctx->dyn_valpolopt) {
         if (VAL_NO_ERROR != 
                 (retval = update_dynamic_gopt(&ctx->g_opt, ctx->dyn_valpolopt)))
             goto err;
-        /*
-         * Add any log targets that might have been specified in the
-         * dynamic policy
-         */
-        if (ctx->dyn_valpolopt && ctx->dyn_valpolopt->log_target) {
-            val_log_add_optarg_to_list(&ctx->val_log_targets,
-                                       ctx->dyn_valpolopt->log_target, 1);
-        }
-    }
-
-    /* enable logging as specified by global options */
-    if (ctx->g_opt && ctx->g_opt->log_target) {
-        val_log_add_optarg_to_list(&ctx->val_log_targets, ctx->g_opt->log_target, 1);
-    }
-
-    /* set the log target from environment */
-    logtarget = getenv(VAL_LOG_TARGET);
-    if (logtarget) {
-        val_log_add_optarg_to_list(&ctx->val_log_targets, logtarget, 1);
     }
 
     /* 
