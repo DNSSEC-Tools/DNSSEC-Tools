@@ -134,7 +134,8 @@ typedef struct val_global_opt {
  */
 #define CTX_DYN_POL_VAL_OVR  0x00000001
 #define CTX_DYN_POL_RES_OVR  0x00000002
-#define CTX_DYN_POL_RES_NRD  0x00000004
+#define CTX_DYN_POL_GLO_OVR  0x00000004
+#define CTX_DYN_POL_RES_NRD  0x00000008
 
 typedef struct val_context_opt {
     unsigned int vc_qflags;
@@ -144,6 +145,7 @@ typedef struct val_context_opt {
     char *vc_val_conf;
     char *vc_res_conf;
     char *vc_root_conf;
+    val_global_opt_t *vc_gopt;
 } val_context_opt_t;
 
 
@@ -457,7 +459,6 @@ typedef struct val_context_opt {
                                                  char *root_conf,
                                                  val_context_t ** newcontext);
     int             val_create_context_ex(char *label,
-                                          val_global_opt_t *gopt,
                                           val_context_opt_t *opt,
                                           val_context_t ** newcontext);
     int             val_create_context(char *label,
