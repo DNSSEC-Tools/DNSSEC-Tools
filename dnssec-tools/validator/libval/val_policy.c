@@ -229,8 +229,55 @@ int free_policy_entry(policy_entry_t *pol_entry, int index)
 
 }
 
+static void
+set_global_opt_defaults(val_global_opt_t *gopt)
+{
+    if (gopt == NULL)
+        return;
+
+    gopt->local_is_trusted = 0;
+    gopt->edns0_size = RES_EDNS0_DEFAULT;
+    gopt->env_policy = VAL_POL_GOPT_DISABLE;
+    gopt->app_policy = VAL_POL_GOPT_DISABLE;
+    gopt->log_target = NULL;
+    gopt->closest_ta_only = 0;
+    gopt->rec_fallback = 1;
+}
+
+int 
+update_dynamic_gopt(val_global_opt_t **g_new, val_global_opt_t *g)
+{
+    if (g_new == NULL || g == NULL)
+        return VAL_BAD_ARGUMENT;
+
+    if (*g_new == NULL) {
+        *g_new = (val_global_opt_t *) MALLOC (sizeof (val_global_opt_t));
+        if (*g_new == NULL) {
+            return VAL_OUT_OF_MEMORY;
+        }
+        set_global_opt_defaults(*g_new);
+    }
+
+    /* NOTE: We must not update log_target */
+
+    if (g->local_is_trusted != -1)
+        (*g_new)->local_is_trusted = g->local_is_trusted;        
+    if (g->edns0_size != -1)
+        (*g_new)->edns0_size = g->edns0_size;        
+    if (g->env_policy != -1)
+        (*g_new)->env_policy = g->env_policy;        
+    if (g->app_policy != -1)
+        (*g_new)->app_policy = g->app_policy;        
+    if (g->closest_ta_only != -1)
+        (*g_new)->closest_ta_only = g->closest_ta_only;        
+    if (g->rec_fallback != -1)
+        (*g_new)->rec_fallback = g->rec_fallback;        
+
+    return VAL_NO_ERROR;
+}
+
 void
-free_global_options(global_opt_t *g)
+free_global_options(val_global_opt_t *g)
 {
     if (g) {
         if (g->log_target)
@@ -802,7 +849,7 @@ check_relevance(char *label, char *scope, int *label_count, int *relevant)
 
 static int
 parse_local_answer_gopt(char **buf_ptr, char *end_ptr, int *line_number, 
-                        int *endst, global_opt_t *g_opt) 
+                        int *endst, val_global_opt_t *g_opt) 
 {
     char            token[TOKEN_MAX];
     int retval;
@@ -834,7 +881,7 @@ parse_local_answer_gopt(char **buf_ptr, char *end_ptr, int *line_number,
 
 static int
 parse_edns0_size_gopt(char **buf_ptr, char *end_ptr, int *line_number, 
-                      int *endst, global_opt_t *g_opt) 
+                      int *endst, val_global_opt_t *g_opt) 
 {
     char            token[TOKEN_MAX];
     int retval;
@@ -861,7 +908,7 @@ parse_edns0_size_gopt(char **buf_ptr, char *end_ptr, int *line_number,
     
 static int
 parse_enable_disable_gopt(int *type, char **buf_ptr, char *end_ptr, int *line_number,
-                          int *endst, global_opt_t *g_opt)
+                          int *endst, val_global_opt_t *g_opt)
 {
     char            token[TOKEN_MAX];
     int retval;
@@ -896,7 +943,7 @@ parse_enable_disable_gopt(int *type, char **buf_ptr, char *end_ptr, int *line_nu
 
 static int
 parse_log_target_gopt(char **buf_ptr, char *end_ptr, int *line_number,
-                      int *endst, global_opt_t *g_opt)
+                      int *endst, val_global_opt_t *g_opt)
 {
     char            token[TOKEN_MAX];
     int retval;
@@ -926,7 +973,7 @@ parse_log_target_gopt(char **buf_ptr, char *end_ptr, int *line_number,
 
 static int
 parse_closest_ta_target_gopt(char **buf_ptr, char *end_ptr, int *line_number,
-                      int *endst, global_opt_t *g_opt)
+                      int *endst, val_global_opt_t *g_opt)
 {
     char            token[TOKEN_MAX];
     int retval;
@@ -959,7 +1006,7 @@ parse_closest_ta_target_gopt(char **buf_ptr, char *end_ptr, int *line_number,
 
 static int
 parse_rec_fallback(char **buf_ptr, char *end_ptr, int *line_number,
-                   int *endst, global_opt_t *g_opt)
+                   int *endst, val_global_opt_t *g_opt)
 {
     char            token[TOKEN_MAX];
     int retval;
@@ -990,9 +1037,10 @@ parse_rec_fallback(char **buf_ptr, char *end_ptr, int *line_number,
     return VAL_NO_ERROR;
 }
 
+
 static int
 get_global_options(char **buf_ptr, char *end_ptr, 
-                   int *line_number, global_opt_t **g_opt) 
+                   int *line_number, val_global_opt_t **g_opt) 
 {
     int endst = 0;
     char            token[TOKEN_MAX];
@@ -1002,17 +1050,10 @@ get_global_options(char **buf_ptr, char *end_ptr,
         (g_opt == NULL) || (line_number == NULL))
         return VAL_BAD_ARGUMENT;
 
-    *g_opt = (global_opt_t *) MALLOC (sizeof (global_opt_t));
+    *g_opt = (val_global_opt_t *) MALLOC (sizeof (val_global_opt_t));
     if (*g_opt == NULL)
         return VAL_OUT_OF_MEMORY;
-    (*g_opt)->local_is_trusted = 0;
-    (*g_opt)->edns0_size = RES_EDNS0_DEFAULT;
-    (*g_opt)->env_policy = VAL_POL_GOPT_DISABLE;
-    (*g_opt)->app_policy = VAL_POL_GOPT_DISABLE;
-    (*g_opt)->log_target = NULL;
-    (*g_opt)->closest_ta_only = 0;
-    (*g_opt)->rec_fallback = 1;
-    
+    set_global_opt_defaults(*g_opt);
     while (!endst) {
         /*
          * read the option type 
@@ -1095,7 +1136,7 @@ err:
  * Get the next relevant {label, keyword, data} fragment 
  * from the configuration file file
  */
-static int
+int
 get_next_policy_fragment(char **buf_ptr, char *end_ptr, char *scope,
                          struct policy_fragment **pol_frag,
                          int *line_number, int *g_opt_seen, int *include_seen)
@@ -1270,15 +1311,14 @@ get_next_policy_fragment(char **buf_ptr, char *end_ptr, char *scope,
  * This list is ordered from general to more specific --
  * so "mozilla" < "sendmail" < "browser:mozilla"
  */
-static int
-store_policy_overrides(val_context_t * ctx, 
-                       struct policy_overrides **overrides, 
+int
+store_policy_overrides(struct policy_overrides **overrides, 
                        struct policy_fragment **pfrag)
 {
     struct policy_overrides *cur, *prev, *newp;
     struct policy_list *e;
 
-    if ((ctx == NULL) || (overrides == NULL) || (pfrag == NULL) || (*pfrag == NULL))
+    if ((overrides == NULL) || (pfrag == NULL) || (*pfrag == NULL))
         return VAL_BAD_ARGUMENT;
 
     /*
@@ -1326,16 +1366,12 @@ store_policy_overrides(val_context_t * ctx,
     /*
      * Check if we have an existing entry for this label/policy-type combination 
      */
-    val_log(ctx, LOG_DEBUG, "store_policy_overrides(): Adding policy [%s:%s]", 
-            newp->label, 
-            conf_elem_array[(*pfrag)->index].keyword);
-
     for (e = newp->plist; e; e = e->next) {
         if (e->index == (*pfrag)->index) {
-            val_log(ctx, LOG_WARNING,
-                    "store_policy_overrides(): Duplicate policy definition for [%s:%s]; using initial",
-                    newp->label, conf_elem_array[e->index].keyword);
-            
+            /* 
+             * Duplicate policy definition conf_elem_array[e->index].keyword
+             * Use the first one found
+             */
             free_policy_entry((*pfrag)->pol, (*pfrag)->index);
             (*pfrag)->pol = NULL;
             FREE(*pfrag);
@@ -1361,7 +1397,7 @@ store_policy_overrides(val_context_t * ctx,
     return VAL_NO_ERROR;
 }
 
-static void
+void
 destroy_valpolovr(struct policy_overrides **po)
 {
     struct policy_overrides *cur, *prev;
@@ -1450,7 +1486,7 @@ read_next_val_config_file(val_context_t *ctx,
                           struct dnsval_list *dlist, 
                           struct dnsval_list **added_files,
                           struct policy_overrides **overrides,
-                          global_opt_t **g_opt)
+                          val_global_opt_t **g_opt)
 {
     int    fd = -1;
 #ifdef HAVE_FLOCK
@@ -1473,8 +1509,8 @@ read_next_val_config_file(val_context_t *ctx,
     int done;
     char *env = NULL;
 
-    if (ctx == NULL || label == NULL || dnsval_c == NULL || 
-        dlist == NULL || added_files == NULL || 
+    if (ctx == NULL || label == NULL || 
+        added_files == NULL || 
         overrides == NULL || g_opt == NULL)
         return VAL_BAD_ARGUMENT;
 
@@ -1483,14 +1519,19 @@ read_next_val_config_file(val_context_t *ctx,
     *added_files = NULL;
 
     next_label = *label;
-    
-    fd = open(dnsval_c->dnsval_conf, O_RDONLY);
+   
+    fd = -1;
+    if (dnsval_c != NULL && dlist != NULL) {
+        fd = open(dnsval_c->dnsval_conf, O_RDONLY);
+    }
+
     if (fd < 0) {
         val_log(ctx, LOG_ERR, 
                 "read_next_val_config_file(): Could not open validator conf file for reading: %s",
                 dnsval_c->dnsval_conf);
-        /* check if we have at least one file */
-        if (dnsval_c != dlist) {
+
+        /* check if we have read at least one file in the past */
+        if (dnsval_c && dlist && (dnsval_c != dlist)) {
             return VAL_NO_ERROR;
         }
         /* check if we have the validator policy available inline */
@@ -1581,7 +1622,7 @@ read_next_val_config_file(val_context_t *ctx,
                                              &include_seen))) {
             if (g_opt_seen) {
                 /* next policy fragment contains global options */ 
-                global_opt_t *gt_opt = NULL;
+                val_global_opt_t *gt_opt = NULL;
                 g_opt_seen = 0;
                 if (VAL_NO_ERROR != (retval =
                         get_global_options(&buf_ptr, end_ptr, 
@@ -1761,7 +1802,7 @@ read_next_val_config_file(val_context_t *ctx,
                 /*
                  * Store this fragment as an override, consume pol_frag 
                  */
-                store_policy_overrides(ctx, overrides, &pol_frag);
+                store_policy_overrides(overrides, &pol_frag);
                 pol_frag = NULL;
             }
             if (buf_ptr >= end_ptr) {
@@ -1811,40 +1852,43 @@ err:
 int
 read_val_config_file(val_context_t * ctx, char *scope)
 {
-    struct policy_overrides *overrides;
     struct policy_overrides *t;
-    char *base_dnsval_conf = NULL;
-    global_opt_t *g_opt = NULL;
-    struct dnsval_list *dlist = NULL;
     struct dnsval_list *dnsval_c;
     int             retval;
     char *label;
     char *newctxlab;
     struct val_query_chain *q;
     char *logtarget = NULL;
+    val_global_opt_t *g_opt = NULL;
+    struct dnsval_list *dlist = NULL;
+    struct policy_overrides *overrides = NULL;
    
     if (ctx == NULL)
         return VAL_BAD_ARGUMENT;
+
+    label = scope;
+
+    /*
+     * If our dynamic policies override existing policies
+     * we don't need to read any of the config files 
+     */
+    if ((ctx->dyn_polflags & CTX_DYN_POL_VAL_OVR) &&
+        (ctx->dyn_polflags & CTX_DYN_POL_GLO_OVR))
+        goto skipfileread;
     
-    if (ctx->dnsval_l && ctx->dnsval_l->dnsval_conf)
-        base_dnsval_conf = strdup(ctx->dnsval_l->dnsval_conf);
-    
-    if (base_dnsval_conf == NULL) 
-        return VAL_OUT_OF_MEMORY;
+    if (ctx->base_dnsval_conf == NULL) {
+        goto skipfileread;
+    }
    
     /* create a new head element for the dnsval.conf file list */
     dlist = (struct dnsval_list *) MALLOC (sizeof(struct dnsval_list));
     if (dlist == NULL) {
-        FREE(base_dnsval_conf);
         return VAL_OUT_OF_MEMORY;
     }
-    dlist->dnsval_conf = base_dnsval_conf;
+    dlist->dnsval_conf = strdup(ctx->base_dnsval_conf);
+    dlist->v_timestamp = 0;
     dlist->next = NULL; 
     dnsval_c = dlist;
-    label = scope;
-
-    overrides = NULL;
-    g_opt = NULL;
 
     while(dnsval_c) {
         struct dnsval_list *added_list = NULL;
@@ -1881,6 +1925,7 @@ read_val_config_file(val_context_t * ctx, char *scope)
         dnsval_c = dnsval_c->next;
     }
 
+skipfileread:
     newctxlab = NULL;
     if (label == NULL) {
         /*
@@ -1903,16 +1948,30 @@ read_val_config_file(val_context_t * ctx, char *scope)
 
     destroy_valpol(ctx);
 
-    /* Replace policies */
-    for (t = overrides; t != NULL; t = t->next) {
+    /* process overrides unless we want to override them */
+    if (!(ctx->dyn_polflags & CTX_DYN_POL_VAL_OVR)) {
+        /* Replace policies */
+        for (t = overrides; t != NULL; t = t->next) {
+            struct policy_list *c;
+            for (c = t->plist; c; c = c->next){
+                /* Override elements in e_pol[c->index] with what's in c->pol */
+                STORE_POLICY_ENTRY_IN_LIST(c->pol, ctx->e_pol[c->index]);
+            }
+        }
+    }
+
+    destroy_valpolovr(&overrides);
+
+    /* Apply any dynamic policies */
+    for (t = ctx->dyn_valpol; t != NULL; t = t->next) {
         struct policy_list *c;
         for (c = t->plist; c; c = c->next){
             /* Override elements in e_pol[c->index] with what's in c->pol */
             STORE_POLICY_ENTRY_IN_LIST(c->pol, ctx->e_pol[c->index]);
         }
     }
-    destroy_valpolovr(&overrides);
 
+    /* Process Global options */
     ctx->g_opt = g_opt;
 
     /* free up older log targets */
@@ -1923,15 +1982,28 @@ read_val_config_file(val_context_t * ctx, char *scope)
     }
     ctx->val_log_targets = NULL;
     
-    /* enable logging */
-    if (g_opt && g_opt->log_target) {
-        val_log_add_optarg_to_list(&ctx->val_log_targets, g_opt->log_target, 1);
+    /* enable logging as specified by global options */
+    if (ctx->g_opt && ctx->g_opt->log_target) {
+        val_log_add_optarg_to_list(&ctx->val_log_targets, ctx->g_opt->log_target, 1);
     }
-
+    /* enable logging as specified by dynamic policy */
+    if (ctx->dyn_valpolopt && ctx->g_opt->log_target) {
+        val_log_add_optarg_to_list(&ctx->val_log_targets,
+                ctx->dyn_valpolopt->log_target, 1);
+    }
     /* set the log target from environment */
     logtarget = getenv(VAL_LOG_TARGET);
     if (logtarget) {
         val_log_add_optarg_to_list(&ctx->val_log_targets, logtarget, 1);
+    }
+
+    /* 
+     * Merge other dynamic global options into the context 
+     */
+    if (ctx->dyn_valpolopt) {
+        if (VAL_NO_ERROR != 
+                (retval = update_dynamic_gopt(&ctx->g_opt, ctx->dyn_valpolopt)))
+            goto err;
     }
 
     /* 
@@ -2056,11 +2128,11 @@ int
 read_res_config_file(val_context_t * ctx)
 {
     char           *resolv_config;
-    int             fd;
 #ifdef HAVE_FLOCK
     struct flock    fl;
 #endif
     char            token[TOKEN_MAX];
+    int             fd = -1;
     int             line_number = 0;
     int             endst = 0;
     struct name_server *ns_head = NULL;
@@ -2077,7 +2149,20 @@ read_res_config_file(val_context_t * ctx)
     if (ctx == NULL)
         return VAL_BAD_ARGUMENT;
 
-    fd = -1;
+    /*
+     * Use any dynamic resolver policy that we may have
+     */
+    if (ctx->dyn_nslist) {
+        clone_ns_list(&ns_head, ctx->dyn_nslist);
+        ns = ns_head;
+        while (ns) {
+            ns_tail = ns;
+            ns = ns->ns_next;
+        }
+    }
+    if (ctx->dyn_polflags & CTX_DYN_POL_RES_OVR) {
+        goto done;
+    }
 
     resolv_config = ctx->resolv_conf;
     if (resolv_config) {
@@ -2114,7 +2199,7 @@ read_res_config_file(val_context_t * ctx)
             goto err;
         } 
         if (0 == sb.st_size)
-            goto empty;
+            goto done;
 
         mtime = sb.st_mtime;
         bufsize = sb.st_size;
@@ -2143,11 +2228,11 @@ read_res_config_file(val_context_t * ctx)
             val_log(ctx, LOG_ERR, "read_res_config_file(): Could not open resolver conf file for reading: %s",
                     resolv_config);
 
-        /* Try to read any inline root.hints information */
+        /* Try to read any inline resolv.conf information */
         mtime = 0;
         bufsize = sizeof(resolv_conf_inline_buf);
         if (!strncmp(resolv_conf_inline_buf, "", sizeof(""))) {
-            goto empty;
+            goto done;
         }
         val_log(ctx, LOG_INFO, 
                 "read_res_config_file(): Using inline resolv.conf data");
@@ -2255,7 +2340,7 @@ read_res_config_file(val_context_t * ctx)
 
     FREE(buf);
 
-  empty:
+  done:
 
     /*
      * Check if we have root hints 

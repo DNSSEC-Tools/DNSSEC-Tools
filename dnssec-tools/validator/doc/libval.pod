@@ -105,9 +105,9 @@ In querying various name servers, libsres will also attempt multiple EDNS0
 sizes, ending with a query that has EDNS0 disabled (i.e. no CD bit set).
 This option causes libval to disable EDNS0 fallback for the query.
 
-=item B<VAL_QUERY_RECURSE>
+=item B<VAL_QUERY_ITERATE>
 
-forces libval to recursively answer the query by iteratively querying
+forces libval to iteratively answer the query by querying
 various name servers in the delegation hierarchy, instead of
 requesting this information from
 any caching name server that may be configured in B<dnsval.conf>

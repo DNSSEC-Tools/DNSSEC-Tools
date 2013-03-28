@@ -494,7 +494,7 @@ values are implementation-specific: </t>
    If this flag is specified, this name MUST be resolved through
    the asynchronous lookup process (see <xref target="val-async"/>). </t>
 
-<t hangText="VAL_QUERY_RECURSE:">
+<t hangText="VAL_QUERY_ITERATE:">
    If this flag is specified, the name MUST be looked up by 
    directly querying the authoritative name server for that name (which may
    involve iteratively querying various name servers in the delegation hierarchy)
@@ -958,7 +958,7 @@ int val_async_select_info(val_context_t *context,
       any pending asynchronous query timeout which is less than the
       current value in timeout.</t>
 
-      <t>After the application call select, val_async_check_wait() (see
+      <t>After the application calls select, val_async_check_wait() (see
       <xref target="val_async_check_wait"/>) should be called with the
       fd_set and number of ready file descriptors returned by select.
       Example code is provided in
@@ -997,7 +997,7 @@ int val_async_check_wait(val_context_t *ctx, fd_set *fds,
       </t>
       <t>val_async_check_wait() SHOULD return an appropriate negative
       integer error code on error, a 0 when no pending requests are
-      found and a positive integer when requests are still pending</t>
+      found and a positive integer when requests are still pending.</t>
       <t>Example code is provided in
       <xref target="Asynchronous API Example Code"/>.</t>
     </section>  <!-- x.1.3 val_async_check -->
