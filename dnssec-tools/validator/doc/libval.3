@@ -124,7 +124,7 @@
 .\" ========================================================================
 .\"
 .IX Title "libval 3"
-.TH libval 3 "2013-03-22" "perl v5.12.4" "Programmer's Manual"
+.TH libval 3 "2013-03-29" "perl v5.12.4" "Programmer's Manual"
 .\" For nroff, turn off justification.  Always turn off hyphenation; it makes
 .\" way too many mistakes in technical documents.
 .if n .ad l
@@ -158,6 +158,10 @@ val_log_add_optarg \- control log message verbosity and output location
 \&  #include <validator.h>
 \&
 \&  int val_create_context(const char *label, val_context_t **newcontext);
+\&
+\&  int val_create_context_ex(char *label, 
+\&                            val_context_opt_t *opt, 
+\&                            val_context_t ** newcontext);
 \&
 \&  int val_context_setqflags(val_context_t *context, 
 \&                            unsigned char action, 
@@ -249,6 +253,106 @@ resolver (see \fI\fIdnsval.conf\fI\|(3)\fR). These defaults may be different if
 any other value was specified at library configure time. If the default 
 resolver configuration file is not found at the specified location, libval
 will also try to fallback to /etc/resolv.conf as a last resort.
+.PP
+Applications may also create validator context with a custom policy 
+using the \fI\fIval_create_context_ex()\fI\fR function.
+.PP
+The \fIopt\fR argument in \fI\fIval_create_context_ex()\fI\fR points to the
+following structure.
+.PP
+.Vb 10
+\&    typedef struct val_context_opt {
+\&        unsigned int vc_qflags;
+\&        unsigned int vc_polflags;
+\&        char *vc_valpol;
+\&        char *vc_nslist;
+\&        char *vc_val_conf;
+\&        char *vc_res_conf;
+\&        char *vc_root_conf;
+\&        val_global_opt_t *gopt, 
+\&    } val_context_opt_t;
+.Ve
+.PP
+vc_qflags specify the default query flags for queries associated with
+the context. This field is identical to the \fIflags\fR argument in the
+\&\fI\fIval_resolve_and_check()\fI\fR function.
+.PP
+The vc_val_conf, vc_res_conf and vc_root_conf fields can be used to
+specify alternative configuration files in place of the default files
+used for the validator, resolver and root hints configuration
+information.
+.PP
+The vc_valpol field can be used to supply a custom validator
+configuration \*(L"snippet\*(R" to the validator. The validator parses this
+information and applies it to the default validator configuration either
+as an extension or as an override, as specified by the vc_polflags
+field. The vc_nslist field, similarly, can be used to supply a custom
+list of recursive name servers to send queries to, in addition (or in
+place of) the list of name servers specified in the \fBresolv.conf\fR file.
+The list of name servers in vc_res_conf must be specified as a
+white-space delimited list of \s-1IP\s0 or IPv6 addresses.
+.PP
+vc_polflags can be configured with the following values:
+.IP "\fB\s-1CTX_DYN_POL_VAL_OVR\s0\fR" 4
+.IX Item "CTX_DYN_POL_VAL_OVR"
+When this flag is set only the validator configuration specified in the
+vc_valpol field is used for the validator configuration. Options
+specified in the dnsval.conf file are ignored.
+.IP "\fB\s-1CTX_DYN_POL_RES_OVR\s0\fR" 4
+.IX Item "CTX_DYN_POL_RES_OVR"
+When this flag is set only the name servers specified in the
+vc_nslist field is used for the resolver configuration. Options
+specified in the resolv.conf file are ignored.
+.IP "\fB\s-1CTX_DYN_POL_GLO_OVR\s0\fR" 4
+.IX Item "CTX_DYN_POL_GLO_OVR"
+When this flag is set only the global options set in gopt field are
+used. Global options specified in the dnsval.conf file are ignored.
+.IP "\fB\s-1CTX_DYN_POL_RES_NRD\s0\fR" 4
+.IX Item "CTX_DYN_POL_RES_NRD"
+When this flag is set outgoing queries have the Recursion Desired (\s-1RD\s0)
+bit set to 0. This is useful if queries need to be sent to an
+authoritative-only name server.
+.PP
+The \fIgopt\fR field points to the following structure:
+.PP
+.Vb 9
+\&    typedef struct val_global_opt {
+\&        int local_is_trusted;
+\&        long edns0_size;
+\&        int env_policy;
+\&        int app_policy;
+\&        char *log_target;
+\&        int closest_ta_only;
+\&        int rec_fallback;
+\&    } val_global_opt_t;
+.Ve
+.PP
+Setting a value of 1 for local_is_trusted is equivalent to specifying the
+\&\fBtrust-oob-answers\fR option in the \fIdnsval.conf\fR file to \fByes\fR. 
+Similarly, setting the closest_ta_only and rec_fallback
+members to 1 is equivalent to setting the closest-ta-only
+and rec-fallback options to \fByes\fR in the \fBdnsval.conf\fR file. 
+A value of 0 is equivalent to the \fBno\fR setting for these option.
+.PP
+Setting the edns0_size member to a particular value is identical to
+setting the \fBedns0\-size\fR ption in the dnsval.conf file.
+.PP
+env_policy and app_policies can be set to one of \s-1VAL_POL_GOPT_DISABLE\s0,
+\&\s-1VAL_POL_GOPT_ENABLE\s0 or \s-1VAL_POL_GOPT_OVERRIDE\s0, which
+correspond directly with the \fBdisable\fR, \fBenable\fR and
+\&\fBoverride\fR options for the env-policy and app-policy settings
+in the \fBdnsval.conf\fR file.
+.PP
+Values of \-1 for the above fields are treated as \*(L"ignore\*(R" conditions
+in that the validator will not include dynamically supplied global
+options with a value of \-1 when creating its context. This allows an
+application to overriding a subset of global options while using the
+global options supplied in the \fBdnsval.conf\fR file by default.
+.PP
+The log_target field enables the application to supply log targets 
+\&\fIin additions\fR to the ones configured in the configuration file.
+.PP
+See \fI\fIdnsval.conf\fI\|(3)\fR for more details on specifying validator policy.
 .PP
 Default query flags can be set and unset for a given context using 
 \&\fI\fIval_context_setqflags()\fI\fR. This allows an application to alter the 

@@ -32,6 +32,10 @@ I<val_log_add_optarg> - control log message verbosity and output location
 
   int val_create_context(const char *label, val_context_t **newcontext);
 
+  int val_create_context_ex(char *label, 
+                            val_context_opt_t *opt, 
+                            val_context_t ** newcontext);
+
   int val_context_setqflags(val_context_t *context, 
                             unsigned char action, 
                             unsigned int flags);
@@ -136,6 +140,115 @@ resolver (see I<dnsval.conf(3)>). These defaults may be different if
 any other value was specified at library configure time. If the default 
 resolver configuration file is not found at the specified location, libval
 will also try to fallback to /etc/resolv.conf as a last resort.
+
+Applications may also create validator context with a custom policy 
+using the I<val_create_context_ex()> function. 
+
+The I<opt> argument in I<val_create_context_ex()> points to the
+following structure.
+
+    typedef struct val_context_opt {
+        unsigned int vc_qflags;
+        unsigned int vc_polflags;
+        char *vc_valpol;
+        char *vc_nslist;
+        char *vc_val_conf;
+        char *vc_res_conf;
+        char *vc_root_conf;
+        val_global_opt_t *gopt, 
+    } val_context_opt_t;
+
+
+vc_qflags specify the default query flags for queries associated with
+the context. This field is identical to the I<flags> argument in the
+I<val_resolve_and_check()> function.
+
+The vc_val_conf, vc_res_conf and vc_root_conf fields can be used to
+specify alternative configuration files in place of the default files
+used for the validator, resolver and root hints configuration
+information.
+
+The vc_valpol field can be used to supply a custom validator
+configuration "snippet" to the validator. The validator parses this
+information and applies it to the default validator configuration either
+as an extension or as an override, as specified by the vc_polflags
+field. The vc_nslist field, similarly, can be used to supply a custom
+list of recursive name servers to send queries to, in addition (or in
+place of) the list of name servers specified in the B<resolv.conf> file.
+The list of name servers in vc_res_conf must be specified as a
+white-space delimited list of IP or IPv6 addresses.
+
+vc_polflags can be configured with the following values:
+
+=over 4
+
+=item B<CTX_DYN_POL_VAL_OVR> 
+
+When this flag is set only the validator configuration specified in the
+vc_valpol field is used for the validator configuration. Options
+specified in the dnsval.conf file are ignored. 
+
+=item B<CTX_DYN_POL_RES_OVR> 
+
+When this flag is set only the name servers specified in the
+vc_nslist field is used for the resolver configuration. Options
+specified in the resolv.conf file are ignored. 
+
+=item B<CTX_DYN_POL_GLO_OVR> 
+
+When this flag is set only the global options set in gopt field are
+used. Global options specified in the dnsval.conf file are ignored.
+
+=item B<CTX_DYN_POL_RES_NRD> 
+
+When this flag is set outgoing queries have the Recursion Desired (RD)
+bit set to 0. This is useful if queries need to be sent to an
+authoritative-only name server.
+
+=back
+
+
+
+
+The I<gopt> field points to the following structure:
+
+    typedef struct val_global_opt {
+        int local_is_trusted;
+        long edns0_size;
+        int env_policy;
+        int app_policy;
+        char *log_target;
+        int closest_ta_only;
+        int rec_fallback;
+    } val_global_opt_t;
+
+Setting a value of 1 for local_is_trusted is equivalent to specifying the
+B<trust-oob-answers> option in the I<dnsval.conf> file to B<yes>. 
+Similarly, setting the closest_ta_only and rec_fallback
+members to 1 is equivalent to setting the closest-ta-only
+and rec-fallback options to B<yes> in the B<dnsval.conf> file. 
+A value of 0 is equivalent to the B<no> setting for these option.
+
+Setting the edns0_size member to a particular value is identical to
+setting the B<edns0-size> ption in the dnsval.conf file.
+
+env_policy and app_policies can be set to one of VAL_POL_GOPT_DISABLE,
+VAL_POL_GOPT_ENABLE or VAL_POL_GOPT_OVERRIDE, which
+correspond directly with the B<disable>, B<enable> and
+B<override> options for the env-policy and app-policy settings
+in the B<dnsval.conf> file.
+
+Values of -1 for the above fields are treated as "ignore" conditions
+in that the validator will not include dynamically supplied global
+options with a value of -1 when creating its context. This allows an
+application to overriding a subset of global options while using the
+global options supplied in the B<dnsval.conf> file by default.
+
+The log_target field enables the application to supply log targets 
+I<in additions> to the ones configured in the configuration file.
+
+
+See I<dnsval.conf(3)> for more details on specifying validator policy.
 
 Default query flags can be set and unset for a given context using 
 I<val_context_setqflags()>. This allows an application to alter the 
