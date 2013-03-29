@@ -191,6 +191,8 @@ SV *rrset_c2sv(struct val_rrset_rec *rrs_ptr)
   SV *rrset_hv_ref = &PL_sv_undef;
   AV *rrs_av;
   SV *rrs_av_ref;
+  HV *rr_hv;
+  SV *rr_hv_ref;
   struct val_rr_rec *rr;
 
   if (rrs_ptr) {
@@ -201,14 +203,19 @@ SV *rrset_c2sv(struct val_rrset_rec *rrs_ptr)
     rrs_av_ref = newRV_noinc((SV*)rrs_av);
 
     for (rr = rrs_ptr->val_rrset_data; rr; rr = rr->rr_next) {
-      av_push(rrs_av, 
+      rr_hv = newHV();
+      rr_hv_ref = newRV_noinc((SV*)rr_hv);
+      (void)hv_store(rr_hv, "rrdata", strlen("rrdata"), 
 	      rr_c2sv(rrs_ptr->val_rrset_name,
 		      rrs_ptr->val_rrset_type,
 		      rrs_ptr->val_rrset_class,
 		      rrs_ptr->val_rrset_ttl,
 		      rr->rr_rdata_length,
-		      rr->rr_rdata)
-	      );
+		      rr->rr_rdata), 0);
+
+      (void)hv_store(rr_hv, "rrstatus", strlen("rrstatus"),
+              newSViv(rr->rr_status),0);
+      av_push(rrs_av, rr_hv_ref);
     }
 
     (void)hv_store(rrset_hv, "data", strlen("data"), rrs_av_ref, 0);
