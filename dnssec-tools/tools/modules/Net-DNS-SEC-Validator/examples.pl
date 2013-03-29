@@ -25,7 +25,7 @@ foreach $h (@$a) {
            "result is NOT trusted\n");
 
    $ac = ${$h}{answer}; 
-   do {
+   while ($ac) {
         print "AC status: " . ${$ac}{status} . "\n";
         $acr = ${$ac}{rrset};
         $acd = ${$acr}{data};
@@ -39,7 +39,7 @@ foreach $h (@$a) {
 #            ${$d}{rrdata}->print;
         }
         $ac = ${$ac}{trust};
-   } while ($ac);
+   } 
 }
 
 
