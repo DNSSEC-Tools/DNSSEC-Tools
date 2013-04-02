@@ -191,6 +191,8 @@ SV *rrset_c2sv(struct val_rrset_rec *rrs_ptr)
   SV *rrset_hv_ref = &PL_sv_undef;
   AV *rrs_av;
   SV *rrs_av_ref;
+  HV *rr_hv;
+  SV *rr_hv_ref;
   struct val_rr_rec *rr;
 
   if (rrs_ptr) {
@@ -201,14 +203,19 @@ SV *rrset_c2sv(struct val_rrset_rec *rrs_ptr)
     rrs_av_ref = newRV_noinc((SV*)rrs_av);
 
     for (rr = rrs_ptr->val_rrset_data; rr; rr = rr->rr_next) {
-      av_push(rrs_av, 
+      rr_hv = newHV();
+      rr_hv_ref = newRV_noinc((SV*)rr_hv);
+      (void)hv_store(rr_hv, "rrdata", strlen("rrdata"), 
 	      rr_c2sv(rrs_ptr->val_rrset_name,
 		      rrs_ptr->val_rrset_type,
 		      rrs_ptr->val_rrset_class,
 		      rrs_ptr->val_rrset_ttl,
 		      rr->rr_rdata_length,
-		      rr->rr_rdata)
-	      );
+		      rr->rr_rdata), 0);
+
+      (void)hv_store(rr_hv, "rrstatus", strlen("rrstatus"),
+              newSViv(rr->rr_status),0);
+      av_push(rrs_av, rr_hv_ref);
     }
 
     (void)hv_store(rrset_hv, "data", strlen("data"), rrs_av_ref, 0);
@@ -217,17 +224,22 @@ SV *rrset_c2sv(struct val_rrset_rec *rrs_ptr)
     rrs_av_ref = newRV_noinc((SV*)rrs_av);
 
     for (rr = rrs_ptr->val_rrset_sig; rr; rr = rr->rr_next) {
-      av_push(rrs_av, 
+      rr_hv = newHV();
+      rr_hv_ref = newRV_noinc((SV*)rr_hv);
+      (void)hv_store(rr_hv, "rrdata", strlen("rrdata"), 
 	      rr_c2sv(rrs_ptr->val_rrset_name,
-		      ns_t_rrsig,
+		      rrs_ptr->val_rrset_type,
 		      rrs_ptr->val_rrset_class,
 		      rrs_ptr->val_rrset_ttl,
 		      rr->rr_rdata_length,
-		      rr->rr_rdata)
-	      );
+		      rr->rr_rdata), 0);
+
+      (void)hv_store(rr_hv, "rrstatus", strlen("rrstatus"),
+              newSViv(rr->rr_status),0);
+      av_push(rrs_av, rr_hv_ref);
     }
 
-    (void)hv_store(rrset_hv, "sigs", strlen("s"), rrs_av_ref, 0);
+    (void)hv_store(rrset_hv, "sigs", strlen("sigs"), rrs_av_ref, 0);
   }
 
   return rrset_hv_ref;
@@ -440,27 +452,14 @@ pval_create_context_ex(optref)
 	CODE:
 	{
 	ValContext *vc_ptr=NULL;
-    ValContextGlOpt gopt;
     ValContextOpt opt;
+    ValContextGlOpt gopt;
     char *label;
+
 
     // Find the policy label
     SV **label_svp = hv_fetch((HV*)SvRV(optref), "policy", 6, 1);
     label = (SvOK(*label_svp) ? SvPV_nolen(*label_svp) : NULL);
-
-    // Global options
-    SV **local_is_trusted_svp = hv_fetch((HV*)SvRV(optref), "local_is_trusted", 16, 1);
-    gopt.local_is_trusted = (SvOK(*local_is_trusted_svp) ?  SvIV(*local_is_trusted_svp) : -1);
-    SV **edns0_size_svp = hv_fetch((HV*)SvRV(optref), "edns0_size", 10, 1);
-    gopt.edns0_size = (SvOK(*edns0_size_svp) ? SvIV(*edns0_size_svp) : -1);
-    SV **log_target_svp = hv_fetch((HV*)SvRV(optref), "log_target", 10, 1);
-    gopt.log_target = (SvOK(*log_target_svp) ? SvPV_nolen(*log_target_svp) : NULL);
-    SV **closest_ta_only_svp = hv_fetch((HV*)SvRV(optref), "closest_ta_only", 15, 1);
-    gopt.closest_ta_only = (SvOK(*closest_ta_only_svp) ?  SvIV(*closest_ta_only_svp) : -1);
-    SV **rec_fallback_svp = hv_fetch((HV*)SvRV(optref), "rec_fallback", 12, 1);
-    gopt.rec_fallback = (SvOK(*rec_fallback_svp) ?  SvIV(*rec_fallback_svp) : -1);
-    gopt.env_policy = 0;
-    gopt.app_policy = 0;
 
     // Context options
     SV **vc_qflags_svp = hv_fetch((HV*)SvRV(optref), "qflags", 6, 1);
@@ -479,8 +478,25 @@ pval_create_context_ex(optref)
     SV **root_conf_svp = hv_fetch((HV*)SvRV(optref), "root_hints", 10, 1);
     opt.vc_root_conf = (SvOK(*root_conf_svp) ?  SvPV_nolen(*root_conf_svp) : NULL);
 
+    // Global options
+    SV **local_is_trusted_svp = hv_fetch((HV*)SvRV(optref), "local_is_trusted", 16, 1);
+    gopt.local_is_trusted = (SvOK(*local_is_trusted_svp) ?  SvIV(*local_is_trusted_svp) : -1);
+    SV **edns0_size_svp = hv_fetch((HV*)SvRV(optref), "edns0_size", 10, 1);
+    gopt.edns0_size = (SvOK(*edns0_size_svp) ? SvIV(*edns0_size_svp) : -1);
+    SV **env_policy_svp = hv_fetch((HV*)SvRV(optref), "env_policy", 10, 1);
+    gopt.env_policy = (SvOK(*env_policy_svp) ? SvIV(*env_policy_svp) : -1);
+    SV **app_policy_svp = hv_fetch((HV*)SvRV(optref), "app_policy", 10, 1);
+    gopt.app_policy = (SvOK(*app_policy_svp) ? SvIV(*app_policy_svp) : -1);
+    SV **log_target_svp = hv_fetch((HV*)SvRV(optref), "log_target", 10, 1);
+    gopt.log_target = (SvOK(*log_target_svp) ? SvPV_nolen(*log_target_svp) : NULL);
+    SV **closest_ta_only_svp = hv_fetch((HV*)SvRV(optref), "closest_ta_only", 15, 1);
+    gopt.closest_ta_only = (SvOK(*closest_ta_only_svp) ?  SvIV(*closest_ta_only_svp) : -1);
+    SV **rec_fallback_svp = hv_fetch((HV*)SvRV(optref), "rec_fallback", 12, 1);
+    gopt.rec_fallback = (SvOK(*rec_fallback_svp) ?  SvIV(*rec_fallback_svp) : -1);
+
+    opt.vc_gopt = &gopt;
+
 	int result = val_create_context_ex(label, 
-                          &gopt,
                           &opt,
 						  &vc_ptr);
 	//	fprintf(stderr,"pval_create_context_with_confresult=%d):%lx\n",result,vc_ptr);

@@ -143,8 +143,9 @@ $validator->resolve_and_check(<name>[, <class>[, <type> [, <flags>]]])
 	auth_chain = {status, <rrset>, <trust>}
 	trust = <auth_chain>
 	rrset = {<data>, <sigs>}
-	data = [Net::DNS::RR, ...]
-	sigs = [Net::DNS::RR, ...]
+	data = {rrstatus, <rrdata>}  
+	sigs = {rrstatus, <rrdata>}  
+    rrdata = [Net::DNS::RR, ...]
 
 	On error undef will be returned and validator
 	object error/errorStr fields are updated.

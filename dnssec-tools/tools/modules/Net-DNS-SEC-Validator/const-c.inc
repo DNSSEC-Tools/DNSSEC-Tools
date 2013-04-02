@@ -1132,6 +1132,15 @@ constant_19 (pTHX_ const char *name, IV *iv_return) {
       return PERL_constant_NOTDEF;
 #endif
     }
+    if (memEQ(name, "CTX_DYN_POL_GLO_OVR", 19)) {
+    /*                          ^              */
+#ifdef VAL_NOT_IMPLEMENTED
+      *iv_return = VAL_NOT_IMPLEMENTED;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
     break;
   case 'O':
     if (memEQ(name, "VAL_AS_CB_COMPLETED", 19)) {
