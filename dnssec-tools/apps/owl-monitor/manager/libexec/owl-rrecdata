@@ -18,6 +18,7 @@
 # Revision History
 #	2.0	Initial version.				3/15/2013
 #		This was adapted from the owl-dnstimer plugin.
+#	2.0.1	Added history recording.			4/01/2013
 #
 
 use strict;
@@ -31,7 +32,7 @@ use File::Path;
 # Version information.
 #
 my $NAME   = "owl-rredata";
-my $VERS   = "$NAME version: 2.0.0";
+my $VERS   = "$NAME version: 2.0.1";
 my $DTVERS = "DNSSEC-Tools version: 2.0";
 
 #######################################################################
@@ -53,19 +54,17 @@ my $sub_hist = 'history';		# Subdirectory for history data.
 
 my $OWLDATA	= "$OWLDIR/data";	# Owl DNS resource-record data dir.
 
+my $datadir;				# Data directory.
+
 my $hist_rrdata	= 'rrdata';		# History file for rrdata data.
 
 my $historydir;				# History data directory.
-my $datadir;				# Data directory.
+my $histfile;				# History file for this triad.
+my $writehist = 0;			# Write-history-file flag.
 
-#
-# Array indices into history file's data.
-#
-my $LASTSVC  = 0;
-my $LASTFILE = 1;
-my $LASTTIME = 2;
+my $nohist = 1;				# History file not-found flag.
 
-my $nohist = 1;					# History file not-found flag.
+my @history = ();			# Contents of history file.
 
 #######################################################################
 #
@@ -77,8 +76,23 @@ my $RC_CRITICAL	= 2;		# Critical return code.
 my $RC_UNKNOWN	= 3;		# Unknown return code.
 
 
-my $WARNING_THRESHOLD  = 0;	# Warning threshold for averaged errors.
-my $CRITICAL_THRESHOLD = 9;	# Critical threshold for averaged errors.
+#
+# Thresholds for changed DNS resource-record data.
+#
+# These are calculated as days, but this may be adjusted as desired.
+# The greater the unit, the longer the changed condition will be visible
+# on the Nagios display.
+#
+#
+my $MINUTESECONDS = 60;				# Seconds in a minute.
+my $HOURSECONDS	  = 3600;			# Seconds in an hour.
+my $DAYSECONDS	  = 86400;			# Seconds in a day.
+my $WEEKSECONDS	  = 604800;			# Seconds in a week.
+
+my $UNITS = $DAYSECONDS;
+
+my $WARNING_THRESHOLD  = (5 * $UNITS);		# Warning threshold.
+my $CRITICAL_THRESHOLD = (1 * $UNITS);		# Critical threshold.
 
 ######################################################################r
 #
@@ -87,44 +101,34 @@ my $CRITICAL_THRESHOLD = 9;	# Critical threshold for averaged errors.
 my %options = ();			# Filled option array.
 my @opts =
 (
+	'warning=i',			# Warning threshold.
+	'critical=i',			# Critical threshold.
+	'nohistory',			# Don't save history information.
 	'paths',			# Display the paths.
 	'Version',			# Display the version number.
 	'help',				# Give a usage message and exit.
 );
 
+my $warning = $WARNING_THRESHOLD;	# Warning threshold.
+my $critical = $CRITICAL_THRESHOLD;	# Critical threshold.
+my $savehist = 1;			# Save history.
+
 #######################################################################
 #
 # Data from command line.
 
-my $sensor = '';				# Owl sensor host.
-my $target = '';				# Target host.
-my $query = '';					# Type of DNS query.
+my $sensor = '';			# Owl sensor host.
+my $target = '';			# Target host.
+my $query = '';				# Type of DNS query.
 
-my $triad = '';					# Combination of arguments.
+my $triad = '';				# Combination of arguments.
 
 #######################################################################
 
 my $rc = $RC_UNKNOWN;			# Command's return code.
 my $outstr = '';			# Accumulated DNS response data.
 my $rrdata = '';			# Accumulated resource-record data.
-my $count  = 0;				# Count of response lines handled.
-my $errors = 0;				# Count of errors encountered.
-
-my $totalresp  = 0;			# Accumulated total response times.
-my $totalprobs = 0;			# Total count of reported problems.
-my $totaldrops = 0;			# Total count of drops.
-my $totalerrs  = 0;			# Total count of errors.
-
-#
-# If a particular sensor tries to update a large number of response entries
-# at a single time, the whole system could get bogged down.  Some Nagios
-# services might appear to be timing out and not returning data.  In order
-# to prevent a single sensor from consuming a huge amount of processor time,
-# we'll restrict the maximum number of entries we'll handle at a time.
-# This number isn't very large, but given the behavior seen so far, it should
-# be sufficient to allow things to catch up.  Eventually.
-
-my $MAXENTRIES = 20;
+my $querydata = '';			# Last valid entry.
 
 ################################################################################
 
@@ -147,6 +151,8 @@ sub main
 	my @fns = ();				# Filenames to check.
 	my @lasts = ();				# Last file and record checked.
 	my $lastfn = '';			# Last filename we checked.
+	my $lasttime = 0;			# Time of last history entry.
+	my $lastdata = '';			# Data from last history entry.
 	my $kronos;				# Last time checked.
 
 	#
@@ -160,45 +166,40 @@ sub main
 	getdirs(1);
 
 	#
-	# Get the last file and entry checked for this sensor/name server
-	# pair.
+	# Get the last file and entry checked for this sensor/target/query
+	# triad.
 	#
-	@lasts = getlast();
-	$lasts[$LASTFILE] = '' if(@lasts == 0);
+	($lasttime, $lastdata) = gethistory();
 
 	#
 	# Get the names of the files to check for response lines.
 	#
-	@fns = getfns($lasts[$LASTFILE]);
+	@fns = getfns();
 
 	#
-	# Get the DNS timer data for this triad from the recent files.
+	# Get the DNS resource-record data for this triad from the recent files.
 	#
 	foreach my $fn (@fns)
 	{
-		my $ret;			# This invocation's return.
-
-		($ret,$kronos) = rrecdata($fn,$lasts[$LASTTIME]);
-
-		$retcode = $ret if($ret != $RC_NORMAL);
-# print "$kronos:  $ret\t<$retcode>\n";
+		$kronos = rrecdata($fn,$lasttime);
 
 		#
 		# Save the last filename we examined.
 		#
 		$lastfn = $fn;
 
-		#
-		# Make sure we don't exceed the maximum number of entries
-		# we can handle at a time.
-		#
-		last if($count == $MAXENTRIES);
+		last if($kronos != 0);
 	}
+
+	#
+	# Figure out what our return code for Nagios will be.
+	#
+	$retcode = calcret($lasttime,$lastdata,$kronos);
 
 	#
 	# Write a line of data to Nagios.
 	#
-	nagiout($retcode);
+	nagiout($kronos,$retcode);
 
 	#
 	# We'll move to now if no final time was returned.
@@ -208,7 +209,7 @@ sub main
 	#
 	# Update the history file.
 	#
-#	updatehist($lastfn,$kronos);
+	updatehist("$kronos $querydata");
 
 	#
 	# Exit with the command's return code.
@@ -235,7 +236,30 @@ sub doopts
 	usage()     if(defined($options{'help'}));
 	showpaths() if(defined($options{'paths'}));
 
+	$warning  = $options{'warning'} if(defined($options{'warning'}));
+	$critical = $options{'critical'} if(defined($options{'critical'}));
+
+	$savehist = 0 if(defined($options{'nohistory'}));
+
 	usage() if(@ARGV != 3);
+
+	#
+	# Ensure the thresholds are not negative.
+	#
+	if(($warning < 0) || ($critical < 0))
+	{
+		print "thresholds must be zero or greater\n";
+		exit($RC_UNKNOWN);
+	}
+
+	#
+	# Ensure the warning threshold is greater than the critical threshold.
+	#
+	if(($warning < $critical) && ($warning > 0))
+	{
+		print "warning threshold ($warning) must be greater than critical threshold ($critical)\n";
+		exit($RC_UNKNOWN);
+	}
 
 	#
 	# Set a few parameters.
@@ -300,87 +324,62 @@ sub getdirs
 }
 
 #-----------------------------------------------------------------------------
-# Routine:	getlast()
+# Routine:	gethistory()
 #
-# Purpose:	Get the last file and entry for this sensor/service pair.
+# Purpose:	Get the history entries for this sensor/target/query pair.
+#		The sensor is implied by its presence in a particular hierarchy.
 #
-sub getlast
+sub gethistory
 {
-	my $lfn;				# Last file for this server.
-	my @lasts = ();				# Files matching this service.
-	my @lines;				# Lines in last file.
+	my $lastline;				# Last line in history file.
 
 	#
-	# Get the history file for this sensor.  
+	# Get the history file for this triad.
 	#
-	$lfn = "$historydir/$hist_rrdata";
+	$histfile = "$historydir/$hist_rrdata,$target,$query";
 
 	#
-	# If the history doesn't exist, we'll create it and return.
+	# If the history file doesn't exist, we'll create it and return.
 	#
-	if(! -e $lfn)
+	if(! -e $histfile)
 	{
-		open(LFN,">$lfn");
-		close(LFN);
-		return(@lasts);
+		open(HIST,">$histfile");
+		close(HIST);
+		return(0,'');
 	}
 
 	#
-	# Get the lines from the sensor's history file.
+	# Get the lines from this query's rrec history file.
 	#
-	open(LFN,"<$lfn");
-	flock(LFN,LOCK_EX);
-	@lines = <LFN>;
-	flock(LFN,LOCK_UN);
-	close(LFN);
+	open(HIST,"<$histfile");
+	flock(HIST,LOCK_EX);
+	@history = <HIST>;
+	flock(HIST,LOCK_UN);
+	close(HIST);
 
 	#
-	# Search the file contents to find the line for this service.
+	# Get the time from the last line in the query's history file.
 	#
-	foreach my $line (@lines)
-	{
-		chomp $line;
-		next if($line eq '');
-
-		$line =~ /(\S+)\s+(\S+)\s+(\S+)/;
-
-		#
-		# Grab some data if this is the server's line.
-		#
-		if($target eq $1)
-		{
-			$lasts[$LASTSVC]  = $1;
-			$lasts[$LASTFILE] = $2;
-			$lasts[$LASTTIME] = $3;
-			$nohist = 0;
-
-			last;
-		}
-	}
-
-	#
-	# Return whatever we found -- if anything.
-	#
-	return(@lasts);
+	$lastline = $history[-1];
+	$lastline =~ /^(\S+)\s+(.*)$/;
+	return($1,$2);
 }
 
 #-----------------------------------------------------------------------------
 # Routine:	getfns()
 #
-# Purpose:	Get the data files for this server needs to deal with.
+# Purpose:	Get the data files for this query triad.  The list of
+#		files is sorted and reversed before being returned.
 #
 sub getfns
 {
-	my $lfile = shift;			# Last file.
 	my @files;				# Files matching this service.
-	my @newfiles;				# Subset of files.
-	my $ind;				# Loop index.
 
 	#
 	# Get the list of extant files for this triad.  Give an unknown
 	# error if there aren't any.
 	#
-	@files = sort(glob("$datadir/*,$triad"));
+	@files = reverse(sort(glob("$datadir/*,$triad")));
 	if(@files == 0)
 	{
 		print "no data available for \"$triad\"|$outstr";
@@ -388,36 +387,9 @@ sub getfns
 	}
 
 	#
-	# If we didn't find a last file in the history file, we'll return
-	# the last file that matches this triad.
-	#
-	if($lfile eq '')
-	{
-		return($files[0]);
-	}
-
-	$lfile = "$lfile,$triad";
-
-	#
-	# Look for the last file accessed or the first one written after
-	# that file.
-	#
-	for($ind=0; $ind < @files; $ind++)
-	{
-		my @pathbits = split /\//, $files[$ind];
-		last if($pathbits[-1] ge $lfile);
-	}
-
-	#
-	# Get the latest files from the last accessed to the most recent
-	# written.
-	#
-	@newfiles = splice @files, $ind;
-
-	#
 	# Return the most recent file from our sorted list.
 	#
-	return(@newfiles);
+	return(@files);
 }
 
 #-----------------------------------------------------------------------------
@@ -435,7 +407,6 @@ sub rrecdata
 	my @lines;				# Files matching this service.
 	my $tempus;				# Timestamp to return.
 	my $rrtmp = '';				# Temporary rrec data.
-	my $rc = $RC_NORMAL;			# Return value.
 
 	#
 	# Open our data file.
@@ -443,7 +414,7 @@ sub rrecdata
 # print "rrecdata:  reading - <$fn>\n";
 	if(open(SF,"<$fn") == 0)
 	{
-		return($RC_NORMAL,'');
+		return(0);
 	}
 
 	#
@@ -456,7 +427,7 @@ sub rrecdata
 	# Return if the file is empty.  It isn't necessarily an error, so
 	# we won't complain.
 	#
-	return($RC_NORMAL,'') if(@lines == 0);
+	return(0) if(@lines == 0);
 
 	$lasttime = 0 if((!defined($lasttime)) || ($lasttime eq ''));
 
@@ -473,13 +444,7 @@ sub rrecdata
 		my $datalen;			# Length of rrec data.
 		my $rcnt = 0;			# Count of rrec data read.
 
-		#
-		# Make sure we don't exceed the maximum number of entries
-		# we can handle at a time.
-		#
-		last if($count == $MAXENTRIES);
-
-#    1349291568.73732 dnssec-tools.org A 0.011641979217529 0 142
+#    1349291568.73732 example.com A 0.011641979217529 0 142
 #    <142 bytes of data follow>
 
 # print "rrecdata:  $ind  line - <$line>\n";
@@ -496,36 +461,11 @@ sub rrecdata
 
 # print "rrecdata:  <$thost> <$qarg> <$resptime> <$errval> <$datalen>\n";
 		#
-		# Skip the line on a few conditions.
+		# Skip this line on a few conditions.
 		#
-		next if($errval eq 'UNANSWERED');
+		next if($errval ne 0);
 		next if($kronos eq '');
 		next if($lasttime ge $kronos);
-
-		#
-		# Convert the response time to milliseconds and make it a
-		# reasonable number.
-		#
-		$resptime *= 1000;
-		$resptime = sprintf("%.0f", $resptime);
-
-		#
-		# Keep a running total of response time, for later averaging.
-		#
-		$totalresp += $resptime;
-
-		#
-		# Add shtuff to the output string and bump our entry count.
-		#
-		if($nohist)
-		{
-			$outstr = "owl-rrdata=$resptime ms;";
-		}
-		else
-		{
-			$outstr = "owl-rrdata=$kronos:$resptime ms;";
-		}
-		$count++;
 
 		#
 		# If this entry has data to be read, we'll grab it and
@@ -537,13 +477,16 @@ sub rrecdata
 			# up to the end of the file.  However, we
 			# won't go past the data sent by the sensor.
 			#
-			$rrtmp = "$qarg RRec Data:  ";
+			$querydata = '';
 			for($ind++; $ind < @lines; $ind++)
 			{
-				$rrtmp .= $lines[$ind];
+				$querydata .= $lines[$ind];
 				$rcnt += length($lines[$ind]);
 				last if($rcnt >= $datalen);
 			}
+
+			$querydata = datamunch($querydata);
+			$rrtmp = "$qarg RRec Data:  $querydata";
 		}
 
 		#
@@ -552,43 +495,165 @@ sub rrecdata
 		$tempus = $kronos;
 	}
 
+	#
+	# Make sure there's *something* there...
+	#
+	$querydata = 'no resource-record data found' if($querydata eq '');
+
+	#
+	# Massage the query data a bit.
+	#
 	chomp $rrtmp;
 	$rrdata = $rrtmp;
 	$rrdata =~ s/\n/, /g if($qarg =~ /^ns$/i);
+	$querydata =~ s/\n/, /g;
+	$querydata =~ s/, $//g;
 
 	#
-	# Convert error codes into a Nagios value.
+	# Build the output string.
 	#
-	$rc = $RC_WARNING if($rc ne $RC_NORMAL);
+#	$outstr = "owl-rrdata=$kronos:$resptime ms;";
 
 	#
 	# Return the response data.
 	#
-	return($rc,$tempus);
+	return($tempus);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	datamunch()
+#
+# Purpose:	Manipulate the data, based on the resource record type.
+#
+#		A	Nothing is done to A record data.
+#		NS	The hosts in NS records are converted to lowercase,
+#			sorted, and joined into a space-separated string.
+#
+sub datamunch
+{
+	my $data = shift;			# Data to muck with.
+
+	if($query eq 'A')
+	{
+		# Don't do anything to A record data.
+	}
+	elsif($query eq 'NS')
+	{
+		my @servers;			# Array of nameservers.
+
+		@servers = split /[ \n]/, lc($data);
+		$data = join ' ', sort(@servers);
+	}
+
+	#
+	# Return our masticated data.
+	#
+	return($data);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	calcret()
+#
+# Purpose:	Figure out what exit code we're going to use.  This is based
+#		on the time since the last time the sensor provided different
+#		resource-record data for this query.
+#
+sub calcret
+{
+	my $lasttime = shift;			# Time of last history entry.
+	my $lastquery = shift;			# Data from last history entry.
+	my $kronos = shift;			# Time of this entry.
+	my $rc;					# Return code.
+	my $timediff;				# Time since last data change.
+
+	#
+	# If our history is a blank slate, then all is well.
+	# If this triad has a history, then we must look further...
+	#
+	if(@history == 0)
+	{
+		$timediff = 0;
+		$writehist = 1;
+	}
+	else
+	{
+		#
+		# If this current query response is different from the
+		# last query response, we'll calculate the difference on
+		# their times.
+		#
+		if($querydata ne $lastquery)
+		{
+			$timediff = $kronos - $lasttime;
+			$writehist = 1;
+		}
+		else
+		{
+			#
+			# If this current query response is the same as the
+			# last query response, but there aren't any others
+			# before that one, then all is well.
+			#
+			if(@history == 1)
+			{
+				$timediff = 0;
+			}
+			else
+			{
+				#
+				# If there are older responses still, then
+				# we'll calculate the times based on this
+				# query response and the second-last one.
+				#
+
+				$history[-2] =~ /^(\S+)\s+(.*)$/;
+
+				$timediff = $kronos - $1;
+			}
+		}
+	}
+
+	#
+	# Figure out what what exit code we're going to need.
+	#
+	if(($timediff <= $critical) && ($critical > 0))
+	{
+		$rc = $RC_CRITICAL;
+	}
+	elsif(($timediff <= $warning) && ($warning > 0))
+	{
+		$rc = $RC_WARNING;
+	}
+	else
+	{
+		$rc = $RC_NORMAL;
+	}
+
+	#
+	# If we aren't saving history, we'll always give a normal return.
+	#
+	$rc = $RC_NORMAL if($savehist == 0);
+
+	return($rc);
 }
 
 #-----------------------------------------------------------------------------
 # Routine:	nagiout()
 #
-# Purpose:	Generate a line of DNS timer output for Nagios.
+# Purpose:	Generate a line of DNS resource-record output for Nagios.
+#		The return code is added for graphing purposes.
+#		We want a non-zero normal code, so the line rises above
+#		the axis, and we're therefore incrementing the return code
+#		by 1.
 #
 sub nagiout
 {
+	my $kronos     = shift;			# Command's time of execution.
 	my $rc	     = shift;			# Command's return code.
 
-	$outstr =~ s/;$//g;
+	$rc++;
 
-	if($rc == $RC_NORMAL)
-	{
-		$totalresp /= $count if($count != 0);
-		$totalresp = sprintf("%.1f", $totalresp);
-
-		print "$rrdata|$outstr\n";
-	}
-	else
-	{
-		print "$totalprobs problems found|$outstr\n";
-	}
+	print "$rrdata|owl-rrecdata=$kronos:$rc;\n";
 }
 
 #-----------------------------------------------------------------------------
@@ -598,75 +663,29 @@ sub nagiout
 #
 sub updatehist
 {
-	my $file = shift;			# New last file.
-	my $kron = shift;			# New last time.
-
-	my $filetime;				# Time from file's name.
-	my @nodes;				# Nodes in new last file name.
-	my $lfn;				# Last file for this server.
-	my @lines;				# Lines in history file.
-	my $line;				# Line from @lines.
-	my $added = 0;				# Added-line flag.
+	my $newentry = shift;			# New entry for history file.
 
 	#
-	# Do nothing if we found nothing.
+	# Don't update the history file if nothing's changed.
 	#
-	return if($count == 0);
+	return if(($writehist == 0) || ($savehist == 0));
 
 	#
-	# Get the node of the new history file.
+	# Open and lock this triad's history file.
 	#
-	@nodes = split '/', $file;
-	$file = $nodes[-1];
+	open(HIST,">> $histfile");
+	flock(HIST,LOCK_EX);
 
 	#
-	# Get the timestamp from the last file's name.
+	# Write the new entry.
 	#
-	$file =~ /^([0-9]+\.[0-9]+),/;
-	$filetime = $1;
+	print HIST "$newentry\n";
 
 	#
-	# Get the history file for this sensor.  
+	# Unlock and close the history file.
 	#
-	$lfn = "$historydir/$hist_rrdata";
-
-	#
-	# Open and lock the sensor's history file.
-	#
-	open(LFN,"+<$lfn");
-	flock(LFN,LOCK_EX);
-
-	#
-	# Read the file's contents and then zap it.
-	#
-	@lines = <LFN>;
-	seek LFN, 0, 0;
-	truncate LFN, 0;
-
-	#
-	# Copy the old contents to the file, replacing the appropriate line.
-	#
-	foreach $line (@lines)
-	{
-		if($line =~ /^$target/)
-		{
-			$line = "$target\t$filetime\t$kron\n";
-			$added++;
-		}
-
-		print LFN "$line";
-	}
-
-	if($added == 0)
-	{
-		print LFN "$target\t$filetime,$triad\t$kron\n";
-	}
-
-	#
-	# Unlock and close the file.
-	#
-	flock(LFN,LOCK_UN);
-	close(LFN);
+	flock(HIST,LOCK_UN);
+	close(HIST);
 
 }
 
@@ -686,6 +705,7 @@ sub showpaths
 	print "Owl directory		$OWLDATA\n";
 	print "Owl data directory	$datadir\n";
 	print "Owl history directory	$historydir\n";
+	print "Owl history file     	$histfile\n";
 
 	exit(0);
 }
@@ -713,9 +733,12 @@ This script retrieves the DNS resource-record data gathered by a Owl sensor.
 
 usage:  owl-rrecdata [options] <sensor> <target> <rrec-type>
 	options:
-		-paths          display paths to be used
-		-Version        display program version
-		-help           display this message
+		-warning <num>     warning threshold (in seconds)
+		-critical <num>    critical threshold (in seconds)
+		-nohistory         do not save history
+		-paths             display paths to be used
+		-Version           display program version
+		-help              display this message
 
 ";
 
@@ -768,7 +791,37 @@ The most recent file whose I<servicename> matches the service name given on
 the command line will be consulted.  The DNS response data will be taken from
 the last entry in that file.
 
+Thresholds for the critical state and the warning state may be specified.
+These are only triggered if the current DNS resource record data has changed
+from the previous execution of B<owl-rrecdata>.  These thresholds are measured
+from the time of the last change in the specified DNS resource record data to
+the time of the current changed record.  If the difference in times is
+between zero and the critical threshold, that entry is in a critical state.
+If the difference in times is between the critical and warning thresholds,
+then the entry is in a warning state.  If the time difference exceeds the
+warning threshold, then the entry reverts to the normal state.  This
+automatic reduction in states assumes that as time passes, the administrators
+will handle the condition as required.  Graphs can be defined in Nagios that
+show the occurrence and frequency of state changes in DNS data.
+
+Both the warning threshold and the critical threshold can be disabled, in
+case the local installation only wants one particular type of state for
+tracking changes in DNS resource records.  If both thresholds are disabled, 
+then these entries will always appear to be normal; graphing such data will
+never show a change.
+
 B<owl-rrecdata> is expected to only be run by the Nagios monitoring system.
+
+=head1 RECORD-SPECIFIC PROCESSING
+
+Before passing the resource-record data to Nagios, B<owl-rrecdata> can modify
+the data as required.  The following data manipulations are performed:
+
+    resource-record type          data manipulation
+            NS                    nameservers are converted to lowercase,
+                                  then sorted alphabetically
+
+All other resource-record data are left as is.
 
 =head1 NAGIOS USE
 
@@ -793,6 +846,30 @@ of how the objects should be defined:
 The following options are recognized by B<owl-rrecdata>:
 
 =over 4
+
+=item I<-critical critical-threshold>
+
+The threshold for entering a critical state.  This is the number of
+seconds between the most recent change in data and the current data
+entry's timestamp.  This must be less than the warning threshold.
+If this is zero, then the critical state will not be entered.
+The default critical threshold is one day.
+This critical threshold is specified in seconds.
+
+=item I<-warning warning-threshold>
+
+The threshold for entering a warning state.  This is the number of
+seconds between the most recent change in data and the current data
+entry's timestamp.  This must be greater than the critical threshold.
+If this is zero, then the warning state will not be entered.
+The default warning threshold is five days.
+This warning threshold is specified in seconds.
+
+=item I<-nohistory>
+
+This option prevents history data for this plugin from being saved.
+This removes the possibility of tracking and graphing changes in DNS
+resource-record data over time.
 
 =item I<-paths>
 
