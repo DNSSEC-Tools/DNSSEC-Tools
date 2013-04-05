@@ -244,9 +244,18 @@ sub doopts
 	usage() if(@ARGV != 3);
 
 	#
+	# Ensure the thresholds are not negative.
+	#
+	if(($warning < 0) || ($critical < 0))
+	{
+		print "thresholds must be zero or greater\n";
+		exit($RC_UNKNOWN);
+	}
+
+	#
 	# Ensure the warning threshold is greater than the critical threshold.
 	#
-	if($warning < $critical)
+	if(($warning < $critical) && ($warning > 0))
 	{
 		print "warning threshold ($warning) must be greater than critical threshold ($critical)\n";
 		exit($RC_UNKNOWN);
@@ -475,6 +484,8 @@ sub rrecdata
 				$rcnt += length($lines[$ind]);
 				last if($rcnt >= $datalen);
 			}
+
+			$querydata = datamunch($querydata);
 			$rrtmp = "$qarg RRec Data:  $querydata";
 		}
 
@@ -507,6 +518,37 @@ sub rrecdata
 	# Return the response data.
 	#
 	return($tempus);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	datamunch()
+#
+# Purpose:	Manipulate the data, based on the resource record type.
+#
+#		A	Nothing is done to A record data.
+#		NS	The hosts in NS records are converted to lowercase,
+#			sorted, and joined into a space-separated string.
+#
+sub datamunch
+{
+	my $data = shift;			# Data to muck with.
+
+	if($query eq 'A')
+	{
+		# Don't do anything to A record data.
+	}
+	elsif($query eq 'NS')
+	{
+		my @servers;			# Array of nameservers.
+
+		@servers = split /[ \n]/, lc($data);
+		$data = join ' ', sort(@servers);
+	}
+
+	#
+	# Return our masticated data.
+	#
+	return($data);
 }
 
 #-----------------------------------------------------------------------------
@@ -574,11 +616,11 @@ sub calcret
 	#
 	# Figure out what what exit code we're going to need.
 	#
-	if($timediff <= $critical)
+	if(($timediff <= $critical) && ($critical > 0))
 	{
 		$rc = $RC_CRITICAL;
 	}
-	elsif($timediff <= $warning)
+	elsif(($timediff <= $warning) && ($warning > 0))
 	{
 		$rc = $RC_WARNING;
 	}
@@ -693,6 +735,7 @@ usage:  owl-rrecdata [options] <sensor> <target> <rrec-type>
 	options:
 		-warning <num>     warning threshold (in seconds)
 		-critical <num>    critical threshold (in seconds)
+		-nohistory         do not save history
 		-paths             display paths to be used
 		-Version           display program version
 		-help              display this message
@@ -748,7 +791,37 @@ The most recent file whose I<servicename> matches the service name given on
 the command line will be consulted.  The DNS response data will be taken from
 the last entry in that file.
 
+Thresholds for the critical state and the warning state may be specified.
+These are only triggered if the current DNS resource record data has changed
+from the previous execution of B<owl-rrecdata>.  These thresholds are measured
+from the time of the last change in the specified DNS resource record data to
+the time of the current changed record.  If the difference in times is
+between zero and the critical threshold, that entry is in a critical state.
+If the difference in times is between the critical and warning thresholds,
+then the entry is in a warning state.  If the time difference exceeds the
+warning threshold, then the entry reverts to the normal state.  This
+automatic reduction in states assumes that as time passes, the administrators
+will handle the condition as required.  Graphs can be defined in Nagios that
+show the occurrence and frequency of state changes in DNS data.
+
+Both the warning threshold and the critical threshold can be disabled, in
+case the local installation only wants one particular type of state for
+tracking changes in DNS resource records.  If both thresholds are disabled, 
+then these entries will always appear to be normal; graphing such data will
+never show a change.
+
 B<owl-rrecdata> is expected to only be run by the Nagios monitoring system.
+
+=head1 RECORD-SPECIFIC PROCESSING
+
+Before passing the resource-record data to Nagios, B<owl-rrecdata> can modify
+the data as required.  The following data manipulations are performed:
+
+    resource-record type          data manipulation
+            NS                    nameservers are converted to lowercase,
+                                  then sorted alphabetically
+
+All other resource-record data are left as is.
 
 =head1 NAGIOS USE
 
@@ -773,6 +846,30 @@ of how the objects should be defined:
 The following options are recognized by B<owl-rrecdata>:
 
 =over 4
+
+=item I<-critical critical-threshold>
+
+The threshold for entering a critical state.  This is the number of
+seconds between the most recent change in data and the current data
+entry's timestamp.  This must be less than the warning threshold.
+If this is zero, then the critical state will not be entered.
+The default critical threshold is one day.
+This critical threshold is specified in seconds.
+
+=item I<-warning warning-threshold>
+
+The threshold for entering a warning state.  This is the number of
+seconds between the most recent change in data and the current data
+entry's timestamp.  This must be greater than the critical threshold.
+If this is zero, then the warning state will not be entered.
+The default warning threshold is five days.
+This warning threshold is specified in seconds.
+
+=item I<-nohistory>
+
+This option prevents history data for this plugin from being saved.
+This removes the possibility of tracking and graphing changes in DNS
+resource-record data over time.
 
 =item I<-paths>
 
