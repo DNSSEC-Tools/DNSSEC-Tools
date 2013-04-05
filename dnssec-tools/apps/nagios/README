@@ -44,6 +44,21 @@ controlled by DNSSEC-Tools.  Brief descriptions of these files are given
 below.
 
 
+	diff-side.php
+		side.php is a standard part of the Nagios distribution,
+		living in .../share/side.php.  It is a CGI that builds
+		the left sidebar of the Nagios status pages.  It has
+		been modified to provide a very shor tdescription of
+		each DNSSEC rollover, as a reference for output from
+		the DNSSEC-Tools plugins.  This is a diff of the original
+		version and the version modified for DNSSEC-Tools.
+
+		This modification is optional, but it provides a useful
+		reference for zone rollover monitoring.
+
+		The file is located in the source hierarchy for Nagios.
+		.../nagios-3.2.3/html/side.php
+
 	diff-status.c
 		status.c is a standard part of the Nagios distribution,
 		living in .../cgi/status.c.  It is a CGI that builds many
