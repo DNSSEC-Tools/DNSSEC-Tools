@@ -43,10 +43,8 @@ my @opts =
 );
 
 my $DEF_WARN = 3600;			# Default warning limit (in seconds.)
-my $DEF_CRIT = 86400;			# Default critical limit (in seconds.)
 
 my $warn = $DEF_WARN;			# Warning limit (in seconds.)
-my $crit = $DEF_CRIT;			# Critical limit (in seconds.)
 
 #######################################################################
 #
@@ -118,7 +116,6 @@ sub doopts
 	usage()   if(defined($options{'help'}));
 
 	$warn = $options{'w'} if(defined($options{'w'}));
-	$crit = $options{'c'} if(defined($options{'c'}));
 
 	#
 	# Ensure a zonefile and zone name were specified.
@@ -126,14 +123,15 @@ sub doopts
 	if(@ARGV != 2)
 	{
 		print "dt_zonetimer: must specify a zone name and either a keyrec or a rollrec file\n";
-		return($RC_CRITICAL);
+		return($RC_UNKNOWN);
 	}
 
 	#
 	# Get the zone and datafile names.
 	#
-	$zone = $ARGV[0];
+	$zone  = $ARGV[0];
 	$dfile = $ARGV[1];
+
 }
 
 #-----------------------------------------------------------------------------
@@ -180,11 +178,7 @@ sub ztimer
 	{
 		my $secs = $1;			# Seconds to go.
 
-		if($secs < $crit)
-		{
-			$ret = $RC_CRITICAL;
-		}
-		elsif($secs < $warn)
+		if($secs < $warn)
 		{
 			$ret = $RC_WARNING;
 		}
@@ -230,12 +224,12 @@ sub usage
 	print STDERR "$VERS
 Copyright 2012-2013 SPARTA, Inc.  All rights reserved.
 
-This plugin runs donuts on a specified zone.  The error count is then printed.
+This plugin runs lsdnssec on a specified zone.  The time remaining until
+rollover is then printed.
 
 usage:  dt_zonetimer [options] <zone> <datafile>
 	options:
 		-w soon-value		\"soon-to-phase-end\" value
-		-c imminent-value	\"almost-to-phase-end\" value
 		-Version		display program version
 		-help			display this message
 
@@ -271,7 +265,7 @@ that holds a reference to the zone's B<keyrec> file.
 The timings displayed by Nagios will likely be a little different from those
 displayed by B<lsdnssec>.  Nagios runs its monitors and then displays the
 results.  Consequently, the times displayed by Nagios could be minutes old,
-depending on the update-time configured for Nagios.
+depending on the update time configured for Nagios.
 
 =head1 NAGIOS USE
 
@@ -281,12 +275,12 @@ objects should be defined:
 
   define command {
       command_name    dt_zonetimer
-      command_line    $USER1$/dt_zonetimer -w $ARG1$ -c $ARG2$ $ARG3$ $ARG4$
+      command_line    $USER1$/dt_zonetimer -w $ARG1$ $ARG2$ $ARG3$
   }
 
   define service {
       service_description   zone rollover
-      check_command         dt_zonetimer!3600!86400!zones.rrf!test.com.krf
+      check_command         dt_zonetimer!3600!zones.rrf!test.com.krf
       host_name             test.com
       active_checks_enabled 1
       ...
@@ -308,6 +302,7 @@ point, Nagios will display a warning indicator.  The default value is 3600
 
 =item I<-c>
 
+B<This is an obsolete option.  It will be removed soon.  It is not used.>
 Specifies the number of seconds before the zone's next rollover phase that
 defines a "critical" period.  This indicates that the next rollover phase
 is about to occur.  This time period is installation- and zone-dependent.
