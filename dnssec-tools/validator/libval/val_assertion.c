@@ -4120,15 +4120,38 @@ verify_provably_insecure(val_context_t * context,
             FREE(zonecut_n);
             zonecut_n = NULL;
             continue;
-        }
-        /* 
-         * If this is not a proof, check that curzone_n matches 
-         * the zonecut in the RRSIG for the DS
-         */
-        else if (!verify_zonecut_in_rrsig(results, curzone_n)) {
-            val_log(context, LOG_NOTICE, 
-                    "verify_provably_insecure(): Inconsistent zonecut for DS at %s", tempname_p);
-            goto err; 
+        } else if (results->val_rc_status == VAL_SUCCESS) {
+            /* 
+             * If this is not a proof, check that curzone_n matches 
+             * the zonecut in the RRSIG for the DS
+             */
+            if (!verify_zonecut_in_rrsig(results, curzone_n)) {
+                val_log(context, LOG_NOTICE, 
+                        "verify_provably_insecure(): Inconsistent zonecut for DS at %s", tempname_p);
+                goto err; 
+            }
+            /*
+             * Check if algorithms are understood
+             */
+            if (results->val_rc_rrset) {
+                struct val_rr_rec  *rr =
+                    results->val_rc_rrset->val_rrset_data;
+
+                *is_pinsecure = 1;
+                while (rr) {
+                    val_ds_rdata_t  ds;
+                    ds.d_hash = NULL;
+
+                    if ((VAL_NO_ERROR != val_parse_ds_rdata(rr->rr_rdata, 
+                                            rr->rr_rdata_length, &ds)) ||
+                        IS_KNOWN_DNSSEC_ALG(ds.d_algo)) {
+                        *is_pinsecure = 0;
+                    }
+                    if (ds.d_hash != NULL)
+                        FREE(ds.d_hash);
+                    rr = rr->rr_next;
+                }
+            }
         }
 
         if (*is_pinsecure) {
@@ -4476,75 +4499,6 @@ try_verify_assertion(val_context_t * context,
     }
 
     return VAL_NO_ERROR;
-}
-
-static void
-fix_validation_result(val_context_t * context,
-                      struct val_internal_result *res,
-                      struct queries_for_query **queries,
-                      u_int32_t flags)
-{
-    u_int32_t ttl_x = 0;
-
-    if (res == NULL)
-        return;
-
-    /*
-     * Some error most likely, reflected in the val_query_chain 
-     */
-    if (res->val_rc_rrset == NULL && res->val_rc_status == VAL_DONT_KNOW)
-            res->val_rc_status = VAL_DNS_ERROR;
-
-    /*
-     *  Special case of provably insecure: algorithms used
-     *  for signing the DNSKEY record are not understood
-     */
-    if (res->val_rc_status == VAL_BOGUS_PROVABLE) {
-        /*
-         * implies that the trust flag is set 
-         */
-        struct val_digested_auth_chain *as;
-        struct val_digested_auth_chain *top_as;
-        top_as = res->val_rc_rrset;
-        as = top_as;
-        while(as) {
-            if ((as->val_ac_rrset.ac_data) &&
-                (as->val_ac_rrset.ac_data->rrs_type_h == ns_t_dnskey)) {
-                if (as->val_ac_status == VAL_AC_NOT_VERIFIED) {
-                    /*
-                     * see if one of the DNSKEYs links up 
-                     */
-                    struct rrset_rr  *drr;
-                    for (drr = as->val_ac_rrset.ac_data->rrs_data; drr;
-                         drr = drr->rr_next) {
-                        if (drr->rr_status ==
-                                VAL_AC_UNKNOWN_ALGORITHM_LINK) {
-                            if (is_pu_trusted(context, 
-                                        as->val_ac_rrset.ac_data->rrs_name_n, 
-                                        &ttl_x))
-                                res->val_rc_status = VAL_PINSECURE;
-                            else
-                                res->val_rc_status = VAL_PINSECURE_UNTRUSTED;
-                            SET_MIN_TTL(as->val_ac_query->qc_ttl_x, ttl_x);
-                            break;
-                        }
-                    }
-
-                    if (res->val_rc_status == VAL_BOGUS_PROVABLE) {
-                        res->val_rc_status = VAL_BOGUS;
-                    }
-                    break;
-                }
-            }
-
-            as = get_ac_trust(context, as, queries, flags, 0); 
-        }
-    }
-
-    /* If all we have is a trust key then this is a success state */
-    if (res->val_rc_status == VAL_BARE_TRUST_KEY)
-        res->val_rc_status = VAL_SUCCESS;
-
 }
 
 
@@ -5286,10 +5240,14 @@ restart_query:
 
         if (thisdone) {
             /*
-             * Fix validation results 
+             * Some error most likely, reflected in the val_query_chain 
              */
-            fix_validation_result(context, res, queries, flags);
+            if (res->val_rc_rrset == NULL && res->val_rc_status == VAL_DONT_KNOW)
+                res->val_rc_status = VAL_DNS_ERROR;
 
+            /* If all we have is a trust key then this is a success state */
+            if (res->val_rc_status == VAL_BARE_TRUST_KEY)
+                res->val_rc_status = VAL_SUCCESS;
         }
 
 #ifdef LIBVAL_DLV
