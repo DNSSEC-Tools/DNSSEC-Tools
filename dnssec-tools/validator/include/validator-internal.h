@@ -151,6 +151,18 @@ extern          "C" {
 #define ALG_ECDSAP256SHA256 13
 #define ALG_ECDSAP384SHA384 14
 
+#define IS_KNOWN_DNSSEC_ALG(x) \
+    (x == ALG_RSAMD5 || \
+     x == ALG_DH ||\
+     x == ALG_DSASHA1 ||\
+     x == ALG_RSASHA1 ||\
+     x == ALG_NSEC3_DSASHA1 ||\
+     x == ALG_NSEC3_RSASHA1 ||\
+     x == ALG_RSASHA256 ||\
+     x == ALG_RSASHA512 ||\
+     x == ALG_ECDSAP256SHA256 ||\
+     x == ALG_ECDSAP384SHA384)
+
 /* query types for which edns0 is required */
 #ifdef LIBVAL_DLV
 #define DNSSEC_METADATA_QTYPE(type) \
