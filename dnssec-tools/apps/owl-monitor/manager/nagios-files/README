@@ -1,4 +1,31 @@
 
+diff-side.php
+	This file contains the sidebar entry for displaying an Owl-specific
+	version of the Services screen.  This new sidebar command uses the
+	modifications to status.cgi described below in diff-status.c. 
+	The side.php file lives in .../share/side.php.
+
+diff-status.c
+	This file contains the diffs to status.c that will allow a slightly
+	different view of the Services display.
+
+	The standard Nagios sidebar has a "Services" link that gives seven
+	columns of info.  These columns are for Host, Service, Status, Last
+	Check, Duration, Attempt, and Status Information.
+
+	Some unfamiliar with Nagios have found several of these columns
+	confusing.  To alleviate the confusion, a flag can be given to
+	status.cgi that will remove these confusing columns from the display.
+	The new display retains the Host, Service, Status, and Status
+	Information columns, and leaves out the Last Check, Duration, and
+	Attempt columns.
+
+	A new link in the sidebar, labelled "Services (Owl Display)", will
+	cause status.cgi to show the modified display.  Ths link is provided
+	in diff-side.php.
+
+	The status.c file lives in .../cgi/status.c.
+
 example-side.php
 	This file contains example lines that may be added to Nagios'
 	side.php file in order to make graphing more easily available.
