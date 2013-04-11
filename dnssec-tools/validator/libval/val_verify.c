@@ -628,8 +628,7 @@ check_label_count(struct rrset_rec *the_set,
             savedstatus == VAL_AC_TRUST ||\
             savedstatus == VAL_AC_VERIFIED ||\
             savedstatus == VAL_AC_WCARD_VERIFIED ||\
-            newstatus == VAL_AC_UNSET ||\
-            newstatus == VAL_AC_UNKNOWN_ALGORITHM_LINK)\
+            newstatus == VAL_AC_UNSET)\
                 ; /* do nothing */\
         /* Any success is good */\
         else if (\
@@ -661,7 +660,6 @@ verify_next_assertion(val_context_t * ctx,
     struct rrset_rr  *nextrr;
     struct rrset_rr  *keyrr;
     u_int16_t       tag_h;
-    int             is_verified = 0;
     char            name_p[NS_MAXDNAME];
 
     if ((as == NULL) || (as->val_ac_rrset.ac_data == NULL) || (the_trust == NULL)) {
@@ -730,6 +728,7 @@ verify_next_assertion(val_context_t * ctx,
 
         tag_h = ntohs(signby_footprint_n);
         for (nextrr = keyrr; nextrr; nextrr = nextrr->rr_next) {
+            int             is_verified = 0;
             if (VAL_NO_ERROR != val_parse_dnskey_rdata(nextrr->rr_rdata,
                                              nextrr->rr_rdata_length,
                                              &dnskey)) {
@@ -766,118 +765,100 @@ verify_next_assertion(val_context_t * ctx,
                 nextrr->rr_status = VAL_AC_SIGNING_KEY;
             }
 
-            // if success, break
             if (is_verified) {
+
                 val_log(ctx, LOG_INFO, "verify_next_assertion(): Verified a RRSIG for %s (%s) using a DNSKEY (%d)",
                         name_p, p_type(the_set->rrs_type_h),
                         dnskey.key_tag);
-                break;
-            }
 
-            if (dnskey.public_key != NULL) {
-                FREE(dnskey.public_key);
-            }
-            dnskey.public_key = NULL;
-        }
-
-        if (nextrr == NULL) {
-            val_log(ctx, LOG_INFO, "verify_next_assertion(): Could not link this RRSIG to a DNSKEY");
-            SET_STATUS(as->val_ac_status, the_sig, VAL_AC_DNSKEY_NOMATCH);
-
-        } else if (as->val_ac_status == VAL_AC_TRUST ||
-            (is_verified && 
-                     nextrr->rr_status == VAL_AC_TRUST_POINT)) {
-            /* we've verified a trust anchor */
-
-            as->val_ac_status = VAL_AC_TRUST; 
-            val_log(ctx, LOG_INFO, "verify_next_assertion(): verification traces back to trust anchor");
-            if (dnskey.public_key != NULL) {
-                FREE(dnskey.public_key);
-                dnskey.public_key = NULL;
-            }
-            return;
-            
-        /* else check if we're trying to verify some key in the authentication chain */
-        } else if ( the_set->rrs_type_h == ns_t_dnskey && 
-                    as != the_trust &&
-                    as->val_ac_status != VAL_AC_TRUST &&
-                     (is_verified || the_sig->rr_status == VAL_AC_ALGORITHM_NOT_SUPPORTED)) {
-
-            /* Check if we have reached our trust key */
-            
-            /*
-             * If this record contains a DNSKEY, check if the DS record contains this key 
-             * DNSKEYs cannot be wildcard expanded, so VAL_AC_WCARD_VERIFIED does not
-             * count as a good sig
-             * Create the link even if the DNSKEY algorithm is unknown since this 
-             * may be the provably insecure case
-             */
-            /*
-             * follow the trust path 
-             */
-            struct rrset_rr  *dsrec =
-                the_trust->val_ac_rrset.ac_data->rrs_data;
-            while (dsrec) {
-                val_ds_rdata_t  ds;
-                int retval = val_parse_ds_rdata(dsrec->rr_rdata,
-                                   dsrec->rr_rdata_length, &ds);
-                if(retval == VAL_NOT_IMPLEMENTED) {
-                    val_log(ctx, LOG_INFO, "verify_next_assertion(): DS hash not supported");
-                    dsrec->rr_status = VAL_AC_ALGORITHM_NOT_SUPPORTED;
-                } else if (retval != VAL_NO_ERROR) {
-                    val_log(ctx, LOG_INFO, "verify_next_assertion(): DS parse error");
-                    dsrec->rr_status = VAL_AC_INVALID_DS;
-                } else {
-
-                    if (DNSKEY_MATCHES_DS(ctx, &dnskey, &ds, 
-                            the_set->rrs_name_n, nextrr, 
-                            &dsrec->rr_status)) {
-
-                        val_log(ctx, LOG_DEBUG, 
-                                "verify_next_assertion(): DNSKEY tag (%d) matches DS tag (%d)",
-                                (&dnskey)->key_tag,                                         
-                                (&ds)->d_keytag);
-                        if (is_verified)
-                            nextrr->rr_status = VAL_AC_VERIFIED_LINK;
-                        else
-                            nextrr->rr_status = VAL_AC_UNKNOWN_ALGORITHM_LINK;
-
-                        FREE(ds.d_hash);
-                        ds.d_hash = NULL;
-                        if (dnskey.public_key) {
-                            FREE(dnskey.public_key);
-                            dnskey.public_key = NULL;
-                        }
-                        /*
-                        * the first match is enough 
-                        */
-                        val_log(ctx, LOG_INFO, "verify_next_assertion(): Key links upward");
-                        return;
+                if ( as->val_ac_status == VAL_AC_TRUST ||
+                    nextrr->rr_status == VAL_AC_TRUST_POINT) {
+                    /* we've verified a trust anchor */
+                    as->val_ac_status = VAL_AC_TRUST; 
+                    val_log(ctx, LOG_INFO, "verify_next_assertion(): verification traces back to trust anchor");
+                    if (dnskey.public_key != NULL) {
+                        FREE(dnskey.public_key);
+                        dnskey.public_key = NULL;
                     }
-
-                    FREE(ds.d_hash);
-                    ds.d_hash = NULL;
+                    return;
                 }
+            
+                /* Check if we're trying to verify some key in the authentication chain */
+                if ( the_set->rrs_type_h == ns_t_dnskey && 
+                    as != the_trust) {
+                    /* Check if we have reached our trust key */
+                    /*
+                     * If this record contains a DNSKEY, check if the DS record contains this key 
+                     * DNSKEYs cannot be wildcard expanded, so VAL_AC_WCARD_VERIFIED does not
+                     * count as a good sig
+                     * Create the link even if the DNSKEY algorithm is unknown since this 
+                     * may be the provably insecure case
+                     */
+                    /*
+                     * follow the trust path 
+                     */
+                    struct rrset_rr  *dsrec =
+                        the_trust->val_ac_rrset.ac_data->rrs_data;
+                    while (dsrec) {
+                        val_ds_rdata_t  ds;
+                        ds.d_hash = NULL;
+                        int retval = val_parse_ds_rdata(dsrec->rr_rdata,
+                                       dsrec->rr_rdata_length, &ds);
+                        if(retval == VAL_NOT_IMPLEMENTED) {
+                            val_log(ctx, LOG_INFO, "verify_next_assertion(): DS hash not supported");
+                            dsrec->rr_status = VAL_AC_ALGORITHM_NOT_SUPPORTED;
+                        } else if (retval != VAL_NO_ERROR) {
+                            val_log(ctx, LOG_INFO, "verify_next_assertion(): DS parse error");
+                            dsrec->rr_status = VAL_AC_INVALID_DS;
+                        } else if (DNSKEY_MATCHES_DS(ctx, &dnskey, &ds, 
+                                    the_set->rrs_name_n, nextrr, 
+                                    &dsrec->rr_status)) {
+                            val_log(ctx, LOG_DEBUG, 
+                                    "verify_next_assertion(): DNSKEY tag (%d) matches DS tag (%d)",
+                                    (&dnskey)->key_tag,                                         
+                                    (&ds)->d_keytag);
+                            /*
+                             * the first match is enough 
+                             */
+                            nextrr->rr_status = VAL_AC_VERIFIED_LINK;
+                            FREE(ds.d_hash);
+                            ds.d_hash = NULL;
+                            if (dnskey.public_key) {
+                                FREE(dnskey.public_key);
+                                dnskey.public_key = NULL;
+                            }
+                            val_log(ctx, LOG_INFO, "verify_next_assertion(): Key links upward");
+                            return;
+                        } else {
+                            /*
+                             * Didn't find a valid entry in the DS record set 
+                             * Not necessarily a problem, since there is no requirement that a DS be present
+                             * If none match, then we set the status accordingly. See below.
+                             */
+                            nextrr->rr_status = VAL_AC_DS_NOMATCH;
+                        } 
 
-                dsrec = dsrec->rr_next;
+                        if (ds.d_hash != NULL)
+                            FREE(ds.d_hash);
+
+                        dsrec = dsrec->rr_next;
+                    }
+                }
+            } 
+
+            if (dnskey.public_key != NULL) {
+                FREE(dnskey.public_key);
             }
-
-            /*
-             * Didn't find a valid entry in the DS record set 
-             * Not necessarily a problem, since there is no requirement that a DS be present
-             * If none match, then we set the status accordingly. See below.
-             */
-            nextrr->rr_status = VAL_AC_DS_NOMATCH;
-        }
-
-        if (dnskey.public_key != NULL) {
-            FREE(dnskey.public_key);
             dnskey.public_key = NULL;
         }
-    }
 
-    /* If we reach here and we're a keyset, we either didn't verify the keyset or
-       didn't verify the link from the key to the DS 
+        val_log(ctx, LOG_INFO, "verify_next_assertion(): Could not link this RRSIG to a DNSKEY");
+        SET_STATUS(as->val_ac_status, the_sig, VAL_AC_DNSKEY_NOMATCH);
+    }
+        
+    /* 
+     * If we reach here and we're a keyset, we either didn't verify the keyset or
+     * didn't verify the link from the key to the DS 
      */ 
     if (the_set->rrs_type_h == ns_t_dnskey){
         as->val_ac_status = VAL_AC_NO_LINK;

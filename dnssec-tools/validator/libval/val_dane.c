@@ -481,7 +481,6 @@ int val_dane_match(val_context_t *context,
                    int len)
 {
     val_context_t *ctx;
-    int retval = VAL_DANE_CHECK_FAILED;
 
     if (dane_cur == NULL || data == NULL)
         return VAL_DANE_CHECK_FAILED;
@@ -699,10 +698,11 @@ int val_dane_check(val_context_t *ctx,
                 dane_cur->usage);
 
         switch (dane_cur->usage) {
+            case DANE_USE_TA_ASSERTION: /*2*/
             case DANE_USE_CA_CONSTRAINT: /*0*/ {
                 /* 
-                 * Check that the TLSA cert matches one on the cert
-                 * chain
+                 * Check that the TLSA cert matches one of the certs
+                 * in the chain
                  */
                 certList = SSL_get_peer_cert_chain(con);
                 if (!certList) {
@@ -721,10 +721,52 @@ int val_dane_check(val_context_t *ctx,
                                     dane_cur,
                                     (const unsigned char *)cert_data,
                                     cert_datalen) == 0) {
-                                val_log(context, LOG_INFO, "DANE: val_dane_match() success");
-                                rv = VAL_DANE_NOERROR;
-                                OPENSSL_free(cert_data);
-                                goto done;
+
+                                if (dane_cur->usage == DANE_USE_CA_CONSTRAINT) {
+                                    val_log(context, LOG_INFO, "DANE: val_dane_match() success");
+                                    rv = VAL_DANE_NOERROR;
+                                    OPENSSL_free(cert_data);
+                                    goto done;
+                                }
+                                /* DANE_USE_TA_ASSERTION */
+#if 0
+                                SSL_CTX *sslctx = SSL_get_SSL_CTX(con);
+                                X509_STORE *store;
+                                if (NULL == (store = X509_STORE_new())) {
+                                    val_log(context, LOG_INFO, 
+                                            "DANE Error: X509_STORE_new() failed");
+                                } else if (0 == X509_STORE_add_cert(store, cert)) {
+                                    val_log(context, LOG_INFO, 
+                                            "DANE Error: X509_STORE_add_cert() failed");
+                                } else {
+                                    SSL_CTX_set_cert_store(sslctx, store); 
+                                    if (X509_V_OK != (rv =
+                                             SSL_get_verify_result(con))) {
+                                        val_log(context, LOG_INFO, 
+                                                "DANE Error: SSL_get_verify_result() returned %d", rv);
+                                    } else {
+                                        val_log(context, LOG_INFO, "DANE: cert match success");
+                                        rv = VAL_DANE_NOERROR;
+                                        goto done;
+                                    }
+                                }
+#endif
+                                X509_STORE *store = X509_STORE_new();
+                                X509_STORE_CTX *store_ctx = X509_STORE_CTX_new();
+                                X509_STORE_add_cert(store, cert);
+                                X509_STORE_CTX_init(store_ctx, store,
+                                        SSL_get_peer_certificate(con), 
+                                        certList);
+                                if (1 != (rv = X509_verify_cert(store_ctx))) {
+                                    val_log(context, LOG_INFO, 
+                                            "DANE Error: SSL_get_verify_result() returned %d", rv);
+                                } else {
+                                    val_log(context, LOG_INFO, "DANE: cert match success");
+                                    rv = VAL_DANE_NOERROR;
+                                    goto done;
+                                }
+                                X509_STORE_CTX_free(store_ctx);
+                                X509_STORE_free(store);
                             }
                             OPENSSL_free(cert_data);
                         }
@@ -765,6 +807,7 @@ int val_dane_check(val_context_t *ctx,
                         dane_cur->usage);
                 break;
 
+#if 0
             case DANE_USE_TA_ASSERTION: /*2*/ {
                 SSL_CTX *ctx = SSL_get_SSL_CTX(con);
                 X509_STORE *store;
@@ -776,18 +819,24 @@ int val_dane_check(val_context_t *ctx,
                                          dane_cur->datalen);
                     X509_STORE_add_cert(store, tlsa_cert);
                     SSL_CTX_set_cert_store(ctx, store);
-                    if (SSL_get_verify_result(con) == X509_V_OK) {
-                        val_log(context, LOG_INFO, "DANE: val_dane_match() success");
+                    rv = SSL_get_verify_result(con);
+                    if (rv == X509_V_OK || 
+                        rv == X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN) {
+                        val_log(context, LOG_INFO, "DANE: cert match success");
                         rv = VAL_DANE_NOERROR;
                         goto done;
+                    } else {
+                        val_log(context, LOG_INFO, 
+                                "DANE: SSL_get_verify_result() returned %d", rv);
                     }
-                }
 
+                }
                 val_log(context, LOG_NOTICE, 
                         "DANE: val_dane_check() for usage %d failed",
                         dane_cur->usage);
                 break;
             }
+#endif
             default:
                 val_log(context, LOG_NOTICE, 
                         "DANE: val_dane_check() for usage %d failed",

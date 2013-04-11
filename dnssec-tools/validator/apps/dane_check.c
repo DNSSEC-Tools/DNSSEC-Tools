@@ -7,6 +7,8 @@
 #include "validator/validator-config.h"
 #include <validator/validator.h>
 #include <validator/val_dane.h>
+#include <openssl/err.h>
+#include <openssl/ssl.h>
 
 #ifdef HAVE_GETOPT_H
 #include <getopt.h>
@@ -134,6 +136,16 @@ _aicallback(void *callback_data, int eai_retval, struct addrinfo *res,
 
 
 #endif
+
+static const char *
+ssl_error(void)
+{
+    /* Minimum requirement is 120 characters */
+    static char ssl_errbuf[256];
+    ERR_error_string_n(ERR_get_error(), ssl_errbuf, sizeof(ssl_errbuf));
+    return ssl_errbuf;
+}
+
 
 int
 main(int argc, char *argv[])
@@ -341,12 +353,37 @@ done:
         /* Set up the SSL connection */
         SSL_library_init();
         SSL_load_error_strings();
-        const SSL_METHOD *meth = SSLv3_client_method();
+        const SSL_METHOD *meth = SSLv23_client_method();
         SSL_CTX *ctx = SSL_CTX_new(meth);
         struct addrinfo *ai = NULL;
+        int presetup_okay;
 
-        ai = val_ainfo; 
-        while(ai && (ai->ai_protocol == IPPROTO_TCP) && 
+        /*
+         * OpenSSL only does protocol negotiation on SSLv23_client_method;
+         * we need to set SNI to get the correct certificate from many
+         * modern browsers, so we disable both SSLv2 and SSLv3 if we can.
+         * That leaves (currently) TLSv1.0 TLSv1.1 TLSv1.2
+         */
+        long ssl_options = 0
+#ifdef SSL_OP_NO_SSLv2
+            | SSL_OP_NO_SSLv2
+#endif
+#ifdef SSL_OP_NO_SSLv3
+            | SSL_OP_NO_SSLv3
+#endif
+            ;
+
+        if (!SSL_CTX_set_options(ctx, ssl_options)) {
+            fprintf(stderr, "Failed to set SSL context options (%ld): %s\n",
+              ssl_options, ssl_error());
+            presetup_okay = 0;
+        } else {
+            presetup_okay = 1;
+        }
+
+
+        ai = val_ainfo;
+        while(presetup_okay && ai && (ai->ai_protocol == IPPROTO_TCP) && 
              (ai->ai_family == AF_INET || ai->ai_family == AF_INET6)) {
 
             int do_pathval = 0;
@@ -371,9 +408,12 @@ done:
                 SSL *ssl = SSL_new(ctx);
                 BIO * sbio = BIO_new_socket(sock,BIO_NOCLOSE);
 
+#if OPENSSL_VERSION_NUMBER >= 0x0090806fL && !defined(OPENSSL_NO_TLSEXT)
+                SSL_set_tlsext_host_name(ssl, node);
+#endif
+
                 SSL_set_bio(ssl,sbio,sbio);
                 if((err = SSL_connect(ssl)) == 1) {
-                    
                     dane_retval = val_dane_check(context,
                                                  ssl,
                                                  danestatus,
