@@ -822,8 +822,11 @@ sub query_for_live_records {
 	resolve_something($resolver, \%results, $domain, $rrname->nsdname, "A");
     }
 
-    my $type = "A"; # XXX: support more types
     foreach my $name (@names) {
+	my $type = "A";
+	if ($name =~ s/(.*):(.*)/$1/) {
+	    $type = $2;
+	}
 	resolve_something($resolver, \%results, $domain, "$name.$domain", $type);
     }
 
@@ -840,8 +843,8 @@ sub resolve_something {
     my $query = $resolver->query("$name", $type);
     if ($query) {
 	get_dns_packet_records($query, $basedomain, $datastorage);
-#	print "resolved $name/$type: \n";
-#	debug_dump_data($datastorage);
+	print "resolved $name/$type: \n";
+	debug_dump_data($datastorage);
     } else {
 	if ($resolver->errorstring ne 'NOERROR') {
 	    # XXX: handle errors better
@@ -933,6 +936,11 @@ analysis.  Because other data is needed as well for the analysis to be
 useful, donuts will also automatically collect the DNSKEYs, SOAs, and
 NS records for the zone.  Because NSEC records aren't loaded, it is
 advisable to add that rule exclusion for rules to be run.
+
+Other data types may be queried by appending a ':' and the type name
+to a record.  For example:
+
+  donuts -i NSEC live:good-a,good-aaaa:aaaa test.dnssec-tools.org
 
 =head1 OPTIONS
 
