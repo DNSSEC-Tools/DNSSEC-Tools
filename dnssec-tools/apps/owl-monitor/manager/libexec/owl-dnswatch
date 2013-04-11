@@ -16,7 +16,7 @@
 #
 #
 # Revision History
-#	1.0	Initial version.				10/2/2012
+#	1.0	Initial version.				121002
 #		This was adapted from the uem-dnsresp plugin from
 #		the original UEM system.
 #
@@ -904,8 +904,8 @@ B<owl-dnswatch> is expected to only be run by the Nagios monitoring system.
 
 =head1 NAGIOS USE
 
-This is run from a Nagios I<command> object.  These are examples of how the
-objects should be defined:
+B<owl-dnswatch> is run from a Nagios I<command> object.  These are examples
+of how the Nagios objects should be defined:
 
     define command {
          command_name    dnsresp
@@ -920,13 +920,13 @@ objects should be defined:
          ...
     }
 
-
-Nagios orders its output by I<host>.  These object definitions will order
-the data according to the sensor name.  Alternate methods of organizing the
-data may be used in the Nagios object definitions.  For example, using the
-nameserver as the I<host> will order the Nagios data display by server names.
-The arguments of the I<check_command> will not change; it is only the
-I<host_name> and I<service_description> fields that will be adjusted.
+Nagios orders its output by I<host_name>.  These object definitions will
+order the data according to the sensor name.  Alternate methods of organizing
+the data may be used in the Nagios object definitions.  For example, using
+the nameserver as the I<host_name> will order the Nagios data display
+by server names.  The arguments of the I<check_command> will not change;
+it is only the I<host_name> and I<service_description> fields that will
+be adjusted.
 
     define service {
          service_description     sensor3 example.com A
@@ -936,15 +936,35 @@ I<host_name> and I<service_description> fields that will be adjusted.
          ...
     }
 
-Only one I<service> should be created with the specific definitions for
-the I<host_name> and I<service_description> fields.  Duplicated I<service>
-entries can be created that modify the ordering of the sensor, nameserver,
-target host, and query.  However, the B<owl-dnswatch> should only be used
-in the command portion of a single I<check_command> instance for those
-duplicated entries.  The B<owl-dnswatch-rotate> command should be used
-in the other instances.  For example, the following four I<service> objects
-will refer to the same sensor data, but only the first will be used for
-building graphs.
+=head2 Multiple Views of Data
+
+Multiple views of a particular set of sensor/target/server/query data
+may be given by defining the appropriate Nagios objects.  This will
+allow for easy comparisons of data, since the data will be grouped by the
+Nagios I<host_name> field.  The different views will be provided by giving
+different definitions for the I<host_name> and I<service_description> fields.
+However, the arguments to the B<owl-dnswatch> command won't change.
+
+There are two important restrictions that must be observed when defining
+Nagios objects for multiple views. 
+
+First, only one I<service> object should be created with the specific
+definitions for the I<host_name> and I<service_description> fields.
+Multiple views are defined by creating I<service> entries that modify the
+ordering of the sensor, nameserver, target host, and query.
+
+Second, the B<owl-dnswatch> command should only be used in the command
+portion of a single I<check_command> instance for those duplicated entries.
+The B<owl-dnswatch-rotate> command should be used in the other instances.
+(B<owl-dnswatch-rotate> is a Nagios command that executes B<owl-dnswatch>
+with the I<-rotate> option.)  It doesn't matter which of the duplicated
+I<service> objects uses B<owl-dnswatch>, so long as only one of them does.
+Not following this restriction will wreak havoc in the databases used to
+graph these data.
+
+The following four I<service> objects will refer to the same
+sensor/target/server/query data, but only the first will be
+used for building graphs.
 
     define service {
          service_description     d.root-servers.net example.com A
