@@ -56,7 +56,7 @@ int main(int argc, char **argv)
     QStringList arguments = app.arguments();
 
     QString helpText =
-            "dnssec-debug [--pcapfile file] [--logfile file] [--help] [domainnames...]";
+            "dnssec-debug [--pcapfile file] [--logfile file] [--help] [--style qtstyle] [domainnames...]";
 
     qsrand(QTime(0,0,0).secsTo(QTime::currentTime()));
 
@@ -68,6 +68,11 @@ int main(int argc, char **argv)
             startLogs.push_back(arguments.takeFirst());
         } else if (argument == "--help") {
             qWarning() << helpText;
+            exit(0);
+        } else if (argument == "--style") {
+            app.setStyle(arguments.takeFirst());
+        } else if (argument == "--styles") {
+            qDebug() << QApplication::style();
             exit(0);
         } else {
             // must be a domainname to start with
