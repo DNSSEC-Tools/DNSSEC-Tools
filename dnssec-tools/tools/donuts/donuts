@@ -124,6 +124,8 @@ DTGetOptions(\%opts,
 		["v|verbose+",
 		 "Verbose output (show extra processing information).  Use multiple times for increasing amounts of output.",
 		 question => { type => 'checkbox', default => 1, indent => 1 }],
+	        ["V|show-records", "Display the contents of the records read or queried"],
+		 
 		["q|quiet", "Quiet output (Do not print summary information)",
 		 indent => 1],
 
@@ -334,16 +336,18 @@ while ($#ARGV > -1) {
     $parseerror = 0;
     if ($current_zone_file =~ /^live:/) {
 	$rrset = query_for_live_records($current_domain, $current_zone_file);
-#	print "RRs:\n";
-#	foreach my $rr (@$rrset) {
-#	    print "  ", $rr->name, "/", $rr->type, "\n";
-#	}
     } else {
 	$rrset = dt_parse_zonefile(file => $current_zone_file,
 				      origin => "$current_domain.",
 				      soft_errors => 1,
 				      on_error =>\&print_parse_error);
     }
+
+    if ($opts{'V'}) {
+	print "Records parsed:\n";
+	dump_records($rrset, "  ");
+    }
+
     next if ($parseerror);
     if (!$rrset) {
 	print STDERR "WARNING: failed to read $current_zone_file for an unknown reason\n";
@@ -807,6 +811,7 @@ sub query_for_live_records {
 
     my $resolver = Net::DNS::Resolver->new;
     $resolver->dnssec(1);
+    $resolver->cdflag(1);
 
     my @results;
     my %results;
@@ -889,6 +894,25 @@ sub debug_dump_data {
 	foreach my $type (keys(%{$datastorage->{$domain}})) {
 	    print "    $type: ", 1 + $#{$datastorage->{$domain}{$type}}, "\n";
 	}
+    }
+}
+
+sub records_sorter {
+    if ($a->name eq $b->name) {
+	return $a->type cmp $b->type;
+    }
+    return $a->name cmp $b->type;
+}
+
+sub dump_records {
+    my ($records, $prefix, $short) = @_;
+    $prefix = "" if (!defined($prefix));
+    $short = 0 if (!defined($short));
+
+    my $formatstring = $prefix . ($short ? "%-75.75s\n" : "%s\n");
+
+    foreach my $record (sort records_sorter @$records) {
+	printf($formatstring, $record->string);
     }
 }
 
