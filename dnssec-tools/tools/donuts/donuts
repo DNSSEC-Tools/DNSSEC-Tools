@@ -229,7 +229,6 @@ if ($opts{'f'}) {
 # initialize our resolver
 #
 if ($features{'live'}) {
-    use Net::DNS;
     $netdns = Net::DNS::Resolver->new;
 }
 
@@ -331,11 +330,20 @@ while ($#ARGV > -1) {
     #
     # Parse the file into an array
     #
+    my $rrset;
     $parseerror = 0;
-    my $rrset = dt_parse_zonefile(file => $current_zone_file,
-						origin => "$current_domain.",
-						soft_errors => 1,
-						on_error =>\&print_parse_error);
+    if ($current_zone_file =~ /^live:/) {
+	$rrset = query_for_live_records($current_domain, $current_zone_file);
+#	print "RRs:\n";
+#	foreach my $rr (@$rrset) {
+#	    print "  ", $rr->name, "/", $rr->type, "\n";
+#	}
+    } else {
+	$rrset = dt_parse_zonefile(file => $current_zone_file,
+				      origin => "$current_domain.",
+				      soft_errors => 1,
+				      on_error =>\&print_parse_error);
+    }
     next if ($parseerror);
     if (!$rrset) {
 	print STDERR "WARNING: failed to read $current_zone_file for an unknown reason\n";
@@ -781,6 +789,106 @@ sub maybe_output_to_web {
     }
 }
 
+#
+# Pull records from a live zone
+#
+sub query_for_live_records {
+
+    #
+    # resolve various records from the DNS directly
+    #   functionally this generates a "fake zone file"
+    #
+
+    # parse the input specification
+    my ($domain, $specification) = @_;
+    $specification =~ s/^live://;
+
+    my @names = split(/,/,$specification);
+
+    my $resolver = Net::DNS::Resolver->new;
+    $resolver->dnssec(1);
+
+    my @results;
+    my %results;
+
+    # do known minimal queries for a domain
+    resolve_something($resolver, \%results, $domain, $domain, "DNSKEY");
+    resolve_something($resolver, \%results, $domain, $domain, "SOA");
+    resolve_something($resolver, \%results, $domain, $domain, "NS");
+
+    foreach my $rrname (@{$results{$domain}{'NS'}}) {
+	# this is primarily to pull all the rrsigs for a given NS record
+	#print "resolving ", $rrname->nsdname, "\n";
+	resolve_something($resolver, \%results, $domain, $rrname->nsdname, "A");
+    }
+
+    my $type = "A"; # XXX: support more types
+    foreach my $name (@names) {
+	resolve_something($resolver, \%results, $domain, "$name.$domain", $type);
+    }
+
+    foreach my $name (keys(%results)) {
+	foreach my $type (keys(%{$results{$name}})) {
+	    push @results, @{$results{$name}{$type}};
+	}
+    }
+    return \@results;
+}
+
+sub resolve_something {
+    my ($resolver, $datastorage, $basedomain, $name, $type) = @_;
+    my $query = $resolver->query("$name", $type);
+    if ($query) {
+	get_dns_packet_records($query, $basedomain, $datastorage);
+#	print "resolved $name/$type: \n";
+#	debug_dump_data($datastorage);
+    } else {
+	if ($resolver->errorstring ne 'NOERROR') {
+	    # XXX: handle errors better
+	    print STDERR "  DNS error for $name/$type -> " . $resolver->errorstring . "\n";
+	    $netdns_error = $resolver->errorstring;
+	    print STDERR "    $netdns_error\n";
+	    exit 1 
+	}
+    }
+}    
+
+sub get_dns_packet_records {
+    my ($query, $basedomain, $datastorage) = @_;
+    
+    record_data($datastorage, 0, $basedomain, $query->additional);
+    record_data($datastorage, 0, $basedomain, $query->authority);
+    record_data($datastorage, 1, $basedomain, $query->answer);
+}
+
+sub record_data {
+    my ($datastorage, $thisdatatrumps, $basedomain, @datas) = @_;
+    my %donethese;
+
+    foreach my $data (@datas) {
+	if (!exists($datastorage->{$data->name}) || $thisdatatrumps || $data->type eq 'RRSIG') {
+	    if ($data->name =~ /$basedomain$/) { # only record things within the base
+		if (!exists($donethese{$data->name}{$data->type}) && $data->type ne 'RRSIG') {
+		    delete $datastorage->{$data->name}{$data->type};
+		    $donethese{$data->name}{$data->type} = 1;
+		}
+		push @{$datastorage->{$data->name}{$data->type}}, $data;
+	    }
+	}
+    }
+}
+
+sub debug_dump_data {
+    my ($datastorage) = @_;
+    print "data dump: \n";
+    foreach my $domain (keys(%$datastorage)) {
+	print "  $domain\n";
+	foreach my $type (keys(%{$datastorage->{$domain}})) {
+	    print "    $type: ", 1 + $#{$datastorage->{$domain}{$type}}, "\n";
+	}
+    }
+}
+
 # this is merely a convenience function for rule authors to place into
 # rules so a break point can be put on the function to stop in a
 # particular location within a rule definition.
@@ -810,6 +918,21 @@ DNSSEC-related rules run B<donuts> with "-i DNSSEC".
 
 If the B<Text::Wrap> Perl module is installed, B<donuts> will give better
 output formatting.
+
+=head2 QUERYING LIVE ZONES
+
+If the I<ZONEFILE> may be a live name prefixed with "live:" and the
+records afterwards will be queried and analyized as if it was in a
+zonefile.  For example, running donuts as:
+
+  donuts -i NSEC live:badsign-a,good-a test.dnssec-tools.org
+
+Will query the test.dnssec-tools.org zone for the I<badsign-a> and
+I<good-a> records, collect the data and run them through the donuts
+analysis.  Because other data is needed as well for the analysis to be
+useful, donuts will also automatically collect the DNSKEYs, SOAs, and
+NS records for the zone.  Because NSEC records aren't loaded, it is
+advisable to add that rule exclusion for rules to be run.
 
 =head1 OPTIONS
 
