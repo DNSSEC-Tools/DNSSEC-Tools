@@ -843,8 +843,8 @@ sub resolve_something {
     my $query = $resolver->query("$name", $type);
     if ($query) {
 	get_dns_packet_records($query, $basedomain, $datastorage);
-	print "resolved $name/$type: \n";
-	debug_dump_data($datastorage);
+	#print "resolved $name/$type: \n";
+	#debug_dump_data($datastorage);
     } else {
 	if ($resolver->errorstring ne 'NOERROR') {
 	    # XXX: handle errors better
