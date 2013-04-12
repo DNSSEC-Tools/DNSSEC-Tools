@@ -69,6 +69,8 @@ my @opts =
 	'w|warning=i',		# Upper bound for warnings.
 	'c|critical=i',		# Upper bound for critical errors.
 	'maxquery=f',		# Maximum difference between query times.
+	'showmax',		# Show maximum response time.
+	'showmin',		# Show minimum response time.
 
 	'Version',		# Display the version number.
 	'help',			# Give a usage message and exit.
@@ -77,6 +79,8 @@ my @opts =
 my $rtwarn;			# Lower bound for response time warnings.
 my $rtcrit;			# Lower bound for response time critical errors.
 my $maxquery;			# Maximum time difference between queries.
+my $showmax;			# Show maximum response time.
+my $showmin;			# Show minimum response time.
 
 my $MAXQUERYDIFF  = 300;	# Queries should be within five minutes.
 my $WARNING_THRESHOLD  = 2000;	# Millisecond difference that gives a warning.
@@ -102,6 +106,12 @@ my %sensorfiles	= ();		# Lists of sensors' files.
 
 my @tstmps	= ();		# Sensors' timestamps.  (for fast reference)
 my @resptimes	= ();		# Response times.	(for fast reference)
+my @resptets	= ();		# Response tetrads -- indexes with @resptimes.
+
+my $maxtime   = -1;		# Maximum time taken. 
+my $maxtetrad = -1;		# Tetrad with maximum time taken. 
+my $mintime   = 9999999999999;	# Minimum time taken. 
+my $mintetrad = -1;		# Tetrad with minimum time taken. 
 
 my $rc;				# Command's return code.
 my $outstr = '';		# Accumulated DNS response data.
@@ -194,6 +204,8 @@ sub doopts
 	$rtwarn	= defined($options{'w'}) ? $options{'w'} : $WARNING_THRESHOLD;
 	$rtcrit	= defined($options{'c'}) ? $options{'c'} : $CRITICAL_THRESHOLD;
 	$maxquery = defined($options{'m'}) ? $options{'m'} : $MAXQUERYDIFF;
+	$showmax  = defined($options{'showmax'});
+	$showmin  = defined($options{'showmin'});
 
 	if($rtwarn > $rtcrit)
 	{
@@ -266,23 +278,6 @@ sub atomizer
 	# Bail if there were any errors.
 	#
 	exit($RC_UNKNOWN) if($errs);
-
-if(0)
-{
-	print "atoms:\n";
-	for(my $ind=0; $ind < @sensors; $ind++)
-	{
-		print "\t$ind:  <$sensors[$ind]>\t<$targets[$ind]>\t<$servers[$ind]>\t<$queries[$ind]>\n";
-	}
-	print "\n";
-
-	print "tetrads:\n";
-	foreach my $tet (@tetrads)
-	{
-		print "\t<$tet>\n";
-	}
-	print "\n";
-}
 
 }
 
@@ -407,6 +402,7 @@ sub getlasts
 				#
 				$tstmps[$tind] = $1;
 				$resptimes[$tind] = $5 * 1000;
+				$resptets[$tind] = $tetrad;
 
 				#
 				# We can stop looking if we got this far.
@@ -439,6 +435,26 @@ sub difftimes
 
 	for(my $ind = 0; $ind < @tstmps; $ind++)
 	{
+		#
+		# Check to see if this entry exceeds the maximum response
+		# time found so far and save it if it does.
+		#
+		if($resptimes[$ind] > $maxtime)
+		{
+			$maxtime = $resptimes[$ind];
+			$maxtetrad = $resptets[$ind];
+		}
+
+		#
+		# Check to see if this entry is beneath the minimum response
+		# time found so far and save it if it is.
+		#
+		if($resptimes[$ind] < $mintime)
+		{
+			$mintime = $resptimes[$ind];
+			$mintetrad = $resptets[$ind];
+		}
+
 		for(my $jnd = ($ind + 1); $jnd < @tstmps; $jnd++)
 		{
 			my $tdiff;		# Difference in query times.
@@ -554,21 +570,36 @@ sub nagiout
 	my $rc = shift;			# Command's return code.
 	my $mqdiff = shift;		# Maximum difference between queries.
 	my $probs = 0;			# Count of all problems.
+	my $maxout = '';		# Maximum response output.
+	my $minout = '';		# Minimum response output.
 
 	#
 	# Get the count of all the problems we've found.
+	#
 	$probs = $qterrs + $respwarn + $respcrit;
+
+	if($showmax)
+	{
+		$maxtetrad =~ s/,.*$//;
+		$maxout = sprintf("maximum response time - %5.2f ms for $maxtetrad;", $maxtime);
+	}
+
+	if($showmin)
+	{
+		$mintetrad =~ s/,.*$//;
+		$minout = sprintf("minimum response time - %5.2f ms for $mintetrad;", $mintime);
+	}
 
 	$outstr =~ s/;$//g;
 
 	if($rc == $RC_NORMAL)
 	{
-		printf("DNS response time difference:  %5.2f ms|$outstr\n", $mqdiff);
+		printf("DNS response time difference:  %5.2f ms; $maxout $minout|$outstr\n", $mqdiff, $maxtime);
 	}
 	else
 	{
-		printf("DNS response time difference:  %5.2f ms|$outstr\n", $mqdiff);
-#		print "$probs problems found|$outstr\n";
+		printf("DNS response time difference:  %5.2f ms; $maxout $minout|$outstr\n", $mqdiff, $maxtime);
+		print "$probs problems found|$outstr\n";
 	}
 }
 
@@ -615,11 +646,13 @@ This script retrieves the DNS timer data gathered by a Owl sensor.
 
 usage:  owl-comp-dnswatch [options] <target> <server> <query> <sensor1> ... <sensorN>
 	options:
-		-warning milliseconds   lower bound for responses for warnings
-		-critical milliseconds  lower bound for responses for errors
-		-maxquery seconds       maximum time between queries
-		-Version                display program version
-		-help                   display this message
+                -warning milliseconds   lower bound for responses for warnings
+                -critical milliseconds  lower bound for responses for errors
+                -maxquery seconds       maximum time between queries
+                -showmax                show maximum response time
+                -showmin                show minimum response time
+                -Version                display program version
+                -help                   display this message
 
 ";
 
@@ -745,6 +778,16 @@ The default value for this is 5000 milliseconds (5 seconds.)
 This is the maximum number of seconds allowed between queries before they
 are considered too far apart for a comparison to be relevant.  
 The default maximum is 300 seconds (five minutes.)
+
+=item I<-showmax>
+
+The maximum response time for the specified queries, and the responsible
+sensor, will be added to the Nagios output.
+
+=item I<-showmin>
+
+The minimum response time for the specified queries, and the responsible
+sensor, will be added to the Nagios output.
 
 =item I<-Version>
 
