@@ -136,7 +136,6 @@ exit($rc);
 #
 sub main
 {
-	my $srvc;				# Service to check.
 	my $retcode = 0;			# Service's return code.
 	my $mqdiff = 0;				# Maximum query difference.
 
@@ -218,7 +217,8 @@ sub doopts
 #-----------------------------------------------------------------------------
 # Routine:	atomizer()
 #
-# Purpose:	This routine shakes and bakes our command line options.
+# Purpose:	This routine splits a query tertrad into its constituent
+#		pieces and saves them into global arrays.
 #
 sub atomizer
 {
@@ -296,7 +296,7 @@ sub getfns
 	#
 	# Build the data directory name.
 	#
-	$datadir    = "$OWLDATA/$sensor/$subdata";
+	$datadir = "$OWLDATA/$sensor/$subdata";
 
 	#
 	# Ensure the data directory exists.
@@ -304,7 +304,7 @@ sub getfns
 	if(! -e $datadir)
 	{
 		print "data directory \"$datadir\" does not exist\n";
-		exit($RC_CRITICAL);
+		exit($RC_UNKNOWN);
 	}
 
 	#
@@ -314,10 +314,10 @@ sub getfns
 	@files = sort(glob("$datadir/*,$tetrad.dns"));
 	if(@files == 0)
 	{
+		print "no data are available for \"$tetrad.dns\"|$outstr";
 		print "datadir - <$datadir>\n";
 		print "tetrad  - <$tetrad>\n";
-		print "glob($datadir/*,$tetrad.dns) failed\n\n";
-		print "no data available for \"$tetrad.dns\"|$outstr";
+		print "glob($datadir/*,$tetrad.dns) returned nothing\n\n";
 		exit($RC_UNKNOWN);
 	}
 
