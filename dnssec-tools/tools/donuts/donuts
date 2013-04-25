@@ -12,9 +12,6 @@ BEGIN {
     }
 }
 
-
-use Net::DNS;
-use Net::DNS::SEC::Tools::Donuts::Rule;
 use Net::DNS::SEC::Tools::QWPrimitives;
 use Net::DNS::SEC::Tools::BootStrap;
 use Net::DNS::SEC::Tools::conf;
@@ -35,6 +32,7 @@ my $qw;
 use strict;
 
 use Config;
+use Net::DNS::SEC::Tools::Donuts;
 
 our @guiargs;
 
@@ -211,10 +209,15 @@ if (!$opts{'R'} && !$opts{'F'} && !$opts{'H'} &&
 }
 
 #
+# Create the main Donuts object
+#
+my $donuts = new Net::DNS::SEC::Tools::Donuts();
+
+#
 # initialize ignore list
 #
 if ($opts{'i'}) {
-    @ignorelist = split(/,\s*/, $opts{'i'});
+    $donuts->set_ignore_list(split(/,\s*/, $opts{'i'}));
 }
 
 #
@@ -222,40 +225,20 @@ if ($opts{'i'}) {
 #
 my %features;
 if ($opts{'f'}) {
-    foreach my $feat (split(/,\s*/, $opts{'f'})) {
-	$features{$feat} = 1;
-    }
-}
-
-#
-# initialize our resolver
-#
-if ($features{'live'}) {
-    $netdns = Net::DNS::Resolver->new;
+    $donuts->set_feature_list(split(/,\s*/, $opts{'f'}));
 }
 
 #
 # load rule files
 #   (comma separated list)
 #
-foreach_rule_file(
-    sub {
-        my $rf = shift;
-	print STDERR "--- loading rule file $rf\n    rules:" if ($opts{'v'});
-	if ($rf =~ /\.pl$/) {
-	    do $rf;
-	} else {
-	    parse_rule_file($rf);
-	}
-	print STDERR "\n" if ($opts{'v'});
-    }
-);
+$donuts->load_rule_files($opts{'r'});
 
 #
 # load optional user-config file
 #
 if ($opts{'c'} && !$opts{'C'} && -f $opts{'c'}) {
-    parse_user_config($opts{'c'});
+    $donuts->parse_config_file($opts{'c'});
 }
 
 #
@@ -268,6 +251,7 @@ if ($opts{'H'}) {
 			  "RULE NAME", "TOKEN", "DESCRIPTION");
     printf STDERR sprintf("%-20s %-15s%s\n", "_" x 19, "_" x 13, 
 			  "_" x (80-20-15-2));
+    my @rules = $donuts->rules();
     foreach my $rule (@rules) {
 	$rule->print_help();
     }
@@ -282,6 +266,7 @@ if ($opts{'R'}) {
     print STDERR "\n$0 rules:\n\n";
     printf STDERR "RULE NAME\n  DESCRIPTION...\n";
     printf STDERR "_" x 75 . "\n";
+    my @rules = $donuts->rules();
     foreach my $rule (@rules) {
 	$rule->print_description() if (!$rule->{'internal'});
     }
@@ -296,11 +281,14 @@ if ($opts{'F'}) {
     print STDERR "\n$0 feature list:\n";
     print STDERR "  (Turn these on using the --features flag)\n\n";
     my %shown;
+    my @rules = $donuts->rules();
     foreach my $rule (@rules) {
-	if (exists($rule->{'feature'}) &&
-	    !exists($shown{$rule->{'feature'}})) {
-	    print "  ", $rule->{'feature'},"\n";
-	    $shown{$rule->{'feature'}} = 1;
+	my $features = $rule->feature_list();
+	foreach my $feature (@$features) {
+	    if (!exists($shown{$feature})) {
+		print "  ", $rule->{'feature'},"\n";
+		$shown{$rule->{'feature'}} = 1;
+	    }
 	}
     }
     exit;
@@ -536,181 +524,6 @@ sub get_gui_children {
 
 
 #######################################################################
-
-sub foreach_rule_file {
-    my ($cb) = @_;
-    foreach my $rfexp (split(/,\s*/, $opts{'r'})) {
-	my @rfs = glob($rfexp);
-	foreach $rf (@rfs) {
-	    next if (! -f $rf || $rf =~ /.bak$/ || $rf =~ /~$/);
-	    $cb->($rf);
-	}
-    }
-}
-
-sub add_rule {
-    my $rule = shift;
-
-    # ignore certain rules
-    if ($opts{'i'}) {
-	foreach my $i (@ignorelist) {
-	    if ($rule->{'name'} =~ /$i/) {
-		return;
-	    }
-	}
-    }
-
-    # merge in default values
-    my %defaultrule = ( level => 5 );
-    foreach my $key (keys(%defaultrule)) {
-	$rule->{$key} = $defaultrule{$key} if (!exists($rule->{$key}));
-    }
-
-    # check rule validity for required fields
-    if (!$rule->{'name'}) {
-	warn "no name for a rule in file $rf\n";
-    }
-    if (!$rule->{'test'}) {
-	warn "no test defined for a rule in file $rf\n";
-    }
-
-    print STDERR " $rule->{'name'}" if ($opts{'v'});
-
-    if ($opts{'show-gui'}) {
-	$rule->{'gui'} = \%outstructure;
-    }
-
-    # remember the rule
-    $rule = new Net::DNS::SEC::Tools::Donuts::Rule($rule);
-    push @rules, $rule;
-    $rules{$rule->{name}} = $rule;
-}
-
-# parses a text based rule file
-sub parse_rule_file {
-    my $file = $_[0];
-    my ($rule, $err);
-    open(RF, $file);
-    my $nextline;
-    my $count;
-    my $ruledef;
-
-    $err = 0;
-    while (($_ = $nextline) || ($_ = <RF>)) {
-	$nextline = undef;
-	$count++;
-	next if (/^\s*#/);
-
-	$ruledef .= $_;
-
-	# deal with multi-line records
-	if (/(<|)(test|init)(>|:)/) {
-	    my $type = $2;
-	    my $xmllike = 0;
-	    $xmllike = 1 if ($1 eq '<');
-
-	    # collect code
-	    my $code;
-	    while (<RF>) {
-		# rule code must begin with white space
-		$count++;
-		last if ((!$xmllike && (!/^\s/ || /^\s*$/)) ||
-			 ($xmllike && /<\/(test|init)>/));
-		$code .= $_;
-		$ruledef .= $_;
-	    }
-	    $ruledef .= $_;
-
-	    # evaluate it
-	    if ($type eq 'init') {
-		eval("$code");
-	    # if error, mention it
-		if ($@) {
-		    warn "broken code in $file:$count rule '$rule->{name}': $@";
-		    print STDERR "IN CODE:\n  $code\n" if ($opts{'v'});
-		    $err = 1;
-		}
-	    } else {
-		$rule->{'test'} = $code;
-	    }
-
-	    if (!/^\s/ && !/<\/(test|init)/) {
-		$count--;
-		$nextline = $_;
-	    }
-	} elsif (/^\s*help:\s*(\w+):\s*(.*)/) {
-	    push @{$rule->{'help'}}, { token => $1, description => $2 };
-	} elsif (/^\s*(\w+):\s*(.*\S)\s*$/) {
-	    $rule->{$1} = $2;
-	} elsif (!/^\s*$/) {
-	    print STDERR "illegal rule in $file:$count for rule $rule->{name}";
-	}
-
-	if ($rule && !exists($rule->{'code_file'})) {
-	    $rule->{'code_file'} = $file;
-	    $rule->{'code_line'} = $count;
-	}
-
-	# end of rule (can get here from inside a test end too, hence
-	# not an else clause above)
-	if (/^\s*$/) {
-	    if ($rule && !$err) {
-		$rule->{'ruledef'} = $ruledef if ($opts{'v'} >= 2);
-		$ruledef = '';
-		add_rule($rule);
-	    }
-	    $rule = undef;
-	    $err = 0;
-	}
-    }
-    if ($rule && !$err) {
-	$rule->{'ruledef'} = $ruledef if ($opts{'v'} >= 2);
-	add_rule($rule);
-    }
-}
-
-sub parse_user_config {
-    my ($file) = @_;
-    open(I,$file);
-    my $line;
-    my $name;
-    while (<I>) {
-	$line++;
-	next if (/^\s*#/);
-	if (/^\s*$/) {
-	    $name = undef;
-	    next;
-	}
-	if (/^name:\s*(.*)/) {
-	    $name = $1;
-	    if (!exists($rules{$name})) {
-		print STDERR "$file:$line warning: no such rule: $name\n";
-	    }
-	    next;
-	}
-	if (!$name) {
-	    close(I);
-	    print STDERR
-	      "Error in $file at line $line: no rule name found yet\n";
-	    exit;
-	}
-	if (/^(test|init):/) {
-	    close(I);
-	    print STDERR
-	      "Error in $file at line $line: Illegal token in config file.\n";
-	    exit;
-	}
-	if (!/^(\w+):\s*(.*)$/) {
-	    close(I);
-	    print STDERR
-	      "Error in $file at line $line: Illegal definition.\n";
-	    exit;
-	}
-	if (exists($rules{$name})) {
-	    $rules{$name}->config($1, $2);
-	}
-    }
-}
 
 #
 # subroutines for doing live queries on running systems

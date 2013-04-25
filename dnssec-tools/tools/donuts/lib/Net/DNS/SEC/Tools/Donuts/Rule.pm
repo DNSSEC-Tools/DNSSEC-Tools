@@ -220,10 +220,20 @@ sub config {
     $self->{$prop} = $val;
 }
 
+sub feature_list {
+    my ($self) = @_;
+    return [$self->{'feature'}] if ($self->{'feature'});
+}
+
+sub help {
+    my ($self) = @_;
+    return $self->{'help'};
+}
+
 sub print_help {
     my ($self) = @_;
     return if (!$self->{'help'});
-    foreach my $h (@{$self->{help}}) {
+    foreach my $h (@{$self->help()}) {
 	if ($have_textwrap) {
 	    printf STDERR 
 	      Text::Wrap::wrap(sprintf("%-20s %-15s",
@@ -237,14 +247,24 @@ sub print_help {
     }
 }
 
+sub description {
+    my ($self, $wrapifpossible) = @_;
+    my $description = $self->{'desc'} || "[no description]";
+    if ($wrapifpossible && $have_textwrap) {
+	return Text::Wrap::wrap("  ", "  ", $description);
+    }
+    return $description;
+}
+
+sub name {
+    my ($self) = @_;
+    return $self->{'name'};
+}
+
 sub print_description {
     my ($self) = @_;
-    print STDERR $self->{'name'},"\n";
-    if ($have_textwrap) {
-	print STDERR Text::Wrap::wrap("  ", "  ", $self->{'desc'} || "[no description]");
-    } else {
-	print STDERR "  " . ($self->{'desc'} || "[no description]");
-    }
+    print STDERR $self->name(),"\n";
+    print STDERR $self->description(1);
     print STDERR "\n\n";
 }
 
