@@ -29,3 +29,22 @@ $donuts->parse_config_file('t/donuts-test.conf');
 ($rulecount, $errcount) = $donuts->analyze(9);
 ok($rulecount == 2, "2 rules were executed (got: $rulecount)");
 ok($errcount == 3, "3 errors were found in the second run (got: $errcount)");
+
+# should be able to set the config rules via an API
+$donuts->rule('DONUTS_TEST_RULE_TTL')->config('minttl', 3200);
+
+# we should be back to one more again
+($rulecount, $errcount) = $donuts->analyze(9);
+ok($errcount == 4, "4 errors were found in the after-config-set run (got: $errcount)");
+
+# running at a lower level should drop us down again
+($rulecount, $errcount) = $donuts->analyze(7);
+ok($errcount == 3, "3 errors were found in the level 7 run (got: $errcount)");
+
+# the default level (5) should be the same
+($rulecount, $errcount) = $donuts->analyze();
+ok($errcount == 3, "3 errors were found in the level <default> run (got: $errcount)");
+
+# running at an even lower level should drop all warnings
+($rulecount, $errcount) = $donuts->analyze(2);
+ok($errcount == 0, "0 errors were found in the level 2 run (got: $errcount)");
