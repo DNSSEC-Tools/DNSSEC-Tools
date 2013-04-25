@@ -16,4 +16,4 @@ my $rrs = $donuts->zone_records();
 ok($#$rrs > 0, "at least one record was parsed");
 ok($rrs->[0]->name eq 'example.com', "the first record does contain a example.com record");
 ok($rrs->[0]->type eq 'SOA', "the first record does contain an SOA record");
-
+ok($#$rrs == 9, "There were the correct number of resource records");
