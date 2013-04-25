@@ -93,6 +93,11 @@ sub rules {
     return @{$self->{'rules'}};
 }
 
+sub rule {
+    my ($self, $rulename) = @_;
+    return grep { $_->{'name'} eq $rulename; } @{$self->{'rules'}};
+}
+
 sub load_rule_files {
     my ($self, @rulelists) = @_;
     foreach my $rulelist (@rulelists) {
