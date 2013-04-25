@@ -370,12 +370,13 @@ sub load_zone {
 # Analysis - combining it all together
 #
 sub analyze_records {
-    my ($self, $level, $verbose) = @_;
+    my ($self, $level, $verbose, $recordByNameType) = @_;
     my $firstrun = 1;
     my @rules = $self->rules();
     my $rrset = $self->zone_records();
 
-    my ($errcount, $errorsfound, $rulecount, $rulesrun);
+    my ($errorsfound, $rulesrun);
+    my ($rulecount, $errcount) = (0,0);
 
     foreach my $rec (@$rrset) {
 	foreach my $r (@rules) {
@@ -385,7 +386,46 @@ sub analyze_records {
 	    $errcount += $errorsfound;
 	    $rulecount += $rulesrun if ($firstrun);
 	}
+
+	# allow the calling function to cache things by name/type
+	if (defined($recordByNameType)) {
+	    push @{$recordByNameType->{$rec->name}{$rec->type}}, $rec;
+	}
 	$firstrun = 0;
+    }
+
+    return ($rulecount, $errcount);
+}
+
+sub analyze_names {
+    my ($self, $level, $verbose, $recordByNameTypeCache) = @_;
+    my $firstrun = 1;
+    my ($rulecount, $errcount) = (0,0);
+    my @rules = $self->rules();
+
+    my ($errcount, $errorsfound, $rulecount, $rulesrun);
+
+    if (!defined($recordByNameTypeCache)) {
+	# they didn't pass in a cache structure, so we need to 
+	# create it ourselves.
+	my $rrset = $self->zone_records();
+
+	$recordByNameTypeCache = {};
+	foreach my $rec (@$rrset) {
+	    push @{$recordByNameTypeCache->{$rec->name}{$rec->type}}, $rec;
+	}
+    }
+
+    foreach my $namerec (keys(%$recordByNameTypeCache)) {
+        foreach my $r (@rules) {
+            ($rulesrun, $errorsfound) =
+              $r->test_name($recordByNameTypeCache->{$namerec}, $namerec,
+                            $self->{'zonesource'},
+                            $level, $self->{'featurehash'}, $verbose);
+            $errcount += $errorsfound;
+            $rulecount += $rulesrun if ($firstrun);
+        }
+        $firstrun = 0;
     }
 
     return ($rulecount, $errcount);
