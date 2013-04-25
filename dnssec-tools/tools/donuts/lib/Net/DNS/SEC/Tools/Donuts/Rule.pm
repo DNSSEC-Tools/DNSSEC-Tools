@@ -42,7 +42,6 @@ sub new {
 	# if error, mention it
 	if ($@) {
 	    warn "broken code in test for rule '$ref->{name}': $@";
-	    print STDERR "IN CODE:\n  $ref->{test}\n" if ($main::opts{'v'});
 	}
     }
 
@@ -81,10 +80,10 @@ sub wrapit {
 	push @{$r->{'gui'}{$r->{'location'}}}, [[@_]];
     } else {
 	if ($have_textwrap) {
-	    print STDERR Text::Wrap::wrap(sprintf("  %-13s", $_[0]),
-					  " " x 15, $_[1]),"\n";
+	    $r->Error(Text::Wrap::wrap(sprintf("  %-13s", $_[0]),
+				       " " x 15, $_[1]) . "\n");
 	} else {
-	    printf STDERR ("  %-12s %s\n", $_[0], $_[1]);
+	    $r->Error(sprintf("  %-12s %s\n", $_[0], $_[1]));
 	}
     }
 }
@@ -267,14 +266,13 @@ sub print_help {
     return if (!$self->{'help'});
     foreach my $h (@{$self->help()}) {
 	if ($have_textwrap) {
-	    printf STDERR 
-	      Text::Wrap::wrap(sprintf("%-20s %-15s",
-				       $self->{'name'}, $h->{'token'} . ":"),
-			       " " x (20+15+1), $h->{'description'}) . "\n";
+	    $self->output(Text::Wrap::wrap(sprintf("%-20s %-15s",
+						   $self->{'name'}, $h->{'token'} . ":"),
+					   " " x (20+15+1), $h->{'description'}) . "\n");
 	} else {
-	    printf STDERR ("%-20s %-15s %s\n",
-			   $self->{'name'}, $h->{'token'} . ":",
-			     $h->{'description'})
+	    $self->output("%-20s %-15s %s\n",
+			  $self->{'name'}, $h->{'token'} . ":",
+			  $h->{'description'})
 	}
     }
 }
@@ -295,9 +293,9 @@ sub name {
 
 sub print_description {
     my ($self) = @_;
-    print STDERR $self->name(),"\n";
-    print STDERR $self->description(1);
-    print STDERR "\n\n";
+    $self->output($self->name(),"\n");
+    $self->output($self->description(1));
+    $self->output("\n\n");
 }
 
 1;
