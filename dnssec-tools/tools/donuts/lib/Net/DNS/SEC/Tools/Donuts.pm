@@ -313,6 +313,121 @@ sub Verbose {
     }
 }
 
+#
+# Zone Loading and manipulating
+#
+
+#
+# Internal resolving capability
+#
+sub set_resolver {
+    my ($self, $resolver) = @_;
+    $self->{'resolver'} = $resolver;
+}
+
+sub create_dnssec_resolver {
+    my ($self) = @_;
+    my $resolver = Net::DNS::Resolver->new;
+    $resolver->dnssec(1);
+    $resolver->cdflag(1);
+}
+
+sub resolver {
+    my ($self) = @_;
+    if (!$self->{'resolver'}) {
+	$self->create_dnssec_resolver();
+    }
+    return $self->{'resolver'};
+}
+
+# Pull records from a live zone
+sub query_for_live_records {
+
+    #
+    # resolve various records from the DNS directly
+    #   functionally this generates a "fake zone file"
+    #
+
+    # parse the input specification
+    my ($self, $domain, $specification) = @_;
+    $specification =~ s/^live://;
+
+    my @names = split(/,/,$specification);
+
+    $self->create_dnssec_resolver();
+
+    my @results;
+    my %results;
+
+    # do known minimal queries for a domain
+    $self->resolve_something(\%results, $domain, $domain, "DNSKEY");
+    $self->resolve_something(\%results, $domain, $domain, "SOA");
+    $self->resolve_something(\%results, $domain, $domain, "NS");
+
+    foreach my $rrname (@{$results{$domain}{'NS'}}) {
+	# this is primarily to pull all the rrsigs for a given NS record
+	#print "resolving ", $rrname->nsdname, "\n";
+	$self->resolve_something(\%results, $domain, $rrname->nsdname, "A");
+    }
+
+    foreach my $name (@names) {
+	my $type = "A";
+	if ($name =~ s/(.*):(.*)/$1/) {
+	    $type = $2;
+	}
+	$self->resolve_something(\%results, $domain, "$name.$domain", $type);
+    }
+
+    foreach my $name (keys(%results)) {
+	foreach my $type (keys(%{$results{$name}})) {
+	    push @results, @{$results{$name}{$type}};
+	}
+    }
+    return \@results;
+}
+
+sub resolve_something {
+    my ($self, $datastorage, $basedomain, $name, $type) = @_;
+    my $query = $self->{'resolver'}->query("$name", $type);
+    if ($query) {
+	$self->get_dns_packet_records($query, $basedomain, $datastorage);
+	#print "resolved $name/$type: \n";
+	#debug_dump_data($datastorage);
+    } else {
+	if ($self->{'resolver'}->errorstring ne 'NOERROR') {
+	    # XXX: handle errors better
+	    $self->Error("  DNS error for $name/$type -> " . $self->{'resolver'}->errorstring . "\n");
+	    #$netdns_error = $resolver->errorstring;
+	    exit 1 
+	}
+    }
+}    
+
+sub get_dns_packet_records {
+    my ($self, $query, $basedomain, $datastorage) = @_;
+    
+    $self->record_data($datastorage, 0, $basedomain, $query->additional);
+    $self->record_data($datastorage, 0, $basedomain, $query->authority);
+    $self->record_data($datastorage, 1, $basedomain, $query->answer);
+}
+
+sub record_data {
+    my ($self, $datastorage, $thisdatatrumps, $basedomain, @datas) = @_;
+    my %donethese;
+
+    foreach my $data (@datas) {
+	if (!exists($datastorage->{$data->name}) || $thisdatatrumps || $data->type eq 'RRSIG') {
+	    if ($data->name =~ /$basedomain$/) { # only record things within the base
+		if (!exists($donethese{$data->name}{$data->type}) && $data->type ne 'RRSIG') {
+		    delete $datastorage->{$data->name}{$data->type};
+		    $donethese{$data->name}{$data->type} = 1;
+		}
+		push @{$datastorage->{$data->name}{$data->type}}, $data;
+	    }
+	}
+    }
+}
+
 1;
 
 =pod
