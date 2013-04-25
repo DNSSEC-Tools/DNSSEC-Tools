@@ -416,7 +416,7 @@ sub analyze_names {
     my ($rulecount, $errcount) = (0,0);
     my @rules = $self->rules();
 
-    my ($errcount, $errorsfound, $rulecount, $rulesrun);
+    my ( $errorsfound, $rulesrun);
 
     if (!defined($recordByNameTypeCache)) {
 	# they didn't pass in a cache structure, so we need to 
