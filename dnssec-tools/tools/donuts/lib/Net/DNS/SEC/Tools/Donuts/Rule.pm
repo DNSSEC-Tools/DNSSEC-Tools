@@ -84,6 +84,36 @@ sub Output {
     }
 }
 
+sub Separator {
+    my $r = shift;
+    if (exists($r->{'donuts'})) {
+	$r->{'donuts'}->Separator(@_);
+    } else {
+	# very lame fallback just in case
+	print STDERR "\n";
+    }
+}
+
+sub StartSection {
+    my $r = shift;
+    if (exists($r->{'donuts'})) {
+	$r->{'donuts'}->StartSection(@_);
+    } else {
+	# very lame fallback just in case
+	print STDERR "$_[0]:";
+    }
+}
+
+sub EndSection {
+    my $r = shift;
+    if (exists($r->{'donuts'})) {
+	$r->{'donuts'}->EndSection(@_);
+    } else {
+	# very lame fallback just in case
+	print STDERR "$_[0]:";
+    }
+}
+
 # XXX: deprecated
 sub wrapit {
     my $r = shift;
@@ -106,7 +136,7 @@ sub output_error {
 
     $r->{'location'} = $loc;
     $r->{'rulename'} = $r->{name};
-    $r->Output("$loc", "-----");
+    $r->StartSection("$loc");
     $r->Output("Location", $rrname) if ($rrname);
     if ($verb) {
 	if ($verb >= 5) {
@@ -133,7 +163,8 @@ sub output_error {
     # print the output error, with one of 3 formatting styles
     $r->Output("$class", $err);
     $r->Output("Details", $r->{desc});
-#    $r->Separator("");
+    $r->EndSection();
+    $r->Separator("");
 }
 
 # Print the results of an error for a given rule
