@@ -431,6 +431,25 @@ sub analyze_names {
     return ($rulecount, $errcount);
 }
 
+sub analyze {
+    my ($self, $level) = @_;
+
+    my ($rulecount, $errcount) = (0,0);
+
+    $level = $level || $self->config('level') || 5;
+    
+    my $byNameTypeCache;
+    $self->Verbose("--- Analyzing individual records in $self->{zonesource}\n");
+    ($rulecount, $errcount) = $self->analyze_records($level, $self->config('verboes'), $byNameTypeCache);
+
+    $self->Verbose("--- Analyzing records for each name in $self->{zonesource}\n");
+    my ($ruleadd, $erradd) = $self->analyze_names($level, $self->config('verboes'), $byNameTypeCache);
+    $rulecount += $ruleadd;
+    $errcount += $erradd;
+
+    return ($rulecount, $errcount);
+}
+
 #
 # Internal resolving capability
 #
