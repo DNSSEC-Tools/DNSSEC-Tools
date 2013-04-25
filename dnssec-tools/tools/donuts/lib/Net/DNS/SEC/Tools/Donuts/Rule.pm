@@ -8,7 +8,7 @@ package Net::DNS::SEC::Tools::Donuts::Rule;
 use strict;
 use Net::DNS;
 my $have_textwrap = eval { require Text::Wrap };
-our $VERSION="1.1";
+our $VERSION="2.1";
 
 require Exporter;
 our @ISA = qw(Exporter);
@@ -567,9 +567,9 @@ Wes Hardaker <hardaker@users.sourceforge.net>
 
 B<donuts(8)>
 
-B<Net::DNS>, B<Net::DNS::RR>
+B<Net::DNS>, B<Net::DNS::RR>, B<Net::DNS::SEC::Tools::Donuts>
 
-http://dnssec-tools.sourceforge.net
+http://www.dnssec-tools.org/
 
 =cut
 
