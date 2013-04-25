@@ -98,6 +98,29 @@ sub create_feature_hash_from_list {
 }
 
 #
+# Output formatting and location
+#
+sub set_output_format {
+    my ($self, $format) = @_;
+    $self->{'output_format'} = $format;
+}
+
+sub output_format {
+    my ($self) = @_;
+    return $self->{'output_format'};
+}
+
+sub set_output_location {
+    my ($self, $location) = @_;
+    $self->{'output_location'} = $location;
+}
+
+sub output_location {
+    my ($self) = @_;
+    return $self->{'output_location'};
+}
+
+#
 # Loading and manipulating rules
 #
 
