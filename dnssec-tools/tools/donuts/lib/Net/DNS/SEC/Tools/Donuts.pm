@@ -343,6 +343,7 @@ sub load_zone {
     my ($self, $file, $domain) = @_;
     
     $self->{'domain'} = $domain;
+    $self->{'zonesource'} = $file;
     $self->clear_zone_records();
 
     my $rrset;
@@ -358,6 +359,31 @@ sub load_zone {
     }
     $self->set_zone_records($rrset);
     return $parseerror;
+}
+
+#
+# Analysis - combining it all together
+#
+sub analyze_records {
+    my ($self, $l, $v) = @_;
+    my $firstrun = 1;
+    my @rules = $self->rules();
+    my $rrset = $self->zone_records();
+
+    my ($errcount, $errorsfound, $rulecount, $rulesrun);
+
+    foreach my $rec (@$rrset) {
+	foreach my $r (@rules) {
+	    ($rulesrun, $errorsfound) =
+	      $r->test_record($rec, $self->{'zonesource'},
+			      $l, $self->{'featurehash'}, $v);
+	    $errcount += $errorsfound;
+	    $rulecount += $rulesrun if ($firstrun);
+	}
+	$firstrun = 0;
+    }
+
+    return ($rulecount, $errcount);
 }
 
 #
