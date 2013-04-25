@@ -44,7 +44,15 @@ ok($errcount == 3, "3 errors were found in the level 7 run (got: $errcount)");
 # the default level (5) should be the same
 ($rulecount, $errcount) = $donuts->analyze();
 ok($errcount == 3, "3 errors were found in the level <default> run (got: $errcount)");
+ok($rulecount == 1, "1 rule was run in the level <default> run (got: $rulecount)");
 
 # running at an even lower level should drop all warnings
 ($rulecount, $errcount) = $donuts->analyze(2);
 ok($errcount == 0, "0 errors were found in the level 2 run (got: $errcount)");
+ok($rulecount == 0, "0 rules were run in the level 2 run (got: $rulecount)");
+
+# now explicitly remove a rule via the regexp setting
+$donuts->set_ignore_list('TEST_DNS_NO_MX');
+($rulecount, $errcount) = $donuts->analyze(9);
+ok($errcount == 1, "1 errors were found in the ignore run (got: $errcount)");
+ok($rulecount == 1, "1 rule was run in the ignore run (got: $rulecount)");
