@@ -348,7 +348,7 @@ sub load_zone {
     my $rrset;
     my $parseerror = 0;
     if ($file =~ /^live:/) {
-	$rrset = query_for_live_records($domain, $file);
+	$rrset = $self->query_for_live_records($domain, $file);
     } else {
 	$rrset = dt_parse_zonefile(file => $file,
 				   origin => "$domain.",
