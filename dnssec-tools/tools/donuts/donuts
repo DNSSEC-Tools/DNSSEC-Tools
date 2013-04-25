@@ -369,8 +369,14 @@ while ($#ARGV > -1) {
     #
     # call each rule on each record
     #
+    my $byNameTypeCache;
     print STDERR "--- Analyzing individual records in $current_zone_file\n" if ($opts{'v'});
-    ($rulecount, $errcount) = $donuts->analyze_records($opts{'l'}, $opts{'v'});
+    ($rulecount, $errcount) = $donuts->analyze_records($opts{'l'}, $opts{'v'}, $byNameTypeCache);
+
+    print STDERR "--- Analyzing records for each name in $current_zone_file\n" if ($opts{'v'});
+    my ($ruleadd, $erradd) = $donuts->analyze_names($opts{'l'}, $opts{'v'}, $byNameTypeCache);
+    $rulecount += $ruleadd;
+    $errcount += $erradd;
 
     #
     # stop tcpdump if we had started it
