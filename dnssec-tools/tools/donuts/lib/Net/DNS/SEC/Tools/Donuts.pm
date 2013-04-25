@@ -31,6 +31,10 @@ sub new {
     $self->{'ignorelist'} = [];
     $self->{'featurelist'} = [];
     $self->{'featurehash'} = {};
+    $self->{'config'} = {};
+
+    # XXX: only really needed if 'live' is enabled
+    $self->{'resolver'} = Net::DNS::Resolver->new;
 
     return $self;
 }
@@ -79,7 +83,23 @@ sub create_feature_hash_from_list {
     foreach my $feature (@{$self->{'featurelist'}}) {
 	$self->{'featurehash'}{$feature} = 1;
     }
-}    
+}
+
+#
+# configuration objects
+#
+sub set_config {
+    my ($self, $name, $value) = @_;
+
+    $self->{'config'}{$name} = $value;
+}
+
+sub config {
+    my ($self, $name) = @_;
+
+    return if (!exists($self->{'config'}{$name}));
+    return $self->{'config'}{$name};
+}
 
 1;
 
