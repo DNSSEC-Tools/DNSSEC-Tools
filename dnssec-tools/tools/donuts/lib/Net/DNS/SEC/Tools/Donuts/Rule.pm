@@ -163,6 +163,10 @@ sub run_test_for_errors {
 
     my $res = eval {
 	import Net::DNS::SEC::Tools::Donuts::Rule qw(donuts_error);
+
+	# Set global variables needed by rules
+	$main::current_domain = $rule->{'donuts'}->domain();
+
 	$rule->{'test'}->(@$testargs);
     };
     if (!defined($res) && $@) {
@@ -170,7 +174,7 @@ sub run_test_for_errors {
 	$rule->Error("  ZoneData: $file\n");
 	$rule->Error("  Location: $rule->{code_file}:$rule->{code_line}\n");
 	$rule->Error("  Error:    $@\n");
-	return (0,0,[]); # XXX: need to return this data instead
+	return (1,1,[]); # XXX: need to return this data instead
     }
     if (ref($res) ne 'ARRAY') {
 	if ($res) {
@@ -183,9 +187,13 @@ sub run_test_for_errors {
     } elsif ($#$current_errors > -1) {
 	$res = [@$current_errors, @$res];
     }
-    return (1,0,$res);
+    return (1, 1 + $#$res, $res);
 }
 
+#
+# Perform the same thing as run_test_for_errors, but print
+# resulting errors out
+#
 sub run_test {
     my ($rule, $file, $testargs, $errorargs) = @_;
 
@@ -234,7 +242,7 @@ sub test_name {
 	(exists($rule->{'ruletype'}) && $rule->{'ruletype'} eq 'name')) {
 
 	return $rule->run_test($file, [$namerecord, $rule, $name],
-			       ["$file::$name", $verbose]);
+			       ["$file/$name", $verbose]);
     }
     return (0,0);
 }
