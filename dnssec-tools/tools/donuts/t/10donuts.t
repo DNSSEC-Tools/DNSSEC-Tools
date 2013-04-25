@@ -22,3 +22,6 @@ ok(is_deeply(\@features, ['feat1', 'feat2']), "ignore list container");
 $donuts->set_config('enable-testing', 'true');
 ok(is($donuts->config('enable-testing'), 'true'), "config tester: stored");
 ok(is($donuts->config('dne-config'), undef), "config tester: dne");
+
+# test user config parsing
+$donuts->parse_config_file('t/donuts-test.conf');
