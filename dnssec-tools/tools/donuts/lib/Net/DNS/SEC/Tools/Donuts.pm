@@ -8,6 +8,7 @@ package Net::DNS::SEC::Tools::Donuts;
 use strict;
 use Net::DNS;
 use Net::DNS::SEC::Tools::Donuts::Rule;
+use Net::DNS::SEC::Tools::dnssectools;
 
 my $have_textwrap = eval { require Text::Wrap };
 our $VERSION="2.1";
@@ -316,6 +317,48 @@ sub Verbose {
 #
 # Zone Loading and manipulating
 #
+
+sub clear_zone_records {
+    # nuke 
+    my ($self) = @_;
+    $self->{'RRs'} = [];
+}
+
+sub zone_records {
+    my ($self) = @_;
+    return $self->{'RRs'};
+}
+
+sub set_zone_records {
+    my ($self, $rrs) = @_;
+    $self->{'RRs'} = $rrs;
+}
+
+sub domain {
+    my ($self) = @_;
+    return $self->{'domain'};
+}
+
+sub load_zone {
+    my ($self, $file, $domain) = @_;
+    
+    $self->{'domain'} = $domain;
+    $self->clear_zone_records();
+
+    my $rrset;
+    my $parseerror = 0;
+    if ($file =~ /^live:/) {
+	$rrset = query_for_live_records($domain, $file);
+    } else {
+	$rrset = dt_parse_zonefile(file => $file,
+				   origin => "$domain.",
+				   soft_errors => 1,
+				   #on_error =>\&print_parse_error
+	    );
+    }
+    $self->set_zone_records($rrset);
+    return $parseerror;
+}
 
 #
 # Internal resolving capability
