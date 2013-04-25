@@ -30,7 +30,7 @@ ok($#rules == 1, "rules loaded");
 
 # extract a certain rule
 my @subrules = $donuts->rule('DONUTS_TEST_RULE_TTL');
-ok($#subrules == 1, "1 extracted rule found");
+ok($#subrules == 0, "1 extracted rule found");
 
 # test user config parsing
 $donuts->parse_config_file('t/donuts-test.conf');
