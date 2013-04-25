@@ -95,7 +95,9 @@ sub rules {
 
 sub rule {
     my ($self, $rulename) = @_;
-    return grep { $_->{'name'} eq $rulename; } @{$self->{'rules'}};
+    my @extracted_rules = grep { $_->{'name'} eq $rulename; } @{$self->{'rules'}};
+    return if ($#extracted_rules == -1);
+    return wantarray ? @extracted_rules : $extracted_rules[0];
 }
 
 sub load_rule_files {
