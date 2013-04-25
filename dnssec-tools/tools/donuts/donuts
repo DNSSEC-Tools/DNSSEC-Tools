@@ -394,7 +394,7 @@ while ($#ARGV > -1) {
 	print "  rules considered:\t" . (1+$#rules) . "\n";
 	print "  rules tested:\t\t$rulecount\n";
 	print "  records analyzed:\t" . (1+$#{$donuts->zone_records()}) . "\n";
-	print "  names analyzed:\t" . "FIXME" . "\n";
+	print "  names analyzed:\t" . $donuts->name_count() . "\n";
 	print "  errors found:\t\t$errcount\n";
     } else {
 	print "$errcount errors found in $current_zone_file\n"

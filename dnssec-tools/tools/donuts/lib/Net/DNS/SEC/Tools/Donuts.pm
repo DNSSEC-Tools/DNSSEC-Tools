@@ -397,6 +397,19 @@ sub analyze_records {
     return ($rulecount, $errcount);
 }
 
+sub create_name_type_cache {
+    my ($self) = @_;
+    # they didn't pass in a cache structure, so we need to 
+    # create it ourselves.
+    my $rrset = $self->zone_records();
+    
+    my %recordByNameTypeCache;
+    foreach my $rec (@$rrset) {
+	push @{$recordByNameTypeCache{$rec->name}{$rec->type}}, $rec;
+    }
+
+    return \%recordByNameTypeCache;
+}
 sub analyze_names {
     my ($self, $level, $verbose, $recordByNameTypeCache) = @_;
     my $firstrun = 1;
@@ -408,12 +421,7 @@ sub analyze_names {
     if (!defined($recordByNameTypeCache)) {
 	# they didn't pass in a cache structure, so we need to 
 	# create it ourselves.
-	my $rrset = $self->zone_records();
-
-	$recordByNameTypeCache = {};
-	foreach my $rec (@$rrset) {
-	    push @{$recordByNameTypeCache->{$rec->name}{$rec->type}}, $rec;
-	}
+	$recordByNameTypeCache = $self->create_name_type_cache();
     }
 
     foreach my $namerec (keys(%$recordByNameTypeCache)) {
@@ -448,6 +456,12 @@ sub analyze {
     $errcount += $erradd;
 
     return ($rulecount, $errcount);
+}
+
+sub name_count {
+    my ($self) = @_;
+    my @names = keys(%{$self->create_name_type_cache()});
+    return $#names + 1;
 }
 
 #
