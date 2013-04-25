@@ -365,7 +365,7 @@ sub load_zone {
 # Analysis - combining it all together
 #
 sub analyze_records {
-    my ($self, $l, $v) = @_;
+    my ($self, $level, $verbose) = @_;
     my $firstrun = 1;
     my @rules = $self->rules();
     my $rrset = $self->zone_records();
@@ -376,7 +376,7 @@ sub analyze_records {
 	foreach my $r (@rules) {
 	    ($rulesrun, $errorsfound) =
 	      $r->test_record($rec, $self->{'zonesource'},
-			      $l, $self->{'featurehash'}, $v);
+			      $level, $self->{'featurehash'}, $verbose);
 	    $errcount += $errorsfound;
 	    $rulecount += $rulesrun if ($firstrun);
 	}
