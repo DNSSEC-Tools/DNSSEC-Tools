@@ -65,10 +65,10 @@ sub output {
 	}
     } else {
 	if ($#_ == 0) {
-	    print STDERR "$_[0]\n";
+	    print "$_[0]\n";
 	} else {
 	    my $token = shift;
-	    print STDERR "  ", sprintf("%-13s", $token), @_, "\n";
+	    print "  ", sprintf("%-13s", $token), @_, "\n";
 	}
     }
 }
