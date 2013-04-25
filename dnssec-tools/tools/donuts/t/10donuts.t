@@ -23,5 +23,11 @@ $donuts->set_config('enable-testing', 'true');
 ok(is($donuts->config('enable-testing'), 'true'), "config tester: stored");
 ok(is($donuts->config('dne-config'), undef), "config tester: dne");
 
+# test rule loading
+$donuts->load_rule_files('rules/*.txt');
+my @rules = $donuts->rules();
+ok($#rules > -1, "rules loaded");
+
 # test user config parsing
 $donuts->parse_config_file('t/donuts-test.conf');
+
