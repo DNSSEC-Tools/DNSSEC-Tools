@@ -56,9 +56,9 @@ if (runpacked()) {
     $TCPDUMP = "./tcpdump";
 }
 
-our (@rules, %rules, $rf, $current_zone_file, %nrecs,
+our ($rf, $current_zone_file,
     @ignorelist, $netdns, $netdns_error, %outstructure, $current_domain,
-    $globalrulecount, $globalrrset, $globalnrecs,
+    $globalrulecount, $globalrrset,
     $globalerrcount, @filestested);
 
 
@@ -96,10 +96,10 @@ my %primaries =
 	       my $tab;
 
 	       push @$tab, ['results on testing:', join(', ',@filestested)];
-	       push @$tab, ['rules considered:', (1+$#rules)];
-	       push @$tab, ['rules tested:',     $globalrulecount];
-	       push @$tab, ['records analyzed:', ($globalrrset)];
-	       push @$tab, ['names analyzed:',   $globalnrecs];
+#	       push @$tab, ['rules considered:', $#{$donuts->rules()}];
+#	       push @$tab, ['rules tested:',     "FIX ME: only rules run"];
+#	       push @$tab, ['records analyzed:', $#{$donuts->records()}];
+#	       push @$tab, ['names analyzed:',   "FIX ME"];
 	       push @$tab, ['errors found:',     $globalerrcount];
 	       return [$tab];
 	   }
@@ -316,7 +316,6 @@ while ($#ARGV > -1) {
     push @filestested, $current_zone_file;
     $current_domain = shift;
     $current_domain =~ s/\.$//;  # remove potential trailing dot
-    %nrecs = ();
 
     #
     # Start collecting TCPDUMP data if requested
@@ -371,37 +370,7 @@ while ($#ARGV > -1) {
     # call each rule on each record
     #
     print STDERR "--- Analyzing individual records in $current_zone_file\n" if ($opts{'v'});
-    my $firstrun = 1;
-    my @rules = $donuts->rules();
-    foreach my $rec (@$rrset) {
-	foreach my $r (@rules) {
-	    ($rulesrun, $errorsfound) =
-	      $r->test_record($rec, $current_zone_file,
-			      $opts{'l'}, \%features, $opts{'v'});
-	    $errcount += $errorsfound;
-	    $rulecount += $rulesrun if ($firstrun);
-	}
-	push @{$nrecs{$rec->name}{$rec->type}}, $rec;
-	$firstrun = 0;
-    }
-
-
-    #
-    # call each ruletype=name rule on each name set of records
-    #
-    print STDERR "--- Analyzing records for each name in $current_zone_file\n"  if ($opts{'v'});
-    $firstrun = 1;
-    foreach my $namerec (keys(%nrecs)) {
-	foreach my $r (@rules) {
-	    ($rulesrun, $errorsfound) =
-	      $r->test_name($nrecs{$namerec}, $namerec,
-			    $current_zone_file,
-			    $opts{'l'}, \%features, $opts{'v'});
-	    $errcount += $errorsfound;
-	    $rulecount += $rulesrun if ($firstrun);
-	}
-	$firstrun = 0;
-    }
+    ($rulecount, $errcount) = $donuts->analyze_records($opts{'l'}, $opts{'v'});
 
     #
     # stop tcpdump if we had started it
@@ -417,16 +386,16 @@ while ($#ARGV > -1) {
     # collect global stats for gui display
     $globalrulecount += $rulecount if ($globalrulecount == 0);
     $globalrrset += 1 + $#$rrset;
-    my @a = keys(%nrecs);
-    $globalnrecs += 1 + $#a;
+#    $globalnrecs += 1 + $#a;
     $globalerrcount += $errcount;
 
+    my @rules = $donuts->rules();
     if ($opts{'v'}) {
 	print "results on testing $current_domain:\n";
 	print "  rules considered:\t" . (1+$#rules) . "\n";
 	print "  rules tested:\t\t$rulecount\n";
-	print "  records analyzed:\t" . (1+$#$rrset) . "\n";
-	print "  names analyzed:\t" . (1+$#a) . "\n";
+	print "  records analyzed:\t" . (1+$#{$donuts->zone_records()}) . "\n";
+	print "  names analyzed:\t" . "FIXME" . "\n";
 	print "  errors found:\t\t$errcount\n";
     } else {
 	print "$errcount errors found in $current_zone_file\n"
@@ -439,10 +408,7 @@ while ($#ARGV > -1) {
     if ($#$rrset == -1) {
 	print "\nWARNING: no records found to be analyzed in $current_domain!!!\n";
     }
-    if ($#a == -1) {
-	print "\nWARNING: no names found to be analyzed in $current_domain!!!\n";
-    } 
-   if ($errcount) {
+    if ($errcount) {
 	$exitcode = 1;
     }
 }
