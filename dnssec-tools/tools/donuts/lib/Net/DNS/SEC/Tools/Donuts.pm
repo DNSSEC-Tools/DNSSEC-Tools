@@ -183,7 +183,7 @@ sub parse_rule_file {
 		$code .= $_;
 		$ruledef .= $_;
 	    }
-	    $ruledef .= $_;
+	    $ruledef .= $_ if (defined($_));
 
 	    # evaluate it
 	    if ($type eq 'init') {
@@ -198,7 +198,7 @@ sub parse_rule_file {
 		$rule->{'test'} = $code;
 	    }
 
-	    if (!/^\s/ && !/<\/(test|init)/) {
+	    if (defined($_) && !/^\s/ && !/<\/(test|init)/) {
 		$count--;
 		$nextline = $_;
 	    }
@@ -217,7 +217,7 @@ sub parse_rule_file {
 
 	# end of rule (can get here from inside a test end too, hence
 	# not an else clause above)
-	if (/^\s*$/) {
+	if (!defined($_) || /^\s*$/) {
 	    if ($rule && !$err) {
 		$rule->{'ruledef'} = $ruledef;
 		$ruledef = '';
@@ -265,7 +265,7 @@ sub parse_config_file {
 	}
 	if (/^name:\s*(.*)/) {
 	    $name = $1;
-	    if (!exists($self->{'rules'}{$name})) {
+	    if (!exists($self->{'rulesByName'}{$name})) {
 		$self->Warning("Warning in $file at $line: no such rule: $name\n");
 	    }
 	    next;
@@ -285,8 +285,8 @@ sub parse_config_file {
 	    $self->Error("Error in $file at line $line: Illegal definition.\n");
 	    exit;
 	}
-	if (exists($self->{'rules'}{$name})) {
-	    $self->{'rules'}{$name}->config($1, $2);
+	if (exists($self->{'rulesByName'}{$name})) {
+	    $self->{'rulesByName'}{$name}->config($1, $2);
 	}
     }
 }
