@@ -57,6 +57,13 @@ sub output {
 	foreach my $spot (qw(location rulename)) {
 	    push @{$r->{'gui'}{$spot}{$r->{$spot}}}, [@_];
 	}
+    } elsif (exists($r->{'donuts'})) {
+	if ($#_ == 0) {
+	    $r->{'donuts'}->Output("$_[0]\n");
+	} else {
+	    my $token = shift;
+	    $r->{'donuts'}->Output(sprintf("%-13s", $token) . join("", @_) . "\n");
+	}
     } else {
 	if ($#_ == 0) {
 	    print STDERR "$_[0]\n";
@@ -134,13 +141,22 @@ sub print_error {
     $r->output("");
 }
 
+sub Error {
+    my ($self, $error) = @_;
+    if (exists($self->{'donuts'})) {
+	$self->{'donuts'}->Error($error);
+    } else {
+	print STDERR $error;
+    }
+}
+
 my ($current_errors, $current_warnings);
 sub donuts_error {
     push @$current_errors, @_;
     return;
 }
 
-sub run_test {
+sub run_test_for_errors {
     my ($rule, $file, $testargs, $errorargs) = @_;
 
     $current_errors = [];
@@ -150,11 +166,11 @@ sub run_test {
 	$rule->{'test'}->(@$testargs);
     };
     if (!defined($res) && $@) {
-	print STDERR "\nProblem executing rule $rule->{name}: \n";
-	print STDERR "  ZoneData: $file\n";   
-	print STDERR "  Location: $rule->{code_file}:$rule->{code_line}\n";
-	print STDERR "  Error:    $@\n";
-	return (0,0);
+	$rule->Error("\nProblem executing rule $rule->{name}: \n");
+	$rule->Error("  ZoneData: $file\n");
+	$rule->Error("  Location: $rule->{code_file}:$rule->{code_line}\n");
+	$rule->Error("  Error:    $@\n");
+	return (0,0,[]); # XXX: need to return this data instead
     }
     if (ref($res) ne 'ARRAY') {
 	if ($res) {
@@ -162,29 +178,37 @@ sub run_test {
 	} elsif ($#$current_errors > -1) {
 	    $res = [@$current_errors];
 	} else {
-	    return (1,0);
+	    return (1,0,[]);
 	}
     } elsif ($#$current_errors > -1) {
 	$res = [@$current_errors, @$res];
     }
+    return (1,0,$res);
+}
+
+sub run_test {
+    my ($rule, $file, $testargs, $errorargs) = @_;
+
+    my ($count1, $count2, $res) =
+	$rule->run_test_for_errors($file, $testargs, $errorargs);
     if ($#$res > -1) {
 	foreach my $result (@$res) {
 	    $rule->print_error($result, @$errorargs);
 	}
-	return (1,$#$res+1);
     }
+    return ($count1, $count2);
 }
 
 
 sub test_record {
     my ($rule, $record, $file, $level, $features, $verbose) = @_;
+
     if ((!exists($rule->{'level'}) || $level >= $rule->{'level'}) &&
 	(!exists($rule->{'feature'}) ||
 	 exists($features->{$rule->{'feature'}})) &&
 	(!exists($rule->{'ruletype'}) || $rule->{'ruletype'} ne 'name')) {
 
 	# this is a legal rule for this run.
-
 	if (!exists($rule->{'type'}) || $record->type eq $rule->{'type'}) {
 
 	    # and the type matches
