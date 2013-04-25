@@ -24,7 +24,7 @@ sub new {
     if (exists($ref->{'test'}) && ref($ref->{'test'}) ne 'CODE') {
 	if ($ref->{'test'} !~ /^\s*sub\s*{/) {
 	    my $code = "no strict;   package main;   sub {\n";
-	    if ($ref->{'ruletype'} eq 'name') {
+	    if (exists($ref->{'ruletype'}) && $ref->{'ruletype'} eq 'name') {
 		$code .= "  my (\$records, \$rule, \$recordname) = \@_;\n";
 	    } else {
 		# assume 'record' ruletype...
