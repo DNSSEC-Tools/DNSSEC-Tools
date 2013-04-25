@@ -16,5 +16,9 @@ ns2.example.com.       1D IN A         192.0.2.82
 www.example.com.       1D IN A         192.1.2.1
                        1D IN MX        10 mail.example.com.
 
+; missing MX
 ssh.example.com.       1D IN A         192.0.2.2
+
+; deliberately low ttl
+lowttl.example.com     50 IN A         192.0.2.3
                        1D IN MX        10 mail.example.com.
