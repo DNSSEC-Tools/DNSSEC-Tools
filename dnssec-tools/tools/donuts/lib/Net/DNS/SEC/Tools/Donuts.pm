@@ -51,6 +51,19 @@ sub ignore_list {
     return @{$self->{'ignorelist'}};
 }
 
+sub rule_is_ignored {
+    my ($self, $rule) = @_;
+    # ignore certain rules
+
+    foreach my $ignore (@{$self->{'ignorelist'}}) {
+	if ($rule->{'name'} =~ /$ignore/) {
+	    return 1;
+	}
+    }
+    return 0;
+}
+
+
 #
 # feature lists/hashes
 #
@@ -121,14 +134,6 @@ sub load_rule_files {
 
 sub add_rule {
     my ($self, $rule) = @_;
-
-    # ignore certain rules
-
-    foreach my $ignore (@{$self->{'ignorelist'}}) {
-	if ($rule->{'name'} =~ /$ignore/) {
-	    return;
-	}
-    }
 
     # merge in default values
     my %defaultrule = ( level => 5 );
@@ -387,6 +392,8 @@ sub analyze_records {
 
     foreach my $rec (@$rrset) {
 	foreach my $r (@rules) {
+	    next if ($self->rule_is_ignored($r));
+
 	    ($rulesrun, $errorsfound) =
 	      $r->test_record($rec, $self->{'zonesource'},
 			      $level, $self->{'featurehash'}, $verbose);
@@ -433,6 +440,8 @@ sub analyze_names {
 
     foreach my $namerec (keys(%$recordByNameTypeCache)) {
         foreach my $r (@rules) {
+	    next if ($self->rule_is_ignored($r));
+	    
             ($rulesrun, $errorsfound) =
               $r->test_name($recordByNameTypeCache->{$namerec}, $namerec,
                             $self->{'zonesource'},
