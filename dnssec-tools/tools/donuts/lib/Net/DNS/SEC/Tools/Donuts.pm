@@ -371,7 +371,7 @@ sub load_zone {
 	$rrset = dt_parse_zonefile(file => $file,
 				   origin => "$domain.",
 				   soft_errors => 1,
-				   #on_error =>\&print_parse_error
+				   #on_error =>\&print_parse_error # XXX
 	    );
     }
     $self->set_zone_records($rrset);
