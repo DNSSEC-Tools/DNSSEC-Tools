@@ -144,6 +144,7 @@ sub output_location {
 sub output {
     my ($self) = @_;
     # XXX: right now the formatter is doing both
+    $self->set_output_format() if (!$self->{'formatter'});
     return $self->{'formatter'};
 }
 
