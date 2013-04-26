@@ -29,17 +29,22 @@ sub Separator {
 }
 
 sub StartSection {
-    my ($self, $name) = @_;
+    my ($self, $tag, $name) = @_;
 
     $self->{'section_depth'} += 2;
 
-    return " " x ($self->{'section_depth'}-2) . "$name:\n";
+    return " " x ($self->{'section_depth'}-2) . "$tag: $name\n";
 }
 
 sub EndSection {
     my ($self) = @_;
     $self->{'section_depth'} -= 2;
     $self->{'section_depth'} = 0 if ($self->{'section_depth'} < 0);
+}
+
+sub Comment {
+    my ($self, $comment) = @_;
+    return "# $comment";
 }
 
 1;

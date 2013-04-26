@@ -27,4 +27,10 @@ sub Output {
 			    $leader . " " x ($tagwidth+1), $message) . "\n";
 }
 
+sub Comment {
+    my ($self, $comment) = @_;
+    return Text::Wrap::wrap("# ", "# ", $comment, ) . "\n";
+}
+
+
 1;
