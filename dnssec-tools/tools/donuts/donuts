@@ -60,8 +60,7 @@ if (runpacked()) {
 
 our ($rf, $current_zone_file,
     @ignorelist, $netdns, $netdns_error, %outstructure, $current_domain,
-    $globalrulecount, $globalrrset,
-    $globalerrcount, @filestested);
+    @filestested);
 
 
 my %primaries = 
@@ -102,7 +101,7 @@ my %primaries =
 #	       push @$tab, ['rules tested:',     "FIX ME: only rules run"];
 #	       push @$tab, ['records analyzed:', $#{$donuts->records()}];
 #	       push @$tab, ['names analyzed:',   "FIX ME"];
-	       push @$tab, ['errors found:',     $globalerrcount];
+#	       push @$tab, ['errors found:',     $globalerrcount];
 	       return [$tab];
 	   }
 	   return [[[""]]];
@@ -394,12 +393,6 @@ while ($#ARGV > -1) {
 	sleep(1);
 	kill(9, $tcpdumpproc);
     }
-
-    # collect global stats for gui display
-    $globalrulecount += $rulecount if ($globalrulecount == 0);
-    $globalrrset += 1 + $#$rrset;
-#    $globalnrecs += 1 + $#a;
-    $globalerrcount += $errcount;
 
     my @rules = $donuts->rules();
     if ($opts{'v'}) {
