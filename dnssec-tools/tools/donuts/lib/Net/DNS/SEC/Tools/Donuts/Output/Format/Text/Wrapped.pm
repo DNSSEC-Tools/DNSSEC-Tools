@@ -23,8 +23,8 @@ sub Output {
     $tag .= ":";
 
     my $leader = " " x $self->{'section_depth'};
-    print Text::Wrap::wrap($leader . sprintf("\%-${tagwidth}s ", $tag),
-			   $leader . " " x ($tagwidth+1), $message) . "\n";
+    return Text::Wrap::wrap($leader . sprintf("\%-${tagwidth}s ", $tag),
+			    $leader . " " x ($tagwidth+1), $message) . "\n";
 }
 
 1;

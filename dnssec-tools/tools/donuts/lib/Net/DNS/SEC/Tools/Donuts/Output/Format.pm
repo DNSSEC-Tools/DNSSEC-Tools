@@ -7,8 +7,6 @@ package Net::DNS::SEC::Tools::Donuts::Output::Format;
 
 use strict;
 
-my $have_textwrap = eval { require Text::Wrap };
-
 sub new {
     my $type = shift;
     my ($class) = ref($type) || $type;
@@ -20,12 +18,12 @@ sub new {
 
 sub Error {
     my ($self, $message, $tag) = @_;
-    print STDERR $message;
+    return $message;
 }
 
 sub Warning {
     my ($self, $message, $tag) = @_;
-    print STDERR $message;
+    return $message;
 }
 
 1;

@@ -19,21 +19,21 @@ sub Output {
     $tag .= ":";
 
     my $leader = " " x $self->{'section_depth'};
-    printf("%s\%-${tagwidth}s %s\n", $leader, $tag, $message);
+    sprintf("%s\%-${tagwidth}s %s\n", $leader, $tag, $message);
 }
 
 sub Separator {
     my ($self) = @_;
 
-    print "\n";
+    return "\n";
 }
 
 sub StartSection {
     my ($self, $name) = @_;
 
-    print " " x $self->{'section_depth'} . "$name:\n";
-
     $self->{'section_depth'} += 2;
+
+    return " " x ($self->{'section_depth'}-2) . "$name:\n";
 }
 
 sub EndSection {
