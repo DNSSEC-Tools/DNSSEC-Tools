@@ -106,6 +106,12 @@ sub create_feature_hash_from_list {
 sub set_output_format {
     my ($self, $format) = @_;
 
+    if (ref($format) ne '') {
+	# a class was directly passed
+	$self->{'formatter'} = $format;
+	return;
+    }
+
     $format = defined($format) ? $format : "wrapped";
     $format = "text" if ($format eq 'wrapped' && !$have_textwrap);
 
