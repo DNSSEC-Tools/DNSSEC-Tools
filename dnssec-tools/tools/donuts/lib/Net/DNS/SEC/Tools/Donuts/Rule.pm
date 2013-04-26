@@ -7,6 +7,8 @@ package Net::DNS::SEC::Tools::Donuts::Rule;
 
 use strict;
 use Net::DNS;
+use Net::DNS::SEC::Tools::Donuts::Output::Format::Text;
+
 my $have_textwrap = eval { require Text::Wrap };
 our $VERSION="2.1";
 
@@ -45,6 +47,11 @@ sub new {
 	}
     }
 
+    if (!exists($ref->{'formatter'})) {
+	# default to straight text?
+	$ref->{'formatter'} = new Net::DNS::SEC::Tools::Donuts::Output::Format::Text();
+    }
+
     bless $ref, $class;
     return $ref;
 }
@@ -76,42 +83,22 @@ sub output {
 
 sub Output {
     my $r = shift;
-    if (exists($r->{'donuts'})) {
-	$r->{'donuts'}->Output(@_);
-    } else {
-	# very lame fallback just in case
-	print STDERR @_;
-    }
+    $r->{'formatter'}->Output(@_);
 }
 
 sub Separator {
     my $r = shift;
-    if (exists($r->{'donuts'})) {
-	$r->{'donuts'}->Separator(@_);
-    } else {
-	# very lame fallback just in case
-	print STDERR "\n";
-    }
+    $r->{'formatter'}->Separator(@_);
 }
 
 sub StartSection {
     my $r = shift;
-    if (exists($r->{'donuts'})) {
-	$r->{'donuts'}->StartSection(@_);
-    } else {
-	# very lame fallback just in case
-	print STDERR "$_[0]:";
-    }
+    $r->{'formatter'}->StartSection(@_);
 }
 
 sub EndSection {
     my $r = shift;
-    if (exists($r->{'donuts'})) {
-	$r->{'donuts'}->EndSection(@_);
-    } else {
-	# very lame fallback just in case
-	print STDERR "$_[0]:";
-    }
+    $r->{'formatter'}->EndSection(@_);
 }
 
 # XXX: deprecated
