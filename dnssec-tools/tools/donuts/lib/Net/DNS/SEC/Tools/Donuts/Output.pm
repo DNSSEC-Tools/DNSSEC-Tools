@@ -5,6 +5,9 @@
 
 package Net::DNS::SEC::Tools::Donuts::Output;
 
+use IO::Handle;
+use IO::File;
+
 use strict;
 
 my $have_textwrap = eval { require Net::DNS::SEC::Tools::Donuts::Output::Format::Text::Wrapped; };
@@ -69,6 +72,13 @@ sub set_location {
     if ($location eq 'stdout') {
 	$self->{'location'} = new IO::Handle;
 	$self->{'location'}->fdopen(fileno(STDOUT),"w");
+    } elsif ($location eq 'stderr') {
+	$self->{'location'} = new IO::Handle;
+	$self->{'location'}->fdopen(fileno(STDERR),"w");
+    } elsif ($location =~ /^file:(.*)/) {
+	my $path = $1;
+	$self->{'location'} = new IO::File;
+	$self->{'location'}->open("> $path");
     } else {
 	die "unknown location directive: '$location'";
     }
