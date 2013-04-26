@@ -417,6 +417,7 @@ sub analyze_records {
     my ($errorsfound, $rulesrun);
     my ($rulecount, $errcount) = (0,0);
 
+    $self->output()->StartOutput();
     $self->output()->StartSection("Record Results", "$self->{zonesource}");
     $self->output()->Comment("Analyzing individual records in $self->{zonesource}");
 
@@ -439,6 +440,7 @@ sub analyze_records {
     }
 
     $self->output()->EndSection();
+    $self->output()->EndOutput();
 
     return ($rulecount, $errcount);
 }
@@ -464,6 +466,7 @@ sub analyze_names {
 
     my ( $errorsfound, $rulesrun);
 
+    $self->output()->StartOutput();
     $self->output()->StartSection("Name Results", "$self->{zonesource}");
     $self->output()->Comment("Analyzing records for each name in $self->{zonesource}");
 
@@ -488,6 +491,7 @@ sub analyze_names {
     }
 
     $self->output()->EndSection();
+    $self->output()->EndOutput();
 
     return ($rulecount, $errcount);
 }
@@ -499,13 +503,20 @@ sub analyze {
 
     my $verbose = $self->config('verbose') || 0;
     $level = $level || $self->config('level') || 5;
-    
-    my $byNameTypeCache;
-    ($rulecount, $errcount) = $self->analyze_records($level, $verbose, $byNameTypeCache);
 
-    my ($ruleadd, $erradd) = $self->analyze_names($level, $verbose, $byNameTypeCache);
+    $self->output()->StartOutput();
+    $self->output()->StartSection("Donuts Results", $self->{'domain'});
+    $self->output()->Output("Source", $self->{'zonesource'});
+    
+    my %byNameTypeCache;
+    ($rulecount, $errcount) = $self->analyze_records($level, $verbose, \%byNameTypeCache);
+
+    my ($ruleadd, $erradd) = $self->analyze_names($level, $verbose, \%byNameTypeCache);
     $rulecount += $ruleadd;
     $errcount += $erradd;
+
+    $self->output()->EndSection();
+    $self->output()->EndOutput();
 
     return ($rulecount, $errcount);
 }

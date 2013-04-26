@@ -26,4 +26,10 @@ sub Warning {
     return $message;
 }
 
+sub StartOutput {
+}
+
+sub EndOutput {
+}
+
 1;
