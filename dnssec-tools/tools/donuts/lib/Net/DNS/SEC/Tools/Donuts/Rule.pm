@@ -7,8 +7,10 @@ package Net::DNS::SEC::Tools::Donuts::Rule;
 
 use strict;
 use Net::DNS;
+use Net::DNS::SEC::Tools::Donuts::Output::Format::Text;
+
 my $have_textwrap = eval { require Text::Wrap };
-our $VERSION="1.1";
+our $VERSION="2.1";
 
 require Exporter;
 our @ISA = qw(Exporter);
@@ -24,7 +26,7 @@ sub new {
     if (exists($ref->{'test'}) && ref($ref->{'test'}) ne 'CODE') {
 	if ($ref->{'test'} !~ /^\s*sub\s*{/) {
 	    my $code = "no strict;   package main;   sub {\n";
-	    if ($ref->{'ruletype'} eq 'name') {
+	    if (exists($ref->{'ruletype'}) && $ref->{'ruletype'} eq 'name') {
 		$code .= "  my (\$records, \$rule, \$recordname) = \@_;\n";
 	    } else {
 		# assume 'record' ruletype...
@@ -42,7 +44,6 @@ sub new {
 	# if error, mention it
 	if ($@) {
 	    warn "broken code in test for rule '$ref->{name}': $@";
-	    print STDERR "IN CODE:\n  $ref->{test}\n" if ($main::opts{'v'});
 	}
     }
 
@@ -50,6 +51,7 @@ sub new {
     return $ref;
 }
 
+# XXX: deprecated
 sub output {
     my $r = shift;
     if (exists($r->{'gui'})) {
@@ -57,16 +59,49 @@ sub output {
 	foreach my $spot (qw(location rulename)) {
 	    push @{$r->{'gui'}{$spot}{$r->{$spot}}}, [@_];
 	}
-    } else {
+    } elsif (exists($r->{'donuts'})) {
 	if ($#_ == 0) {
-	    print STDERR "$_[0]\n";
+	    $r->{'donuts'}->Output("$_[0]\n");
 	} else {
 	    my $token = shift;
-	    print STDERR "  ", sprintf("%-13s", $token), @_, "\n";
+	    $r->{'donuts'}->Output(sprintf("%-13s", $token) . join("", @_) . "\n");
+	}
+    } else {
+	if ($#_ == 0) {
+	    print "$_[0]\n";
+	} else {
+	    my $token = shift;
+	    print "  ", sprintf("%-13s", $token), @_, "\n";
 	}
     }
 }
 
+sub Output {
+    my $r = shift;
+    $r->{'donuts'}->output()->Output(@_);
+}
+
+sub Separator {
+    my $r = shift;
+    $r->{'donuts'}->output()->Separator(@_);
+}
+
+sub StartSection {
+    my $r = shift;
+    $r->{'donuts'}->output()->StartSection(@_);
+}
+
+sub EndSection {
+    my $r = shift;
+    $r->{'donuts'}->output()->EndSection(@_);
+}
+
+sub Comment {
+    my $r = shift;
+    $r->{'donuts'}->output()->Comment(@_);
+}
+
+# XXX: deprecated
 sub wrapit {
     my $r = shift;
     if (exists($r->{'gui'})) {
@@ -74,16 +109,53 @@ sub wrapit {
 	push @{$r->{'gui'}{$r->{'location'}}}, [[@_]];
     } else {
 	if ($have_textwrap) {
-	    print STDERR Text::Wrap::wrap(sprintf("  %-13s", $_[0]),
-					  " " x 15, $_[1]),"\n";
+	    $r->output(Text::Wrap::wrap(sprintf("  %-13s", $_[0]),
+				       " " x 15, $_[1]) . "\n");
 	} else {
-	    printf STDERR ("  %-12s %s\n", $_[0], $_[1]);
+	    $r->output(sprintf("  %-12s %s\n", $_[0], $_[1]));
 	}
     }
 }
 
+sub output_error {
+    my ($r, $err, $loc, $verb, $rrname, $record) = @_;
+    my $class = $r->{class} || 'Error';
+
+    $r->{'location'} = $loc;
+    $r->{'rulename'} = $r->{name};
+    $r->StartSection("$class", "$loc");
+    $r->Output("Location", $rrname) if ($rrname);
+    if ($verb) {
+	if ($verb >= 5) {
+	    require Data::Dumper;
+	    import Data::Dumper qw(Dumper);
+	    $r->Output("Rule Dump", Dumper($r));
+	} else {
+	    $r->Output("Rule Name",  $r->{name});
+	    $r->Output("Rule Level", $r->{level});
+	    if ($verb >= 2) {
+		$r->Output("Rule Type", $r->{'ruletype'} || 'record');
+		$r->Output("Record Type", $r->{'type'}) if ($r->{'type'});
+		$r->Output("Rule File", $r->{'code_file'});
+		$r->Output("Rule Line", $r->{'code_line'});
+	    }
+	    if ($verb >= 3 && defined($record)) {
+		$r->Output("Record", $record->string);
+	    }
+	    if ($verb >= 4) {
+		$r->Output("Rule Code", $r->{'ruledef'});
+	    }
+	}
+    }
+    # print the output error, with one of 3 formatting styles
+    $r->Output("Message", $err);
+    $r->Output("Details", $r->{desc});
+    $r->EndSection();
+    $r->Separator("");
+}
 
 # Print the results of an error for a given rule
+# XXX: deprecated
 sub print_error {
     my ($r, $err, $loc, $verb, $rrname, $record) = @_;
     my $class = $r->{class} || 'Error';
@@ -92,46 +164,55 @@ sub print_error {
     $r->{'location'} = $loc;
     $r->{'rulename'} = $r->{name};
     $r->output("$loc:");
-    $r->output("Location:", $rrname) if ($rrname);
+    $r->output("  Location:", $rrname) if ($rrname);
     if ($verb) {
 	if ($verb >= 5) {
 	    require Data::Dumper;
 	    import Data::Dumper qw(Dumper);
-	    $r->output("Rule Dump:", Dumper($r));
+	    $r->output("  Rule Dump:", Dumper($r));
 	} else {
-	    $r->output("Rule Name:", $r->{name});
-	    $r->output("Level:",     $r->{level});
+	    $r->output("  Rule Name:", $r->{name});
+	    $r->output("  Level:",     $r->{level});
 	    if ($verb >= 2) {
-		$r->output("Rule Type:", $r->{'ruletype'} || 'record');
-		$r->output("Record Type:", $r->{'type'}) if ($r->{'type'});
-		$r->output("Rule File:", $r->{'code_file'});
-		$r->output("Rule Line:", $r->{'code_line'});
+		$r->output("  Rule Type:", $r->{'ruletype'} || 'record');
+		$r->output("  Record Type:", $r->{'type'}) if ($r->{'type'});
+		$r->output("  Rule File:", $r->{'code_file'});
+		$r->output("  Rule Line:", $r->{'code_line'});
 	    }
 	    if ($verb >= 3 && defined($record)) {
-		$r->output("Record:", $record->string);
+		$r->output("  Record:", $record->string);
 	    }
 	    if ($verb >= 4) {
-		$r->output("Rule Code:", $r->{'ruledef'});
+		$r->output("  Rule Code:", $r->{'ruledef'});
 	    }
 	}
     }
     # print the output error, with one of 3 formatting styles
     if ($r->{'noindent'} || $r->{'gui'}) {
-	$r->output("$class:", $err);
+	$r->output("  $class:", $err);
     } elsif ($r->{'nowrap'}) {
 	$err =~ s/\n/\n$indent/g;
-	$r->output("$class:", $err);
+	$r->output("  $class:", $err);
     } else {
 	$r->wrapit("$class:",$err);
     }
     if ($r->{desc} && $verb) {
 	if ($r->{'gui'}) {
-	    $r->output("Details:", $r->{desc});
+	    $r->output("  Details:", $r->{desc});
 	} else {
 	    $r->wrapit("Details:", $r->{desc});
 	}
     }
     $r->output("");
+}
+
+sub Error {
+    my ($self, $error) = @_;
+    if (exists($self->{'donuts'})) {
+	$self->{'donuts'}->Error($error);
+    } else {
+	print STDERR $error;
+    }
 }
 
 my ($current_errors, $current_warnings);
@@ -140,21 +221,25 @@ sub donuts_error {
     return;
 }
 
-sub run_test {
+sub run_test_for_errors {
     my ($rule, $file, $testargs, $errorargs) = @_;
 
     $current_errors = [];
 
     my $res = eval {
 	import Net::DNS::SEC::Tools::Donuts::Rule qw(donuts_error);
+
+	# Set global variables needed by rules
+	$main::current_domain = $rule->{'donuts'}->domain();
+
 	$rule->{'test'}->(@$testargs);
     };
     if (!defined($res) && $@) {
-	print STDERR "\nProblem executing rule $rule->{name}: \n";
-	print STDERR "  ZoneData: $file\n";   
-	print STDERR "  Location: $rule->{code_file}:$rule->{code_line}\n";
-	print STDERR "  Error:    $@\n";
-	return (0,0);
+	$rule->Error("\nProblem executing rule $rule->{name}: \n");
+	$rule->Error("  ZoneData: $file\n");
+	$rule->Error("  Location: $rule->{code_file}:$rule->{code_line}\n");
+	$rule->Error("  Error:    $@\n");
+	return (1,1,[]); # XXX: need to return this data instead
     }
     if (ref($res) ne 'ARRAY') {
 	if ($res) {
@@ -162,36 +247,48 @@ sub run_test {
 	} elsif ($#$current_errors > -1) {
 	    $res = [@$current_errors];
 	} else {
-	    return (1,0);
+	    return (1,0,[]);
 	}
     } elsif ($#$current_errors > -1) {
 	$res = [@$current_errors, @$res];
     }
+    return (1, 1 + $#$res, $res);
+}
+
+#
+# Perform the same thing as run_test_for_errors, but print
+# resulting errors out
+#
+sub run_test {
+    my ($rule, $file, $testargs, $errorargs) = @_;
+
+    my ($count1, $count2, $res) =
+	$rule->run_test_for_errors($file, $testargs, $errorargs);
     if ($#$res > -1) {
 	foreach my $result (@$res) {
-	    $rule->print_error($result, @$errorargs);
+	    $rule->output_error($result, @$errorargs);
 	}
-	return (1,$#$res+1);
     }
+    return ($count1, $count2);
 }
 
 
 sub test_record {
     my ($rule, $record, $file, $level, $features, $verbose) = @_;
+
     if ((!exists($rule->{'level'}) || $level >= $rule->{'level'}) &&
 	(!exists($rule->{'feature'}) ||
 	 exists($features->{$rule->{'feature'}})) &&
 	(!exists($rule->{'ruletype'}) || $rule->{'ruletype'} ne 'name')) {
 
 	# this is a legal rule for this run.
-
 	if (!exists($rule->{'type'}) || $record->type eq $rule->{'type'}) {
 
 	    # and the type matches
 
 	    return $rule->run_test($file, [$record, $rule],
 				   [$record->name, $verbose,
-				    "$file:$record->{Line}", $record]);
+				    "${file}:$record->{Line}", $record]);
 	}
 	
 	# it was a legal rule, so we count it but no errors
@@ -210,7 +307,7 @@ sub test_name {
 	(exists($rule->{'ruletype'}) && $rule->{'ruletype'} eq 'name')) {
 
 	return $rule->run_test($file, [$namerecord, $rule, $name],
-			       ["$file::$name", $verbose]);
+			       ["$name", $verbose]);
     }
     return (0,0);
 }
@@ -220,32 +317,51 @@ sub config {
     $self->{$prop} = $val;
 }
 
+sub feature_list {
+    my ($self) = @_;
+    return [$self->{'feature'}] if ($self->{'feature'});
+}
+
+sub help {
+    my ($self) = @_;
+    return $self->{'help'};
+}
+
 sub print_help {
     my ($self) = @_;
     return if (!$self->{'help'});
-    foreach my $h (@{$self->{help}}) {
+    foreach my $h (@{$self->help()}) {
 	if ($have_textwrap) {
-	    printf STDERR 
-	      Text::Wrap::wrap(sprintf("%-20s %-15s",
-				       $self->{'name'}, $h->{'token'} . ":"),
-			       " " x (20+15+1), $h->{'description'}) . "\n";
+	    $self->output(Text::Wrap::wrap(sprintf("%-20s %-15s",
+						   $self->{'name'}, $h->{'token'} . ":"),
+					   " " x (20+15+1), $h->{'description'}) . "\n");
 	} else {
-	    printf STDERR ("%-20s %-15s %s\n",
-			   $self->{'name'}, $h->{'token'} . ":",
-			     $h->{'description'})
+	    $self->output("%-20s %-15s %s\n",
+			  $self->{'name'}, $h->{'token'} . ":",
+			  $h->{'description'})
 	}
     }
 }
 
+sub description {
+    my ($self, $wrapifpossible) = @_;
+    my $description = $self->{'desc'} || "[no description]";
+    if ($wrapifpossible && $have_textwrap) {
+	return Text::Wrap::wrap("  ", "  ", $description);
+    }
+    return $description;
+}
+
+sub name {
+    my ($self) = @_;
+    return $self->{'name'};
+}
+
 sub print_description {
     my ($self) = @_;
-    print STDERR $self->{'name'},"\n";
-    if ($have_textwrap) {
-	print STDERR Text::Wrap::wrap("  ", "  ", $self->{'desc'} || "[no description]");
-    } else {
-	print STDERR "  " . ($self->{'desc'} || "[no description]");
-    }
-    print STDERR "\n\n";
+    $self->output($self->name(),"\n");
+    $self->output($self->description(1));
+    $self->output("\n\n");
 }
 
 1;
@@ -567,9 +683,9 @@ Wes Hardaker <hardaker@users.sourceforge.net>
 
 B<donuts(8)>
 
-B<Net::DNS>, B<Net::DNS::RR>
+B<Net::DNS>, B<Net::DNS::RR>, B<Net::DNS::SEC::Tools::Donuts>
 
-http://dnssec-tools.sourceforge.net
+http://www.dnssec-tools.org/
 
 =cut
 

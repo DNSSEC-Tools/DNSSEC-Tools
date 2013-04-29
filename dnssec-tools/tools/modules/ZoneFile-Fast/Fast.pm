@@ -32,6 +32,35 @@
 # WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
 # OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 # ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+# ----------------------------------------------------------------------------
+# Copyright (c) 2013-2013 PARSONS, Inc.
+# All rights reserved.
+#  
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#  
+# *  Redistributions of source code must retain the above copyright notice,
+#    this list of conditions and the following disclaimer.
+#  
+# *  Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#  
+# *  Neither the name of SPARTA, Inc nor the names of its contributors may
+#    be used to endorse or promote products derived from this software
+#    without specific prior written permission.
+#  
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS ``AS
+# IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+# THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+# OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+# WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+# OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+# ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 # $Id$
 #
@@ -46,7 +75,7 @@ use Net::DNS;
 use Net::DNS::RR;
 use MIME::Base64;
 
-$VERSION = '1.19';
+$VERSION = '1.20';
 
 my $MAXIMUM_TTL = 0x7fffffff;
 
@@ -78,6 +107,7 @@ my $sshfp;
 my $key;
 my $dnskey;
 my $ds;
+my $nsec3;
 my $tlsa;
 my $on_error;
 my $quiet;
@@ -953,14 +983,38 @@ sub parse_line
       } elsif (/\G(nsec3)[ \t]+/igc) {
 	  error ("You are missing required modules for NSEC3 support")
 	    if (!$nsec3capable);
-	  if (/\G\s*(\d+)\s+(\d+)\s+(\d+)\s+([-0-9A-Fa-f]+)\s+($pat_maybefullname)\s+(.*?)$pat_skip$/gc) {
+          if (/\G\s*(\d+)\s+(\d+)\s+(\d+)\s+([-0-9A-Fa-f]+)\s+($pat_maybefullname)\s+(.*?)$pat_skip$/gc) {
+              # XXX: set the typebm field ourselves?
+              my ($alg, $flags, $iters, $salt, $nxthash, $typelist) =
+                ($1, $2, $3, $4, $5, $6);
+              $typelist = join(" ",sort split(/\s+/,$typelist));
+              my $binhash = MIME::Base32::decode(uc($nxthash));
+              push @zone,
+                {
+                 Line        => $ln,
+                 name        => $domain,
+                 class       => "IN",
+                 ttl         => $ttl,
+                 type        => "NSEC3",
+                 hashalgo    => $alg,
+                 flags       => $flags,
+                 iterations  => $iters,
+                 hnxtname    => $nxthash,
+                 hnxtnamebin => $binhash,
+                 hashlength  => length($binhash),
+                 salt        => $salt,
+                 saltbin     => pack("H*",$salt),
+                 saltlength  => int(length($salt)/2),
+                 typelist    => $typelist,
+                 typebm      =>
+                 Net::DNS::RR::NSEC::_typearray2typebm(split(/\s+/,$typelist)),
+                };
+# multi-line
+          } elsif (/\G\s*(\d+)\s+(\d+)\s+(\d+)\s+([-0-9A-Fa-f]+)\s+\(/gc) {
 	      # XXX: set the typebm field ourselves?
-	      my ($alg, $flags, $iters, $salt, $nxthash, $typelist) =
-		($1, $2, $3, $4, $5, $6);
-	      $typelist = join(" ",sort split(/\s+/,$typelist));
-	      my $binhash = MIME::Base32::decode(uc($nxthash));
-	      push @zone, 
-		{
+	      my ($alg, $flags, $iters, $salt) =
+		($1, $2, $3, $4);
+	      $nsec3 =	{
 		 Line        => $ln,
 		 name        => $domain,
 		 class       => "IN",
@@ -969,16 +1023,11 @@ sub parse_line
 		 hashalgo    => $alg,
 		 flags       => $flags,
 		 iterations  => $iters,
-		 hnxtname    => $nxthash,
-		 hnxtnamebin => $binhash,
-		 hashlength  => length($binhash),
 		 salt        => $salt,
 		 saltbin     => pack("H*",$salt),
 		 saltlength  => int(length($salt)/2),
-		 typelist    => $typelist,
-		 typebm      =>
-		 Net::DNS::RR::NSEC::_typearray2typebm(split(/\s+/,$typelist)),
-		};
+              };
+	      $parse = \&parse_nsec3;
 	  } else {
 	      error("bad NSEC data");
 	  }
@@ -1283,6 +1332,31 @@ sub parse_tlsa
       }
   }
 
+sub parse_nsec3
+  {
+      #got more data
+      if ( /\G\s*((\w+\s+)+)\)\s*$/) {
+         my $typelist = $1;
+	 $typelist = join(" ",sort split(/\s+/,$typelist));
+         $nsec3->{ 'typelist' } = $typelist;
+	 $nsec3->{ 'typebm' } =
+	     Net::DNS::RR::NSEC::_typearray2typebm(split(/\s+/,$typelist));
+	 push @zone, $nsec3; 
+	 # we're done
+	 $parse = \&parse_line;
+         $nsec3 = undef;
+      } elsif ( /\G\s*([A-Z0-9]{32})\s*$/gc) {
+         my $nxthash = $1;
+	 my $binhash = MIME::Base32::decode(uc($nxthash));
+         $nsec3->{ 'hnxtname' } = $nxthash;
+         $nsec3->{ 'hnxtnamebin' } = $binhash;
+         $nsec3->{ 'hashlength' } = length( $binhash );
+      } elsif ( /\G\s+$/gc ) {			# Empty line
+      } else {
+         error( "bad NSEC3 continuation lines ($_)" );
+      } 
+  }
+
 sub parse_soa_number
   {
       error("parse_soa_number: internal error, no \$soa") unless $soa;
@@ -1582,7 +1656,36 @@ Copyright 2003 by Anton Berezin and catpipe Systems ApS
 
   Anton Berezin
 
-Copyright (c) 2004-2013 SPARTA, Inc.
+Copyright (c) 2004-2011 SPARTA, Inc.
+  All rights reserved.
+   
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions are met:
+   
+  *  Redistributions of source code must retain the above copyright notice,
+     this list of conditions and the following disclaimer.
+   
+  *  Redistributions in binary form must reproduce the above copyright
+     notice, this list of conditions and the following disclaimer in the
+     documentation and/or other materials provided with the distribution.
+   
+  *  Neither the name of SPARTA, Inc nor the names of its contributors may
+     be used to endorse or promote products derived from this software
+     without specific prior written permission.
+   
+  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS ``AS
+  IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+  THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+  PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT HOLDERS OR
+  CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+  EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
+  OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+  WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
+  OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
+  ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+Copyright (c) 2013-2013 PARSONS, Inc.
   All rights reserved.
    
   Redistribution and use in source and binary forms, with or without

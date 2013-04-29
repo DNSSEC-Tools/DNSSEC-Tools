@@ -1,0 +1,32 @@
+# -*- mmm-classes: donuts-perl -*-
+# Copyright 2013-2013 SPARTA, Inc.  All rights reserved.
+# See the COPYING file included with the DNSSEC-Tools package for details.
+#
+# This file is used just for running the donuts test suite
+#
+
+name: DONUTS_TEST_RULE_TTL
+desc: Checks to see if reasonable TTL values (configurable) were chosen for all the records in a zone.
+level: 8
+#class: Warning
+# 60 seconds min
+minttl: 60
+help: minttl: minimum ttl value acceptable for a record
+# 7 days max
+<test>
+  if ($record->ttl < $rule->{'minttl'}) {
+    donuts_error("Record has a TTL which is unreasonably small ( " .
+		 $record->ttl . " < min: " . $rule->{'minttl'} . ")");
+  }
+</test>
+
+name: DONUTS_TEST_DNS_NO_MX_RECORDS
+level: 3
+class: Warning
+ruletype: name
+desc: Checks to ensure that each name contains at least 1 MX record.
+<test>
+   if ($#{$records->{'MX'}} == -1) {
+       donuts_error("At least one MX record for $recordname is suggested");
+   }
+</test>
