@@ -518,7 +518,28 @@ sub analyze {
     $self->output()->EndSection();
     $self->output()->EndOutput();
 
+    $self->{'rulecount'} = $rulecount;
+    $self->{'errcount'} = $errcount;
     return ($rulecount, $errcount);
+}
+
+sub summarize_results {
+    my ($self) = @_;
+    my $output = $self->output();
+    $output->StartOutput();
+    $output->StartSection("Donuts Summary",  $self->{'domain'});
+    $output->Output("Rules Considered",      scalar($self->rules()));
+    $output->Output("Rules Tested",          $self->{'rulecount'});
+    $output->Output("Records Analyzed",      (1+$#{$self->zone_records()}));
+    $output->Output("Names Analyzed",        $self->name_count());
+    $output->Output("Errors Found",          $self->{'errcount'});
+    $output->EndSection();
+    $output->EndOutput();
+}
+
+sub error_count {
+    my ($self) = @_;
+    return $self->{'errcount'};
 }
 
 sub name_count {
