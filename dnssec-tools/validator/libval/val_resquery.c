@@ -2549,6 +2549,8 @@ val_async_select_info(val_context_t *ctx, fd_set *activefds,
 
     for (as = context->as_list; as; as = as->val_as_next) {
 
+        int cache_only = 1;
+
 #ifndef VAL_NO_THREADS
         if (! (as->val_as_ctx->ctx_flags & CTX_PROCESS_ALL_THREADS) &&
             (! pthread_equal(self, as->val_as_tid)))
@@ -2564,7 +2566,7 @@ val_async_select_info(val_context_t *ctx, fd_set *activefds,
             char         name_p[NS_MAXDNAME];
             if (-1 == ns_name_ntop(qfq->qfq_query->qc_name_n, name_p, sizeof(name_p)))
                 snprintf(name_p, sizeof(name_p), "unknown/error");
-            if (!qfq->qfq_query->qc_ea) {
+            if (!qfq->qfq_query->qc_ea || (qfq->qfq_flags & VAL_QUERY_SKIP_RESOLVER)) {
                 val_log(NULL, LOG_DEBUG+1, " as %p query %p {%s %s(%d) %s(%d)} ea %p", as, qfq,
                         name_p, p_class(qfq->qfq_query->qc_class_h),
                         qfq->qfq_query->qc_class_h,
@@ -2572,6 +2574,7 @@ val_async_select_info(val_context_t *ctx, fd_set *activefds,
                         qfq->qfq_query->qc_type_h, qfq->qfq_query->qc_ea);
                 continue;
             }
+            cache_only = 0;
             val_log(NULL, LOG_DEBUG, " as %p query %p {%s %s(%d) %s(%d)} ea %p", as, qfq,
                     name_p, p_class(qfq->qfq_query->qc_class_h),
                     qfq->qfq_query->qc_class_h,
@@ -2579,6 +2582,10 @@ val_async_select_info(val_context_t *ctx, fd_set *activefds,
                     qfq->qfq_query->qc_type_h, qfq->qfq_query->qc_ea);
             res_async_query_select_info(qfq->qfq_query->qc_ea, nfds, activefds,
                                         closest_event);
+        }
+        if (cache_only) {
+            closest.tv_sec = 0;
+            closest.tv_usec = 0;
         }
     }
 
