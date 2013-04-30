@@ -12,6 +12,7 @@ use strict;
 
 use Net::DNS::SEC::Tools::Donuts::Output::Format::Text;
 use Net::DNS::SEC::Tools::Donuts::Output::Format::XML;
+use Net::DNS::SEC::Tools::Donuts::Output::Format::JSON;
 
 my $have_textwrap = eval { require Net::DNS::SEC::Tools::Donuts::Output::Format::Text::Wrapped; };
 
@@ -49,6 +50,8 @@ sub set_format {
 	$self->{'formatter'} = new Net::DNS::SEC::Tools::Donuts::Output::Format::Text();
     } elsif ($format eq 'xml') {
 	$self->{'formatter'} = new Net::DNS::SEC::Tools::Donuts::Output::Format::XML();
+    } elsif ($format eq 'json') {
+	$self->{'formatter'} = new Net::DNS::SEC::Tools::Donuts::Output::Format::JSON();
     } else {
 	die "unknown output-format directive: '$format'";
     }
