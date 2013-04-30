@@ -51,6 +51,7 @@ extern          "C" {
 #define Q_REFERRAL_ERROR        0x0200
 #define Q_MISSING_GLUE          0x0400
 #define Q_CONFLICTING_ANSWERS   0x0800
+#define Q_MISSING_ANSWER        0x1000
 
 
 /*
