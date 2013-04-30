@@ -29,7 +29,9 @@ sub Output {
 
 sub Comment {
     my ($self, $comment) = @_;
-    return Text::Wrap::wrap("# ", "# ", $comment, ) . "\n";
+    return Text::Wrap::wrap(" " x ($self->{'section_depth'}) . "# ",
+			    " " x ($self->{'section_depth'}) . "# ",
+			    $comment, ) . "\n";
 }
 
 

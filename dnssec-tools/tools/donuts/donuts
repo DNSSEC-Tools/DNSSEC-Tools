@@ -319,6 +319,7 @@ my $exitcode = 0;
 my $parseerror;
 my $errcount;
 
+$donuts->output()->StartOutput();
 maybe_output_to_web();
 while ($#ARGV > -1) {
     $errcount = 0;
@@ -381,7 +382,26 @@ while ($#ARGV > -1) {
     #
     # call each rule on each record
     #
+    $donuts->output()->StartSection("Donuts-Analysis", "$current_domain");
     ($rulecount, $errcount) = $donuts->analyze($opts{'l'});
+
+    $donuts->summarize_results() if (!$opts{'q'});
+    
+    
+#    print "$errcount errors found in $current_zone_file\n";
+
+    if (scalar($donuts->rules()) == -1) {
+	$donuts->output()->Comment("WARNING: no rules found to be executed!!!");
+	$donuts->output()->Comment("WARNING: (maybe use the --rules switch to fix this?)");
+    }
+    if ($#$rrset == -1) {
+	$donuts->output()->Comment("WARNING: no records found to be analyzed in $current_domain!!!");
+    }
+    if ($errcount) {
+	$exitcode = 1;
+    }
+
+    $donuts->output()->EndSection();
 
     #
     # stop tcpdump if we had started it
@@ -393,30 +413,8 @@ while ($#ARGV > -1) {
 	sleep(1);
 	kill(9, $tcpdumpproc);
     }
-
-    my @rules = $donuts->rules();
-    if ($opts{'v'}) {
-	print "results on testing $current_domain:\n";
-	print "  rules considered:\t" . (1+$#rules) . "\n";
-	print "  rules tested:\t\t$rulecount\n";
-	print "  records analyzed:\t" . (1+$#{$donuts->zone_records()}) . "\n";
-	print "  names analyzed:\t" . $donuts->name_count() . "\n";
-	print "  errors found:\t\t$errcount\n";
-    } else {
-	print "$errcount errors found in $current_zone_file\n"
-	  if (!$opts{'q'});
-    }
-    if ($#rules == -1) {
-	print "\nWARNING: no rules found to be executed!!!\n";
-	print "WARNING: (maybe use the --rules switch to fix this?)\n";
-    }
-    if ($#$rrset == -1) {
-	print "\nWARNING: no records found to be analyzed in $current_domain!!!\n";
-    }
-    if ($errcount) {
-	$exitcode = 1;
-    }
 }
+$donuts->output()->EndOutput();
 
 if ($opts{'show-gui'}) {
     setup_gui();
