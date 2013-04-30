@@ -384,7 +384,8 @@ while ($#ARGV > -1) {
     #
     # call each rule on each record
     #
-    $donuts->output()->StartSection("Donuts-Analysis", "$current_domain");
+    $donuts->output()->Separator();
+    $donuts->output()->StartSection("Donuts Analysis", "$current_domain");
     ($rulecount, $errcount) = $donuts->analyze($opts{'l'});
 
     $donuts->summarize_results() if (!$opts{'q'});
