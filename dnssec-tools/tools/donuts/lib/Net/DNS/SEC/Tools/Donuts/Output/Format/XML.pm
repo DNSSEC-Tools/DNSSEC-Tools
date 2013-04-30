@@ -38,13 +38,17 @@ sub StartSection {
     my ($self, $tag, $name) = @_;
 
     $tag = simplify_tag($tag);
-    $name = escapeHTML($name);
+    $name = escapeHTML($name) if ($name);
 
     $self->{'section_depth'} += 2;
     push @{$self->{'tags'}}, $tag;
 
+    if ($name) {
+	return " " x ($self->{'section_depth'}-2) . 
+	    sprintf("<%s name=\"%s\">\n", $tag, $name);
+    }
     return " " x ($self->{'section_depth'}-2) . 
-	sprintf("<%s name=\"%s\">\n", $tag, $name);
+	sprintf("<%s>\n", $tag);
 }
 
 sub EndSection {

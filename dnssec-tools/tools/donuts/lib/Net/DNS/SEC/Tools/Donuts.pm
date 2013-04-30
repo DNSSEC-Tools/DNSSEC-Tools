@@ -418,7 +418,7 @@ sub analyze_records {
     my ($rulecount, $errcount) = (0,0);
 
     $self->output()->StartOutput();
-    $self->output()->StartSection("Record Results", "$self->{zonesource}");
+    $self->output()->StartSection("Record Results");
     $self->output()->Comment("Analyzing individual records in $self->{zonesource}");
 
     foreach my $rec (@$rrset) {
@@ -467,7 +467,7 @@ sub analyze_names {
     my ( $errorsfound, $rulesrun);
 
     $self->output()->StartOutput();
-    $self->output()->StartSection("Name Results", "$self->{zonesource}");
+    $self->output()->StartSection("Name Results");
     $self->output()->Comment("Analyzing records for each name in $self->{zonesource}");
 
     if (!defined($recordByNameTypeCache)) {

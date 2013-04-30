@@ -44,7 +44,7 @@ sub EndSection {
 
 sub Comment {
     my ($self, $comment) = @_;
-    return "# $comment";
+    return " " x ($self->{'section_depth'}) . "# $comment\n";
 }
 
 1;
