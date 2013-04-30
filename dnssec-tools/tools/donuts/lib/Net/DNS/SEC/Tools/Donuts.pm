@@ -10,7 +10,10 @@ use Net::DNS;
 use Net::DNS::SEC::Tools::Donuts::Rule;
 use Net::DNS::SEC::Tools::dnssectools;
 
-my $have_textwrap = eval { require Text::Wrap };
+use Net::DNS::SEC::Tools::Donuts::Output::Format::Text;
+
+my $have_textwrap = eval { require Net::DNS::SEC::Tools::Donuts::Output::Format::Text::Wrapped; };
+    
 our $VERSION="2.1";
 
 #require Exporter;
@@ -103,10 +106,23 @@ sub create_feature_hash_from_list {
 sub set_output_format {
     my ($self, $format) = @_;
 
-    my $format = defined($format) ? $format : "wrapped";
+    $format = defined($format) ? $format : "wrapped";
     $format = "text" if ($format eq 'wrapped' && !$have_textwrap);
 
     $self->{'output_format'} = $format;
+
+    if ($format eq 'wrapped') {
+	Net::DNS::SEC::Tools::Donuts::Output::Format::Text::Wrapped->import();
+	$self->{'formatter'} = new Net::DNS::SEC::Tools::Donuts::Output::Format::Text::Wrapped();
+    } else {
+	$self->{'formatter'} = new Net::DNS::SEC::Tools::Donuts::Output::Format::Text();
+    }
+}
+
+sub formatter {
+    my ($self) = @_;
+    $self->set_output_format() if (!defined($self->{'output_format'}));
+    return $self->{'formatter'};
 }
 
 sub output_format {
@@ -123,6 +139,12 @@ sub set_output_location {
 sub output_location {
     my ($self) = @_;
     return $self->{'output_location'};
+}
+
+sub output {
+    my ($self) = @_;
+    # XXX: right now the formatter is doing both
+    return $self->{'formatter'};
 }
 
 #
@@ -343,51 +365,6 @@ sub Error {
 sub Warning {
     my ($self, $message, $tag) = @_;
     print STDERR $message;
-}
-
-sub Output {
-    my ($self, $tag, $message) = @_;
-
-    my $output_string;
-    my $format = $self->output_format();
-
-    my $tagwidth = 12;
-    $tag .= ":";
-
-    if ($format eq 'wrapped') {
-	my $leader = " " x $self->{'section_depth'};
-	print Text::Wrap::wrap($leader . sprintf("\%-${tagwidth}s ", $tag),
-			       $leader . " " x ($tagwidth+1), $message) . "\n";
-    } elsif ($format eq 'text') {
-	my $leader = " " x $self->{'section_depth'};
-	printf("%s\%-${tagwidth}s %s\n", $leader, $tag, $message);
-    }
-}
-
-sub Separator {
-    my ($self) = @_;
-    my $format = $self->output_format();
-
-    if ($format eq 'wrapped' || $format eq 'text') {
-	print "\n";
-    }
-}
-
-sub StartSection {
-    my ($self, $name) = @_;
-    my $format = $self->output_format();
-
-    if ($format eq 'wrapped' || $format eq 'text') {
-	print " " x $self->{'section_depth'} . "$name:\n";
-    }
-
-    $self->{'section_depth'} += 2;
-}
-
-sub EndSection {
-    my ($self) = @_;
-    $self->{'section_depth'} -= 2;
-    $self->{'section_depth'} = 0 if ($self->{'section_depth'} < 0);
 }
 
 sub Verbose {
