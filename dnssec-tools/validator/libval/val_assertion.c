@@ -4751,6 +4751,11 @@ int switch_to_root(val_context_t * context,
         return VAL_NO_ERROR;
     }
 
+    /* Don't perform this logic if we don't want to send queries out */
+    if (matched_q->qc_flags & VAL_QUERY_SKIP_RESOLVER) {
+        return VAL_NO_ERROR;
+    }
+
     if (-1 == ns_name_ntop(matched_q->qc_name_n,
                            name_p, sizeof(name_p))) {
         snprintf(name_p, sizeof(name_p), "unknown/error");
@@ -5456,6 +5461,12 @@ _ask_cache_one(val_context_t * context, struct queries_for_query **queries,
     if (!response) {
         if (next_q->qfq_query->qc_state > Q_SENT)
             *data_received = 1;
+
+        if (next_q->qfq_query->qc_flags & VAL_QUERY_SKIP_RESOLVER) {
+            next_q->qfq_query->qc_state = Q_MISSING_ANSWER; 
+            *data_received = 1;
+        }
+
         return VAL_NO_ERROR;
     }
 
@@ -5570,7 +5581,7 @@ _resolver_submit_one(val_context_t * context, struct queries_for_query **queries
 
     if (query->qfq_query->qc_flags & VAL_QUERY_SKIP_RESOLVER) {
         val_log(context, LOG_INFO,
-                "ask_resolver(): skipping query {%s %s(%d) %s(%d)}, flags=%x%s",
+                "_resolver_submit_one(): skipping query {%s %s(%d) %s(%d)}, flags=%x%s",
                 name_p, p_class(query->qfq_query->qc_class_h),
                 query->qfq_query->qc_class_h,
                 p_type(query->qfq_query->qc_type_h),
@@ -5580,7 +5591,7 @@ _resolver_submit_one(val_context_t * context, struct queries_for_query **queries
     }
 
     val_log(context, LOG_INFO,
-            "ask_resolver(): sending query for {%s %s(%d) %s(%d)}, flags=%x%s",
+            "_resolver_submit_one(): sending query for {%s %s(%d) %s(%d)}, flags=%x%s",
             name_p, p_class(query->qfq_query->qc_class_h),
             query->qfq_query->qc_class_h, p_type(query->qfq_query->qc_type_h),
             query->qfq_query->qc_type_h, query->qfq_query->qc_flags,
@@ -5686,7 +5697,7 @@ _resolver_rcv_one(val_context_t * context, struct queries_for_query **queries,
                                sizeof(name_p)))
             snprintf(name_p, sizeof(name_p), "unknown/error");
         val_log(context, LOG_INFO,
-                "ask_resolver(): found matching ack/nack response for {%s %s(%d) %s(%d)}, flags=%x",
+                "_resolver_rcv_one(): found matching ack/nack response for {%s %s(%d) %s(%d)}, flags=%x",
                 name_p, p_class(next_q->qfq_query->qc_class_h),
                 next_q->qfq_query->qc_class_h,
                 p_type(next_q->qfq_query->qc_type_h),
@@ -5703,7 +5714,7 @@ _resolver_rcv_one(val_context_t * context, struct queries_for_query **queries,
                                sizeof(name_p)))
             snprintf(name_p, sizeof(name_p), "unknown/error");
         val_log(context, LOG_INFO,
-                "ask_resolver(): received error response for {%s %s(%d) %s(%d)}, flags=%x: %d",
+                "_resolver_rcv_one(): received error response for {%s %s(%d) %s(%d)}, flags=%x: %d",
                 name_p, p_class(next_q->qfq_query->qc_class_h),
                 next_q->qfq_query->qc_class_h,
                 p_type(next_q->qfq_query->qc_type_h),
@@ -6465,9 +6476,6 @@ val_resolve_and_check(val_context_t * ctx,
         /*
          * Send un-sent queries 
          */
-        /*
-         * XXX by-pass this functionality through flags if needed 
-         */
         if (VAL_NO_ERROR !=
             (retval = ask_resolver(context, &queries, &pending_desc, 
                                    &closest_event, &data_received, 
@@ -6492,8 +6500,9 @@ val_resolve_and_check(val_context_t * ctx,
 
             data_missing = 1;
             data_received = 0;
-        }
 
+        } 
+        
         /*
          * check if more queries have been added 
          */
@@ -6849,6 +6858,7 @@ val_async_submit(val_context_t * ctx,  const char * domain_name, int class_h,
     int data_received = 0;
     int data_missing = 1, more_data;
     u_char domain_name_n[NS_MAXCDNAME];
+    u_int32_t tflags = 0;
 
     if ((domain_name == NULL) || (async_status == NULL))
         return VAL_BAD_ARGUMENT;
@@ -6903,14 +6913,15 @@ val_async_submit(val_context_t * ctx,  const char * domain_name, int class_h,
 
     as->val_as_ctx = context;
 
-    flags |= VAL_QUERY_ASYNC;
+    tflags = VAL_QFLAGS_USERMASK & (flags | VAL_QUERY_ASYNC | 
+                context->def_cflags | context->def_uflags);
 
     CTX_LOCK_ACACHE(context);
 
     retval = add_to_qfq_chain(context, &as->val_as_queries,
                               domain_name_n, as->val_as_type,
                               as->val_as_class,
-                              (flags | context->def_cflags | context->def_uflags) & VAL_QFLAGS_USERMASK,
+                              tflags,
                               &added_q);
     if (VAL_NO_ERROR == retval) {
         as->val_as_top_q = added_q;
@@ -6958,9 +6969,6 @@ val_async_submit(val_context_t * ctx,  const char * domain_name, int class_h,
 #endif
             }
 
-
-
-
         }
     }
 
@@ -6988,6 +6996,7 @@ val_async_submit(val_context_t * ctx,  const char * domain_name, int class_h,
         as->val_as_next = context->as_list;
         context->as_list = as;
     }
+
     CTX_UNLOCK_ACACHE(context);
 
     *async_status = as;
@@ -7039,6 +7048,16 @@ _async_check_one(val_async_status *as, fd_set *pending_desc,
     data_received = 0;
 
     /*
+     * check for answers in the cache
+     */
+    if (!(as->val_as_flags & VAL_AS_IGNORE_CACHE)) {
+        retval = ask_cache(context, &as->val_as_queries,
+                           &data_received, &data_missing);
+        if (VAL_NO_ERROR != retval)
+            goto done;
+    }
+
+    /*
      * run through all queries, checking for responses/retries
      */
     timerclear(&closest_event);
@@ -7083,16 +7102,6 @@ _async_check_one(val_async_status *as, fd_set *pending_desc,
             as_remain += qfq_remain;
 
     } /* qfq loop */
-
-    /*
-     * check for answers in the cache
-     */
-    if (!(as->val_as_flags & VAL_AS_IGNORE_CACHE)) {
-        retval = ask_cache(context, &as->val_as_queries,
-                           &data_received, &data_missing);
-        if (VAL_NO_ERROR != retval)
-            goto done;
-    }
 
     /*
      * Send un-sent new queries
