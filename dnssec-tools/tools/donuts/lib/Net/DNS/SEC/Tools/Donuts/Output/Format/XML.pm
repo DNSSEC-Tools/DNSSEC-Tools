@@ -63,4 +63,14 @@ sub Comment {
     return "<!-- " . escapeHTML($comment) . " -->\n";
 }
 
+sub StartOutput {
+    my ($self) = @_;
+    return "<?xml encoding=\"UTF-8\"?>\n<donuts>\n";
+}
+
+sub EndOutput {
+    my ($self) = @_;
+    return "<donuts>\n";
+}
+
 1;
