@@ -96,6 +96,11 @@ sub EndSection {
     $r->{'donuts'}->output()->EndSection(@_);
 }
 
+sub Comment {
+    my $r = shift;
+    $r->{'donuts'}->output()->Comment(@_);
+}
+
 # XXX: deprecated
 sub wrapit {
     my $r = shift;
@@ -118,7 +123,7 @@ sub output_error {
 
     $r->{'location'} = $loc;
     $r->{'rulename'} = $r->{name};
-    $r->StartSection("$loc");
+    $r->StartSection("$class", "$loc");
     $r->Output("Location", $rrname) if ($rrname);
     if ($verb) {
 	if ($verb >= 5) {
