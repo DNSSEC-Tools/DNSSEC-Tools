@@ -124,8 +124,8 @@ sub set_output {
 }
 
 sub set_output_location {
-    my ($self, $location) = @_;
-    $self->{'output'}->set_location($location);
+    my ($self, $location, $argument) = @_;
+    $self->{'output'}->set_location($location, $argument);
 }
 
 #
