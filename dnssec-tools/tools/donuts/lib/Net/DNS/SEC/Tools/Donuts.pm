@@ -331,18 +331,31 @@ sub parse_config_file {
 # base warning/error/verbose/output functions
 #
 sub Error {
-    my ($self, $message) = @_;
+    my ($self, $message, $tag) = @_;
     print STDERR $message;
 }
 
 sub Warning {
-    my ($self, $message) = @_;
+    my ($self, $message, $tag) = @_;
     print STDERR $message;
 }
 
 sub Output {
-    my ($self, $message) = @_;
-    print $message;
+    my ($self, $tag, $message) = @_;
+
+    my $output_string;
+    my $format = exists($self->{'output_format'}) ? $self->{'output_format'} : "wrapped";
+    $format = "text" if ($format eq 'wrapped' && !$have_textwrap);
+
+    my $tagwidth = 12;
+    $tag .= ":";
+
+    if ($format eq 'wrapped') {
+	print Text::Wrap::wrap(sprintf("\%-${tagwidth}s ", $tag),
+			       " " x ($tagwidth+1), $message) . "\n";
+    } elsif ($format eq 'text') {
+	printf("\%-${tagwidth}s %s\n", $tag, $message);
+    }
 }
 
 sub Verbose {

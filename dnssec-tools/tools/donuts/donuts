@@ -41,6 +41,7 @@ my %opts = (l => 5,
 	    c => $ENV{'HOME'} . "/.donuts.conf",
 	    T => 'port 53 || ip[6:2] & 0x1fff != 0',
 	    o => '%d.%t.pcap',
+	    O => "wrapped",
 	    r => "/usr/local/share/dnssec-tools/donuts/rules/*.txt," .
 	    $ENV{'HOME'} . "/.dnssec-tools/donuts/rules/*.txt");
 
@@ -120,6 +121,14 @@ DTGetOptions(\%opts,
 		["show-gui", "Display the results in a browsable window.",
 		 nocgi => 1,
 		 question => { type => 'checkbox', default => 1, indent => 1}],
+	        ["O|output-format=s", "Output format (wrapped, or text)",
+		 nocgi => 1,
+		 question => { type => 'menu', default => 'wrapped', indent => 1,
+		 values => [qw(wrapped text)]}],
+	        ["L|output-location=s", "Output location (stdout, or stderr)",
+		 nocgi => 1,
+		 question => { type => 'menu', default => 'stdout', indent => 1,
+		 values => [qw(stdout stderr)]}],
 		["v|verbose+",
 		 "Verbose output (show extra processing information).  Use multiple times for increasing amounts of output.",
 		 question => { type => 'checkbox', default => 1, indent => 1 }],
@@ -214,6 +223,8 @@ if (!$opts{'R'} && !$opts{'F'} && !$opts{'H'} &&
 #
 my $donuts = new Net::DNS::SEC::Tools::Donuts();
 $donuts->set_config('verbose', $opts{'v'});
+$donuts->set_output_format($opts{'O'});
+$donuts->set_output_location($opts{'L'});
 
 #
 # initialize ignore list
