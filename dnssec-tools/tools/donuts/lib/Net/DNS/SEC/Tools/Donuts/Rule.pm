@@ -131,8 +131,8 @@ sub output_error {
 	    import Data::Dumper qw(Dumper);
 	    $r->Output("Rule Dump", Dumper($r));
 	} else {
-	    $r->Output("Rule Name", $r->{name});
-	    $r->Output("Level",     $r->{level});
+	    $r->Output("Rule Name",  $r->{name});
+	    $r->Output("Rule Level", $r->{level});
 	    if ($verb >= 2) {
 		$r->Output("Rule Type", $r->{'ruletype'} || 'record');
 		$r->Output("Record Type", $r->{'type'}) if ($r->{'type'});
@@ -148,7 +148,7 @@ sub output_error {
 	}
     }
     # print the output error, with one of 3 formatting styles
-    $r->Output("$class", $err);
+    $r->Output("Message", $err);
     $r->Output("Details", $r->{desc});
     $r->EndSection();
     $r->Separator("");
