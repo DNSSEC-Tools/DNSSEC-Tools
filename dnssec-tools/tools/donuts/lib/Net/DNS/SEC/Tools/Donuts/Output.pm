@@ -143,5 +143,27 @@ sub Comment {
 	$self->{'formatter'}->Comment($tag, $message));
 }
 
+sub StartOutput {
+    my ($self, $tag, $message) = @_;
+
+    if (!exists($self->{'OutputStarted'}) ||
+	$self->{'OutputStarted'} == 0) {
+	$self->{'location'}->print(
+	    $self->{'formatter'}->StartOutput($tag, $message));
+    }
+    $self->{'OutputStarted'}++;
+}
+
+sub EndOutput {
+    my ($self, $tag, $message) = @_;
+
+    $self->{'OutputStarted'}--;
+
+    if ($self->{'OutputStarted'} == 0) {
+	$self->{'location'}->print(
+	    $self->{'formatter'}->EndOutput($tag, $message));
+    }
+}
+
 
 1;
