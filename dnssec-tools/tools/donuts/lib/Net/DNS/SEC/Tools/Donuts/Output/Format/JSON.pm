@@ -123,12 +123,14 @@ sub Comment {
 
 sub StartOutput {
     my ($self) = @_;
-    return "{\n";
+    $self->{'section_firsts'} = [ 1 ];
+    $self->{'in_array'} = [ 1 ];
+    return "[\n";
 }
 
 sub EndOutput {
     my ($self) = @_;
-    return "}\n";
+    return "]\n";
 }
 
 sub Separator {
