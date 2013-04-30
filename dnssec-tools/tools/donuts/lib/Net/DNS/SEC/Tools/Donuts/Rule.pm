@@ -80,10 +80,10 @@ sub wrapit {
 	push @{$r->{'gui'}{$r->{'location'}}}, [[@_]];
     } else {
 	if ($have_textwrap) {
-	    $r->Error(Text::Wrap::wrap(sprintf("  %-13s", $_[0]),
+	    $r->output(Text::Wrap::wrap(sprintf("  %-13s", $_[0]),
 				       " " x 15, $_[1]) . "\n");
 	} else {
-	    $r->Error(sprintf("  %-12s %s\n", $_[0], $_[1]));
+	    $r->output(sprintf("  %-12s %s\n", $_[0], $_[1]));
 	}
     }
 }
@@ -98,41 +98,41 @@ sub print_error {
     $r->{'location'} = $loc;
     $r->{'rulename'} = $r->{name};
     $r->output("$loc:");
-    $r->output("Location:", $rrname) if ($rrname);
+    $r->output("  Location:", $rrname) if ($rrname);
     if ($verb) {
 	if ($verb >= 5) {
 	    require Data::Dumper;
 	    import Data::Dumper qw(Dumper);
-	    $r->output("Rule Dump:", Dumper($r));
+	    $r->output("  Rule Dump:", Dumper($r));
 	} else {
-	    $r->output("Rule Name:", $r->{name});
-	    $r->output("Level:",     $r->{level});
+	    $r->output("  Rule Name:", $r->{name});
+	    $r->output("  Level:",     $r->{level});
 	    if ($verb >= 2) {
-		$r->output("Rule Type:", $r->{'ruletype'} || 'record');
-		$r->output("Record Type:", $r->{'type'}) if ($r->{'type'});
-		$r->output("Rule File:", $r->{'code_file'});
-		$r->output("Rule Line:", $r->{'code_line'});
+		$r->output("  Rule Type:", $r->{'ruletype'} || 'record');
+		$r->output("  Record Type:", $r->{'type'}) if ($r->{'type'});
+		$r->output("  Rule File:", $r->{'code_file'});
+		$r->output("  Rule Line:", $r->{'code_line'});
 	    }
 	    if ($verb >= 3 && defined($record)) {
-		$r->output("Record:", $record->string);
+		$r->output("  Record:", $record->string);
 	    }
 	    if ($verb >= 4) {
-		$r->output("Rule Code:", $r->{'ruledef'});
+		$r->output("  Rule Code:", $r->{'ruledef'});
 	    }
 	}
     }
     # print the output error, with one of 3 formatting styles
     if ($r->{'noindent'} || $r->{'gui'}) {
-	$r->output("$class:", $err);
+	$r->output("  $class:", $err);
     } elsif ($r->{'nowrap'}) {
 	$err =~ s/\n/\n$indent/g;
-	$r->output("$class:", $err);
+	$r->output("  $class:", $err);
     } else {
 	$r->wrapit("$class:",$err);
     }
     if ($r->{desc} && $verb) {
 	if ($r->{'gui'}) {
-	    $r->output("Details:", $r->{desc});
+	    $r->output("  Details:", $r->{desc});
 	} else {
 	    $r->wrapit("Details:", $r->{desc});
 	}
@@ -222,7 +222,7 @@ sub test_record {
 
 	    return $rule->run_test($file, [$record, $rule],
 				   [$record->name, $verbose,
-				    "$file:$record->{Line}", $record]);
+				    "${file}:$record->{Line}", $record]);
 	}
 	
 	# it was a legal rule, so we count it but no errors
@@ -241,7 +241,7 @@ sub test_name {
 	(exists($rule->{'ruletype'}) && $rule->{'ruletype'} eq 'name')) {
 
 	return $rule->run_test($file, [$namerecord, $rule, $name],
-			       ["$file/$name", $verbose]);
+			       ["$name", $verbose]);
     }
     return (0,0);
 }
