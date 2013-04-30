@@ -13,6 +13,7 @@ use strict;
 use Net::DNS::SEC::Tools::Donuts::Output::Format::Text;
 use Net::DNS::SEC::Tools::Donuts::Output::Format::XML;
 use Net::DNS::SEC::Tools::Donuts::Output::Format::JSON;
+use Net::DNS::SEC::Tools::Donuts::Output::Format::Perl;
 
 my $have_textwrap = eval { require Net::DNS::SEC::Tools::Donuts::Output::Format::Text::Wrapped; };
 
@@ -52,6 +53,13 @@ sub set_format {
 	$self->{'formatter'} = new Net::DNS::SEC::Tools::Donuts::Output::Format::XML();
     } elsif ($format eq 'json') {
 	$self->{'formatter'} = new Net::DNS::SEC::Tools::Donuts::Output::Format::JSON();
+    } elsif ($format eq 'perl') {
+	$self->{'formatter'} = new Net::DNS::SEC::Tools::Donuts::Output::Format::Perl();
+	if (exists($self->{'perllocation'})) {
+	    # bind them together
+	    ${$self->{'perllocation'}} = $self->{'formatter'}->storage_ref();
+	    delete $self->{'perllocation'};
+	}
     } else {
 	die "unknown output-format directive: '$format'";
     }
@@ -69,7 +77,7 @@ sub formatter {
 }
 
 sub set_location {
-    my ($self, $location, $argument) = @_;
+    my ($self, $location, $output) = @_;
 
     if (ref($location) ne '') {
 	# a class was directly passed
@@ -82,22 +90,33 @@ sub set_location {
     if ($location eq 'stdout') {
 	$self->{'location'} = new IO::Handle;
 	$self->{'location'}->fdopen(fileno(STDOUT),"w");
+	$output = $self->{'location'};
     } elsif ($location eq 'stderr') {
 	$self->{'location'} = new IO::Handle;
 	$self->{'location'}->fdopen(fileno(STDERR),"w");
+	$output = $self->{'location'};
     } elsif ($location =~ /^file:(.*)/) {
 	my $path = $1;
 	$self->{'location'} = new IO::File;
 	$self->{'location'}->open("> $path");
+	$output = $self->{'location'};
     } elsif ($location eq 'string') {
-	my $path = $1;
 	if (! eval 'require IO::String;') {
 	    die "IO::String is required for exporting to a string";
 	}
 	import IO::String;
 
 	$self->{'location'} = IO::String->new();
-	$$argument = $self->{'location'}->string_ref();
+	$$output = $self->{'location'}->string_ref();
+    } elsif ($location eq 'perl') {
+	if (ref($self->{'formatter'}) eq 'Net::DNS::SEC::Tools::Donuts::Output::Format::Perl') {
+	    # they've already set the correct formatter
+	    # extract it's already set storage ref
+	    $$output = $self->{'formatter'}->storage_ref();;
+	} else {
+	    # they haven't yet; store it for a later binding
+	    $self->{'perllocation'} = $output;
+	}
     } else {
 	die "unknown location directive: '$location'";
     }
