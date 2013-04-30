@@ -32,4 +32,19 @@ sub StartOutput {
 sub EndOutput {
 }
 
+sub StartArray {
+    my $self = shift @_;
+    $self->StartSection(@_);
+}
+
+sub EndArray {
+    my $self = shift @_;
+    $self->EndSection(@_);
+}
+
+sub ArrayObject {
+    my $self = shift @_;
+    $self->Output(@_);
+}
+
 1;

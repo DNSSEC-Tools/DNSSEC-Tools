@@ -44,6 +44,12 @@ sub is_section_first {
     return $ans;
 }
 
+sub is_in_array {
+    my ($self) = @_;
+    return 0 if (!exists($self->{'in_array'}) || $#{$self->{'in_array'}} == -1);
+    return $self->{'in_array'}[$#{$self->{'in_array'}}];
+}
+
 sub get_comma_leader {
     my ($self) = @_;
     my $output = "";
@@ -51,8 +57,8 @@ sub get_comma_leader {
     return $output;
 }
 
-sub StartSection {
-    my ($self, $tag, $name) = @_;
+sub StartBlock {
+    my ($self, $tag, $name, $startchar) = @_;
 
     $tag = simplify_tag($tag);
     $name = escapeHTML($name) if ($name);
@@ -60,26 +66,60 @@ sub StartSection {
     $self->{'section_depth'} += 2;
 
     my $output = $self->get_comma_leader();
-    $output .= " " x ($self->{'section_depth'}-2) . 
-	sprintf("\"%s\": {\n", $tag);
+    $output .= " " x ($self->{'section_depth'}-2);
 
+    if ($self->is_in_array()) {
+	$output .= $startchar . "\n";
+    } else {
+	$output .= sprintf("\"%s\": %s\n", $tag, $startchar);
+    }
 
     push @{$self->{'section_firsts'}}, 1;
+    push @{$self->{'in_array'}}, ($startchar eq '[') ? 1 : 0;
 
     if ($name) {
 	$output .= " " x ($self->{'section_depth'}) . 
 	    sprintf("\"name\": \"%s\",\n", $name);
     }
+
     return $output;
 }
 
-sub EndSection {
-    my ($self) = @_;
+sub EndBlock {
+    my ($self, $tag, $name, $closechar) = @_;
     $self->{'section_depth'} -= 2;
     $self->{'section_depth'} = 0 if ($self->{'section_depth'} < 0);
     pop @{$self->{'section_firsts'}};
+    pop @{$self->{'in_array'}};
 
-    return "\n" . " " x ($self->{'section_depth'}) . "}";
+    return "\n" . " " x ($self->{'section_depth'}) . $closechar;
+}
+
+sub StartSection {
+    my ($self, $tag, $name) = @_;
+
+    return $self->StartBlock($tag, $name, "{");
+}
+
+sub EndSection {
+    my ($self, $tag, $name) = @_;
+
+    return $self->EndBlock($tag, $name, "}");
+}
+
+sub StartArray {
+    my ($self, $tag, $name) = @_;
+
+    return $self->StartBlock($tag, $name, "[");
+}
+
+sub EndArray {
+    my ($self, $tag, $name) = @_;
+
+    return $self->EndBlock($tag, $name, "]");
+}
+
+sub ArrayObject {
 }
 
 sub Comment {

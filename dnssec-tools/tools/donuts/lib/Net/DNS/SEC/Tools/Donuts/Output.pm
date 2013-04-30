@@ -125,6 +125,27 @@ sub EndSection {
 	$self->{'formatter'}->EndSection($tag, $message));
 }
 
+sub StartArray {
+    my ($self, $tag, $message) = @_;
+
+    $self->{'location'}->print(
+	$self->{'formatter'}->StartArray($tag, $message));
+}
+
+sub EndArray {
+    my ($self, $tag, $message) = @_;
+
+    $self->{'location'}->print(
+	$self->{'formatter'}->EndArray($tag, $message));
+}
+
+sub ArrayObject {
+    my ($self, $tag, $message) = @_;
+
+    $self->{'location'}->print(
+	$self->{'formatter'}->ArrayObject($tag, $message));
+}
+
 sub Error {
     my ($self, $tag, $message) = @_;
 

@@ -81,6 +81,11 @@ sub Output {
     $r->{'donuts'}->output()->Output(@_);
 }
 
+sub ArrayObject {
+    my $r = shift;
+    $r->{'donuts'}->output()->ArrayObject(@_);
+}
+
 sub Separator {
     my $r = shift;
     $r->{'donuts'}->output()->Separator(@_);
@@ -124,6 +129,7 @@ sub output_error {
     $r->{'location'} = $loc;
     $r->{'rulename'} = $r->{name};
     $r->StartSection("$class", "$loc");
+    $r->Output("Rule Type", $class);
     $r->Output("Location", $rrname) if ($rrname);
     if ($verb) {
 	if ($verb >= 5) {
