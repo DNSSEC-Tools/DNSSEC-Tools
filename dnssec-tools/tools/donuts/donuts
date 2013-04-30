@@ -42,6 +42,7 @@ my %opts = (l => 5,
 	    T => 'port 53 || ip[6:2] & 0x1fff != 0',
 	    o => '%d.%t.pcap',
 	    O => "wrapped",
+	    L => "stdout",
 	    r => "/usr/local/share/dnssec-tools/donuts/rules/*.txt," .
 	    $ENV{'HOME'} . "/.dnssec-tools/donuts/rules/*.txt");
 
@@ -125,7 +126,7 @@ DTGetOptions(\%opts,
 		 nocgi => 1,
 		 question => { type => 'menu', default => 'wrapped', indent => 1,
 		 values => [qw(wrapped text)]}],
-	        ["L|output-location=s", "Output location (stdout, or stderr)",
+	        ["L|output-location=s", "Output location (stdout, stderr, file:/path)",
 		 nocgi => 1,
 		 question => { type => 'menu', default => 'stdout', indent => 1,
 		 values => [qw(stdout stderr)]}],
