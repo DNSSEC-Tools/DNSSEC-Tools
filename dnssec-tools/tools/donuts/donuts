@@ -241,6 +241,9 @@ if ($opts{'f'}) {
     $donuts->set_feature_list(split(/,\s*/, $opts{'f'}));
 }
 
+# start the output wrapper (eg, <?xml ...>)
+$donuts->output()->StartOutput();
+
 #
 # load rule files
 #   (comma separated list)
@@ -319,7 +322,6 @@ my $exitcode = 0;
 my $parseerror;
 my $errcount;
 
-$donuts->output()->StartOutput();
 maybe_output_to_web();
 while ($#ARGV > -1) {
     $errcount = 0;
