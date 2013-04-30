@@ -213,6 +213,7 @@ if (!$opts{'R'} && !$opts{'F'} && !$opts{'H'} &&
 # Create the main Donuts object
 #
 my $donuts = new Net::DNS::SEC::Tools::Donuts();
+$donuts->set_config('verbose', $opts{'v'});
 
 #
 # initialize ignore list
