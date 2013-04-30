@@ -47,11 +47,6 @@ sub new {
 	}
     }
 
-    if (!exists($ref->{'formatter'})) {
-	# default to straight text?
-	$ref->{'formatter'} = new Net::DNS::SEC::Tools::Donuts::Output::Format::Text();
-    }
-
     bless $ref, $class;
     return $ref;
 }
@@ -83,22 +78,22 @@ sub output {
 
 sub Output {
     my $r = shift;
-    $r->{'formatter'}->Output(@_);
+    $r->{'donuts'}->output()->Output(@_);
 }
 
 sub Separator {
     my $r = shift;
-    $r->{'formatter'}->Separator(@_);
+    $r->{'donuts'}->output()->Separator(@_);
 }
 
 sub StartSection {
     my $r = shift;
-    $r->{'formatter'}->StartSection(@_);
+    $r->{'donuts'}->output()->StartSection(@_);
 }
 
 sub EndSection {
     my $r = shift;
-    $r->{'formatter'}->EndSection(@_);
+    $r->{'donuts'}->output()->EndSection(@_);
 }
 
 # XXX: deprecated
