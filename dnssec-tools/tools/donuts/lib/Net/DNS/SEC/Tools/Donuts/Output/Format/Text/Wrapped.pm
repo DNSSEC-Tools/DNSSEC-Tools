@@ -3,7 +3,7 @@
 # See the COPYING file included with the DNSSEC-Tools package for details.
 #
 
-package Net::DNS::SEC::Tools::Donuts::Output::Format::Wrapped;
+package Net::DNS::SEC::Tools::Donuts::Output::Format::Text::Wrapped;
 
 use strict;
 use Net::DNS::SEC::Tools::Donuts::Output::Format::Text;
@@ -18,7 +18,6 @@ sub Output {
     my ($self, $tag, $message) = @_;
 
     my $output_string;
-    my $format = $self->output_format();
 
     my $tagwidth = 12;
     $tag .= ":";
