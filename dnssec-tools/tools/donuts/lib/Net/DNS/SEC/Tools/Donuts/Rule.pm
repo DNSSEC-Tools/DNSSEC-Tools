@@ -49,6 +49,7 @@ sub new {
     return $ref;
 }
 
+# XXX: deprecated
 sub output {
     my $r = shift;
     if (exists($r->{'gui'})) {
@@ -73,6 +74,17 @@ sub output {
     }
 }
 
+sub Output {
+    my $r = shift;
+    if (exists($r->{'donuts'})) {
+	$r->{'donuts'}->Output(@_);
+    } else {
+	# very lame fallback just in case
+	print STDERR @_;
+    }
+}
+
+# XXX: deprecated
 sub wrapit {
     my $r = shift;
     if (exists($r->{'gui'})) {
@@ -88,8 +100,44 @@ sub wrapit {
     }
 }
 
+sub output_error {
+    my ($r, $err, $loc, $verb, $rrname, $record) = @_;
+    my $class = $r->{class} || 'Error';
+
+    $r->{'location'} = $loc;
+    $r->{'rulename'} = $r->{name};
+    $r->Output("$loc", "-----");
+    $r->Output("Location", $rrname) if ($rrname);
+    if ($verb) {
+	if ($verb >= 5) {
+	    require Data::Dumper;
+	    import Data::Dumper qw(Dumper);
+	    $r->Output("Rule Dump", Dumper($r));
+	} else {
+	    $r->Output("Rule Name", $r->{name});
+	    $r->Output("Level",     $r->{level});
+	    if ($verb >= 2) {
+		$r->Output("Rule Type", $r->{'ruletype'} || 'record');
+		$r->Output("Record Type", $r->{'type'}) if ($r->{'type'});
+		$r->Output("Rule File", $r->{'code_file'});
+		$r->Output("Rule Line", $r->{'code_line'});
+	    }
+	    if ($verb >= 3 && defined($record)) {
+		$r->Output("Record", $record->string);
+	    }
+	    if ($verb >= 4) {
+		$r->Output("Rule Code", $r->{'ruledef'});
+	    }
+	}
+    }
+    # print the output error, with one of 3 formatting styles
+    $r->Output("$class", $err);
+    $r->Output("Details", $r->{desc});
+#    $r->Separator("");
+}
 
 # Print the results of an error for a given rule
+# XXX: deprecated
 sub print_error {
     my ($r, $err, $loc, $verb, $rrname, $record) = @_;
     my $class = $r->{class} || 'Error';
@@ -200,7 +248,7 @@ sub run_test {
 	$rule->run_test_for_errors($file, $testargs, $errorargs);
     if ($#$res > -1) {
 	foreach my $result (@$res) {
-	    $rule->print_error($result, @$errorargs);
+	    $rule->output_error($result, @$errorargs);
 	}
     }
     return ($count1, $count2);
