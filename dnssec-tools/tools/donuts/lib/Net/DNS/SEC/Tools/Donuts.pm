@@ -10,10 +10,8 @@ use Net::DNS;
 use Net::DNS::SEC::Tools::Donuts::Rule;
 use Net::DNS::SEC::Tools::dnssectools;
 
-use Net::DNS::SEC::Tools::Donuts::Output::Format::Text;
+use Net::DNS::SEC::Tools::Donuts::Output;
 
-my $have_textwrap = eval { require Net::DNS::SEC::Tools::Donuts::Output::Format::Text::Wrapped; };
-    
 our $VERSION="2.1";
 
 #require Exporter;
@@ -36,7 +34,8 @@ sub new {
     $self->{'config'} = {};
 
     # XXX: only really needed if 'live' is enabled
-    $self->{'resolver'} = Net::DNS::Resolver->new;
+    $self->{'resolver'} = Net::DNS::Resolver->new if (!exists($self->{'resolver'}));
+    $self->{'output'} = Net::DNS::SEC::Tools::Donuts::Output->new if (!defined($self->{'output'}));
 
     return $self;
 }
@@ -106,52 +105,27 @@ sub create_feature_hash_from_list {
 sub set_output_format {
     my ($self, $format) = @_;
 
-    if (ref($format) ne '') {
-	# a class was directly passed
-	$self->{'formatter'} = $format;
-	return;
-    }
-
-    $format = defined($format) ? $format : "wrapped";
-    $format = "text" if ($format eq 'wrapped' && !$have_textwrap);
-
-    $self->{'output_format'} = $format;
-
-    if ($format eq 'wrapped') {
-	Net::DNS::SEC::Tools::Donuts::Output::Format::Text::Wrapped->import();
-	$self->{'formatter'} = new Net::DNS::SEC::Tools::Donuts::Output::Format::Text::Wrapped();
-    } else {
-	$self->{'formatter'} = new Net::DNS::SEC::Tools::Donuts::Output::Format::Text();
-    }
-}
-
-sub formatter {
-    my ($self) = @_;
-    $self->set_output_format() if (!defined($self->{'output_format'}));
-    return $self->{'formatter'};
+    $self->{'output'}->set_format($format);
 }
 
 sub output_format {
     my ($self) = @_;
-    $self->set_output_format() if (!defined($self->{'output_format'}));
-    return $self->{'output_format'};
-}
-
-sub set_output_location {
-    my ($self, $location) = @_;
-    $self->{'output_location'} = $location;
-}
-
-sub output_location {
-    my ($self) = @_;
-    return $self->{'output_location'};
+    return $self->{'output'}->format();
 }
 
 sub output {
     my ($self) = @_;
-    # XXX: right now the formatter is doing both
-    $self->set_output_format() if (!$self->{'formatter'});
-    return $self->{'formatter'};
+    return $self->{'output'};
+}
+
+sub set_output {
+    my ($self, $output) = @_;
+    $self->{'output'} = $output;
+}
+
+sub set_output_location {
+    my ($self, $location) = @_;
+    $self->{'output'}->set_location($location);
 }
 
 #
