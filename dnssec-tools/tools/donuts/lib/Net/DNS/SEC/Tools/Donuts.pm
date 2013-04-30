@@ -102,11 +102,16 @@ sub create_feature_hash_from_list {
 #
 sub set_output_format {
     my ($self, $format) = @_;
+
+    my $format = defined($format) ? $format : "wrapped";
+    $format = "text" if ($format eq 'wrapped' && !$have_textwrap);
+
     $self->{'output_format'} = $format;
 }
 
 sub output_format {
     my ($self) = @_;
+    $self->set_output_format() if (!defined($self->{'output_format'}));
     return $self->{'output_format'};
 }
 
@@ -344,18 +349,45 @@ sub Output {
     my ($self, $tag, $message) = @_;
 
     my $output_string;
-    my $format = exists($self->{'output_format'}) ? $self->{'output_format'} : "wrapped";
-    $format = "text" if ($format eq 'wrapped' && !$have_textwrap);
+    my $format = $self->output_format();
 
     my $tagwidth = 12;
     $tag .= ":";
 
     if ($format eq 'wrapped') {
-	print Text::Wrap::wrap(sprintf("\%-${tagwidth}s ", $tag),
-			       " " x ($tagwidth+1), $message) . "\n";
+	my $leader = " " x $self->{'section_depth'};
+	print Text::Wrap::wrap($leader . sprintf("\%-${tagwidth}s ", $tag),
+			       $leader . " " x ($tagwidth+1), $message) . "\n";
     } elsif ($format eq 'text') {
-	printf("\%-${tagwidth}s %s\n", $tag, $message);
+	my $leader = " " x $self->{'section_depth'};
+	printf("%s\%-${tagwidth}s %s\n", $leader, $tag, $message);
     }
+}
+
+sub Separator {
+    my ($self) = @_;
+    my $format = $self->output_format();
+
+    if ($format eq 'wrapped' || $format eq 'text') {
+	print "\n";
+    }
+}
+
+sub StartSection {
+    my ($self, $name) = @_;
+    my $format = $self->output_format();
+
+    if ($format eq 'wrapped' || $format eq 'text') {
+	print " " x $self->{'section_depth'} . "$name:\n";
+    }
+
+    $self->{'section_depth'} += 2;
+}
+
+sub EndSection {
+    my ($self) = @_;
+    $self->{'section_depth'} -= 2;
+    $self->{'section_depth'} = 0 if ($self->{'section_depth'} < 0);
 }
 
 sub Verbose {
