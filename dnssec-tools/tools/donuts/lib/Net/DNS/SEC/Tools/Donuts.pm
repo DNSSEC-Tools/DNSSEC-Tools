@@ -483,14 +483,15 @@ sub analyze {
 
     my ($rulecount, $errcount) = (0,0);
 
+    my $verbose = $self->config('verbose') || 0;
     $level = $level || $self->config('level') || 5;
     
     my $byNameTypeCache;
     $self->Verbose("--- Analyzing individual records in $self->{zonesource}\n");
-    ($rulecount, $errcount) = $self->analyze_records($level, $self->config('verboes'), $byNameTypeCache);
+    ($rulecount, $errcount) = $self->analyze_records($level, $verbose, $byNameTypeCache);
 
     $self->Verbose("--- Analyzing records for each name in $self->{zonesource}\n");
-    my ($ruleadd, $erradd) = $self->analyze_names($level, $self->config('verboes'), $byNameTypeCache);
+    my ($ruleadd, $erradd) = $self->analyze_names($level, $verbose, $byNameTypeCache);
     $rulecount += $ruleadd;
     $errcount += $erradd;
 
