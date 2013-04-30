@@ -7,15 +7,15 @@ package Net::DNS::SEC::Tools::Donuts::Output::Format::XML;
 
 use strict;
 use Net::DNS::SEC::Tools::Donuts::Output::Format;
+use CGI qw(escapeHTML);
 
 our @ISA = qw(Net::DNS::SEC::Tools::Donuts::Output::Format);
 
-sub escape_html {
-    return $_[0]; # XXX
-}
-
 sub simplify_tag {
-    return $_[0]; # XXX
+    my ($tag) = @_;
+    $tag =~ s/ /-/g;
+    $tag =~ s/[^-a-zA-Z0-9]//g;
+    return $tag;
 }
 
 sub Output {
@@ -25,7 +25,7 @@ sub Output {
     $tag = simplify_tag($tag);
 
     my $leader = " " x $self->{'section_depth'};
-    sprintf("%s<%s>%s</%s>\n", $leader, $tag, escape_html($message), $tag);
+    sprintf("%s<%s>%s</%s>\n", $leader, $tag, escapeHTML($message), $tag);
 }
 
 sub Separator {
@@ -38,7 +38,7 @@ sub StartSection {
     my ($self, $tag, $name) = @_;
 
     $tag = simplify_tag($tag);
-    $name = escape_html($name);
+    $name = escapeHTML($name);
 
     $self->{'section_depth'} += 2;
     push @{$self->{'tags'}}, $tag;
@@ -60,7 +60,7 @@ sub EndSection {
 
 sub Comment {
     my ($self, $comment) = @_;
-    return "<!-- " . escape_html($comment) . " -->\n";
+    return "<!-- " . escapeHTML($comment) . " -->\n";
 }
 
 1;
