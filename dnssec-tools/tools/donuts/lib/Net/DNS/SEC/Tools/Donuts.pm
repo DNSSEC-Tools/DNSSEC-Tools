@@ -151,13 +151,16 @@ sub load_rule_files {
 	    my @rfs = glob($rfexp);
 	    foreach my $rf (@rfs) {
 		next if (! -f $rf || $rf =~ /.bak$/ || $rf =~ /~$/);
-		$self->Verbose("--- loading rule file $rf\n    rules:");
+		$self->output()->Comment("loading rule file $rf");
+		$self->output()->Comment("Rules Run:");
 		if ($rf =~ /\.pl$/) {
 		    do $rf;
 		} else {
 		    $self->parse_rule_file($rf);
 		}
-		$self->Verbose("\n");
+
+		$self->output()->Comment(join(" ", keys(%{$self->{'rulesByName'}})));
+		$self->output()->Separator();
 	    }
 	}
     }
@@ -179,8 +182,6 @@ sub add_rule {
     if (!$rule->{'test'}) {
 	$self->Warning("no test defined for the '$rule->{name}' rule\n");
     }
-
-    $self->Verbose(" $rule->{'name'}");
 
     #if ($opts{'show-gui'}) {
     #	$rule->{'gui'} = \%outstructure; #XXX
@@ -251,7 +252,7 @@ sub parse_rule_file {
 	} elsif (/^\s*(\w+):\s*(.*\S)\s*$/) {
 	    $rule->{$1} = $2;
 	} elsif (!/^\s*$/) {
-	    print STDERR "illegal rule in $file:$count for rule $rule->{name}";
+	    $self->output()->Error("illegal rule in $file:$count for rule $rule->{name}");
 	}
 
 	if ($rule && !exists($rule->{'code_file'})) {
@@ -416,6 +417,9 @@ sub analyze_records {
     my ($errorsfound, $rulesrun);
     my ($rulecount, $errcount) = (0,0);
 
+    $self->output()->StartSection("Record Results", "$self->{zonesource}");
+    $self->output()->Comment("Analyzing individual records in $self->{zonesource}");
+
     foreach my $rec (@$rrset) {
 	foreach my $r (@rules) {
 	    next if ($self->rule_is_ignored($r));
@@ -433,6 +437,8 @@ sub analyze_records {
 	}
 	$firstrun = 0;
     }
+
+    $self->output()->EndSection();
 
     return ($rulecount, $errcount);
 }
@@ -458,6 +464,9 @@ sub analyze_names {
 
     my ( $errorsfound, $rulesrun);
 
+    $self->output()->StartSection("Name Results", "$self->{zonesource}");
+    $self->output()->Comment("Analyzing records for each name in $self->{zonesource}");
+
     if (!defined($recordByNameTypeCache)) {
 	# they didn't pass in a cache structure, so we need to 
 	# create it ourselves.
@@ -478,6 +487,8 @@ sub analyze_names {
         $firstrun = 0;
     }
 
+    $self->output()->EndSection();
+
     return ($rulecount, $errcount);
 }
 
@@ -490,10 +501,8 @@ sub analyze {
     $level = $level || $self->config('level') || 5;
     
     my $byNameTypeCache;
-    $self->Verbose("--- Analyzing individual records in $self->{zonesource}\n");
     ($rulecount, $errcount) = $self->analyze_records($level, $verbose, $byNameTypeCache);
 
-    $self->Verbose("--- Analyzing records for each name in $self->{zonesource}\n");
     my ($ruleadd, $erradd) = $self->analyze_names($level, $verbose, $byNameTypeCache);
     $rulecount += $ruleadd;
     $errcount += $erradd;

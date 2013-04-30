@@ -10,6 +10,9 @@ use IO::File;
 
 use strict;
 
+use Net::DNS::SEC::Tools::Donuts::Output::Format::Text;
+use Net::DNS::SEC::Tools::Donuts::Output::Format::XML;
+
 my $have_textwrap = eval { require Net::DNS::SEC::Tools::Donuts::Output::Format::Text::Wrapped; };
 
 sub new {
@@ -34,16 +37,20 @@ sub set_format {
 	return;
     }
 
-    $format = defined($format) ? $format : "wrapped";
+    $format = defined($format) ? lc($format) : "wrapped";
     $format = "text" if ($format eq 'wrapped' && !$have_textwrap);
 
     $self->{'output_format'} = $format;
 
-    if ($format eq 'wrapped' && $have_textwrap) {
+    if ($format eq 'wrapped') {
 	Net::DNS::SEC::Tools::Donuts::Output::Format::Text::Wrapped->import();
 	$self->{'formatter'} = new Net::DNS::SEC::Tools::Donuts::Output::Format::Text::Wrapped();
-    } else {
+    } elsif ($format eq 'text') {
 	$self->{'formatter'} = new Net::DNS::SEC::Tools::Donuts::Output::Format::Text();
+    } elsif ($format eq 'xml') {
+	$self->{'formatter'} = new Net::DNS::SEC::Tools::Donuts::Output::Format::XML();
+    } else {
+	die "unknown output-format directive: '$format'";
     }
 }
 
@@ -127,6 +134,13 @@ sub Warning {
 
     $self->{'location'}->print(
 	$self->{'formatter'}->Warning($tag, $message));
+}
+
+sub Comment {
+    my ($self, $tag, $message) = @_;
+
+    $self->{'location'}->print(
+	$self->{'formatter'}->Comment($tag, $message));
 }
 
 
