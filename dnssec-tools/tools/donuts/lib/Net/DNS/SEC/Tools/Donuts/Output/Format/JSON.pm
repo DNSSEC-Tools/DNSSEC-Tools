@@ -30,12 +30,6 @@ sub Output {
     sprintf("%s%s\"%s\": \"%s\"", $output, $leader, $tag, escapeHTML($message));
 }
 
-sub Separator {
-    my ($self) = @_;
-
-    return "\n";
-}
-
 sub is_section_first {
     my ($self) = @_;
     return 1 if ($#{$self->{'section_firsts'}} == -1);

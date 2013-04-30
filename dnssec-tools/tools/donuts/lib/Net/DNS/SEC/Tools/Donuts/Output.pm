@@ -69,7 +69,7 @@ sub formatter {
 }
 
 sub set_location {
-    my ($self, $location) = @_;
+    my ($self, $location, $argument) = @_;
 
     if (ref($location) ne '') {
 	# a class was directly passed
@@ -89,10 +89,26 @@ sub set_location {
 	my $path = $1;
 	$self->{'location'} = new IO::File;
 	$self->{'location'}->open("> $path");
+    } elsif ($location eq 'string') {
+	my $path = $1;
+	if (! eval 'require IO::String;') {
+	    die "IO::String is required for exporting to a string";
+	}
+	import IO::String;
+
+	$self->{'location'} = IO::String->new();
+	$$argument = $self->{'location'}->string_ref();
     } else {
 	die "unknown location directive: '$location'";
     }
     
+}
+
+# config
+
+sub allow_comments {
+    my ($self, $yesno) = @_;
+    $self->{'allow_comments'} = $yesno;
 }
 
 # why yes, these could be done with an autoload...
@@ -163,6 +179,8 @@ sub Warning {
 sub Comment {
     my ($self, $tag, $message) = @_;
 
+    return if (exists($self->{'allow_comments'}) &&
+	       ! $self->{'allow_comments'});
     $self->{'location'}->print(
 	$self->{'formatter'}->Comment($tag, $message));
 }

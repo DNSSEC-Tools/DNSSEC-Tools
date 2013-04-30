@@ -30,6 +30,7 @@ sub Separator {
 
 sub StartSection {
     my ($self, $tag, $name) = @_;
+    $name ||= "";
 
     $self->{'section_depth'} += 2;
 
