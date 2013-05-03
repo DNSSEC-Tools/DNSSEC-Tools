@@ -157,8 +157,8 @@ our %owlqueries =
 my %DEF_QUERYARG =
 (
 	'dnstimer'	=> $DEF_DNSTIMER_QUERY,
-	'rrdata'	=> ''
-	'rrsec'	=> ''
+	'rrdata'	=> '',
+	'rrsec'	=> '',
 );
 
 #------------------------------------------------------------------------
