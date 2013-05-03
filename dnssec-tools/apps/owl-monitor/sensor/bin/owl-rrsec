@@ -585,7 +585,7 @@ sub askaway
 	# Send the query to the nameserver, and time the query.
 	#
 	$time0 = time();
-	$reply = `dig +dnssec $target $qarg`;
+	$reply = `dig +dnssec +cd $target $qarg`;
 	$rcode = $? >> 8;
 
 	$time1 = time();
