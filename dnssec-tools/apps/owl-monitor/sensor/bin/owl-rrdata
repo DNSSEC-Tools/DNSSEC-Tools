@@ -569,7 +569,7 @@ sub askaway
 	my $rcode = -1;					# send() error code.
 
 	my $qarg;					# Query argument.
-	my $ns; 					# Name server argument. 
+	my $ns = "";				# Name server argument. 
 
 	my $time0;					# Start time.
 	my $time1;					# Stop time.
@@ -580,13 +580,13 @@ sub askaway
 	#
 	$target   = $cf_targets[$qind];
 	$qarg	  = $cf_qargs[$qind];
-	$ns       = $cf_servers[$qind];
+	$ns       = "\@$cf_servers[$qind]" if ($cf_servers[$qind] != "");
 
 	#
 	# Send the query to the nameserver, and time the query.
 	#
 	$time0 = time();
-	$reply = `dig +short \@$ns $target $qarg`;
+	$reply = `dig +short $ns $target $qarg`;
 	$rcode = $? >> 8;
 
 	$time1 = time();
