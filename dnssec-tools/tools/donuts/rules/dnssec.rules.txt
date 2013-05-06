@@ -409,7 +409,7 @@ desc: In order to facilitate future rolling of your zone signing keys (ZSKs) it 
   return if ($current_domain ne $recordname);
   return donuts_error("No DNSKEY records associated with $current_domain")
    if ($#{$records->{'DNSKEY'}} == -1);
-  my ($zskcount, $kskcount);
+  my ($zskcount, $kskcount) = (0,0);
   foreach my $key (@{$records->{'DNSKEY'}}) {
     if ($key->flags & 0x01) {
        $kskcount++;
