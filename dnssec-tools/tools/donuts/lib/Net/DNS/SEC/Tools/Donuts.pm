@@ -394,6 +394,8 @@ sub load_zone {
     my $parseerror = 0;
     if ($file =~ /^live:/) {
 	$rrset = $self->query_for_live_records($domain, $file);
+    } elsif ($file =~ /^afxr:/) {
+	$rrset = $self->afxr_records($domain, $file);
     } else {
 	$rrset = dt_parse_zonefile(file => $file,
 				   origin => "$domain.",
@@ -570,6 +572,13 @@ sub resolver {
     }
     return $self->{'resolver'};
 }
+
+sub afxr_records {
+    my ($self, $domain, $specification) = @_;
+
+    my @zone = $self->{'resolver'}->axfr($domain);
+    return \@zone;
+}    
 
 # Pull records from a live zone
 sub query_for_live_records {
