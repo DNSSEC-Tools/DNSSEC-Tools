@@ -9,6 +9,7 @@ BEGIN { use_ok('Net::DNS::SEC::Tools::Donuts'); }
 require_ok('Net::DNS::SEC::Tools::Donuts');
 
 my $donuts = new Net::DNS::SEC::Tools::Donuts();
+$donuts->set_output_location("file:/dev/null");
 
 my $result = $donuts->load_zone("t/db.example.com", "example.com");
 ok($result == 0, "zone load produced no errors");

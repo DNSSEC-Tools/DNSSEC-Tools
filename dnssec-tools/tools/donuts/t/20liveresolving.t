@@ -8,6 +8,7 @@ BEGIN { use_ok('Net::DNS::SEC::Tools::Donuts'); }
 require_ok('Net::DNS::SEC::Tools::Donuts');
 
 my $donuts = new Net::DNS::SEC::Tools::Donuts();
+$donuts->set_output_location("file:/dev/null");
 
 # By default we don't do these tests unless we know it's ok
 SKIP: {

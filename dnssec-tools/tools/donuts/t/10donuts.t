@@ -7,6 +7,7 @@ BEGIN { use_ok('Net::DNS::SEC::Tools::Donuts'); }
 require_ok('Net::DNS::SEC::Tools::Donuts');
 
 my $donuts = new Net::DNS::SEC::Tools::Donuts();
+$donuts->set_output_location("file:/dev/null");
 
 # test ignore storage
 $donuts->set_ignore_list('ignore', 'this');
