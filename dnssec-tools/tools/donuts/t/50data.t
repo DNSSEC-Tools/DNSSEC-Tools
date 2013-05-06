@@ -12,6 +12,7 @@ my $have_json = eval 'require Test::JSON;';
 my $have_xml = eval 'require XML::Simple;';
 
 my $donuts = new Net::DNS::SEC::Tools::Donuts();
+$donuts->set_output_location("file:/dev/null");
 
 my $resultRef;
 
