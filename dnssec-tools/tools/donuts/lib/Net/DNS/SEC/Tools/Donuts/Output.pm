@@ -61,7 +61,18 @@ sub set_format {
 	    delete $self->{'perllocation'};
 	}
     } else {
-	die "unknown output-format directive: '$format'";
+	# try and see if we can load something dynamically
+	$format =~ s/(.)(.*)/uc($1) . lc($2)/e;
+	my $success = eval "require Net::DNS::SEC::Tools::Donuts::Output::Format::$format;";
+	if (!$success) {
+	    die "unknown output-format directive: '$format'";
+	}
+	
+	# now create an instance
+	$self->{'formatter'} = eval "new Net::DNS::SEC::Tools::Donuts::Output::Format::${format} ()";
+	if (ref($self->{'formatter'}) ne "Net::DNS::SEC::Tools::Donuts::Output::Format::${format}") {
+	    die "failed to create a $format object: $@";
+	}
     }
 }
 
