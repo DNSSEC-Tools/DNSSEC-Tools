@@ -30,15 +30,16 @@ sub Separator {
 
 sub StartSection {
     my ($self, $tag, $name) = @_;
+    $name ||= "";
 
-    $self->{'section_depth'} += 2;
+    $self->{'section_depth'} += $self->config('indent', 2);
 
-    return " " x ($self->{'section_depth'}-2) . "$tag: $name\n";
+    return " " x ($self->{'section_depth'} - $self->config('indent', 2)) . "$tag: $name\n";
 }
 
 sub EndSection {
     my ($self) = @_;
-    $self->{'section_depth'} -= 2;
+    $self->{'section_depth'} -= $self->config('indent', 2);
     $self->{'section_depth'} = 0 if ($self->{'section_depth'} < 0);
 }
 

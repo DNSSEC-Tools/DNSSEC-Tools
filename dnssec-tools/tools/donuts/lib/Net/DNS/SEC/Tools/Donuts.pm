@@ -124,8 +124,8 @@ sub set_output {
 }
 
 sub set_output_location {
-    my ($self, $location) = @_;
-    $self->{'output'}->set_location($location);
+    my ($self, $location, $argument) = @_;
+    $self->{'output'}->set_location($location, $argument);
 }
 
 #
@@ -394,6 +394,8 @@ sub load_zone {
     my $parseerror = 0;
     if ($file =~ /^live:/) {
 	$rrset = $self->query_for_live_records($domain, $file);
+    } elsif ($file =~ /^afxr:/) {
+	$rrset = $self->afxr_records($domain, $file);
     } else {
 	$rrset = dt_parse_zonefile(file => $file,
 				   origin => "$domain.",
@@ -418,7 +420,7 @@ sub analyze_records {
     my ($rulecount, $errcount) = (0,0);
 
     $self->output()->StartOutput();
-    $self->output()->StartSection("Record Results");
+    $self->output()->StartArray("Record Results");
     $self->output()->Comment("Analyzing individual records in $self->{zonesource}");
 
     foreach my $rec (@$rrset) {
@@ -439,7 +441,7 @@ sub analyze_records {
 	$firstrun = 0;
     }
 
-    $self->output()->EndSection();
+    $self->output()->EndArray();
     $self->output()->EndOutput();
 
     return ($rulecount, $errcount);
@@ -467,7 +469,7 @@ sub analyze_names {
     my ( $errorsfound, $rulesrun);
 
     $self->output()->StartOutput();
-    $self->output()->StartSection("Name Results");
+    $self->output()->StartArray("Name Results");
     $self->output()->Comment("Analyzing records for each name in $self->{zonesource}");
 
     if (!defined($recordByNameTypeCache)) {
@@ -490,7 +492,7 @@ sub analyze_names {
         $firstrun = 0;
     }
 
-    $self->output()->EndSection();
+    $self->output()->EndArray();
     $self->output()->EndOutput();
 
     return ($rulecount, $errcount);
@@ -570,6 +572,13 @@ sub resolver {
     }
     return $self->{'resolver'};
 }
+
+sub afxr_records {
+    my ($self, $domain, $specification) = @_;
+
+    my @zone = $self->{'resolver'}->axfr($domain);
+    return \@zone;
+}    
 
 # Pull records from a live zone
 sub query_for_live_records {

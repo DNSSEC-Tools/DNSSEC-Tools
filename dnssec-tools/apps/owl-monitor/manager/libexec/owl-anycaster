@@ -1,0 +1,845 @@
+#!/usr/bin/perl
+#
+# Copyright 2010-2013 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details.
+#
+# owl-anycaster
+#
+#	This script parses the DNS ANYCAST nameserver name data gathered by
+#	an Owl Monitoring System sensor and writes the parsed data to the
+#	Nagios perfdata file.  The sensor's anycast history file is updated
+#	to record the last entry for a particular root server from that sensor.
+#
+#	owl-anycaster is an update of the uem-anycaster Nagios plugin, which
+#	was written for the UEM project.
+#
+# Revision History
+#	1.0	Initial version.
+#		This was adapted from the uem-anycaster plugin from
+#		the original UEM system.
+#
+#	2.0	Initial version for the Owl Monitoring System.	130430
+#
+
+use strict;
+
+use Getopt::Long qw(:config no_ignore_case_always);
+use Fcntl ':flock';
+
+#######################################################################
+#
+# Version information.
+#
+my $NAME   = "owl-anycaster";
+my $VERS   = "$NAME version: 2.0";
+
+#######################################################################
+#
+# Paths and commands.
+#
+#	$OWL_DIR might need changing for the individual installation.
+#
+
+my $OWL_DIR	 = "/owl";			# Owl directory.
+
+my $OWL_DATA		= "$OWL_DIR/data";	# Owl DNS data directory.
+my $OWL_HISTORY		= "history";		# Owl DNS history data dir.
+my $OWL_ANYCASTDATA	= "data";		# Owl DNS data.
+
+my $historydir;					# History data directory.
+my $datadir;					# Data directory.
+
+#
+# Array indices into the history file's data.
+#
+my $LASTNS   = 0;
+my $LASTFILE = 1;
+my $LASTTIME = 2;
+
+#
+# This flag indicates when there's no history for the given service.
+# When this happens, we fall back to the original behavior and report
+# just the most recent datum for the service.
+# 
+my $nohist = 1;
+
+#######################################################################
+#
+# Nagios return codes.
+#
+my $RC_NORMAL	= 0;		# Normal return code.
+my $RC_WARNING	= 1;		# Warning return code.
+my $RC_CRITICAL	= 2;		# Critical return code.
+my $RC_UNKNOWN	= 3;		# Unknown return code.
+
+
+my $WARNING_THRESHOLD  = 0;	# Warning threshold for averaged errors.
+my $CRITICAL_THRESHOLD = 9;	# Critical threshold for averaged errors.
+
+######################################################################r
+#
+# Data required for command line options.
+#
+my %options = ();			# Filled option array.
+my @opts =
+(
+	"sensor=s",			# Sensor we're examining.
+	"ns=s",				# Name server we're examining.
+
+	"out",				# Save debugging output.
+	"Version",			# Display the version number.
+	"help",				# Give a usage message and exit.
+);
+
+my $ns = '';				# Name server to look for.
+my $sensor = '';			# Sensor we're examining.
+my $out = 0;				# Debugging output flag.
+
+#######################################################################
+#
+# Host name/address translation table.  These are name servers that have
+# been queried for particular records.
+#
+
+my %hosts =
+(
+	#
+	# Owl 2.0:  The following name/address pairs are used
+	#	    in the current Owl configuration.  2013
+	#
+	#	    There's undoubtedly a better way to do this.
+	#
+	'a.root-servers.net'	=> '198.41.0.4',
+	'b.root-servers.net'	=> '192.228.79.201',
+	'c.root-servers.net'	=> '192.33.4.12',
+	'd.root-servers.net'	=> '199.7.91.13',
+	'e.root-servers.net'	=> '192.203.230.10',
+	'f.root-servers.net'	=> '192.5.5.241',
+	'g.root-servers.net'	=> '192.112.36.4',
+	'h.root-servers.net'	=> '128.63.2.53',
+	'i.root-servers.net'	=> '192.36.148.17',
+	'j.root-servers.net'	=> '192.58.128.30',
+	'k.root-servers.net'	=> '193.0.14.129',
+	'l.root-servers.net'	=> '199.7.83.42',
+	'm.root-servers.net'	=> '202.12.27.33',
+);
+
+#######################################################################
+
+my $rc	   = $RC_UNKNOWN;		# Command's return code.
+my $outstr = '';			# Accumulated anycast data.
+my $count  = 0;				# Count of anycast lines handled.
+my $errors = 0;				# Count of errors encountered.
+
+#
+# If a particular sensor tries to update a large number of anycast entries
+# at a single time, the whole system could get bogged down.  Some Nagios
+# services might appear to be timing out and not returning data.  In order
+# to prevent a single root server from consuming a huge amount of processor
+# time, we'll restrict the maximum number of entries we'll handle at a time.
+# This number isn't very large, but given the behavior seen of anycast data
+# so far, it should be sufficient to allow things to catch up.
+#
+my $MAXENTRIES = 25;
+
+#
+# Run shtuff.
+#
+$rc = main();
+exit($rc);
+
+#-----------------------------------------------------------------------------
+# Routine:	main()
+#
+# Purpose:	Main controller routine for owl-anycaster.
+#
+sub main
+{
+	my @fns = ();				# Filenames to check.
+	my @lasts = ();				# Last file and record checked.
+	my $lastfn = '';			# Last filename we checked.
+	my $kronos = '';			# Last time checked.
+	my $retcode = $RC_NORMAL;		# Service's return code.
+
+	my $respdata = '';			# DNS response data.
+	my $txtcode;				# Service's text return code.
+	my $nsname;				# Service's NS name return code.
+
+# out("\nowl-anycaster:  running");
+
+	#
+	# Check our options.
+	#
+	doopts();
+
+	#
+	# Get the name of the data directory.
+	#
+	getdatadir();
+
+	#
+	# Get info on the last entry checked for this sensor/name server pair.
+	#
+	@lasts = getlast();
+
+	#
+	# Get the names of the files to check for anycast lines.
+	#
+	@fns = getfns($lasts[$LASTFILE]);
+
+	#
+	# Search the appropriate files for anycasting hosts and deal with
+	# the data "appropriately".
+	#
+	foreach my $fn (@fns)
+	{
+		my $ret;			# This invocation's return.
+
+		($ret, $kronos) = anyresps($fn,$lasts[$LASTTIME]);
+		if($ret eq 'DNSSEC_NOT_SUPPORTED')
+		{
+			$retcode = $RC_NORMAL;
+		}
+		else
+		{
+			$retcode = $ret if($ret != $RC_NORMAL);
+		}
+
+		#
+		# Save the last filename we examined.
+		#
+		$lastfn = $fn;
+
+		#
+		# Make sure we don't exceed the maximum number of entries
+		# we can handle at a time.
+		#
+		last if($count == $MAXENTRIES);
+	}
+
+	#
+	# We'll move to now if no final time was returned.
+	#
+	$kronos = time() if(!defined($kronos) || $kronos eq '');
+
+	#
+	# Write a line of data to Nagios.
+	#
+	$outstr =~ s/;$//g;
+	$outstr =~ s/\n/\n|/m;
+	if($retcode == $RC_NORMAL)
+	{
+		print "$count new anycast name entries found|$outstr";
+	}
+	else
+	{
+		print "$errors errors found in anycast name data|$outstr";
+	}
+
+	#
+	# Update the history file.
+	#
+	updatehist($ns,$lastfn,$kronos);
+
+	#
+	# Exit with the command's return code.
+	#
+	return($retcode);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	doopts()
+#
+# Purpose:	This routine shakes and bakes our command line options.
+#
+sub doopts
+{
+	#
+	# Parse the command line.
+	#
+	GetOptions(\%options,@opts) || usage();
+
+	#
+	# Show the version number or usage if requested.
+	#
+	version() if(defined($options{'Version'}));
+	usage()   if(defined($options{'help'}));
+
+	#
+	# Set some fields.
+	#
+	$ns	= $options{'ns'}	if(defined($options{'ns'}));
+	$sensor = $options{'sensor'}	if(defined($options{'sensor'}));
+	$out	= 1			if(defined($options{'out'}));
+
+	#
+	# Ensure we were given a nameserver and a sensor.
+	#
+	if($ns eq '')
+	{
+		print "no nameserver specified\n";
+		exit($RC_CRITICAL);
+	}
+	if($sensor eq '')
+	{
+		print "no sensor specified\n";
+		exit($RC_CRITICAL);
+	}
+
+	#
+	# Get the service name.
+	#
+	return($ARGV[0]);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	getdatadir()
+#
+# Purpose:	Build the data directory name we'll need. 
+#
+sub getdatadir
+{
+	#
+	# Build and verify the name of our history data directory.
+	#
+	$historydir = "$OWL_DATA/$sensor/$OWL_HISTORY";
+	dirchk($historydir);
+
+	#
+	# Build and verify the name of our response data directory.
+	#
+	$datadir = "$OWL_DATA/$sensor/$OWL_ANYCASTDATA";
+	dirchk($datadir);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	dirchk()
+#
+# Purpose:	Ensure a directory exists, is a directory, and is writable.
+#
+sub dirchk
+{
+	my $dir = shift;			# Directory name to check.
+
+	#
+	# Ensure the directory exists.
+	#
+	if(! -e $dir)
+	{
+		if(mkdir($dir) == 0)
+		{
+			print "unable to create directory \"$dir\"\n";
+			exit($RC_CRITICAL);
+		}
+	}
+
+	#
+	# Ensure the directory is a directory.
+	#
+	if(! -d $dir)
+	{
+		print "\"$dir\" is not a directory\n";
+		exit($RC_CRITICAL);
+	}
+
+	#
+	# Ensure the directory is writable.
+	#
+	if(! -w $dir)
+	{
+		print "\"$dir\" is not writable\n";
+		exit($RC_CRITICAL);
+	}
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	getlast()
+#
+# Purpose:	Get the last file and entry for this sensor/name server pair.
+#
+sub getlast
+{
+	my $lfn;				# Last file for this server.
+	my $outstr = '';			# Output string.
+	my @lasts  = ();			# Files matching this service.
+	my @lines;				# Lines in last file.
+
+	#
+	# Get the anycast history file for this sensor.  
+	#
+	$lfn = "$historydir/anycast-$sensor";
+# out("history file - <$lfn>");
+
+	if(! -e $lfn)
+	{
+		open(LFN,">$lfn");
+		close(LFN);
+		return(@lasts);
+	}
+
+	#
+	# Get the lines from the sensor's history file.
+	#
+	open(LFN,"<$lfn");
+	flock(LFN,LOCK_EX);
+	@lines = <LFN>;
+	flock(LFN,LOCK_UN);
+	close(LFN);
+
+	#
+	# Return nil if the file is empty.
+	#
+	return() if(@lines == 0);
+
+	#
+	# Search the file contents to find the line for this sensor/name
+	# server pair.
+	#
+	foreach my $line (@lines)
+	{
+		$line =~ /(\S+)\s+(\S+)\s+(\S+)/;
+
+		if($ns eq $1)
+		{
+			$lasts[$LASTNS]	  = $1;
+			$lasts[$LASTFILE] = $2;
+			$lasts[$LASTTIME] = $3;
+
+			$nohist = 0;
+
+			last;
+		}
+	}
+
+	#
+	# Return whatever we found -- if anything.
+	#
+	return(@lasts);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	getfns()
+#
+# Purpose:	Get the data files for this server needs to deal with.
+#
+sub getfns
+{
+	my $lfile = shift;			# Last file.
+	my @files;				# Files matching this service.
+	my @newfiles;				# Subset of files.
+	my $ind;				# Loop index.
+
+#
+# example path:
+#   /owl/data/sensor1/data/130109.0019,snsor1,.,h.root-servers.net,ANYCAST.dns
+
+# out("looking for <$datadir/*,$ns,ANYCAST.dns>");
+
+	#
+	# Get the list of extant files for this service.  Give an unknown
+	# error if there aren't any.
+	#
+	@files = sort(glob("$datadir/*,$ns,ANYCAST.dns"));
+	if(@files == 0)
+	{
+		print "no ANYCAST files matching \"$ns\"\n";
+		exit($RC_UNKNOWN);
+	}
+
+	#
+	# Ensure the anycast history file has an entry for this nameserver.
+	#
+	if(!defined($lfile))
+	{
+		print "no anycast history defined for $ns\n";
+		exit($RC_UNKNOWN);
+	}
+
+	#
+	# Look for the last file accessed or the first one written after
+	# that file.
+	#
+	for($ind=0; $ind < @files; $ind++)
+	{
+		my @pathbits = split /\//, $files[$ind];
+		last if($pathbits[-1] ge $lfile);
+	}
+
+	#
+	# Get the latest files from the last accessed to the most recent
+	# written.
+	#
+	@newfiles = splice @files, $ind;
+
+	#
+	# Return the most recent file from our sorted list.
+	#
+	return(@newfiles);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	anyresps()
+#
+# Purpose:	Generate anycast-related output for Nagios.
+#
+sub anyresps
+{
+	my $fn = shift;				# Data file to examine.
+	my $lasttime = shift;			# Timestamp of last entry.
+
+	my @lines;				# Files matching this service.
+	my $line;				# Final line in file.
+	my $rc = $RC_NORMAL;			# Return value.
+
+	my $tempus;				# Timestamp to return.
+	my $kronos = 0;				# Timestamp from file.
+	my $nsanycast;				# Name of nameserver from file.
+	my $resptime;				# DNS response time from file.
+	my $errval;				# Error value from file.
+	my $nsname = '';			# Nameserver's anycast instance.
+
+	#
+	# Open our data file.
+	#
+	if(open(DF,"<$fn") == 0)
+	{
+		return($RC_NORMAL,'');
+	}
+
+	#
+	# Get entries in this data file.
+	#
+	@lines = <DF>;
+	close(DF);
+
+	#
+	# Return if the file is empty.  It isn't necessarily an error,
+	# so we won't complain.
+	#
+	return($RC_NORMAL,'') if(@lines == 0);
+
+	#
+	# If the service wasn't found in the history file, we'll just
+	# keep the final line.
+	#
+	if($nohist)
+	{
+		@lines = $lines[-1];
+	}
+
+	#
+	# Handle any file entries more recent than the last time we ran.
+	#
+	foreach $line (@lines)
+	{
+		#
+		# Make sure we don't exceed the maximum number of entries
+		# we can handle at a time.
+		#
+		last if($count == $MAXENTRIES);
+
+		chomp $line;
+		next if($line =~ /UNANSWERED/);
+
+		#
+		# Divide the line into its atoms.
+		#
+		$line =~ /^([0-9]+).[0-9]+\s+\S+\s+(\S+)\s+\S+\s+(\S+)\s+(\S+)\s+(\S+)/;
+		$kronos	   = $1;
+		$nsanycast = $2;
+		$resptime  = $3;
+		$errval	   = $4;
+		$nsname	   = $5;
+
+		#
+		# If the previous regexp failed, we'll try dropping an atom.
+		#
+#		if(!defined($kronos))
+#		{
+#
+#			$line =~ /^(\S+)\s+(\S+)\s+(\S+)/;
+#			$line =~ /^([0-9]+).[0-9]+\s+(\S+)\s+(\S+)\s+(\S+)/;
+# 			$line =~ /^([0-9]+).[0-9]+\s+(\S+)\s+(\S+)/;
+# 			$kronos	  = $1;
+# 			$resptime = $2;
+# 			$errval	  = $3;
+# 		}
+
+		#
+		# Skip the line on a few conditions.
+		#
+		next if($errval eq 'UNANSWERED');
+#		next if($errval eq 'DNSSEC_NOT_SUPPORTED');
+		next if($kronos eq '');
+		next if($lasttime ge $kronos);
+
+		#
+		# If this line had errors, we'll skip over it.
+		#
+		if(($errval ne "NOERROR") ||
+		   ($errval ne "DNSSEC_NOT_SUPPORTED"))
+		{
+			$errors++;
+			$rc = $errval;
+
+		}
+
+		#
+		# Convert the response time to milliseconds to make it a
+		# reasonable number.
+		#
+		$resptime *= 1000;
+		$resptime = sprintf("%.0f", $resptime);
+
+		#
+		# Add shtuff to the output string and bump our entry count.
+		#
+		$nsname = '' if(!defined($nsname));
+		$outstr .= "owl-anycaster=$kronos:$resptime ms $ns $nsname;";
+		$count++;
+
+		#
+		# Save a valid timestamp.
+		#
+		$tempus = $kronos;
+	}
+
+	#
+	# Convert error codes into a Nagios value.
+	#
+	if(!defined($errval))				{ $rc = $RC_UNKNOWN; }
+	elsif($errval eq "NOERROR")			{ $rc = $RC_NORMAL }
+	elsif($errval eq "DNSSEC_NOT_SUPPORTED")	{ $rc = $RC_NORMAL }
+	elsif($errval eq "NOTIMP")			{ $rc = $RC_NORMAL }
+#	$rc = $RC_CRITICAL if($errval ne "NOERROR");
+
+	#
+	# Return a result code. 
+	#
+	return($rc,$tempus);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	updatehist()
+#
+# Purpose:	Update the history file for this execution.
+#
+sub updatehist
+{
+	my $ns	 = shift;			# Updated name server.
+	my $file = shift;			# New last file.
+	my $kron = shift;			# New last time.
+
+	my @nodes;				# Nodes in new last file name.
+	my $lfn;				# Last file for this server.
+	my @lines;				# Lines in history file.
+	my $line;				# Line from @lines.
+
+	#
+	# Do nothing if we found nothing.
+	#
+	return if(($count == 0) || $nohist);
+
+	#
+	# Get the node of the new last file.
+	#
+	@nodes = split '/', $file;
+	$file = $nodes[-1];
+
+	#
+	# Get the anycast history file for this sensor.  
+	#
+	$lfn = "$historydir/anycast-$sensor";
+
+	#
+	# Open and lock the sensor's history file.
+	#
+	open(LFN,"+<$lfn");
+	flock(LFN,LOCK_EX);
+
+	#
+	# Read the file's contents and then zap it.
+	@lines = <LFN>;
+	seek LFN, 0, 0;
+	truncate LFN, 0;
+
+	#
+	# Copy the old contents to the file, replacing the appropriate line.
+	#
+	foreach $line (@lines)
+	{
+		if($line =~ /^$ns/)
+		{
+			$line = "$ns\t$file\t$kron\n";
+		}
+
+		print LFN "$line";
+	}
+
+	#
+	# Unlock and close the file.
+	#
+	flock(LFN,LOCK_UN);
+	close(LFN);
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	out()
+#
+# Purpose:	Temporary output routine.
+#
+sub out
+{
+	my $str = shift;
+
+	return if(! $out);
+
+	open(OUT,">>/tmp/z.anycaster");
+	print OUT "$str\n";
+	close(OUT);
+}
+
+#----------------------------------------------------------------------
+# Routine:	version()
+#
+sub version
+{
+	print STDERR "$VERS\n";
+	exit(1);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	usage()
+#
+sub usage
+{
+	print STDERR "$VERS
+Copyright 2010-2013 SPARTA, Inc.  All rights reserved.
+
+This script parses the DNS ANYCAST nameserver name data gathered by
+an Owl sensor and logs the parsed data to the Nagios perfdata file.
+
+
+usage:  owl-anycaster [options] <-sensor sensor> <-ns nameserver>
+	options:
+		-Version	display program version
+		-help		display this message
+
+";
+
+	exit(1);
+}
+
+1;
+
+###############################################################################
+
+=pod
+
+=head1 NAME
+
+owl-anycaster - Nagios plugin to retrieve log Owl ANYCAST response data
+
+=head1 SYNOPSIS
+
+  owl-anycaster [options] <-sensor sensor> <-ns nameserver>
+
+=head1 DESCRIPTION
+
+B<owl-anycaster> parses the DNS ANYCAST nameserver name data gathered by
+an Owl Monitoring System sensor and writes the parsed data to the Nagios
+B<perfdata> file.  The sensor data is expected to be gathered by the
+B<owl-dnstimer> sensor program.  The sensor's anycast history file is
+updated to record the last entry for a particular root server from that
+sensor.
+
+The specified sensor and nameserver determine which data file will be
+consulted for ANYCAST data.  The sensor name will determine the data and
+history directories, and the nameserver name will determine the entry in
+the history file, which will hold the appropriate data file's name.
+
+Each history-file entry contains the nameserver, the data file that was
+last read, and the last entry read from the data file.  B<owl-anycaster>
+will start reading from the next entry, and proceed until it has read up
+to 25 entries.  The response time and replying anycasted nameserver will
+be reported to Nagios, which will then cause the data to be written to the
+appropriate RRD databases.  These data will be used in graphing the response
+times.
+
+The data directories are hard-coded in B<owl-anycaster>.
+DNS ANYCAST response time data are in B</owl/data/E<lt>sensorE<gt>/data/>.
+The history file for the sensor/nameserver pair is in
+B</owl/data/E<lt>sensorE<gt>/history/anycast-E<lt>sensorE<gt>>.
+
+There must be a Nagios service object defined for each sensor/nameserver
+pair that will be tracked by Nagios.
+
+B<owl-anycaster> will normally only be run by the Nagios monitoring system.
+
+=head1 NAGIOS USE
+
+This is run from a Nagios I<command> object.  These are examples of how the
+objects should be defined:
+
+    define command {
+        command_name    owl-anycaster
+        command_line    $USER1$/owl-anycaster -sensor $ARG1$ -ns $ARG2$
+    }
+
+    define service {
+        service_description     h.root ANYCAST
+        host_name               sensor42 ANYCAST
+        check_command           owl-anycaster!sensor42!h.root-servers.net
+        active_checks_enabled   1
+        use                     owl-service
+    }
+
+    define service {
+        service_description     a.root ANYCAST
+        host_name               sensor42 ANYCAST
+        check_command           owl-anycaster!sensor42!a.root-servers.net
+        active_checks_enabled   1
+        use                     owl-service
+    }
+
+=head1 OPTIONS
+
+The following options are recognized by B<owl-anycaster>:
+
+=over 4
+
+=item I<-ns nameserver>
+
+The name server whose data should be examined.
+
+=item I<-sensor sensor>
+
+The sensor whose data should be examined.
+
+=item I<-Version>
+
+Display the program version and exit.
+
+=item I<-help>
+
+Display a usage message and exit.
+
+=back
+
+=head1 COPYRIGHT
+
+Copyright 2010-2013 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@tislabs.com
+
+=head1 SEE ALSO
+
+B<owl-dnswatch(1)>
+
+=cut
+

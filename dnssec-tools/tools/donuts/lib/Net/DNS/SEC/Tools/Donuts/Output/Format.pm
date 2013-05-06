@@ -32,4 +32,30 @@ sub StartOutput {
 sub EndOutput {
 }
 
+sub StartArray {
+    my $self = shift @_;
+    $self->StartSection(@_);
+}
+
+sub EndArray {
+    my $self = shift @_;
+    $self->EndSection(@_);
+}
+
+sub ArrayObject {
+    my $self = shift @_;
+    $self->Output(@_);
+}
+
+sub config {
+    my ($self, $what, $default) = @_;
+    return $default if (!exists($self->{'config'}{$what}));
+    return $self->{'config'}{$what};
+}
+
+sub set_config {
+    my ($self, $what, $value) = @_;
+    return $self->{'config'}{$what};
+}
+
 1;

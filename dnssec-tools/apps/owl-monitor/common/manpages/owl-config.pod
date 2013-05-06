@@ -160,8 +160,8 @@ this is a single letter from 'a' to 'm', then it will be appended with
 '.root-servers.net'.  At present, this field is not used for I<rrdata>
 I<type> queries.
 
-The I<arg> field specifies an argument to the query.  For I<dnstimer> and
-I<rrdata> query types, this is the DNS resource record that the nameserver
+The I<arg> field specifies an argument to the query.  For I<dnstimer>,
+I<rrdata> and I<rrsec> query types, this is the DNS resource record that the nameserver
 will be queried for.  If this is not included or is given as '-', then an
 'A' query will be performed.
 
@@ -237,6 +237,7 @@ The following is an example configuration file:
     query    dnstimer example.com      ns1.local   AAAA  -  42
 
     query    rrdata example.com      dummy.field   NS  -  30
+    query    rrsec  example.com      dummy.field   NS  -  30
 
     data   archive    /owl/archived-data
     data   dir        /owl/data-files

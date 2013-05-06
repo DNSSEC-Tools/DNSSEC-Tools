@@ -81,6 +81,11 @@ sub Output {
     $r->{'donuts'}->output()->Output(@_);
 }
 
+sub ArrayObject {
+    my $r = shift;
+    $r->{'donuts'}->output()->ArrayObject(@_);
+}
+
 sub Separator {
     my $r = shift;
     $r->{'donuts'}->output()->Separator(@_);
@@ -124,6 +129,7 @@ sub output_error {
     $r->{'location'} = $loc;
     $r->{'rulename'} = $r->{name};
     $r->StartSection("$class", "$loc");
+    $r->Output("Rule Type", $class);
     $r->Output("Location", $rrname) if ($rrname);
     if ($verb) {
 	if ($verb >= 5) {
@@ -285,10 +291,11 @@ sub test_record {
 	if (!exists($rule->{'type'}) || $record->type eq $rule->{'type'}) {
 
 	    # and the type matches
+	    my $line = $record->{Line} || "";
 
 	    return $rule->run_test($file, [$record, $rule],
 				   [$record->name, $verbose,
-				    "${file}:$record->{Line}", $record]);
+				    "${file}:$line", $record]);
 	}
 	
 	# it was a legal rule, so we count it but no errors

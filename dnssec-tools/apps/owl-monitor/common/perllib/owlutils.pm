@@ -131,6 +131,7 @@ my %owldaemons =				# Owl daemons.
 (
 	'owl-dnstimer'		=> $OWL_SENSOR,
 	'owl-rrdata'		=> $OWL_SENSOR,
+	'owl-rrsec' 		=> $OWL_SENSOR,
 	'owl-sensord'		=> $OWL_SENSOR,
 	'owl-transfer'		=> $OWL_SENSOR,
 
@@ -147,6 +148,7 @@ our %owlqueries =
 (
 	'dnstimer'	=> 'owl-dnstimer',
 	'rrdata'	=> 'owl-rrdata',
+	'rrsec'	    => 'owl-rrsec',
 );
 
 #
@@ -155,7 +157,8 @@ our %owlqueries =
 my %DEF_QUERYARG =
 (
 	'dnstimer'	=> $DEF_DNSTIMER_QUERY,
-	'rrdata'	=> ''
+	'rrdata'	=> '',
+	'rrsec'	=> '',
 );
 
 #------------------------------------------------------------------------

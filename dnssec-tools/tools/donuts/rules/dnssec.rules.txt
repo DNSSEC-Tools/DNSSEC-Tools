@@ -166,6 +166,7 @@ type: NSEC
   # skip the current record if it's not within our current zone
   # (happens with glue especially)
   return if ($record->name !~ /$current_domain$/);
+  return if ($#{$nrecs{$current_domain}{'SOA'}} == -1);
 
   if ($record->ttl ne $nrecs{$current_domain}{'SOA'}[0]->minimum) {
       donuts_error("NSEC TTL for " . $record->name . " (" . $record->ttl . 
@@ -409,7 +410,7 @@ desc: In order to facilitate future rolling of your zone signing keys (ZSKs) it 
   return if ($current_domain ne $recordname);
   return donuts_error("No DNSKEY records associated with $current_domain")
    if ($#{$records->{'DNSKEY'}} == -1);
-  my ($zskcount, $kskcount);
+  my ($zskcount, $kskcount) = (0,0);
   foreach my $key (@{$records->{'DNSKEY'}}) {
     if ($key->flags & 0x01) {
        $kskcount++;

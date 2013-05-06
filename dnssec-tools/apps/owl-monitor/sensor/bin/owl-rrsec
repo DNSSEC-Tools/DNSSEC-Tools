@@ -1,22 +1,20 @@
 #!/usr/bin/perl
 #
-# Copyright 2012-2013 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2013 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details.
 #
-# owl-dnstimer						Owl Monitoring System
+# owl-rrsec						Owl Monitoring System
 #
-#	This script runs timing tests for DNS lookups.  It starts a query
+#	This script gathers DNS resource record information.  It starts a query
 #	entity (thread or subprocess) for each of a set of queries defined in
 #	the Owl configuration file.  Each thread periodically sends a DNS
-#	request for a specified host to a particular nameserver.  The time
-#	taken to fulfill the request is recorded for later transfer to the Owl
-#	manager.
+#	request for a given resource record for a specified host, while also
+#	requesting DNSSEC meta-data.  Response data from the request are
+#	recorded for later transfer to the Owl manager.
 #
-# Revision History:
-#	1.0	Initial version.				121201
-#
-#	2.0	Released as part of DNSSEC-Tools 2.0.		130301
-#	2.0.1	Modified to allow multiple types of queries.	130319
+# Revision History
+#	2.0	Initial version.				130321
+#	2.0.1	Pod and comment fixes.				130327
 #
 
 use strict;
@@ -24,7 +22,7 @@ use strict;
 #
 # Version information.
 #
-my $NAME   = "owl-dnstimer";
+my $NAME   = "owl-rrsec";
 my $VERS   = "$NAME version: 2.0.1";
 my $DTVERS = "DNSSEC-Tools version: 2.0";
 
@@ -109,7 +107,7 @@ my $stopper;					# Stop-execution flag.
 
 #------------------------------------------------------------------------
 #
-# Error strings for log messages.  This is indexed by a code set in nstimer().
+# Error strings for log messages.  This is indexed by a code set in askaway().
 #
 my @errors =
 (
@@ -173,7 +171,6 @@ our @cf_rollints   = ();			# Datafile rollover interval.
 our @cf_states	   = ();			# State of targets.
 
 my @seekers = ();				# Query entity objects.
-my @resolvers = ();				# Resolver objects.
 my @datafiles = ();				# Datafiles for queries.
 my @datafds = ();				# Descriptors for datafiles.
 
@@ -187,7 +184,7 @@ exit(0);
 #
 sub main
 {
-	my $nscount = 0;		# Number of query entities started.
+	my $qecount = 0;		# Number of query entities started.
 
 	#
 	# Check our options and read the configuration file.
@@ -219,16 +216,6 @@ sub main
 	owl_writepid();
 
 	#
-	# Build a name resolver object for each target/query.
-	#
-	makeresolvers();
-
-	#
-	# Print the nameservers we're using.
-	#
-	printnss();
-
-	#
 	# Start a query entity for each nameserver that has a valid entry.
 	#
 	$sensorlog->warning("creating queries for each target/nameserver pair");
@@ -237,21 +224,21 @@ sub main
 	{
 		$datafds[$ind] = -1;
 
-		next if(($cf_owlqueries[$ind] ne 'dnstimer') ||
+		next if(($cf_owlqueries[$ind] ne 'rrsec') ||
 			($cf_states[$ind] == 0));
 
-		push @seekers, forge($ind);
+		$seekers[$ind] = forge($ind);
 
-		$nscount++;
+		$qecount++;
 	}
 
 	#
 	# Complain and exit if we didn't start any query entities.
 	#
-	if($nscount == 0)
+	if($qecount == 0)
 	{
-		$sensorlog->warning("no nameserver query entities started");
-		print STDERR "no nameserver query entities started\n";
+		$sensorlog->warning("no rrsec query entities started");
+		print STDERR "no owl-rrsec query entities started\n";
 		exit(4);
 	}
 
@@ -317,22 +304,22 @@ sub startup
 	$sensorlog = owl_setlog($NAME);
 
 	#
-	# Shutdown any owl-dnstimer instances that are running.
+	# Shutdown any owl-rrsec instances that are running.
 	#
 	if($stopper)
 	{
-		owl_halt('owl-dnstimer');
+		owl_halt('owl-rrsec');
 		exit(0);
 	}
 
 	#
-	# Make sure we're the only owl-dnstimer running.  We'll also allow a
-	# user to signal the other owl-dnstimer to shut down.
+	# Make sure we're the only owl-rrsec running.  We'll also allow a
+	# user to signal the other owl-rrsec to shut down.
 	#
 	if(owl_singleton(0) == 0)
 	{
 		#
-		# If we're not the only owl-dnstimer running, we'll
+		# If we're not the only owl-rrsec running, we'll
 		# complain and exit.
 		#
 		$sensorlog->warning("$NAME already running");
@@ -367,52 +354,6 @@ sub startup
 		print "datadir - $datadir\n";
 		print "logdir  - $logdir\n";
 		print "\n";
-	}
-
-}
-
-#------------------------------------------------------------------------
-# Routine:	makeresolvers()
-#
-# Purpose:	Build a resolver object for each defined nameserver.
-#		These objects will be saved in the @resolvers array.
-#
-sub makeresolvers
-{
-	for(my $ind=0; $ind < @cf_servers; $ind++)
-	{
-		my $nsname;				# Name server's name.
-		my $res;				# Resolver object.
-		my $timeout;				# Query timeout value.
-
-		#
-		# Skip entries that aren't ours.
-		#
-		next if($cf_owlqueries[$ind] ne 'dnstimer');
-
-		$nsname  = $cf_servers[$ind];
-		$timeout = $cf_timeouts[$ind];
-
-		#
-		# Build the resolver object.
-		#
-		$res = Net::DNS::Resolver->new(
-						  nameservers => [$nsname],
-						  recurse     => 0,
-						  retry       => 1,
-					      );
-
-		#
-		# Set some resolver fields.
-		#
-		$res->cdflag(1);
-		$res->tcp_timeout($timeout);
-		$res->udp_timeout($timeout);
-
-		#
-		# Save this nameserver's resolver object.
-		#
-		push @resolvers, $res;
 	}
 
 }
@@ -524,9 +465,9 @@ sub questor
 		$later = time() + $cf_intervals[$qind];
 
 		#
-		# Run our timing check of the nameserver.
+		# Run our query.
 		#
-		nstimer($qind);
+		askaway($qind);
 
 		#
 		# Calculate how much time we need to sleep, based on
@@ -568,7 +509,7 @@ sub getdatafile
 	$tg = $cf_targets[$qind];
 	$qt = $cf_qargs[$qind];
 	@cronos = gmtime($ctime);
-	$datafiles[$qind] = sprintf("%02d%02d%02d.%02d%02d,$sensorname,$tg,$ns,$qt.dns",
+	$datafiles[$qind] = sprintf("%02d%02d%02d.%02d%02d,$sensorname,$tg,$ns,$qt.rrsec",
 						$cronos[5] % 100,
 						$cronos[4] + 1,
 						$cronos[3],
@@ -614,100 +555,58 @@ sub getdatafile
 }
 
 #------------------------------------------------------------------------
-# Routine:	nstimer()
+# Routine:	askaway()
 #
-# Purpose:	Send a message to a nameserver and time how long it takes
-#		for a response to arrive.  We'll then log the message and
-#		response time for use by a monitor.  This is timing how
-#		long it takes a nameserver to respond to a request.
+# Purpose:	We'll look up a DNS record for a target host and time how
+#		long it takes for a response to arrive.  We'll then log the
+#		message and response time for use by a monitor.  This is
+#		timing how long it takes a nameserver to respond to a request.
 #
-sub nstimer
+sub askaway
 {
 	my $qind = shift;				# Query index.
 	my $target;					# Target host.
-	my $ns;						# Name server.
-	my $resolver;					# Resolver object.
-	my $resp;					# Resolver's response.
 	my $reply = 'undefined response';		# Reply message.
 	my $rcode = -1;					# send() error code.
 
-	my $qtype;					# Query type.
-	my $family = 'IN';				# Address family.
+	my $qarg;					# Query argument.
+	my $ns = "";  					# Name server argument.
 
 	my $time0;					# Start time.
 	my $time1;					# Stop time.
 	my $timediff;					# Time difference.
 
 	#
-	# Get the some objects.
+	# Get some objects.
 	#
-	$ns	  = $cf_servers[$qind];
 	$target   = $cf_targets[$qind];
-	$qtype	  = $cf_qargs[$qind];
-	$resolver = $resolvers[$qind];
-
-	#
-	# Make sure we were given a nameserver.
-	#
-	if(!defined($ns))
-	{
-		$sensorlog->warning("nstimer:  undefined nameserver");
-		print STDERR "nstimer:  undefined nameserver\n";
-		return;
-	}
-
-	#
-	# If we want an anycast result, we'll have to adjust some fields.
-	#
-	if($qtype =~ /^anycast$/i)
-	{
-		$target	= 'hostname.bind';
-		$qtype	= 'TXT';
-		$family	= 'CH';
-	}
+	$qarg	  = $cf_qargs[$qind];
+	$ns       = "\@$cf_servers[$qind]" if ($cf_servers[$qind] != "");
 
 	#
 	# Send the query to the nameserver, and time the query.
 	#
 	$time0 = time();
-
-	$resp = $resolver->send($target, $qtype, $family);
+	$reply = `dig +dnssec +cd $ns $target $qarg`;
+	$rcode = $? >> 8;
 
 	$time1 = time();
 	$timediff = $time1 - $time0;
 
 	#
-	# We'll try to make sense of the answer, if one was returned.
-	#
-	if(defined($resp))
-	{
-		$rcode = $resp->header->rcode;
-
-		#
-		# If there's an answer, we'll stuff the text response
-		# into the reply string.
-		#
-		if(($resp->header->ancount > 0) && defined($resp->answer))
-		{
-			foreach my $txtrr ($resp->answer)
-			{
-				$reply = $txtrr->string;
-			}
-		}
-	}
-
-	#
 	# Send the answer off to be logged.
 	#
-	savedatum($qind,$reply,$rcode,$time0,$timediff);
+	$reply =~ s/\s*$//g;
+	poc_savedatum($qind,$reply,$rcode,$time0,$timediff);
+
 }
 
 #------------------------------------------------------------------------
-# Routine:	savedatum()
+# Routine:	poc_savedatum()
 #
-# Purpose:	Save a data point -- found in nstimer() -- to our data file.
+# Purpose:	Proof of Concept...
 #
-sub savedatum
+sub poc_savedatum
 {
 	my $qind = shift;			# Query index.
 	my $reply = shift;			# Nameserver's reply.
@@ -715,33 +614,22 @@ sub savedatum
 	my $cronos = shift;			# Time test was run.
 	my $td = shift;				# Time to run test.
 
-	my $qtype;				# Query type.
+	my $qarg;				# Query argument.
 	my $succstr;				# Success code string.
-	my $anycast = '';			# Nameserver's anycast instance.
 	my $msg;				# Formatted message to send.
 	my $dfd;				# Datafile descriptor.
 
 	#
-	# Get some data -- local variable for quick-access.
+	# Get the type of resource record we just fetched.
 	#
-	$qtype = $cf_qargs[$qind];
-
-	#
-	# If the anycast request was successful, we'll get the anycast
-	# server's name.
-	#
-	if(($qtype eq 'ANYCAST') && ($rcode eq 'NOERROR'))
-	{
-		$reply =~ /"(.*)"/;
-		$anycast = $1;
-	}
+	$qarg = $cf_qargs[$qind];
 
 	#
 	# Get the success string for the query.
 	#
 	$succstr = $rcode;
 
-	$msg = sprintf("%10.5f $cf_targets[$qind] $cf_servers[$qind] $qtype %10.15f $succstr $anycast",$cronos,$td);
+	$msg = sprintf("%10.5f $cf_targets[$qind] $qarg %10.15f $succstr %d",$cronos,$td,(length($reply)+1));
 
 
 	#
@@ -752,7 +640,7 @@ sub savedatum
 	$dfd = $datafds[$qind];
 	$dfd = $$dfd;
 
-	print $dfd "$msg\n";
+	print $dfd "$msg\n$reply\n";
 
 }
 
@@ -825,6 +713,8 @@ sub cleanup
 			my $qt = $seekers[$qind];
 			my $tid = $qt->tid(); 
 
+			next if($qt == 0);
+
 			$sensorlog->warning("shutting down query-entity for $cf_targets[$qind]/$cf_servers[$qind]") if($verbose);
 			$qt->kill('SIGUSR2')->detach();
 		}
@@ -838,6 +728,8 @@ sub cleanup
 		for(my $qind=0; $qind < @seekers; $qind++)
 		{
 			my $qp = $seekers[$qind];
+
+			next if($qp == 0);
 
 			$sensorlog->warning("shutting down query-proc for $cf_targets[$qind]/$cf_servers[$qind]") if($verbose);
 			kill(SIGUSR1, $qp);
@@ -860,36 +752,6 @@ sub cleanup
 	print STDERR "$NAME shutting down...\n" if($verbose);
 	sleep(1);
 	exit(0);
-}
-
-#------------------------------------------------------------------------
-# Routine:	printnss()
-#
-# Purpose:	Print config info for each defined target/nameserver pair.
-#
-sub printnss
-{
-	return if(!$verbose);
-
-	for(my $qind=0; $qind < @cf_servers; $qind++)
-	{
-		my $msg;
-
-		#
-		# Skip entries that aren't ours.
-		#
-		next if($cf_owlqueries[$qind] ne 'dnstimer');
-
-		$msg = sprintf("%10s/%10s:  interval %d, timeout %d, state %s, rollint %d",
-				$cf_targets[$qind],
-				$cf_servers[$qind],
-				$cf_intervals[$qind],
-				$cf_timeouts[$qind],
-				$cf_states[$qind] ? 'active' : 'inactive',
-				$cf_rollints[$qind]);
-
-		$sensorlog->warning("$msg");
-	}
 }
 
 #----------------------------------------------------------------------
@@ -936,46 +798,51 @@ sub usage
 
 =head1 NAME
 
-owl-dnstimer - DNS query timer for the Owl Monitoring System
+owl-rrsec - Fetches DNS Resource Records along with associated DNSSEC
+meta-data for the Owl Monitoring System.
 
 =head1 SYNOPSIS
 
-  owl-dnstimer [options] <config file>
+  owl-rrsec [options]
 
 =head1 DESCRIPTION
 
-B<owl-dnstimer> runs timing tests of DNS lookups.  It starts a set of threads,
-each of which periodically sends a DNS query for a specified target host to a
-particular nameserver.  The DNS query type, target, and nameserver are defined
-in the Owl configuration file.  The time taken from query to response is saved
-in a file specifically for that nameserver, target, and query type.  The data
-so collected are intended to be used in the Owl system to track the
-responsiveness of DNS nameservers.
+B<owl-rrsec> retrieves a specified set of DNS resource records for the Owl
+sensor along with any associated DNSSEC meta-data.  The I<rrsec>
+queries from the Owl configuration file specify a
+target host and the type of DNS resource records that should be retrieved.
+The response data from these queries are transferred to the Owl manager.
+B<owl-rrsec> runs periodically, according to the configuration file.
 
-The B<owl-dnstimer> configuration file defines which nameservers are contacted,
-as well as how often they are contacted.  B<owl-dnstimer> maintains a log file
-that tracks the status of requests and query status.  B<owl-dnstimer>'s
-configuration and data files, as well as the layout for the environment, are
-described in their own man pages.
+B<owl-rrsec> starts a set of threads, each of which periodically executes
+the B<dig> command for a specified target host.  The DNS query type and target
+are defined in the Owl configuration file.  Along with the query's resource
+records, the time taken from query to response is saved in a file
+specifically for that target and query type.
 
-B<owl-dnstimer> will run threaded if the operating system or the installed
+The Owl configuration file defines which target hosts are contacted, as well
+as how often they are contacted.  B<owl-rrsec> maintains a log file that
+tracks the status of requests.  B<owl-rrsec>'s configuration and data files,
+as well as the layout for the environment, are described in their own man pages.
+
+B<owl-rrsec> will run threaded if the operating system or the installed
 version of Perl allow.  In this case, each query will be handled by its own
 thread.  If threaded execution is not allowed, then each query will be
 handled by its own process.
 
 =head2 FILE ORGANIZATION
 
-B<owl-dnstimer> assumes that the file hierarchy for the sensor is arranged like
+B<owl-rrsec> assumes that the file hierarchy for the sensor is arranged like
 this:
 
-    bin/owl-dnstimer
+    bin/owl-rrsec
     conf/owl.conf
     data/<data files>
     log/<log files>
     perllib/owlutils.pm
 
 These directories may be in the home directory of the executing user,
-or they may be located in another directory elsewhere.  However, the four
+or they may be located in another directory elsewhere.  However, the five
 directories should be kept together.
 
 Several options are available that alter this behavior.  They allow you to
@@ -994,7 +861,7 @@ Specifies the directory that holds the Owl configuration file.  If this is
 not given, then the default B<conf> name will be used.  If this is a relative
 path, it will be relative from the point of execution.
 
-The B<owl-dnstimer.pid> file is also stored in this directory.
+The B<owl-rrsec.pid> file is also stored in this directory.
 
 =item B<-config config-file>
 
@@ -1008,33 +875,33 @@ If this is not given, then the default B<owl.conf> name will be used.
 
 =item B<-datadir data-directory>
 
-Specifies the directory that will hold the B<owl-dnstimer> data files.  If
+Specifies the directory that will hold the B<owl-rrsec> data files.  If
 this is not given, then the default B<data> name will be used.  If this is
 a relative path, it will be relative from the point of execution.  If this
 directory doesn't exist, it will be created.
 
 =item B<-defaults>
 
-Print the query default values for B<owl-dnstimer> and exit.  These are the
+Print the query default values for B<owl-rrdsec> and exit.  These are the
 program defaults, not the configuration- and option-enhanced values.
 
 =item B<-foreground>
 
 =item B<-fg>
 
-B<owl-dnstimer> will run as a foreground process if either of these options is
+B<owl-rrsec> will run as a foreground process if either of these options is
 given.  Otherwise, it will run as a daemon.
 
 =item B<-logdir log-directory>
 
-Specifies the directory that will hold the B<owl-dnstimer> log files.
+Specifies the directory that will hold the B<owl-rrsec> log files.
 If this is not given, then the default B<log> name will be used.  If this
 is a relative path, it will be relative from the point of execution.  If
 this directory doesn't exist, it will be created.
 
 =item B<-stop>
 
-Stops the execution of an existing B<owl-dnstimer> process.
+Stops the execution of an existing B<owl-rrsec> process.
 
 =item B<-help>
 
@@ -1046,22 +913,22 @@ Prints verbose output.
 
 =item B<-Version>
 
-Prints B<owl-dnstimer>'s version and exit.
+Prints B<owl-rrsec>'s version and exit.
 
 =back
 
 =head1 SEE ALSO
 
+B<owl-dnstimer(1)>
+B<owl-sensord(1)>,
 B<owl-rrdata(1)>,
-B<owl-rrsec(1)>,
-B<owl-sensord(1)>
 
 B<owl-config(5)>,
 B<owl-data(5)>
 
 =head1 COPYRIGHT
 
-Copyright 2012-2013 SPARTA, Inc.  All rights reserved.
+Copyright 2013 SPARTA, Inc.  All rights reserved.
 
 =head1 AUTHOR
 

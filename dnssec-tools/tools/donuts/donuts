@@ -17,6 +17,7 @@ use Net::DNS::SEC::Tools::BootStrap;
 use Net::DNS::SEC::Tools::conf;
 use Net::DNS::SEC::Tools::Donuts::Rule;
 use Net::DNS::SEC::Tools::dnssectools;
+use Date::Parse;
 
 ######################################################################
 # detect needed perl module requirements
@@ -384,7 +385,8 @@ while ($#ARGV > -1) {
     #
     # call each rule on each record
     #
-    $donuts->output()->StartSection("Donuts-Analysis", "$current_domain");
+    $donuts->output()->Separator();
+    $donuts->output()->StartSection("Donuts Analysis", "$current_domain");
     ($rulecount, $errcount) = $donuts->analyze($opts{'l'});
 
     $donuts->summarize_results() if (!$opts{'q'});
@@ -650,6 +652,14 @@ Other data types may be queried by appending a ':' and the type name
 to a record.  For example:
 
   donuts -i NSEC live:good-a,good-aaaa:aaaa test.dnssec-tools.org
+
+=head2 QUERYING LIVE ZONES WITH AFXR
+
+If your host is allowed to query for afxr transfers of a particular
+zone, you may use the I<afxr:> filename token to indicate it should
+pull the zone data using a AFXR transfer.
+
+  donuts -i NSEC afxr: dnssec-tools.org
 
 =head1 OPTIONS
 
