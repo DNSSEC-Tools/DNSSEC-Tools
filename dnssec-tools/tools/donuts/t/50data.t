@@ -66,12 +66,12 @@ $resultRef = undef;
 $donuts->set_output_format('perl');
 $donuts->set_output_location('perl', \$resultRef);
 ok(defined($resultRef), "perl output defined");
-ok(ref($resultRef) eq 'HASH', "perl output defined to a hash");
+ok(ref($resultRef) eq 'ARRAY', "perl output defined to an array");
 
 $donuts->analyze(9);
 
-ok(exists($resultRef->{'Donuts Results'}), "perl results exist");
-ok(exists($resultRef->{'Donuts Results'}), "perl results exist");
-ok($#{$resultRef->{'Donuts Results'}{'Record Results'}} == 0, "1 record result");
-ok($#{$resultRef->{'Donuts Results'}{'Name Results'}} == 2, "3 name results");
+ok($#$resultRef > -1, "perl results exist");
+ok(exists($resultRef->[0]{'Record Results'}), "perl results exist");
+ok($#{$resultRef->[0]{'Record Results'}} == 0, "1 record result");
+ok($#{$resultRef->[0]{'Name Results'}} == 2, "3 name results");
 
