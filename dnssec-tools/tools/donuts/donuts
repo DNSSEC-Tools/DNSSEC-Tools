@@ -652,6 +652,14 @@ to a record.  For example:
 
   donuts -i NSEC live:good-a,good-aaaa:aaaa test.dnssec-tools.org
 
+=head2 QUERYING LIVE ZONES WITH AFXR
+
+If your host is allowed to query for afxr transfers of a particular
+zone, you may use the I<afxr:> filename token to indicate it should
+pull the zone data using a AFXR transfer.
+
+  donuts -i NSEC afxr: dnssec-tools.org
+
 =head1 OPTIONS
 
 =head2 Rule Set Configuration:
