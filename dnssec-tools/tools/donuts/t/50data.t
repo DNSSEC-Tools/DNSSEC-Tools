@@ -75,3 +75,6 @@ ok(exists($resultRef->[0]{'Record Results'}), "perl results exist");
 ok($#{$resultRef->[0]{'Record Results'}} == 0, "1 record result");
 ok($#{$resultRef->[0]{'Name Results'}} == 2, "3 name results");
 
+#
+# config arguments
+#

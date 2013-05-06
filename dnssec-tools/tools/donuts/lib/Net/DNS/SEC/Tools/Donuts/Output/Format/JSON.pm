@@ -118,6 +118,7 @@ sub ArrayObject {
 
 sub Comment {
     my ($self, $comment) = @_;
+    return if (! $self->config('allow-comments', 1));
     return " " x ($self->{'section_depth'}) . "// " . escapeHTML($comment) . "\n";
 }
 
