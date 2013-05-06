@@ -13,7 +13,9 @@ our @ISA = qw(Net::DNS::SEC::Tools::Donuts::Output::Format);
 
 my %markups = (
     'Donuts-Results' => 'b',
+    'Donuts-Summary' => 'b',
     'Error' => 'b',
+    'Errors-Found' => 'b',
     'Warning' => 'i',
     'Message' => 'b',
     'Details' => 'i',
