@@ -12,7 +12,11 @@ use HTML::Entities;
 our @ISA = qw(Net::DNS::SEC::Tools::Donuts::Output::Format);
 
 my %markups = (
-    'Donuts-Results' => 'b'
+    'Donuts-Results' => 'b',
+    'Error' => 'b',
+    'Warning' => 'i',
+    'Message' => 'b',
+    'Details' => 'i',
     );
 
 sub simplify_tag {
@@ -27,12 +31,13 @@ sub markup {
 
     if (exists($markups{$tag})) {
 	return
-	    sprintf("<%s>%s:</%s> %s", $markups{$tag},
-		    encode_entities($tag), $markups{$tag},
-		    encode_entities($message));
+	    sprintf("<%s>%s %s</%s>", $markups{$tag},
+		    encode_entities($tag), 
+		    encode_entities($message), 
+		    $markups{$tag});
     } else {
 	return
-	    sprintf("%s: %s", encode_entities($tag),
+	    sprintf("%s %s", encode_entities($tag),
 		    encode_entities($message));
     }
 
