@@ -31,18 +31,35 @@ sub new {
 }
 
 sub set_format {
-    my ($self, $format) = @_;
+    my ($self, $outputformat) = @_;
 
-    if (ref($format) ne '') {
+    if (ref($outputformat) ne '') {
 	# a class was directly passed
-	$self->{'formatter'} = $format;
+	$self->{'formatter'} = $outputformat;
 	return;
     }
 
-    $format = defined($format) ? lc($format) : "wrapped";
+    $outputformat ||= "wrapped";
+
+    my ($format, $arguments) = ($outputformat =~ /^(\w+)(:.*|)$/);
+    die "unknown output format: $outputformat" if (!$format);
+    $arguments =~ s/^:// if ($arguments);
+
+    $format = lc($format);
     $format = "text" if ($format eq 'wrapped' && !$have_textwrap);
 
     $self->{'output_format'} = $format;
+    $self->{'output_format_arguments'} = $arguments;
+
+    my %config;
+    foreach my $config_item (split(/,\s*/,$arguments)) {
+	my ($left, $right) = ($config_item =~ /(.*)=(.*)/);
+	if (!defined($right)) {
+	    $config{$config_item} = 1;
+	} else {
+	    $config{$left} = $right;
+	}
+    }
 
     if ($format eq 'wrapped') {
 	Net::DNS::SEC::Tools::Donuts::Output::Format::Text::Wrapped->import();
@@ -74,6 +91,8 @@ sub set_format {
 	    die "failed to create a $format object: $@";
 	}
     }
+
+    $self->{'formatter'}{'config'} = \%config;
 }
 
 sub format {
