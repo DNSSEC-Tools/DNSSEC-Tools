@@ -7,7 +7,7 @@ package Net::DNS::SEC::Tools::Donuts::Output::Format::XML;
 
 use strict;
 use Net::DNS::SEC::Tools::Donuts::Output::Format;
-use CGI qw(escapeHTML);
+use HTML::Entities;
 
 our @ISA = qw(Net::DNS::SEC::Tools::Donuts::Output::Format);
 
@@ -25,7 +25,7 @@ sub Output {
     $tag = simplify_tag($tag);
 
     my $leader = " " x $self->{'section_depth'};
-    sprintf("%s<%s>%s</%s>\n", $leader, $tag, escapeHTML($message), $tag);
+    sprintf("%s<%s>%s</%s>\n", $leader, $tag, encode_entities($message), $tag);
 }
 
 sub Separator {
@@ -38,7 +38,7 @@ sub StartSection {
     my ($self, $tag, $name) = @_;
 
     $tag = simplify_tag($tag);
-    $name = escapeHTML($name) if ($name);
+    $name = encode_entities($name) if ($name);
 
     $self->{'section_depth'} += 2;
     push @{$self->{'tags'}}, $tag;
@@ -65,7 +65,7 @@ sub EndSection {
 sub Comment {
     my ($self, $comment) = @_;
     return if (! $self->config('allow-comments', 1));
-    return "<!-- " . escapeHTML($comment) . " -->\n";
+    return "<!-- " . encode_entities($comment) . " -->\n";
 }
 
 sub StartOutput {
