@@ -291,10 +291,11 @@ sub test_record {
 	if (!exists($rule->{'type'}) || $record->type eq $rule->{'type'}) {
 
 	    # and the type matches
+	    my $line = $record->{Line} || "";
 
 	    return $rule->run_test($file, [$record, $rule],
 				   [$record->name, $verbose,
-				    "${file}:$record->{Line}", $record]);
+				    "${file}:$line", $record]);
 	}
 	
 	# it was a legal rule, so we count it but no errors
