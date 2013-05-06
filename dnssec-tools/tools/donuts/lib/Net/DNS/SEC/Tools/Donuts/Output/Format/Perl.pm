@@ -78,7 +78,7 @@ sub Comment {
 
 sub storage_ref {
     my ($self) = @_;
-    $self->{'outputvar'} = {} if (!exists($self->{'outputvar'}));
+    $self->{'outputvar'} = [] if (!exists($self->{'outputvar'}));
     return $self->{'outputvar'};
 }
 
