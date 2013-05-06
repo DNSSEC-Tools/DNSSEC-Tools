@@ -14,6 +14,7 @@ use Net::DNS::SEC::Tools::Donuts::Output::Format::Text;
 use Net::DNS::SEC::Tools::Donuts::Output::Format::XML;
 use Net::DNS::SEC::Tools::Donuts::Output::Format::JSON;
 use Net::DNS::SEC::Tools::Donuts::Output::Format::Perl;
+use Net::DNS::SEC::Tools::Donuts::Output::Format::HTML;
 
 my $have_textwrap = eval { require Net::DNS::SEC::Tools::Donuts::Output::Format::Text::Wrapped; };
 
@@ -66,6 +67,8 @@ sub set_format {
 	$self->{'formatter'} = new Net::DNS::SEC::Tools::Donuts::Output::Format::Text::Wrapped();
     } elsif ($format eq 'text') {
 	$self->{'formatter'} = new Net::DNS::SEC::Tools::Donuts::Output::Format::Text();
+    } elsif ($format eq 'html') {
+	$self->{'formatter'} = new Net::DNS::SEC::Tools::Donuts::Output::Format::HTML();
     } elsif ($format eq 'xml') {
 	$self->{'formatter'} = new Net::DNS::SEC::Tools::Donuts::Output::Format::XML();
     } elsif ($format eq 'json') {
