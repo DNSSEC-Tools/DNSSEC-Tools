@@ -166,6 +166,7 @@ type: NSEC
   # skip the current record if it's not within our current zone
   # (happens with glue especially)
   return if ($record->name !~ /$current_domain$/);
+  return if ($#{$nrecs{$current_domain}{'SOA'}} == -1);
 
   if ($record->ttl ne $nrecs{$current_domain}{'SOA'}[0]->minimum) {
       donuts_error("NSEC TTL for " . $record->name . " (" . $record->ttl . 
