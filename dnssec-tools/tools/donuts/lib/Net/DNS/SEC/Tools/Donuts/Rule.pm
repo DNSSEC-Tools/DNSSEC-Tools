@@ -335,6 +335,7 @@ sub test_name {
 
 sub config {
     my ($self, $prop, $val) = @_;
+    return $self->{$prop} if (!defined($val));
     $self->{$prop} = $val;
 }
 
@@ -345,7 +346,7 @@ sub feature_list {
 
 sub help {
     my ($self) = @_;
-    return $self->{'help'};
+    return $self->{'help'} || [];
 }
 
 sub print_help {
