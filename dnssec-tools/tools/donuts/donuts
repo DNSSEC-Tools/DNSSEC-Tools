@@ -298,15 +298,9 @@ if ($opts{'F'}) {
     print STDERR "\n$0 feature list:\n";
     print STDERR "  (Turn these on using the --features flag)\n\n";
     my %shown;
-    my @rules = $donuts->rules();
-    foreach my $rule (@rules) {
-	my $features = $rule->feature_list();
-	foreach my $feature (@$features) {
-	    if (!exists($shown{$feature})) {
-		print "  ", $rule->{'feature'},"\n";
-		$shown{$rule->{'feature'}} = 1;
-	    }
-	}
+    my @features = $donuts->available_features();
+    foreach my $feature (@features) {
+	print "  $feature\n";
     }
     exit;
 }

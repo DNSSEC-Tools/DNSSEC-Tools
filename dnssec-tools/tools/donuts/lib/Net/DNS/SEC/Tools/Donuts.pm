@@ -80,16 +80,6 @@ sub feature_list {
     return @{$self->{'featurelist'}};
 }
 
-sub enable_features {
-    my ($self, @list) = @_;
-    foreach my $feature (@list) {
-	if (!exists($self->{'featurehash'}{$feature})) {
-	    $self->{'featurehash'}{$feature} = 1;
-	    push @{$self->{'featurelist'}}, $feature;
-	}
-    }
-}
-
 sub create_feature_hash_from_list {
     my ($self, @list) = @_;
 
@@ -97,6 +87,23 @@ sub create_feature_hash_from_list {
     foreach my $feature (@{$self->{'featurelist'}}) {
 	$self->{'featurehash'}{$feature} = 1;
     }
+}
+
+sub available_features {
+    my ($self) = @_;
+    my @rules = $self->rules();
+    my %seen_features;
+
+    foreach my $rule (@rules) {
+	my $features = $rule->feature_list();
+	foreach my $feature (@$features) {
+	    if (!exists($seen_features{$feature})) {
+		$seen_features{$rule->{'feature'}} = 1;
+	    }
+	}
+    }
+
+    return keys(%seen_features);
 }
 
 #
