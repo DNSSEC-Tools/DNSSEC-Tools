@@ -1,0 +1,3 @@
+package bogusmodule;
+
+1;

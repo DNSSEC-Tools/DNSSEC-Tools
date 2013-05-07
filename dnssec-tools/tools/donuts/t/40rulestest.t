@@ -18,7 +18,7 @@ my $rrs = $donuts->zone_records();
 
 $donuts->load_rule_files('t/donuts-test-rules.txt');
 my @rules = $donuts->rules();
-ok($#rules == 1, "rules loaded");
+ok($#rules == 3, "rules loaded");
 
 my ($rulecount, $errcount) = $donuts->analyze(9);
 ok($rulecount == 2, "2 rules were executed (got: $rulecount)");
