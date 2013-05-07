@@ -27,7 +27,7 @@ ok(is($donuts->config('dne-config'), undef), "config tester: dne");
 # test rule loading
 $donuts->load_rule_files('t/*.txt');
 my @rules = $donuts->rules();
-ok($#rules == 1, "rules loaded");
+ok($#rules == 3, "rules loaded");
 
 # extract a certain rule
 my @subrules = $donuts->rule('DONUTS_TEST_RULE_TTL');

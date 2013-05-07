@@ -1,0 +1,24 @@
+# -*- mmm-classes: donuts-perl -*-
+# Copyright 2013-2013 SPARTA, Inc.  All rights reserved.
+# See the COPYING file included with the DNSSEC-Tools package for details.
+#
+# This file is used just for running the donuts test suite
+#
+
+name: DONUTS_TEST_REQUIRE1
+level: 3
+type: SOA
+desc: Checks if the requires statement works
+requires: bogusmodule
+<test>
+	return 0;
+</test>
+
+name: DONUTS_TEST_REQUIRE2
+level: 3
+type: SOA
+desc: Checks if the requires statement fails properly
+requires: bogusmodule_DOES_NOT_EXIST
+<test>
+	return 0;
+</test>
