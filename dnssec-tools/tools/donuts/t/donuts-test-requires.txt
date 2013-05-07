@@ -11,7 +11,10 @@ type: SOA
 desc: Checks if the requires statement works
 requires: bogusmodule
 <test>
-	return 0;
+	if (donuts_test_func() == 42) {
+	    return 0;
+        }
+        return "failed to load donuts_test_func\n";
 </test>
 
 name: DONUTS_TEST_REQUIRE2
