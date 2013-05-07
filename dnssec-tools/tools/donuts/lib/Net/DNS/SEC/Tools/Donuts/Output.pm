@@ -218,7 +218,7 @@ sub Error {
     my ($self, $tag, $message) = @_;
 
     $self->{'location'}->print(
-	$self->{'formatter'}->Erorr($tag, $message));
+	$self->{'formatter'}->Error($tag, $message));
 }
 
 sub Warning {
