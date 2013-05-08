@@ -148,7 +148,7 @@ our %owlqueries =
 (
 	'dnstimer'	=> 'owl-dnstimer',
 	'rrdata'	=> 'owl-rrdata',
-	'rrsec'	    => 'owl-rrsec',
+	'rrsec'		=> 'owl-rrsec',
 );
 
 #
@@ -158,7 +158,7 @@ my %DEF_QUERYARG =
 (
 	'dnstimer'	=> $DEF_DNSTIMER_QUERY,
 	'rrdata'	=> '',
-	'rrsec'	=> '',
+	'rrsec'		=> '',
 );
 
 #------------------------------------------------------------------------
@@ -185,6 +185,7 @@ our @sshusers = ();			# Users on remote hosts for data.
 our $dnstimerargs;			# Arguments for the owl-dnstimer daemon.
 our $transferargs;			# Arguments for owl-transfer daemon.
 our $rrdataargs;			# Arguments for owl-rrdata daemon.
+our $rrsecargs;				# Arguments for owl-rrsec daemon.
 our $transfermgrargs;			# Arguments for owl-transfer-mgr daemon.
 
 #
@@ -913,6 +914,10 @@ sub conf_hostline
 	{
 		$rrdataargs = join(' ', @atoms);
 	}
+	elsif($keyword =~ /^rrsec-args$/i)
+	{
+		$rrsecargs = join(' ', @atoms);
+	}
 	elsif($keyword =~ /^transfer-args$/i)
 	{
 		$transferargs = join(' ', @atoms);
@@ -1386,6 +1391,7 @@ Data specified on a I<host> line:
 			     "transfer", or "owl-transfer".
     $hostname                Name of this host.
     $rrdataargs              Arguments for the owl-rrdata daemon.
+    $rrsecargs               Arguments for the owl-rrsec daemon.
     $transferargs            Arguments for the owl-transfer daemon.
     $transfermgrargs         Arguments for the owl-transfer-mgr daemon.
 
@@ -1478,6 +1484,7 @@ Data from "host" lines:
 			         execution
     $owlutils::hostname        - name of this host
     $owlutils::rrdataargs      - arguments for the owl-rrdata daemon
+    $owlutils::rrsecargs       - arguments for the owl-rrsec daemon
     $owlutils::transferargs    - arguments for the owl-transfer daemon
     $owlutils::transfermgrargs - arguments for the owl-transfer-mgr daemon
 
