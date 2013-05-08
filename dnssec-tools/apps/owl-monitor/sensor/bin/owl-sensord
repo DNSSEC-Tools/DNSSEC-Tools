@@ -12,6 +12,8 @@
 #
 #	2.0	Released as part of DNSSEC-Tools 2.0.		130301
 #	2.0.1	Modified to obey "host execute" config line.	130227
+#	2.0.2	Generalized sensor-execution code to make it	130327
+#		easier to add additional sensors.
 #
 
 use strict;
@@ -32,7 +34,7 @@ use Getopt::Long qw(:config no_ignore_case_always);
 # Version information.
 #
 my $NAME   = 'owl-sensord';
-my $VERS   = "$NAME version: 2.0.1";
+my $VERS   = "$NAME version: 2.0.2";
 my $DTVERS = 'DNSSEC-Tools version: 2.0';
 
 #------------------------------------------------------------------------
@@ -104,6 +106,26 @@ my $quickcount;			# Consecutive quick executions before pausing.
 my $quickseconds;		# Seconds that make a quick execution.
 
 #------------------------------------------------------------------------
+#
+# Owl sensor daemons.
+#
+
+#
+# The Owl daemons that owl-sensord will start.
+#
+my @owldaemons =
+(
+	'owl-dnstimer',
+	'owl-rrdata',
+	'owl-transfer',
+);
+
+#
+# Owl sensor daemons to run if none are specified n the configuration file.
+#
+my $DEFAULT_DAEMONS = "dnstimer transfer";
+
+#------------------------------------------------------------------------
 
 my $slog;			# Sensor's log object.
 my %loginfo = ();		# Logging information.
@@ -115,6 +137,8 @@ my %executors = ();		# Commands to execute.
 my %chronos = ();		# Start times of children.
 my %children = ();		# Commands run for children.
 my %quickies = ();		# Commands running too quickly.
+
+my $devnull;			# /dev/null redirect, based on -verbose.
 
 #------------------------------------------------------------------------
 
@@ -187,6 +211,11 @@ sub doopts
 	# Moosh together a few variables to build the config file name.
 	#
 	$config = "$confdir/$config" if($config !~ /\//);
+
+	#
+	# Set up the value we'll need for the /dev/null redirect.
+	#
+	$devnull = $verbose ? '' : '> /dev/null 2>&1';
 }
 
 #------------------------------------------------------------------------
@@ -279,7 +308,7 @@ sub startup
 	# Get a list of the programs we should run.
 	#
 	$xqtrs = lc($owlutils::executors);
-	$xqtrs = 'dnstimer transfer' if(($xqtrs eq '') || ($xqtrs eq 'default'));
+	$xqtrs = $DEFAULT_DAEMONS if(($xqtrs eq '') || ($xqtrs eq 'default'));
 	foreach my $xq (split / /, $xqtrs)
 	{
 		$executors{$xq} = 1;
@@ -379,48 +408,44 @@ sub running
 #------------------------------------------------------------------------
 # Routine:	runner()
 #
-# Purpose:	Start the owl-dnstimer and owl-transfer daemons running.
+# Purpose:	Start the sensor daemons running.
 #
 sub runner
 {
-	my $dnstimerargs;			# Arguments for sensor.
-	my $xferargs;				# Arguments for transfer.
-	my $devnull = '> /dev/null 2>&1';	# /dev/null redirect.
-
 	#
-	# Get the commands to execute for the sensor and transfer daemons.
+	# Make sure the sensor daemons aren't running.
 	#
-	$dnstimerargs = $owlutils::dnstimerargs;
-	$xferargs     = $owlutils::transferargs;
-
-	if($verbose)
+	vprint("$NAME:  stopping sensor daemons (if they're running)\n");
+	foreach my $hootie (@owldaemons)
 	{
-		logger("sensor command:    owl-dnstimer $dnstimerargs",1);
-		logger("transfer command:  owl-transfer $xferargs",1);
+		my $stopcmd;			# Command for this daemon.
 
-		$devnull = '';
+		#
+		# Build this daemon's command string, and insert the stopping
+		# argument right after the command name.
+		#
+		$stopcmd = buildcmd($hootie);
+		$stopcmd =~ s/ / -stop /;
+
+		#
+		# If we couldn't build a real stop command, we'll fake it.
+		#
+		$stopcmd = "$hootie -stop" if($stopcmd eq '');
+
+		#
+		# And now we'll let 'er rip.
+		#
+		logger("stopping $hootie",1);
+		system($stopcmd);
 	}
 
 	#
-	# Make sure the sensor and transfer daemons aren't running.
+	# Start up the sensor daemons -- as required by the config file.
 	#
-	vprint("$NAME:  stopping sensor and transfer daemon (if they're running)\n");
-	system("owl-dnstimer $dnstimerargs -stop $devnull");
-	system("owl-transfer $xferargs -stop $devnull");
-
-	#
-	# Start up the sensor and transfer daemons -- as required by the
-	# config file.
-	#
-	if($executors{'dnstimer'} || $executors{'owl-dnstimer'})
+	vprint("$NAME:  starting sensor daemons\n");
+	foreach my $hootie (@owldaemons)
 	{
-		logger("$NAME:  starting sensor daemon owl-dnstimer",1);
-		runcmd("owl-dnstimer -confdir $confdir -logdir $logdir $dnstimerargs -foreground $devnull");
-	}
-	if($executors{'transfer'} || $executors{'owl-transfer'})
-	{
-		logger("$NAME:  starting transfer daemon owl-transfer",1);
-		runcmd("owl-transfer $xferargs -foreground $devnull");
+		runcmd($hootie);
 	}
 
 	#
@@ -459,10 +484,10 @@ sub runner
 		}
 
 		#
-		# Figure out which child has died.
+		# Get the name of the child which has died.
 		#
 		$children{$pid} =~ /^(\S+)\s/;
-		$cmd = ($1 =~ /owl-dnstimer/) ? 'owl-dnstimer' : 'owl-transfer';
+		$cmd = $1;
 
 		#
 		# Calculate how long this process was running.  If it's
@@ -489,20 +514,11 @@ sub runner
 		}
 
 		#
-		# Make sure the sensor and transfer daemons are running.
+		# Restart the daemon which stopped.
 		#
-		if($cmd eq 'owl-dnstimer')
-		{
-			logger("restarting sensor daemon",1);
-			runcmd("owl-dnstimer -confdir $confdir -logdir $logdir $dnstimerargs -foreground $devnull");
-			logger("sensor daemon restarted",0);
-		}
-		else
-		{
-			logger("restarting transfer daemon",1);
-			runcmd("owl-transfer $xferargs -foreground $devnull");
-			logger("transfer daemon restarted",0);
-		}
+		logger("restarting $cmd",1);
+		runcmd($cmd);
+		logger("$cmd restarted",0);
 
 		#
 		# Get rid of this child's entries from the lists.
@@ -526,10 +542,30 @@ sub runner
 #
 sub runcmd
 {
-	my $cmd = shift;			# Command to execute.
-
+	my $hootie = shift;			# Owl daemon to execute.
+	my $alias;				# Alias for this daemon.
+	my $cmd;				# Actual command to execute.
 	my $pid;				# Process id of command.
 	my $start;				# Command's start time.
+
+	#
+	# Build an alias for this daemon.
+	#
+	$alias = $hootie;
+	$alias =~ s/^owl-//;
+
+	#
+	# Return if this daemon isn't marked for execution.
+	#
+	return if(!defined($executors{$hootie}) &&
+		  !defined($executors{$alias}));
+
+	logger("$NAME:  starting $hootie",1);
+
+	#
+	# Get the command to be executed.
+	#
+	$cmd = buildcmd($hootie);
 
 	#
 	# Save the execution time and run the command.
@@ -555,6 +591,62 @@ sub runcmd
 
 	$chronos{$pid} = $start;
 	$children{$pid} = $cmd;
+}
+
+#------------------------------------------------------------------------
+# Routine:	buildcmd()
+#
+# Purpose:	Set up the commands needed for our supported sensor and
+#		transfer daemons.
+#
+#		Supported daemons:
+#			owl-dnstimer		DNS timing statistics
+#			owl-rrdata		DNS resource-record data
+#			owl-transfer		transfer sensor data to manager
+#
+sub buildcmd
+{
+	my $daemon = shift;			# Daemon to execute.
+
+	my $cmd = '';				# Command to execute.
+	my $common;				# Common arguments for commands.
+	my $args;				# Arguments for command.
+
+	#
+	# Set up the value we'll need for the /dev/null redirect.
+	#
+	$common = "-confdir $confdir -logdir $logdir -foreground";
+
+	#
+	# Set up the commands needed for our supported sensor and
+	# transfer daemons.
+	#
+	if(($daemon eq 'dnstimer') || ($daemon eq 'owl-dnstimer')) 
+	{
+		$args = $owlutils::dnstimerargs;
+
+		$cmd = "owl-dnstimer $common $args $devnull";
+	}
+
+	elsif(($daemon eq 'rrdata') || ($daemon eq 'owl-rrdata')) 
+	{
+		$args = $owlutils::rrdataargs;
+
+		$cmd = "owl-rrdata $common $args $devnull";
+	}
+
+	elsif(($daemon eq 'transfer') || ($daemon eq 'owl-transfer')) 
+	{
+		$args = $owlutils::transferargs;
+
+		$cmd = "owl-transfer $common $args $devnull";
+	}
+
+	#
+	# Return the command line constructed for this daemon.
+	#
+	logger("$daemon command:    $cmd",1) if($verbose && ($cmd ne ''));
+	return($cmd);
 }
 
 #------------------------------------------------------------------------
@@ -699,11 +791,19 @@ sub cleanup
  	$SIG{HUP}  = 'IGNORE';
  	$SIG{CHLD} = 'IGNORE';
 
-	logger("    stopping owl_dnstimer",1);
-	owl_halt('owl-dnstimer');
+	#
+	# Try to stop the daemons we've started.
+	#
+	foreach my $dpid (keys(%children))
+	{
+		my $cmdname;			# Command to halt.
 
-	logger("    stopping owl_transfer",1);
-	owl_halt('owl-transfer');
+		$children{$dpid} =~ /^(\S+)/;
+		$cmdname = $1;
+
+		logger("    stopping $cmdname",1);
+		owl_halt($cmdname);
+	}
 
 	#
 	# Tell our children to shut down.
@@ -805,14 +905,16 @@ owl-sensord - Oversees the Owl Monitoring System's daemons
 
 =head1 DESCRIPTION
 
-B<owl-sensord> oversees Owl Monitoring Systems' daemons, B<owl-dnstimer> and
-B<owl-transfer>.  If one stops executing, then B<owl-sensord> will restart it. 
+B<owl-sensord> oversees Owl Monitoring Systems' daemons.  These daemons include
+B<owl-dnstimer>, B<owl-rrdata>, and B<owl-transfer>.  If one stops executing,
+then B<owl-sensord> will restart it.  The daemons listed on the I<host execute>
+line in the Owl configuration file will be started.
 
-In an effort to keep the sensor running, B<owl-sensord> will restart
-B<owl-dnstimer> and B<owl-transfer> if it finds they aren't executing.  
-If a particular daemon stops and restarts too quickly too many times, then
-B<owl-sensord> will assume that it's having a problem and temporarily stops
-restarting it.  The administrator will be informed of the problem.
+In an effort to keep the sensor running, B<owl-sensord> will restart the
+daemons if it finds they aren't executing.  If a particular daemon stops and
+restarts too quickly too many times, then B<owl-sensord> will assume that it's
+having a problem and temporarily stops restarting it.  The administrator will
+be notified of the problem.
 
 There are four values that control B<owl-sensord>'s behavior when it comes
 to restarting its children.  These are:
@@ -888,9 +990,41 @@ Prints B<owl-sensord>'s version and exit.
 
 =back
 
+=head1 ADDING NEW SENSORS
+
+In most cases when adding new sensors to the Owl Monitoring System,
+B<owl-sensord> should be modified to control the new sensor.  The following
+steps should be taken to enable B<owl-sensord>'s control of the new daemon.
+
+=over 4
+
+=item 1. Modify B<perllib/owlutils.pm>.
+
+Using I<owl-dnstimer> and I<owl-rrdata> as models, do the following: 
+
+    - Add the new daemon to the %owldaemons hash.
+    - Add the new daemon to the %owlqueries hash.
+    - Add the new daemon to the %DEF_QUERYARG hash.
+    - Add an "our arguments" variable for the new daemon.
+    - Add the setting of the new "our arguments" variable
+      in conf_hostline().
+    - Add documentation in the POD section.
+
+=item 2. Modify B<owl-sensord>.
+
+Using I<owl-dnstimer> and I<owl-rrdata> as models, do the following: 
+
+    - Add the new daemon to the @owldaemons array.
+    - If the new daemon should be considered a default daemon,
+      then add it to the $DEFAULT_DAEMONS scalar.
+    - Add the appropriate execution command line to buildcmd().
+
+=back
+
 =head1 SEE ALSO
 
 B<owl-dnstimer(1)>,
+B<owl-rrdata(1)>,
 B<owl-transfer(1)>
 
 B<owl-config(5)>
