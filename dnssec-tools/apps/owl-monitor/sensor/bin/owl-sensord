@@ -117,6 +117,7 @@ my @owldaemons =
 (
 	'owl-dnstimer',
 	'owl-rrdata',
+	'owl-rrsec',
 	'owl-transfer',
 );
 
@@ -602,6 +603,7 @@ sub runcmd
 #		Supported daemons:
 #			owl-dnstimer		DNS timing statistics
 #			owl-rrdata		DNS resource-record data
+#			owl-rrsec		DNSSEC resource-record data
 #			owl-transfer		transfer sensor data to manager
 #
 sub buildcmd
@@ -633,6 +635,13 @@ sub buildcmd
 		$args = $owlutils::rrdataargs;
 
 		$cmd = "owl-rrdata $common $args $devnull";
+	}
+
+	elsif(($daemon eq 'rrsec') || ($daemon eq 'owl-rrsec')) 
+	{
+		$args = $owlutils::rrsecargs;
+
+		$cmd = "owl-rrsec $common $args $devnull";
 	}
 
 	elsif(($daemon eq 'transfer') || ($daemon eq 'owl-transfer')) 
@@ -906,9 +915,9 @@ owl-sensord - Oversees the Owl Monitoring System's daemons
 =head1 DESCRIPTION
 
 B<owl-sensord> oversees Owl Monitoring Systems' daemons.  These daemons include
-B<owl-dnstimer>, B<owl-rrdata>, and B<owl-transfer>.  If one stops executing,
-then B<owl-sensord> will restart it.  The daemons listed on the I<host execute>
-line in the Owl configuration file will be started.
+B<owl-dnstimer>, B<owl-rrdata>, B<owl-rrsec>, and B<owl-transfer>.  If one
+stops executing, then B<owl-sensord> will restart it.  The daemons listed on
+the I<host execute> line in the Owl configuration file will be started.
 
 In an effort to keep the sensor running, B<owl-sensord> will restart the
 daemons if it finds they aren't executing.  If a particular daemon stops and
@@ -1025,6 +1034,7 @@ Using I<owl-dnstimer> and I<owl-rrdata> as models, do the following:
 
 B<owl-dnstimer(1)>,
 B<owl-rrdata(1)>,
+B<owl-rrsec(1)>,
 B<owl-transfer(1)>
 
 B<owl-config(5)>
