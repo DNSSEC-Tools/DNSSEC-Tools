@@ -17,6 +17,7 @@
 #
 #	2.0	Released as part of DNSSEC-Tools 2.0.		130301
 #	2.0.1	Modified to allow multiple types of queries.	130319
+#	2.0.2	Added owl-rrdata and owl-rrsec to daemons.	130508
 #
 
 use strict;
@@ -32,7 +33,7 @@ use Getopt::Long qw(:config no_ignore_case_always);
 # Version information.
 #
 my $NAME   = "owl-status";
-my $VERS   = "$NAME version: 2.0.1";
+my $VERS   = "$NAME version: 2.0.2";
 my $DTVERS = "DNSSEC-Tools version: 2.0";
 
 #------------------------------------------------------------------------
@@ -81,6 +82,8 @@ my $verbose = 0;				# Verbose flag.
 my %owldaemons =
 (
 	'owl-dnstimer'	=> 0,
+	'owl-rrdata'	=> 0,
+	'owl-rrsec'	=> 0,
 	'owl-sensord'	=> 0,
 	'owl-transfer'	=> 0,
 );
