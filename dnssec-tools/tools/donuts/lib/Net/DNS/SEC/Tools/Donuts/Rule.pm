@@ -25,7 +25,21 @@ sub new {
     #   - otherwise, prepend some local convenience variable names and sub {} it
     if (exists($ref->{'test'}) && ref($ref->{'test'}) ne 'CODE') {
 	if ($ref->{'test'} !~ /^\s*sub\s*{/) {
-	    my $code = "no strict;   package main;   sub {\n";
+	    my $code = "no strict;\n";
+	    $code .=   "package main;\n";
+	    $code .=   "sub {\n";
+
+	    if(exists($ref->{'requires'})) {
+		$code .= "my \$have_it;\n";
+		foreach my $require (split(/\s+/, $ref->{'requires'})) {
+		    $code .= "\$have_it = eval \"require $require;\";\n";
+		    $code .= "if (!\$have_it) { \n";
+		    $code .= "  return donuts_error('perl module \"$require\" is needed for this rule to run');\n";
+		    $code .= "}\n";
+		    $code .= "import $require;\n";
+		}
+	    }
+
 	    if (exists($ref->{'ruletype'}) && $ref->{'ruletype'} eq 'name') {
 		$code .= "  my (\$records, \$rule, \$recordname) = \@_;\n";
 	    } else {
@@ -321,6 +335,7 @@ sub test_name {
 
 sub config {
     my ($self, $prop, $val) = @_;
+    return $self->{$prop} if (!defined($val));
     $self->{$prop} = $val;
 }
 
@@ -331,7 +346,7 @@ sub feature_list {
 
 sub help {
     my ($self) = @_;
-    return $self->{'help'};
+    return $self->{'help'} || [];
 }
 
 sub print_help {
@@ -633,6 +648,13 @@ keyword was specified using the I<--features> flag.
 A short description of what the rule tests that will be printed to the
 user in help output or in the error summary when B<donuts> outputs the
 results.
+
+=item I<requires:> B<PERLMODULE1> B<PERLMODULE2> ...
+
+This allows rules to depend on installed perl modules.  They'll be
+I<required> and I<imported> as the rule starts executing.  If they
+don't exist, an error will be logged using donuts_error() stating that
+the module is required for that rule to work.
 
 =item I<help:> B<TOKEN:> B<TOKEN-HELP>
 

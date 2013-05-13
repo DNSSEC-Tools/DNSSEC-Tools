@@ -148,7 +148,7 @@ our %owlqueries =
 (
 	'dnstimer'	=> 'owl-dnstimer',
 	'rrdata'	=> 'owl-rrdata',
-	'rrsec'	    => 'owl-rrsec',
+	'rrsec'		=> 'owl-rrsec',
 );
 
 #
@@ -158,7 +158,7 @@ my %DEF_QUERYARG =
 (
 	'dnstimer'	=> $DEF_DNSTIMER_QUERY,
 	'rrdata'	=> '',
-	'rrsec'	=> '',
+	'rrsec'		=> '',
 );
 
 #------------------------------------------------------------------------
@@ -184,6 +184,8 @@ our @sshusers = ();			# Users on remote hosts for data.
 #
 our $dnstimerargs;			# Arguments for the owl-dnstimer daemon.
 our $transferargs;			# Arguments for owl-transfer daemon.
+our $rrdataargs;			# Arguments for owl-rrdata daemon.
+our $rrsecargs;				# Arguments for owl-rrsec daemon.
 our $transfermgrargs;			# Arguments for owl-transfer-mgr daemon.
 
 #
@@ -652,7 +654,19 @@ sub owl_setlog
 	#
 	# Build the name of the log file we'll be using.
 	#
-	$loginfo{filename} = File::Spec->catfile($loginfo{logdir},$loginfo{logfile});
+#	$loginfo{filename} = File::Spec->catfile($loginfo{logdir},$loginfo{logfile});
+
+	#
+	# Make sure the log will rotate periodically.
+	#
+#	$owllog->add(Log::Dispatch::FileRotate->new(
+#					name      => "$pname logfile",
+#					min_level => 'debug',
+#					mode      => 'append',
+#					filename  => "$loginfo{filename}",
+#					size      => 2000000,
+#					max	  => 60)
+#		       );
 
 	#
 	# Make sure the log will rotate periodically.
@@ -661,7 +675,7 @@ sub owl_setlog
 					name      => "$pname logfile",
 					min_level => 'debug',
 					mode      => 'append',
-					filename  => "$loginfo{filename}",
+					filename  => File::Spec->catfile($loginfo{logdir},$loginfo{logfile}),
 					size      => 2000000,
 					max	  => 60)
 		       );
@@ -895,6 +909,14 @@ sub conf_hostline
 	elsif($keyword =~ /^dnstimer-args$/i)
 	{
 		$dnstimerargs = join(' ', @atoms);
+	}
+	elsif($keyword =~ /^rrdata-args$/i)
+	{
+		$rrdataargs = join(' ', @atoms);
+	}
+	elsif($keyword =~ /^rrsec-args$/i)
+	{
+		$rrsecargs = join(' ', @atoms);
 	}
 	elsif($keyword =~ /^transfer-args$/i)
 	{
@@ -1368,8 +1390,10 @@ Data specified on a I<host> line:
                              "default", "dnstimer", "owl-dnstimer",
 			     "transfer", or "owl-transfer".
     $hostname                Name of this host.
-    $transferargs            Arguments for owl-transfer daemon.
-    $transfermgrargs         Arguments for owl-transfer-mgr daemon.
+    $rrdataargs              Arguments for the owl-rrdata daemon.
+    $rrsecargs               Arguments for the owl-rrsec daemon.
+    $transferargs            Arguments for the owl-transfer daemon.
+    $transfermgrargs         Arguments for the owl-transfer-mgr daemon.
 
 Data specified on a I<data> line:
 
@@ -1450,7 +1474,7 @@ Data from "host" lines:
 
     $owlutils::admins          - email addresses for Owl
 				 administrators
-    $owlutils::dnstimerargs    - arguments for owl-dnstimer daemon
+    $owlutils::dnstimerargs    - arguments for the owl-dnstimer daemon
     $owlutils::executors       - programs to be executed
     $owlutils::hesitation      - time between Owl daemon executions
     $owlutils::hibernation     - sleep time upon execution problems
@@ -1459,8 +1483,10 @@ Data from "host" lines:
     $owlutils::quickseconds    - seconds count that makes a quick
 			         execution
     $owlutils::hostname        - name of this host
-    $owlutils::transferargs    - arguments for owl-transfer daemon
-    $owlutils::transfermgrargs - arguments for owl-transfer-mgr daemon
+    $owlutils::rrdataargs      - arguments for the owl-rrdata daemon
+    $owlutils::rrsecargs       - arguments for the owl-rrsec daemon
+    $owlutils::transferargs    - arguments for the owl-transfer daemon
+    $owlutils::transfermgrargs - arguments for the owl-transfer-mgr daemon
 
 Data from "data" lines:
 
@@ -1587,6 +1613,7 @@ Return Values:
 
 B<owl-dnstimer(1)>,
 B<owl-sensord(1)>,
+B<owl-rrdata(1)>,
 B<owl-transfer(1)>,
 B<owl-transfer-mgr(1)>
 

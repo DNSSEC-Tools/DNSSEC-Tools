@@ -12,6 +12,9 @@
 #	1.0	121201	Initial version.
 #			This was adapted from the owl-archdata script.
 #
+#	2.0	Released as part of DNSSEC-Tools 2.0.		130301
+#	2.0.1	Added .rrsec files to those to be backed up.	130513
+#
 
 use strict;
 
@@ -22,7 +25,7 @@ use Getopt::Long qw(:config no_ignore_case_always);
 # Version information.
 #
 my $NAME   = "owl-newsensor";
-my $VERS   = "$NAME version: 2.0.0";
+my $VERS   = "$NAME version: 2.0.1";
 my $DTVERS = "DNSSEC-Tools version: 2.0";
 
 #------------------------------------------------------------------------
@@ -50,6 +53,8 @@ my $host = '';					# Host field.
 my $heartbeat = 0;				# Heartbeat flag.
 
 #------------------------------------------------------------------------
+
+my $EXTENSIONS = "*.dns *.rrec *.rrsec";	# Data-file extensions to save.
 
 my $datadir = '';				# Directory of data files.
 my @files = ();					# List of files to examine.
@@ -154,7 +159,7 @@ sub getfiles
 	#
 	# Get a list of the sensor data files.
 	#
-	@files = sort(glob("*.dns"));
+	@files = sort(glob($EXTENSIONS));
 
 	#
 	# Make sure we found some files.
@@ -192,8 +197,8 @@ sub parsefiles
 		# Ensure we're looking at one of our data files, then
 		# get rid of the suffix.
 		#
-		next if($fn !~ /\.dns$/);
-		$fn =~ s/\.dns$//;
+		next if($fn !~ /\.(dns,rrec,rrsec)$/);
+		$fn =~ s/\.(dns,rrec,rrsec)$//;
 
 		#
 		# Break the name into its pieces.
