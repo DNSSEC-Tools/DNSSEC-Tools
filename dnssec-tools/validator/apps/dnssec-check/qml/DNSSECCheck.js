@@ -300,7 +300,7 @@ function restartRunningTests() {
 
         for(var j = 0; j < hostInfo[hostName]['tests'].length; j++) {
             var testObject = hostInfo[hostName]['tests'][j].test
-            if (testObject.status == DNSSECTest.TESTINGNOW || testObject.status == DNSSECTest.UNKNOWN) {
+            if (testObject.status === DNSSECTest.TESTINGNOW || testObject.status === DNSSECTest.UNKNOWN) {
                 testObject.status = DNSSECTest.UNKNOWN
                 testObject.check()
             }
