@@ -54,8 +54,6 @@ void DNSSECTest::setStatus(DNSSECTest::lightStatus newStatus)
         m_result_status = statusToRc(m_status);
         if (m_status == UNKNOWN)
             setMessage("Unknown");
-        if (QString(m_serverAddress) == QString("8.8.8.8") && m_checkFunction == &check_basic_tcp_async)
-            qDebug() << "status change for " << m_serverAddress << ": " << m_status;
         emit statusChanged();
     }
 }
