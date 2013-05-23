@@ -295,6 +295,7 @@ function stopTesting() {
 }
 
 function restartRunningTests() {
+    testManager.cancelOutstandingRequests()
     for(var i = 0 ; i < hosts.length; i++) {
         var hostName = hosts[i]
 
