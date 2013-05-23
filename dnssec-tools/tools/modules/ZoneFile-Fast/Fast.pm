@@ -983,7 +983,7 @@ sub parse_line
       } elsif (/\G(nsec3)[ \t]+/igc) {
 	  error ("You are missing required modules for NSEC3 support")
 	    if (!$nsec3capable);
-          if (/\G\s*(\d+)\s+(\d+)\s+(\d+)\s+([-0-9A-Fa-f]+)\s+($pat_maybefullname)\s+(.*?)$pat_skip$/gc) {
+          if (/\G\s*(\d+)\s+(\d+)\s+(\d+)\s+([-0-9A-Fa-f]+)\s+($pat_maybefullname)\s*(.*?)$pat_skip$/gc) {
               # XXX: set the typebm field ourselves?
               my ($alg, $flags, $iters, $salt, $nxthash, $typelist) =
                 ($1, $2, $3, $4, $5, $6);
@@ -1335,7 +1335,7 @@ sub parse_tlsa
 sub parse_nsec3
   {
       #got more data
-      if ( /\G\s*((\w+\s+)+)\)\s*$/) {
+      if ( /\G\s*((\w+\s+)*)\)\s*$/) {
          my $typelist = $1;
 	 $typelist = join(" ",sort split(/\s+/,$typelist));
          $nsec3->{ 'typelist' } = $typelist;
