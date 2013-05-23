@@ -81,8 +81,8 @@ my $MAXIMUM_TTL = 0x7fffffff;
 
 my $pat_ttl = qr{\d+[\dwdhms]*}i;
 my $pat_skip = qr{\s*(?:;.*)?};
-my $pat_name = qr{[-\*\w\$\d\/*]+(?:\.[-\*\w\$\d\/]+)*};
-my $pat_maybefullnameorroot = qr{(?:\.|[-\w\$\d\/*]+(?:\.[-\w\$\d\/]+)*\.?)};
+my $pat_name = qr{(?:[-\*\w\$\d\/*]|\\[0-2]\d\d)+(?:\.(?:[-\*\w\$\d\/]|\\[0-2]\d\d)+)*};
+my $pat_maybefullnameorroot = qr{(?:\.|(?:[-\w\$\d\/*]|\\[0-2]\d\d)+(?:\.(?:[-\w\$\d\/]|\\[0-2]\d\d)+)*\.?)};
 
 #
 # Added the ability to have a backslash in the SOA username.  This is to
@@ -90,7 +90,7 @@ my $pat_maybefullnameorroot = qr{(?:\.|[-\w\$\d\/*]+(?:\.[-\w\$\d\/]+)*\.?)};
 # dots in usernames.  Keeping the original version here for easy reference.
 #
 # my $pat_maybefullname = qr{[-\w\$\d\/*]+(?:\.[-\w\$\d\/]+)*\.?};
-my $pat_maybefullname   = qr{[-\+\w\$\d\/*\\]+(?:\.[-\+\w\$\d\/]+)*\.?};
+my $pat_maybefullname   = qr{(?:[-\+\w\$\d\/*\\]|\\[0-2]\d\d)+(?:\.(?:[-\+\w\$\d\/]|\\[0-2]\d\d)+)*\.?};
 
 my $debug;
 my $domain;
