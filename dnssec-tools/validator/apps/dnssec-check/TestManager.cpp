@@ -98,6 +98,9 @@ TestManager::updateWatchedSockets()
             m_socketWatchers[i] = socketToWatch;
             socketToWatch->setSocketDescriptor(i, QAbstractSocket::ConnectedState);
             connect(socketToWatch, SIGNAL(readyRead()), this, SLOT(dataAvailable()));
+        } else if (!FD_ISSET(i, &m_fds) && m_socketWatchers.contains(i)) {
+            QAbstractSocket *removeThis = m_socketWatchers.take(i);
+            delete removeThis;
         }
     }
 
@@ -114,6 +117,9 @@ TestManager::updateWatchedSockets()
             m_socketWatchers[i] = socketToWatch;
             socketToWatch->setSocketDescriptor(i, QAbstractSocket::ConnectedState);
             connect(socketToWatch, SIGNAL(readyRead()), this, SLOT(dataAvailable()));
+        } else if (!FD_ISSET(i, &m_fds) && m_socketWatchers.contains(i)) {
+            QAbstractSocket *removeThis = m_socketWatchers.take(i);
+            delete removeThis;
         }
     }
     for(int i = 0; i < m_num_tcp_fds; i++) {
@@ -123,6 +129,9 @@ TestManager::updateWatchedSockets()
             m_socketWatchers[i] = socketToWatch;
             socketToWatch->setSocketDescriptor(i, QAbstractSocket::ConnectedState);
             connect(socketToWatch, SIGNAL(readyRead()), this, SLOT(dataAvailable()));
+        } else if (!FD_ISSET(i, &m_tcp_fds) && m_socketWatchers.contains(i)) {
+            QAbstractSocket *removeThis = m_socketWatchers.take(i);
+            delete removeThis;
         }
     }
 #endif
@@ -329,6 +338,10 @@ QString TestManager::sha1hex(QString input) {
 int TestManager::outStandingRequests()
 {
     return async_requests_remaining();
+}
+
+void TestManager::cancelOutstandingRequests() {
+    async_cancel_outstanding();
 }
 
 bool TestManager::inTestLoop()

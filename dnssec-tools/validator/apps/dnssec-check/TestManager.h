@@ -84,6 +84,7 @@ public slots:
     void dataAvailable();
     void updateWatchedSockets();
     void handlerReady(DNSSECCheckThreadHandler *handler);
+    void cancelOutstandingRequests();
 
 private:
     QObject *m_parent;

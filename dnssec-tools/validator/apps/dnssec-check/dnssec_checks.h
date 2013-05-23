@@ -12,6 +12,7 @@
 #define CHECK_WARNING   2
 
 int async_requests_remaining();
+void async_cancel_outstanding();
 void check_outstanding_async();
 void check_queued_sends();
 void collect_async_query_select_info(fd_set *fds, int *numfds, fd_set *tcp_fds, int *numUdpFds);
