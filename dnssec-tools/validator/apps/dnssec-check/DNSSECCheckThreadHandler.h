@@ -58,6 +58,8 @@ private:
     struct timeval  m_timeout;
     fd_set          m_fds, m_tcp_fds;
     int             m_num_fds, m_num_tcp_fds;
+
+    bool            m_inTestLoop;
 };
 
 #endif // DNSSECCHECKTHREADHANDLER_H
