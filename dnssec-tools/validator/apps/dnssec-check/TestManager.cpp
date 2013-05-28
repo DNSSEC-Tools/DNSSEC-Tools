@@ -30,6 +30,11 @@ TestManager::handlerReady(DNSSECCheckThreadHandler *handler) {
     connect(this, SIGNAL(inTestLoopChangedBool(bool)), handler, SLOT(inTestLoopChanged(bool)));
     connect(this, SIGNAL(startQueuedTransactionsSignal()), handler, SLOT(startQueuedTransactions()));
     connect(this, SIGNAL(checkAvailableUpdatesSignal()), handler, SLOT(checkAvailableUpdates()));
+
+    // sound out notifications for the already added tests
+    foreach(DNSSECTest *test, m_tests) {
+        emit addedNewTest(test);
+    }
 }
 
 bool TestManager::testName(const QString &resolverAddress)
@@ -123,6 +128,7 @@ DNSSECTest *TestManager::makeTest(testType type, QString address, QString name) 
     if (newtest) {
         connect(newtest, SIGNAL(messageChanged(QString)), this, SLOT(handleResultMessageChanged(QString)));
         connect(newtest, SIGNAL(messageChanged(QString)), this, SIGNAL(aResultMessageChanged(QString)));
+        m_tests.push_back(newtest);
         emit addedNewTest(newtest);
     } else {
         qDebug() << "no test created...  help? " << type << " - " << can_get_signed_dname;

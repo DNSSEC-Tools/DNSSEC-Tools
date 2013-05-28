@@ -11,6 +11,8 @@ DNSSECCheckThreadHandler::DNSSECCheckThreadHandler(QObject *parent) :
     m_timeout.tv_sec = 0;
     m_timeout.tv_usec = 0;
     connect(this, SIGNAL(asyncTestSubmitted()), this, SLOT(updateWatchedSockets()));
+    connect(this, SIGNAL(updatesMaybeAvailable()), this, SLOT(checkStatus()));
+
 }
 
 void DNSSECCheckThreadHandler::startTest(CheckFunction *checkFunction, char *serverAddress, bool async)
