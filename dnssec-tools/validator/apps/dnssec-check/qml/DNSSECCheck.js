@@ -248,7 +248,7 @@ function runNextTest() {
         if (testManager.outStandingRequests() > 0) {
             testManager.startQueuedTransactions();
             testManager.checkAvailableUpdates();
-            testManager.dataAvailable();
+            //testManager.dataAvailable();
             timer.start();
         } else {
             stopTesting();

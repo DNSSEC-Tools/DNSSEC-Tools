@@ -16,13 +16,9 @@
 #include "DnssecCheckVersion.h"
 
 TestManager::TestManager(QObject *parent) :
-    QObject(parent), m_parent(parent), m_manager(0), m_lastResultMessage(), m_socketWatchers(),
-    m_tests(), m_otherThread(), m_num_fds(0), m_inTestLoop(false)
+    QObject(parent), m_parent(parent), m_manager(0), m_lastResultMessage(),
+    m_otherThread(), m_inTestLoop(false)
 {
-    FD_ZERO(&m_fds);
-    m_timeout.tv_sec = 0;
-    m_timeout.tv_usec = 0;
-
     connect(&m_otherThread, SIGNAL(handlerReady(DNSSECCheckThreadHandler*)), this, SLOT(handlerReady(DNSSECCheckThreadHandler*)));
     m_otherThread.start();
 }
@@ -30,41 +26,10 @@ TestManager::TestManager(QObject *parent) :
 void
 TestManager::handlerReady(DNSSECCheckThreadHandler *handler) {
     connect(this, SIGNAL(updatesMaybeAvailable()), handler, SLOT(checkStatus()));
-    connect(handler, SIGNAL(asyncTestSubmitted()), this, SLOT(updateWatchedSockets()));
-}
-
-void
-TestManager::dataAvailable()
-{
-    struct timeval tv;
-    tv.tv_sec = 0;
-    tv.tv_usec = 1;
-
-    // loop through everything we have now
-#ifndef VAL_NO_ASYNC
-    while (val_async_check_wait(NULL, NULL, NULL, &tv, 0) > 0) {
-        //qDebug() << " hit";
-    }
-#endif
-
-    check_outstanding_async();
-
-    checkAvailableUpdates();
-}
-
-void
-TestManager::checkAvailableUpdates()
-{
-    // tell the tests to check and emit as necessary
-    foreach(DNSSECTest *test, m_tests) {
-        test->update();
-    }
-    emit updatesMaybeAvailable();
-}
-
-void TestManager::startQueuedTransactions()
-{
-    updateWatchedSockets();
+    connect(this, SIGNAL(addedNewTest(DNSSECTest*)), handler, SLOT(addTest(DNSSECTest*)));
+    connect(this, SIGNAL(inTestLoopChangedBool(bool)), handler, SLOT(inTestLoopChanged(bool)));
+    connect(this, SIGNAL(startQueuedTransactionsSignal()), handler, SLOT(startQueuedTransactions()));
+    connect(this, SIGNAL(checkAvailableUpdatesSignal()), handler, SLOT(checkAvailableUpdates()));
 }
 
 bool TestManager::testName(const QString &resolverAddress)
@@ -75,66 +40,6 @@ bool TestManager::testName(const QString &resolverAddress)
         return false;
     free_name_server(&ns);
     return true;
-}
-
-void
-TestManager::updateWatchedSockets()
-{
-#ifndef VAL_NO_ASYNC
-    if (!m_inTestLoop)
-        check_queued_sends();
-
-    // process any buffered or cache data first
-    dataAvailable();
-
-    m_num_fds = 0;
-    FD_ZERO(&m_fds);
-    val_async_select_info(0, &m_fds, &m_num_fds, &m_timeout);
-    //qDebug() << "val sockets: " << m_num_fds;
-    for(int i = 0; i < m_num_fds; i++) {
-        if (FD_ISSET(i, &m_fds) && !m_socketWatchers.contains(i)) {
-            //qDebug() << "watching val socket #" << i;
-            QAbstractSocket *socketToWatch = new QAbstractSocket(QAbstractSocket::UdpSocket, 0);
-            m_socketWatchers[i] = socketToWatch;
-            socketToWatch->setSocketDescriptor(i, QAbstractSocket::ConnectedState);
-            connect(socketToWatch, SIGNAL(readyRead()), this, SLOT(dataAvailable()));
-        } else if (!FD_ISSET(i, &m_fds) && m_socketWatchers.contains(i)) {
-            QAbstractSocket *removeThis = m_socketWatchers.take(i);
-            delete removeThis;
-        }
-    }
-
-    m_num_fds = 0;
-    m_num_tcp_fds = 0;
-    FD_ZERO(&m_fds);
-    FD_ZERO(&m_tcp_fds);
-    collect_async_query_select_info(&m_fds, &m_num_fds, &m_tcp_fds, &m_num_tcp_fds);
-    //qDebug() << "sres sockets: " << m_num_fds;
-    for(int i = 0; i < m_num_fds; i++) {
-        if (FD_ISSET(i, &m_fds) && !m_socketWatchers.contains(i)) {
-            //qDebug() << "watching sres socket #" << i;
-            QAbstractSocket *socketToWatch = new QAbstractSocket(QAbstractSocket::UdpSocket, 0);
-            m_socketWatchers[i] = socketToWatch;
-            socketToWatch->setSocketDescriptor(i, QAbstractSocket::ConnectedState);
-            connect(socketToWatch, SIGNAL(readyRead()), this, SLOT(dataAvailable()));
-        } else if (!FD_ISSET(i, &m_fds) && m_socketWatchers.contains(i)) {
-            QAbstractSocket *removeThis = m_socketWatchers.take(i);
-            delete removeThis;
-        }
-    }
-    for(int i = 0; i < m_num_tcp_fds; i++) {
-        if (FD_ISSET(i, &m_tcp_fds) && !m_socketWatchers.contains(i)) {
-            //qDebug() << "watching sres tcp socket #" << i;
-            QAbstractSocket *socketToWatch = new QAbstractSocket(QAbstractSocket::TcpSocket, 0);
-            m_socketWatchers[i] = socketToWatch;
-            socketToWatch->setSocketDescriptor(i, QAbstractSocket::ConnectedState);
-            connect(socketToWatch, SIGNAL(readyRead()), this, SLOT(dataAvailable()));
-        } else if (!FD_ISSET(i, &m_tcp_fds) && m_socketWatchers.contains(i)) {
-            QAbstractSocket *removeThis = m_socketWatchers.take(i);
-            delete removeThis;
-        }
-    }
-#endif
 }
 
 DNSSECTest *TestManager::makeTest(testType type, QString address, QString name) {
@@ -216,12 +121,9 @@ DNSSECTest *TestManager::makeTest(testType type, QString address, QString name) 
 #endif
     }
     if (newtest) {
-        m_tests.push_back(newtest);
         connect(newtest, SIGNAL(messageChanged(QString)), this, SLOT(handleResultMessageChanged(QString)));
         connect(newtest, SIGNAL(messageChanged(QString)), this, SIGNAL(aResultMessageChanged(QString)));
-        if (newtest->async()) {
-            connect(newtest, SIGNAL(asyncTestSubmitted()), this, SLOT(updateWatchedSockets()));
-        }
+        emit addedNewTest(newtest);
     } else {
         qDebug() << "no test created...  help? " << type << " - " << can_get_signed_dname;
     }
@@ -353,8 +255,19 @@ void TestManager::setInTestLoop(bool newval)
 {
     bool oldval = m_inTestLoop;
     m_inTestLoop = newval;
-    if (oldval != newval)
+    if (oldval != newval) {
         emit inTestLoopChanged();
-    if (!m_inTestLoop)
-        m_socketWatchers.clear();
+        emit inTestLoopChangedBool(newval);
+    }
+}
+
+
+void TestManager::startQueuedTransactions()
+{
+    emit startQueuedTransactionsSignal();
+}
+
+void TestManager::checkAvailableUpdates()
+{
+    emit checkAvailableUpdatesSignal();
 }

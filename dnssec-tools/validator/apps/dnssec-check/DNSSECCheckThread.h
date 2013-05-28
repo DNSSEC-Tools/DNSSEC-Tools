@@ -6,6 +6,8 @@
 #include "DNSSECTest.h"
 #include "DNSSECCheckThreadHandler.h"
 
+class DNSSECCheckThreadHandler;
+
 class DNSSECCheckThread : public QThread
 {
     Q_OBJECT

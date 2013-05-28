@@ -76,13 +76,15 @@ signals:
     void aResultMessageChanged(QString message);
     void lastResultMessageChanged();
     void inTestLoopChanged();
+    void inTestLoopChangedBool(bool);
     void updatesMaybeAvailable();
+    void addedNewTest(DNSSECTest *);
+    void startQueuedTransactionsSignal();
+    void checkAvailableUpdatesSignal();
 
 public slots:
     void responseReceived(QNetworkReply *response);
     void handleResultMessageChanged(QString message);
-    void dataAvailable();
-    void updateWatchedSockets();
     void handlerReady(DNSSECCheckThreadHandler *handler);
     void cancelOutstandingRequests();
 
@@ -92,13 +94,9 @@ private:
     QNetworkAccessManager *m_manager;
     QString m_submissionMessage;
     QString m_lastResultMessage;
-    QHash<int, QAbstractSocket *> m_socketWatchers;
     QList<DNSSECTest *> m_tests;
     DNSSECCheckThread m_otherThread;
 
-    fd_set          m_fds, m_tcp_fds;
-    int             m_num_fds, m_num_tcp_fds;
-    struct timeval  m_timeout;
     bool            m_inTestLoop;
 };
 
