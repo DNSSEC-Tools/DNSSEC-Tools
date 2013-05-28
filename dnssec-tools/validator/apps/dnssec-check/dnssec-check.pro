@@ -72,7 +72,8 @@ SOURCES += main.cpp mainwindow.cpp \
     SubmitDialog.cpp \
     DNSSECTest.cpp \
     TestManager.cpp \
-    DNSSECCheckThread.cpp
+    DNSSECCheckThread.cpp \
+    DNSSECCheckThreadHandler.cpp
 HEADERS += mainwindow.h \
     QStatusLight.h \
     dnssec_checks.h \
@@ -80,7 +81,8 @@ HEADERS += mainwindow.h \
     DNSSECTest.h \
     TestManager.h \
     DNSSECCheckThread.h \
-    DnssecCheckVersion.h
+    DnssecCheckVersion.h \
+    DNSSECCheckThreadHandler.h
 
 #    DataSubmitter.h \
 #    DataSubmitter.cpp \
