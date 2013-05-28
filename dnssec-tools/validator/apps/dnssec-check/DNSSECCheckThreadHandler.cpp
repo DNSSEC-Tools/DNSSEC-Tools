@@ -5,7 +5,7 @@
 #include "dnssec_checks.h"
 
 DNSSECCheckThreadHandler::DNSSECCheckThreadHandler(QObject *parent) :
-    QObject(parent), m_dataList(), m_tests(), m_socketWatchers(), m_num_fds(0)
+    QObject(parent), m_dataList(), m_tests(), m_socketWatchers(), m_num_fds(0), m_inTestLoop(false)
 {
     FD_ZERO(&m_fds);
     m_timeout.tv_sec = 0;
@@ -86,8 +86,8 @@ void
 DNSSECCheckThreadHandler::updateWatchedSockets()
 {
 #ifndef VAL_NO_ASYNC
-    //if (!m_inTestLoop)
-    check_queued_sends();
+    if (!m_inTestLoop)
+        check_queued_sends();
 
     // process any buffered or cache data first
     dataAvailable();
@@ -153,4 +153,5 @@ void DNSSECCheckThreadHandler::addTest(DNSSECTest *newtest)
 void DNSSECCheckThreadHandler::inTestLoopChanged(bool val) {
     if (!val)
         m_socketWatchers.clear();
+    m_inTestLoop = val;
 }
