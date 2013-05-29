@@ -42,6 +42,7 @@ our @EXPORT = qw(
 			owl_chkdir
 			owl_getpid
 			owl_halt
+			owl_log
 			owl_printdefs
 			owl_readconfig
 			owl_running
@@ -216,6 +217,8 @@ our @cf_states	   = ();			# State of targets.
 #----------------------------------------------------
 
 our %loginfo = ();			# Logging information.
+
+our $logflag = 1;			# Log flag.
 
 #===============================================================================
 #
@@ -611,6 +614,11 @@ sub owl_setlog
 	my $tstmp;				# Timestamp for logname.
 
 	#
+	# If logging is turned off, we won't build a log file.
+	#
+	return(undef) if(! $logflag);
+
+	#
 	# Get the name of the host we're sitting on.
 	#
 	$realhost = `hostname`;
@@ -684,6 +692,30 @@ sub owl_setlog
 	# Let the caller use our log.
 	#
 	return($owllog);
+}
+
+#----------------------------------------------------------------------
+# Routine:      owl_log()
+#
+# Purpose:      Give the appropriate type of log message -- unless we
+#		aren't supposed to do any logging.
+#
+sub owl_log
+{
+	my $sensorlog	= shift;		# Log object.
+	my $mtype	= shift;		# Type of message to log.
+	my $msg		= shift;		# Message to log.
+
+	return if($logflag == 0);
+
+	if($mtype = 0)
+	{
+		$sensorlog->log($msg);
+	}
+	else
+	{
+		$sensorlog->warning("$msg");
+	}
 }
 
 #------------------------------------------------------------------------
@@ -1266,7 +1298,8 @@ owlutils - Utility routines for Owl programs.
 
   owl_chkdir('archive','oldfiles');
 
-  owl_setlog('owl-dnstimer');
+  $sensorlog = owl_setlog('owl-dnstimer');
+  owl_log($sensorlog,0,'owl-dnstimer has started')>
 
   owl_getpid();
 
@@ -1375,6 +1408,7 @@ Data specified by calling programs or built by B<owlutils.pm>:
     $conffile                Configuration file.
     $datadir                 Data directory.
     $logdir                  Log directory.
+    $logflag                 Log flag -- 0 is nologging; 1 - is logging.
     $pidfile                 Filename of process-id file.
 
     $hesitation              Sleep time between executions.
@@ -1452,6 +1486,18 @@ Return Values:
     0 - Unable to halt the specified program.  This is also used
         if a non-Owl program is named.
     >0 - Program halted; the count of halted programs is returned.
+
+=item I<owl_log(sensorlog,msgtype,msg)>
+
+This routine adds an entry to the log file specified by I<sensorlog>.
+I<sensorlog> is an object previously returned by I<owl_setlog()>.  If
+the I<$logflag> is set to 0, then a log message will not be written.
+
+The I<msgtype> parameter specifies the type of log message that will be
+written.  If it is 0, then a regular log message will be given.  If it
+is 1, then a warning message will be given.
+
+The I<msg> parameter is the message to be written to the log file.
 
 =item I<owl_printdefs()>
 
