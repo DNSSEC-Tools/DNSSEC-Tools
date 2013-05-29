@@ -91,6 +91,7 @@ my @opts =
 
 	"defaults",				# Print defaults.
 	"foreground|fg",			# Run in foreground.
+	"nolog",				# Generate no logging output.
 	"stop",					# Stop execution.
 
 	"help",					# Give help message.
@@ -105,6 +106,7 @@ my $datadir;					# Data directory.
 my $foreground;					# Foreground-execution flag.
 my $logdir;					# Log directory.
 my $logfile;					# Log file.
+my $nolog = 0;					# No-logging flag.
 my $stopper;					# Stop-execution flag.
 
 #------------------------------------------------------------------------
@@ -151,7 +153,7 @@ my $idletime = 1 * 60;			# Main thread wait time.
 # Data and log message data.
 #
 
-my $sensorlog;				# Sensor's log object.
+my $slog;				# Sensor's log object.
 my %loginfo = ();			# Logging information.
 
 my $nextroll = 0;			# Time of next datafile rollover.
@@ -205,7 +207,7 @@ sub main
 	startup();
 
 	exit(1) if(owl_chkdir('data', $datadir) == 1);
-	exit(1) if(owl_chkdir('log', $logdir) == 1);
+	exit(1) if((! $nolog) && (owl_chkdir('log', $logdir) == 1));
 
 	#
 	# Daemonize ourself.
@@ -231,7 +233,7 @@ sub main
 	#
 	# Start a query entity for each nameserver that has a valid entry.
 	#
-	$sensorlog->warning("creating queries for each target/nameserver pair");
+	owl_log($slog,1,"creating queries for each target/nameserver pair");
 	print STDERR "master starting query-entities\n" if($verbose);
 	for(my $ind=0; $ind < @cf_targets; $ind++)
 	{
@@ -250,7 +252,7 @@ sub main
 	#
 	if($nscount == 0)
 	{
-		$sensorlog->warning("no nameserver query entities started");
+		owl_log($slog,1,"no nameserver query entities started");
 		print STDERR "no nameserver query entities started\n";
 		exit(4);
 	}
@@ -288,6 +290,7 @@ sub doopts
 	$confdir    = $options{'confdir'}    || $DEF_CONFDIR;
 	$config	    = $options{'config'}     || $DEF_CONFIG;
 	$foreground = $options{'foreground'} || 0;
+	$nolog	    = $options{'nolog'}	     || 0;
 	$stopper    = $options{'stop'}       || 0;
 	$verbose    = $options{'verbose'};
 
@@ -298,6 +301,11 @@ sub doopts
 	# Moosh together a few variables to build the config file.
 	#
 	$config = "$confdir/$config" if($config !~ /\//);
+
+	#
+	# Set the logging flag in the shared module.
+	#
+	$owlutils::logflag = ! $nolog;
 
 }
 
@@ -312,9 +320,9 @@ sub startup
 	sigurd();
 
 	#
-	# Set up our log file..
+	# Set up our log file.
 	#
-	$sensorlog = owl_setlog($NAME);
+	$slog = owl_setlog($NAME) if((! $nolog) && (! $stopper));
 
 	#
 	# Shutdown any owl-dnstimer instances that are running.
@@ -335,7 +343,7 @@ sub startup
 		# If we're not the only owl-dnstimer running, we'll
 		# complain and exit.
 		#
-		$sensorlog->warning("$NAME already running");
+		owl_log($slog,1,"$NAME already running");
 		print STDERR "$NAME already running\n";
 		exit(2);
 	}
@@ -460,7 +468,7 @@ sub forge
 			# logging for negative values, query thread for
 			# other values.
 			#
-			$sensorlog->warning("starting query-proc ($$) for $cf_targets[$qind]/$cf_servers[$qind]/$cf_qargs[$qind]") if($verbose);
+			owl_log($slog,1,"starting query-proc ($$) for $cf_targets[$qind]/$cf_servers[$qind]/$cf_qargs[$qind]") if($verbose);
 			print STDERR "starting query-proc (pid $$) for $cf_targets[$qind]/$cf_servers[$qind]/$cf_qargs[$qind]\n" if($verbose);
 
 			questor($qind);
@@ -514,7 +522,7 @@ sub questor
 		if($verbose && ($dfn ne $datafiles[$qind]))
 		{
 			print STDERR "new datafile - $datafiles[$qind]\n";
-			$sensorlog->warning("new datafile - $datafiles[$qind]");
+			owl_log($slog,1,"new datafile - $datafiles[$qind]");
 			$dfn = $datafiles[$qind];
 		}
 
@@ -651,7 +659,7 @@ sub nstimer
 	#
 	if(!defined($ns))
 	{
-		$sensorlog->warning("nstimer:  undefined nameserver");
+		owl_log($slog,1,"nstimer:  undefined nameserver");
 		print STDERR "nstimer:  undefined nameserver\n";
 		return;
 	}
@@ -759,14 +767,13 @@ sub savedatum
 #------------------------------------------------------------------------
 # Routine:	logmsg()
 #
-# Purpose:	Send the message to our log file -- via the log thread if
-#		we're threaded, directly if not.
+# Purpose:	Send the message to our log file.
 #
 sub logmsg
 {
 	my $msg = shift;				# Message to log.
 
-	$sensorlog->log(level => 'info', message => $msg);
+	owl_log($slog,0,level => 'info', message => $msg);
 }
 
 #------------------------------------------------------------------------
@@ -819,13 +826,13 @@ sub cleanup
 		#
 		# Shut down the query threads.
 		#
-		$sensorlog->warning("shutting down query-threads");
+		owl_log($slog,1,"shutting down query-threads");
 		for(my $qind=0; $qind < @seekers; $qind++)
 		{
 			my $qt = $seekers[$qind];
 			my $tid = $qt->tid(); 
 
-			$sensorlog->warning("shutting down query-entity for $cf_targets[$qind]/$cf_servers[$qind]") if($verbose);
+			owl_log($slog,1,"shutting down query-entity for $cf_targets[$qind]/$cf_servers[$qind]") if($verbose);
 			$qt->kill('SIGUSR2')->detach();
 		}
 	}
@@ -834,12 +841,12 @@ sub cleanup
 		#
 		# Shut down the query subprocesses.
 		#
-		$sensorlog->warning("shutting down query-procs");
+		owl_log($slog,1,"shutting down query-procs");
 		for(my $qind=0; $qind < @seekers; $qind++)
 		{
 			my $qp = $seekers[$qind];
 
-			$sensorlog->warning("shutting down query-proc for $cf_targets[$qind]/$cf_servers[$qind]") if($verbose);
+			owl_log($slog,1,"shutting down query-proc for $cf_targets[$qind]/$cf_servers[$qind]") if($verbose);
 			kill(SIGUSR1, $qp);
 		}
 
@@ -849,14 +856,14 @@ sub cleanup
 	#
 	# Remove the process-id file.
 	#
-	$sensorlog->warning("unlinking pidfile $pidfile") if($verbose);
+	owl_log($slog,1,"unlinking pidfile $pidfile") if($verbose);
 	print STDERR "\n\nunlinking pidfile \"$pidfile\"\n" if($verbose);
 	unlink($pidfile);
 
 	#
 	# Wait a moment for the final log message to be written.
 	#
-	$sensorlog->warning("shutting down...");
+	owl_log($slog,1,"shutting down...");
 	print STDERR "$NAME shutting down...\n" if($verbose);
 	sleep(1);
 	exit(0);
@@ -888,7 +895,7 @@ sub printnss
 				$cf_states[$qind] ? 'active' : 'inactive',
 				$cf_rollints[$qind]);
 
-		$sensorlog->warning("$msg");
+		owl_log($slog,1,"$msg");
 	}
 }
 
@@ -921,6 +928,7 @@ sub usage
 	print STDERR "\t\t-foreground\n";
 	print STDERR "\t\t-fg\n";
 	print STDERR "\t\t-logdir log-directory\n";
+	print STDERR "\t\t-nolog\n";
 	print STDERR "\t\t-stop\n";
 	print STDERR "\t\t-help\n";
 	print STDERR "\t\t-verbose\n";
@@ -1031,6 +1039,10 @@ Specifies the directory that will hold the B<owl-dnstimer> log files.
 If this is not given, then the default B<log> name will be used.  If this
 is a relative path, it will be relative from the point of execution.  If
 this directory doesn't exist, it will be created.
+
+=item B<-nolog>
+
+Do not write to the log file.
 
 =item B<-stop>
 
