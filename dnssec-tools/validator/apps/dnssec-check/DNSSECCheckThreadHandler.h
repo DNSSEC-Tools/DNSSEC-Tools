@@ -1,6 +1,13 @@
 #ifndef DNSSECCHECKTHREADHANDLER_H
 #define DNSSECCHECKTHREADHANDLER_H
 
+extern "C" {
+#include <sys/time.h>
+#ifdef __MINGW32__
+#include <winsock2.h>
+#endif
+}
+
 #include <QObject>
 #include <QHash>
 #include <QAbstractSocket>
