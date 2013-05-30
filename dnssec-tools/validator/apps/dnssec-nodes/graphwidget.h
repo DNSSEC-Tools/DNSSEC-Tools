@@ -56,6 +56,8 @@
 #include <QtGui/QPushButton>
 #include <QtGui/QTableWidget>
 
+#include <sys/time.h>
+
 #include "Legend.h"
 #include "DNSData.h"
 #include "qtauto_properties.h"
