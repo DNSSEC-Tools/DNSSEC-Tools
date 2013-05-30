@@ -12,6 +12,7 @@ DEPLOYMENTFOLDERS = # file1 dir1
 
 # for android
 INCLUDEPATH += ../../include
+INCLUDEPATH += .
 isEmpty(ANDROID_PLATFORM) {
     # NOT Android
     QMAKE_LIBDIR     += ../../libval/.libs
@@ -24,8 +25,9 @@ isEmpty(ANDROID_PLATFORM) {
     } else:maemo5 {
         INCLUDEPATH += /opt/maemo/usr/include/
     } else:win32 {
-        #QMAKE_LIBDIR += /MinGW/msys/1.0/lib
+        QMAKE_LIBDIR += /OpenSSL-Win32/bin/
         LIBS += -lval-threads -lsres -leay32 -lpthread -lws2_32
+        INCLUDEPATH += pcap
     } else {
         LIBS        += -lval-threads -lsres -lssl -lcrypto -lpthread
     }
