@@ -7,7 +7,9 @@
 #include <qdebug.h>
 
 #include <sys/types.h>
+#ifndef __MINGW_GCC
 #include <arpa/inet.h>
+#endif /* ! __MINGW_GCC */
 #include <QtGui/QAction>
 #include <QFileDialog>
 
