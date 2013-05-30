@@ -589,7 +589,7 @@ sub getdatafile
 	$datafn = "$datadir/$datafiles[$qind]";
 	if(($datafd=new IO::File "> $datafn") == 0)
 	{
-		logmsg("$tg:$ns:  unable to open $datafn : $!");
+		owl_log($slog,0,"$tg:$ns:  unable to open $datafn : $!");
 
 		$seekers[$qind]->join() if($runthreaded);
 	}
@@ -612,7 +612,7 @@ sub getdatafile
 	#
 	autoflush $datafd, 1;
 	$datafds[$qind] = \$datafd;
-	logmsg("$tg:$ns:  changing to new datafile $datafn");
+	owl_log($slog,0,"$tg:$ns:  changing to new datafile $datafn");
 
 	#
 	# Calculate the time for the next datafile rollover.
@@ -755,25 +755,13 @@ sub savedatum
 	#
 	# Send the message to our log file.
 	#
-	logmsg($msg);
+	owl_log($slog,0,$msg);
 
 	$dfd = $datafds[$qind];
 	$dfd = $$dfd;
 
 	print $dfd "$msg\n";
 
-}
-
-#------------------------------------------------------------------------
-# Routine:	logmsg()
-#
-# Purpose:	Send the message to our log file.
-#
-sub logmsg
-{
-	my $msg = shift;				# Message to log.
-
-	owl_log($slog,0,level => 'info', message => $msg);
 }
 
 #------------------------------------------------------------------------
