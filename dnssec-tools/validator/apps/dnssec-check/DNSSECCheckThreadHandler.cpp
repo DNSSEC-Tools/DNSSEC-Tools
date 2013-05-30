@@ -1,7 +1,8 @@
+#include "DNSSECCheckThreadHandler.h"
+
 #include <validator/validator-config.h>
 #include <validator/validator.h>
 
-#include "DNSSECCheckThreadHandler.h"
 #include "dnssec_checks.h"
 
 DNSSECCheckThreadHandler::DNSSECCheckThreadHandler(QObject *parent) :
