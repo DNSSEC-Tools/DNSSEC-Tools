@@ -136,6 +136,23 @@ DNSSECTest *TestManager::makeTest(testType type, QString address, QString name) 
     return newtest;
 }
 
+LONG GetStringRegKey(HKEY hKey, const std::wstring &strValueName, std::wstring &strValue, const std::wstring &strDefaultValue)
+{
+    strValue = strDefaultValue;
+    WCHAR szBuffer[512];
+    DWORD dwBufferSize = sizeof(szBuffer);
+    ULONG nError;
+    nError = RegQueryValueExW(hKey, strValueName.c_str(), 0, NULL, (LPBYTE)szBuffer, &dwBufferSize);
+    qDebug() << "error code: " << nError;
+    if (ERROR_SUCCESS == nError)
+    {
+        strValue = szBuffer;
+    }
+    return nError;
+}
+
+
+
 QStringList TestManager::loadResolvConf()
 {
     // create a libval context
@@ -182,6 +199,50 @@ QStringList TestManager::loadResolvConf()
 
         ns_list = ns_list->ns_next;
     }
+
+#ifdef __MINGW_GCC
+    if (m_serverAddresses.count() == 0) {
+        HKEY hKey;
+        LONG lRes =
+                RegOpenKeyExW(HKEY_LOCAL_MACHINE,
+                              L"SYSTEM\\CurrentControlSet\\services\\Tcpip\\Parameters\\Interfaces",
+                              0, KEY_READ, &hKey);
+        if (lRes == ERROR_SUCCESS) {
+            // We successfully opened the parent interaface node,
+            // now we need to find each interface identifier.
+            DWORD index = 0;
+            TCHAR keyName[256];
+            DWORD keyNameLen = sizeof(keyName)/sizeof(TCHAR);
+
+            while(RegEnumKeyEx(hKey, index++, keyName, &keyNameLen, 0, 0, 0, 0) == ERROR_SUCCESS) {
+                HKEY hSubKey;
+                std::wstring value;
+
+                // open this specific interface identifier
+                if (RegOpenKeyEx(hKey, keyName, 0, KEY_READ, &hSubKey) == ERROR_SUCCESS) {
+                    DWORD retryStatus;
+                    DWORD retryStatusSize = sizeof(retryStatus);
+
+                    // Ensure that the dhcpretrystatus exists
+                    if (RegQueryValueExW(hSubKey, L"DhcpRetryStatus", 0, NULL,
+                                         reinterpret_cast<LPBYTE>(&retryStatus),
+                                         &retryStatusSize) == ERROR_SUCCESS &&
+                            retryStatus == 0) {
+
+                        // get the dhcp name server from it
+                        if (GetStringRegKey(hSubKey, L"DhcpNameServer", value, L"") == ERROR_SUCCESS) {
+                            QString result = QString::fromWCharArray(value.data());
+                            foreach (QString part, result.split(" ")) {
+                                m_serverAddresses.push_back(part);
+                            }
+                        }
+                    }
+                }
+                keyNameLen = sizeof(keyName)/sizeof(TCHAR);
+            }
+        }
+    }
+#endif
 
     qDebug() << m_serverAddresses;
     return m_serverAddresses;
