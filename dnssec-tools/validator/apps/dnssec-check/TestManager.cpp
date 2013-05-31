@@ -136,6 +136,7 @@ DNSSECTest *TestManager::makeTest(testType type, QString address, QString name) 
     return newtest;
 }
 
+#ifdef __MINGW_GCC
 LONG GetStringRegKey(HKEY hKey, const std::wstring &strValueName, std::wstring &strValue, const std::wstring &strDefaultValue)
 {
     strValue = strDefaultValue;
@@ -150,7 +151,7 @@ LONG GetStringRegKey(HKEY hKey, const std::wstring &strValueName, std::wstring &
     }
     return nError;
 }
-
+#endif /* __MINGW_GCC */
 
 
 QStringList TestManager::loadResolvConf()
