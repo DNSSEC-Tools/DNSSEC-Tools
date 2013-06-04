@@ -1,0 +1,483 @@
+#!/usr/bin/perl
+#
+# Copyright 2013 SPARTA, Inc.  All rights reserved.
+# See the COPYING file distributed with this software for details.
+#
+# owl-diskuse
+#
+#	This script checks the disk use of an Owl sensor.
+#
+#
+# Revision History
+#	1.0	Initial version.				130603
+#
+
+use strict;
+
+use Getopt::Long qw(:config no_ignore_case_always);
+use File::Spec;
+
+#######################################################################
+#
+# Version information.
+#
+my $NAME   = "owl-diskuse";
+my $VERS   = "$NAME version: 2.0.0";
+my $DTVERS = "DNSSEC-Tools version: 2.0";
+
+#######################################################################
+#
+# Nagios return codes.
+#
+my $RC_NORMAL	= 0;		# Normal return code.
+my $RC_WARNING	= 1;		# Warning return code.
+my $RC_CRITICAL	= 2;		# Critical return code.
+my $RC_UNKNOWN	= 3;		# Unknown return code.
+
+
+my $WARNING_THRESHOLD  = 90;	# Warning threshold for disk use.
+my $CRITICAL_THRESHOLD = 95;	# Critical threshold for disk use.
+
+######################################################################r
+#
+# Data required for command line options.
+#
+my %options = ();			# Filled option array.
+my @opts =
+(
+	'total',			# Show total usage.
+	'Version',			# Display the version number.
+	'verbose',			# Give verbose output.
+	'help',				# Give a usage message and exit.
+);
+
+my $runtotal = 0;			# Get total usage.
+my $verbose  = 0;			# Verbose flag.
+
+#######################################################################
+#
+# Paths.
+#
+#	The installer must set the value of $OWLDIR to reflect the
+#	desired file hierarchy.
+#
+
+my $OWLDIR	 = '/owl';				# Owl directory.
+
+my $OWL_DATA	 = "$OWLDIR/data";			# Owl DNS data dir.
+my $OWL_OLDDATA	 = "$OWLDIR/old.data";			# Owl DNS data archive.
+
+my $OWL_RRDS	 = "$OWLDIR/nagiosgraph/var/rrd";	# Owl RRD files.
+
+
+################################################################################
+
+my $SCALE = 1048576;				# Scale results to megabytes.
+
+my $rc;						# Return code.
+my $outstr;					# Disk usage to report.
+
+#
+# Run shtuff.
+#
+$rc = main();
+exit($rc);
+
+#-----------------------------------------------------------------------------
+# Routine:	main()
+#
+# Purpose:	Main controller routine for owl-diskuse.
+#
+sub main
+{
+	my $du = 0;					# Disk usage.
+	my $dutotal = 0;				# Total disk usage.
+	my $retcode = $RC_NORMAL;			# Our return code.
+
+	#
+	# Check our options.
+	#
+	doopts();
+
+	#
+	# Check the disk use for either a set of sensors or everything.
+	#
+	if($runtotal)
+	{
+		my @sensors;				# Sensors in data dir.
+
+		#
+		# Get a list of sensors.
+		#
+		@sensors = glob("$OWL_DATA/*");
+
+		#
+		# Get the usage stats for all the sensors.
+		#
+		foreach my $node (@sensors)
+		{
+			my $dum;				# Dummy field.
+			my $sensor;				# Sensor name.
+
+			#
+			# Get this sensor's name.
+			#
+			($dum, $dum, $sensor) = File::Spec->splitpath($node);
+
+			#
+			# Calculate the disk use for this particular sensor
+			# and add it to the running total.
+			#
+			$du = sensoruse($sensor);
+			$dutotal += $du;
+
+		}
+
+		#
+		# Save the usage total.
+		#
+		$outstr = $dutotal;
+
+	}
+	else
+	{
+		#
+		# Get the usage stats for the specified sensors.
+		#
+		foreach my $sensor (@ARGV)
+		{
+			#
+			# Calculate the disk use for this particular sensor.
+			#
+			$du = sensoruse($sensor);
+
+			#
+			# Save this usage stat as our result.
+			#
+			$outstr = $du;
+		}
+
+	}
+
+	#
+	# Write a line of data to Nagios.
+	#
+	nagiout($retcode);
+
+	#
+	# Return the command's retcode.
+	#
+	return($retcode);
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	doopts()
+#
+# Purpose:	This routine shakes and bakes our command line options.
+#
+sub doopts
+{
+	#
+	# Parse the command line.
+	#
+	GetOptions(\%options,@opts) || usage();
+
+	#
+	# Show the version number or usage if requested.
+	#
+	version()   if(defined($options{'Version'}));
+	usage()     if(defined($options{'help'}));
+
+	#
+	# Check for the rest of the options.
+	#
+	$runtotal =  $options{'total'};
+	$verbose  =  $options{'verbose'};
+
+	#
+	# Ensure we've got the right mix of sensors and -total options.
+	#
+	usage() if((@ARGV == 0) && ($runtotal == 0));
+	usage() if((@ARGV != 0) && ($runtotal == 1));
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	sensoruse()
+#
+# Purpose:	Get the disk usage for the specified sensor.
+#
+sub sensoruse
+{
+	my $sensor = shift;				# Sensor to check.
+	my $total;					# Total disk usage.
+
+	#
+	# Get the usage for this sensor's data and archive directories.
+	#
+	$total = getdirs($sensor);
+
+	#
+	# Get the usage of this sensor's RRD databases.
+	#
+	$total += getrrds($sensor);
+
+	return($total);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	getdirs()
+#
+# Purpose:	Get the usage for this sensor's data and archive directories.
+#
+sub getdirs
+{
+	my $sensor = shift;			# Sensor to check.
+	my $sdata;				# Sensor's data directory.
+	my $sarch;				# Sensor's data archive.
+	my $dustr;				# Output from du.
+
+	my $datatot = 0;			# Total for sensor data.
+	my $archtot = 0;			# Total for sensor archive.
+	my $total = 0;				# Total for all sensor dirs.
+
+	#
+	# Build the directory names we'll need.
+	#
+	$sdata = "$OWL_DATA/$sensor";
+	$sarch = "$OWL_OLDDATA/$sensor";
+
+	#
+	# Ensure the sensor exists.
+	#
+	if(! -e $sdata)
+	{
+		print "no such sensor:  $sensor\n";
+		return(-1);
+	}
+
+	#
+	# Get the disk usage for the sensor's data directory.
+	#
+	$dustr = `du -sb $sdata`;
+	$dustr =~ /^(\d+)\s+/;
+	$datatot = $1;
+
+	#
+	# Get the disk usage for the sensor's data archive.
+	#
+	if(-e $sarch)
+	{
+		$dustr = `du -sb $sarch`;
+		$dustr =~ /^(\d+)\s+/;
+		$archtot = $1;
+	}
+
+	#
+	# Sum up and return the total.
+	#
+	$total = $datatot + $archtot;
+	if($verbose)
+	{
+		$datatot /= $SCALE;
+		$archtot /= $SCALE;
+
+		printf("%-15s:  data %5.2f    archive %5.2f    total %5.2f\n",
+			$sensor, $datatot, $archtot, ($total / $SCALE));
+	}
+	return($total);
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	getrrds()
+#
+# Purpose:	Get the usage for this RRD databases.
+#
+sub getrrds
+{
+	my $sensor = shift;		# Sensor to check.
+	my @hits;			# Sensor's files in RRD directory.
+	my $total = 0;			# Total for all RRD databases.
+
+	#
+	# Gather the names of the RRD files that contain the sensor's name.
+	#
+	@hits = `find $OWL_RRDS -print | egrep -i $sensor | egrep \.rrd\$ `;
+
+	#
+	# Add the size of the RRD to our running total.
+	#
+	foreach my $fn (@hits)
+	{
+		my $dustr;				# Output from du.
+
+		chomp $fn;
+
+		$dustr = `du -sb "$fn"`;
+		$dustr =~ /^(\d+)\s+/;
+		$total += $1;
+	}
+
+	#
+	# Return the total.
+	#
+	if($verbose)
+	{
+		printf("%-15s:  RRDs %5.2f\n",$sensor, ($total / $SCALE));
+	}
+	return($total);
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	nagiout()
+#
+# Purpose:	Generate a line of disk-usage output for Nagios.
+#		We'll adjust the total byte count to report megabytes.
+#		Only do this if we aren't running verbosely.
+#
+sub nagiout
+{
+	my $rc = shift;				# Command's return code.
+	my $megs;				# Megabytes used.
+
+	return if($verbose);
+
+	$megs = $outstr / $SCALE;
+
+	printf("Disk usage - %5.2f MB|owl-diskuse=%d:$megs\n",
+			$megs, time(), $megs);
+}
+
+#----------------------------------------------------------------------
+# Routine:	version()
+#
+sub version
+{
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+	exit(1);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	usage()
+#
+sub usage
+{
+	print STDERR "$VERS
+$DTVERS
+Copyright 2013 SPARTA, Inc.  All rights reserved.
+
+This script determines how much disk space is being used for data
+from an Owl sensor. 
+
+
+usage:  owl-diskuse [options] <sensor1> ... <sensorN>
+	options:
+		-total          display paths to be used
+		-Version        display program version
+		-verbose        display verbose output
+		-help           display this message
+
+";
+
+	exit(1);
+}
+
+1;
+
+###############################################################################
+
+=pod
+
+=head1 NAME
+
+owl-diskuse - Calculates the disk use of data from an Owl sensor
+
+=head1 SYNOPSIS
+
+  owl-diskuse [options] <sensor1> ... <sensorN>
+
+=head1 DESCRIPTION
+
+B<owl-diskuse> calculates the disk usage of data from an Owl sensor node.
+It is intended to be run on the Owl manager.
+
+B<owl-diskuse> may be used as a Nagios plugin or run from the command line.
+If it's used with Nagios and the I<-total> option is not used, then only
+one sensor should be specified.
+
+The sensor's disk use is calculated by adding the uses of the data
+directory, the archive directory, and the RRD database files associated
+with that sensor.  Sizes are determined with the B<du> command.
+
+The files and directories are hard-coded in B<owl-diskuse>.
+They are assumed to be in these locations:
+
+    /owl/data/<sensor>          Data directory
+    /owl/old.data/<sensor>      Data archive
+    /owl/nagiosgraph/var/rrd    Data archive
+
+The usage statistics are given in megabytes.
+
+=head1 NAGIOS USE
+
+B<owl-diskuse> is run from a Nagios I<command> object.  These are examples
+of how the Nagios objects should be defined:
+
+    define command {
+         command_name    Disk Usage
+         command_line    $USER1$/owl-diskuse $ARG1$
+    }
+
+    define service {
+         service_description     sensor3 disk usage
+         host_name               sensor3
+         check_command		 owl-diskuse!sensor3
+         active_checks_enabled   1 
+    }
+
+=head1 OPTIONS
+
+The following options are recognized by B<owl-diskuse>:
+
+=over 4
+
+=item I<-total>
+
+Display the disk use for all the Owl sensors.
+
+=item I<-Version>
+
+Display the program version and exit.
+
+=item I<-verbose>
+
+Display the verbose output.  This option is not intended for use with Nagios,
+but instead for use by users.
+
+=item I<-help>
+
+Display a usage message and exit.
+
+=back
+
+=head1 SEE ALSO
+
+B<du(1)>
+
+Nagios
+
+=head1 COPYRIGHT
+
+Copyright 2013 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@tislabs.com
+
+=cut
+
