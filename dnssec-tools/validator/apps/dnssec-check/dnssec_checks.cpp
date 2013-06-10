@@ -19,6 +19,10 @@
 #include <arpa/nameser_compat.h>
 #endif
 
+#ifndef RES_USE_DNSSEC
+#define RES_USE_DNSSEC  0x00200000
+#endif
+
 /* libsres functions that they don't export */
 extern "C" {
     struct expected_arrival *
