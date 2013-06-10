@@ -115,37 +115,37 @@ void MainWindow::addAddress(QString server, int row) {
     label->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
 #endif
 
-    m_results->addWidget(light = new QStatusLight(0, &check_basic_dns, server.toAscii().data(), "DNS", row), row, column++);
+    m_results->addWidget(light = new QStatusLight(0, &check_basic_dns, server.toLatin1().data(), "DNS", row), row, column++);
     m_tests.push_back(light);
 
-    m_results->addWidget(light = new QStatusLight(0, &check_basic_tcp, server.toAscii().data(), "TCP", row), row, column++);
+    m_results->addWidget(light = new QStatusLight(0, &check_basic_tcp, server.toLatin1().data(), "TCP", row), row, column++);
     m_tests.push_back(light);
 
-    m_results->addWidget(light = new QStatusLight(0, &check_do_bit, server.toAscii().data(), "DO", row), row, column++);
+    m_results->addWidget(light = new QStatusLight(0, &check_do_bit, server.toLatin1().data(), "DO", row), row, column++);
     m_tests.push_back(light);
 
-    m_results->addWidget(light = new QStatusLight(0, &check_ad_bit, server.toAscii().data(), "AD", row), row, column++);
+    m_results->addWidget(light = new QStatusLight(0, &check_ad_bit, server.toLatin1().data(), "AD", row), row, column++);
     m_tests.push_back(light);
 
-    m_results->addWidget(light = new QStatusLight(0, &check_do_has_rrsigs, server.toAscii().data(), "RRSIG", row), row, column++);
+    m_results->addWidget(light = new QStatusLight(0, &check_do_has_rrsigs, server.toLatin1().data(), "RRSIG", row), row, column++);
     m_tests.push_back(light);
 
-    m_results->addWidget(light = new QStatusLight(0, &check_small_edns0, server.toAscii().data(), "EDNS0", row), row, column++);
+    m_results->addWidget(light = new QStatusLight(0, &check_small_edns0, server.toLatin1().data(), "EDNS0", row), row, column++);
     m_tests.push_back(light);
 
-    m_results->addWidget(light = new QStatusLight(0, &check_can_get_nsec, server.toAscii().data(), "NSEC", row), row, column++);
+    m_results->addWidget(light = new QStatusLight(0, &check_can_get_nsec, server.toLatin1().data(), "NSEC", row), row, column++);
     m_tests.push_back(light);
 
-    m_results->addWidget(light = new QStatusLight(0, &check_can_get_nsec3, server.toAscii().data(), "NSEC3", row), row, column++);
+    m_results->addWidget(light = new QStatusLight(0, &check_can_get_nsec3, server.toLatin1().data(), "NSEC3", row), row, column++);
     m_tests.push_back(light);
 
-    m_results->addWidget(light = new QStatusLight(0, &check_can_get_dnskey, server.toAscii().data(), "DNSKEY", row), row, column++);
+    m_results->addWidget(light = new QStatusLight(0, &check_can_get_dnskey, server.toLatin1().data(), "DNSKEY", row), row, column++);
     m_tests.push_back(light);
 
-    m_results->addWidget(light = new QStatusLight(0, &check_can_get_ds, server.toAscii().data(), "DS", row), row, column++);
+    m_results->addWidget(light = new QStatusLight(0, &check_can_get_ds, server.toLatin1().data(), "DS", row), row, column++);
     m_tests.push_back(light);
 
-    //m_results->addWidget(light = new QStatusLight(0, &check_can_get_signed_dname, server.toAscii().data(), "DNAME", row), row, column++);
+    //m_results->addWidget(light = new QStatusLight(0, &check_can_get_signed_dname, server.toLatin1().data(), "DNAME", row), row, column++);
     //m_tests.push_back(light);
 }
 
