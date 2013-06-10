@@ -20,8 +20,10 @@ isEmpty(ANDROID_PLATFORM) {
 
     contains(MEEGO_EDITION,harmattan): {
         QMAKE_LIBDIR += /scratchbox/users/hardaker/targets/HARMATTAN_ARMEL/usr/lib
-    } else:osx {
+    } else:macx {
         LIBS        += -lval-threads -lsres -lssl -lcrypto -lpthread
+        INCLUDEPATH += /opt/dnssec-tools/include
+        QMAKE_LIBDIR += /opt/dnssec-tools/lib
     } else:maemo5 {
         INCLUDEPATH += /opt/maemo/usr/include/
     } else:win32 {
