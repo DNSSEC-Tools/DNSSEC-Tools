@@ -1,6 +1,8 @@
 #ifndef PCAPWATCHER_H
 #define PCAPWATCHER_H
 
+#include <sys/time.h>
+#include <stdint.h>
 #include <pcap.h>
 
 #include <QThread>

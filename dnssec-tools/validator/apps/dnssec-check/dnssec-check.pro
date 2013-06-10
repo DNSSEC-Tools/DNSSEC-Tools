@@ -12,6 +12,7 @@ DEPLOYMENTFOLDERS = # file1 dir1
 
 # for android
 INCLUDEPATH += ../../include
+INCLUDEPATH += .
 isEmpty(ANDROID_PLATFORM) {
     # NOT Android
     QMAKE_LIBDIR     += ../../libval/.libs
@@ -19,13 +20,16 @@ isEmpty(ANDROID_PLATFORM) {
 
     contains(MEEGO_EDITION,harmattan): {
         QMAKE_LIBDIR += /scratchbox/users/hardaker/targets/HARMATTAN_ARMEL/usr/lib
-    } else:osx {
+    } else:macx {
         LIBS        += -lval-threads -lsres -lssl -lcrypto -lpthread
+        INCLUDEPATH += /opt/dnssec-tools/include
+        QMAKE_LIBDIR += /opt/dnssec-tools/lib
     } else:maemo5 {
         INCLUDEPATH += /opt/maemo/usr/include/
     } else:win32 {
-        #QMAKE_LIBDIR += /MinGW/msys/1.0/lib
+        QMAKE_LIBDIR += /OpenSSL-Win32/bin/
         LIBS += -lval-threads -lsres -leay32 -lpthread -lws2_32
+        INCLUDEPATH += pcap
     } else {
         LIBS        += -lval-threads -lsres -lssl -lcrypto -lpthread
     }
@@ -72,7 +76,8 @@ SOURCES += main.cpp mainwindow.cpp \
     SubmitDialog.cpp \
     DNSSECTest.cpp \
     TestManager.cpp \
-    DNSSECCheckThread.cpp
+    DNSSECCheckThread.cpp \
+    DNSSECCheckThreadHandler.cpp
 HEADERS += mainwindow.h \
     QStatusLight.h \
     dnssec_checks.h \
@@ -80,7 +85,8 @@ HEADERS += mainwindow.h \
     DNSSECTest.h \
     TestManager.h \
     DNSSECCheckThread.h \
-    DnssecCheckVersion.h
+    DnssecCheckVersion.h \
+    DNSSECCheckThreadHandler.h
 
 #    DataSubmitter.h \
 #    DataSubmitter.cpp \

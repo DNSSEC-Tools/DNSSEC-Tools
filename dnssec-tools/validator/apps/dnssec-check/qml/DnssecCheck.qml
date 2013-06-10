@@ -423,6 +423,10 @@ Rectangle {
                 target: resetButton
                 enabled: true
             }
+            PropertyChanges {
+                target: dnssecCheckTop
+                runningStatus: "Idle; Some tests have run"
+            }
         },
 
         State {
@@ -465,7 +469,7 @@ Rectangle {
             }
             PropertyChanges {
                 target: dnssecCheckTop
-                runningStatus: "idle"
+                runningStatus: "Idle"
             }
         },
         State {
@@ -481,6 +485,10 @@ Rectangle {
             PropertyChanges {
                 target: resetButton
                 enabled: true
+            }
+            PropertyChanges {
+                target: dnssecCheckTop
+                runningStatus: "Idle; Results Submitted"
             }
         },
         State {

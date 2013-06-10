@@ -35,7 +35,7 @@ namename(u_char * big_name, u_char * little_name)
     if (*little_name == '\0') {
         size_t d = wire_name_length(p);
         if (d >= 1)
-            return p+wire_name_length(p)-1;
+            return p+d-1;
         return NULL;
     }
     

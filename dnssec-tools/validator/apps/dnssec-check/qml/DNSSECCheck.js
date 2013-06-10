@@ -102,6 +102,7 @@ function assignHostGrade() {
         var hostName = hosts[i]
         var finished = true
         var maxGrade = 0
+        var testBitmap = 0;
 
         for(var j = 0; j < hostInfo[hostName]['tests'].length; j++) {
             var testObject = hostInfo[hostName]['tests'][j].test
@@ -111,6 +112,7 @@ function assignHostGrade() {
             // Check for any failure == at least a B
             if (testObject.status != DNSSECTest.GOOD) {
                 maxGrade = Math.max(maxGrade, 1);
+                testBitmap = testBitmap | 1 << j;
             }
 
             if (testObject.name == "DNS" && testObject.status != DNSSECTest.GOOD) {
@@ -139,6 +141,7 @@ function assignHostGrade() {
             hostInfo[hostName]['grades'].grade = "?"
         else
             hostInfo[hostName]['grades'].grade = grades[maxGrade]
+        hostInfo[hostName]['grades'].gradeScore = testBitmap.toString(16);
     }
 }
 
@@ -248,7 +251,7 @@ function runNextTest() {
         if (testManager.outStandingRequests() > 0) {
             testManager.startQueuedTransactions();
             testManager.checkAvailableUpdates();
-            testManager.dataAvailable();
+            //testManager.dataAvailable();
             timer.start();
         } else {
             stopTesting();
@@ -295,12 +298,13 @@ function stopTesting() {
 }
 
 function restartRunningTests() {
+    testManager.cancelOutstandingRequests()
     for(var i = 0 ; i < hosts.length; i++) {
         var hostName = hosts[i]
 
         for(var j = 0; j < hostInfo[hostName]['tests'].length; j++) {
             var testObject = hostInfo[hostName]['tests'][j].test
-            if (testObject.status == DNSSECTest.TESTINGNOW || testObject.status == DNSSECTest.UNKNOWN) {
+            if (testObject.status === DNSSECTest.TESTINGNOW || testObject.status === DNSSECTest.UNKNOWN) {
                 testObject.status = DNSSECTest.UNKNOWN
                 testObject.check()
             }

@@ -71,8 +71,17 @@ isEmpty(ANDROID_PLATFORM) {
     QMAKE_LIBDIR     += ../../libval/.libs
     QMAKE_LIBDIR     += ../../libsres/.libs
     LIBS        += -lval-threads -lsres -lnsl -lcrypto -lpthread
-    maemo5 {
+    contains(MEEGO_EDITION,harmattan): {
+        QMAKE_LIBDIR += /scratchbox/users/hardaker/targets/HARMATTAN_ARMEL/usr/lib
+    } else:osx {
+        LIBS        += -lval-threads -lsres -lcrypto -lpthread
+    } else:maemo5 {
         INCLUDEPATH += /opt/maemo/usr/include/
+    } else:win32 {
+        QMAKE_LIBDIR += /OpenSSL-Win32/bin/
+        LIBS += -lval-threads -lsres -leay32 -lpthread -lws2_32
+    } else {
+        LIBS        += -lval-threads -lsres -lcrypto -lpthread
     }
 } else {
     LIBS        += -L/root/necessitas/android-ndk-r5c/platforms/android-4/arch-arm/usr/lib/
@@ -120,7 +129,8 @@ simulator: warning(This example might not fully work on Simulator platform)
 # (comment these lines out if not desired)
 SOURCES += PcapWatcher.cpp
 HEADERS += PcapWatcher.h
-LIBS    += -lpcap
+QMAKE_LIBDIR += c:/windows/system32
+LIBS    += -lwpcap
 DEFINES += WITH_PCAP
 
 OTHER_FILES += \

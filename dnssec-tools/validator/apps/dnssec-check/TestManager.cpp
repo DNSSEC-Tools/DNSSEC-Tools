@@ -16,13 +16,9 @@
 #include "DnssecCheckVersion.h"
 
 TestManager::TestManager(QObject *parent) :
-    QObject(parent), m_parent(parent), m_manager(0), m_lastResultMessage(), m_socketWatchers(),
-    m_tests(), m_otherThread(), m_num_fds(0), m_inTestLoop(false)
+    QObject(parent), m_parent(parent), m_manager(0), m_lastResultMessage(),
+    m_otherThread(), m_inTestLoop(false)
 {
-    FD_ZERO(&m_fds);
-    m_timeout.tv_sec = 0;
-    m_timeout.tv_usec = 0;
-
     connect(&m_otherThread, SIGNAL(handlerReady(DNSSECCheckThreadHandler*)), this, SLOT(handlerReady(DNSSECCheckThreadHandler*)));
     m_otherThread.start();
 }
@@ -30,41 +26,15 @@ TestManager::TestManager(QObject *parent) :
 void
 TestManager::handlerReady(DNSSECCheckThreadHandler *handler) {
     connect(this, SIGNAL(updatesMaybeAvailable()), handler, SLOT(checkStatus()));
-    connect(handler, SIGNAL(asyncTestSubmitted()), this, SLOT(updateWatchedSockets()));
-}
+    connect(this, SIGNAL(addedNewTest(DNSSECTest*)), handler, SLOT(addTest(DNSSECTest*)));
+    connect(this, SIGNAL(inTestLoopChangedBool(bool)), handler, SLOT(inTestLoopChanged(bool)));
+    connect(this, SIGNAL(startQueuedTransactionsSignal()), handler, SLOT(startQueuedTransactions()));
+    connect(this, SIGNAL(checkAvailableUpdatesSignal()), handler, SLOT(checkAvailableUpdates()));
 
-void
-TestManager::dataAvailable()
-{
-    struct timeval tv;
-    tv.tv_sec = 0;
-    tv.tv_usec = 1;
-
-    // loop through everything we have now
-#ifndef VAL_NO_ASYNC
-    while (val_async_check_wait(NULL, NULL, NULL, &tv, 0) > 0) {
-        //qDebug() << " hit";
-    }
-#endif
-
-    check_outstanding_async();
-
-    checkAvailableUpdates();
-}
-
-void
-TestManager::checkAvailableUpdates()
-{
-    // tell the tests to check and emit as necessary
+    // sound out notifications for the already added tests
     foreach(DNSSECTest *test, m_tests) {
-        test->update();
+        emit addedNewTest(test);
     }
-    emit updatesMaybeAvailable();
-}
-
-void TestManager::startQueuedTransactions()
-{
-    updateWatchedSockets();
 }
 
 bool TestManager::testName(const QString &resolverAddress)
@@ -75,57 +45,6 @@ bool TestManager::testName(const QString &resolverAddress)
         return false;
     free_name_server(&ns);
     return true;
-}
-
-void
-TestManager::updateWatchedSockets()
-{
-#ifndef VAL_NO_ASYNC
-    if (!m_inTestLoop)
-        check_queued_sends();
-
-    // process any buffered or cache data first
-    dataAvailable();
-
-    m_num_fds = 0;
-    FD_ZERO(&m_fds);
-    val_async_select_info(0, &m_fds, &m_num_fds, &m_timeout);
-    //qDebug() << "val sockets: " << m_num_fds;
-    for(int i = 0; i < m_num_fds; i++) {
-        if (FD_ISSET(i, &m_fds) && !m_socketWatchers.contains(i)) {
-            //qDebug() << "watching val socket #" << i;
-            QAbstractSocket *socketToWatch = new QAbstractSocket(QAbstractSocket::UdpSocket, 0);
-            m_socketWatchers[i] = socketToWatch;
-            socketToWatch->setSocketDescriptor(i, QAbstractSocket::ConnectedState);
-            connect(socketToWatch, SIGNAL(readyRead()), this, SLOT(dataAvailable()));
-        }
-    }
-
-    m_num_fds = 0;
-    m_num_tcp_fds = 0;
-    FD_ZERO(&m_fds);
-    FD_ZERO(&m_tcp_fds);
-    collect_async_query_select_info(&m_fds, &m_num_fds, &m_tcp_fds, &m_num_tcp_fds);
-    //qDebug() << "sres sockets: " << m_num_fds;
-    for(int i = 0; i < m_num_fds; i++) {
-        if (FD_ISSET(i, &m_fds) && !m_socketWatchers.contains(i)) {
-            //qDebug() << "watching sres socket #" << i;
-            QAbstractSocket *socketToWatch = new QAbstractSocket(QAbstractSocket::UdpSocket, 0);
-            m_socketWatchers[i] = socketToWatch;
-            socketToWatch->setSocketDescriptor(i, QAbstractSocket::ConnectedState);
-            connect(socketToWatch, SIGNAL(readyRead()), this, SLOT(dataAvailable()));
-        }
-    }
-    for(int i = 0; i < m_num_tcp_fds; i++) {
-        if (FD_ISSET(i, &m_tcp_fds) && !m_socketWatchers.contains(i)) {
-            //qDebug() << "watching sres tcp socket #" << i;
-            QAbstractSocket *socketToWatch = new QAbstractSocket(QAbstractSocket::TcpSocket, 0);
-            m_socketWatchers[i] = socketToWatch;
-            socketToWatch->setSocketDescriptor(i, QAbstractSocket::ConnectedState);
-            connect(socketToWatch, SIGNAL(readyRead()), this, SLOT(dataAvailable()));
-        }
-    }
-#endif
 }
 
 DNSSECTest *TestManager::makeTest(testType type, QString address, QString name) {
@@ -207,17 +126,33 @@ DNSSECTest *TestManager::makeTest(testType type, QString address, QString name) 
 #endif
     }
     if (newtest) {
-        m_tests.push_back(newtest);
         connect(newtest, SIGNAL(messageChanged(QString)), this, SLOT(handleResultMessageChanged(QString)));
         connect(newtest, SIGNAL(messageChanged(QString)), this, SIGNAL(aResultMessageChanged(QString)));
-        if (newtest->async()) {
-            connect(newtest, SIGNAL(asyncTestSubmitted()), this, SLOT(updateWatchedSockets()));
-        }
+        m_tests.push_back(newtest);
+        emit addedNewTest(newtest);
     } else {
         qDebug() << "no test created...  help? " << type << " - " << can_get_signed_dname;
     }
     return newtest;
 }
+
+#ifdef __MINGW_GCC
+LONG GetStringRegKey(HKEY hKey, const std::wstring &strValueName, std::wstring &strValue, const std::wstring &strDefaultValue)
+{
+    strValue = strDefaultValue;
+    WCHAR szBuffer[512];
+    DWORD dwBufferSize = sizeof(szBuffer);
+    ULONG nError;
+    nError = RegQueryValueExW(hKey, strValueName.c_str(), 0, NULL, (LPBYTE)szBuffer, &dwBufferSize);
+    qDebug() << "error code: " << nError;
+    if (ERROR_SUCCESS == nError)
+    {
+        strValue = szBuffer;
+    }
+    return nError;
+}
+#endif /* __MINGW_GCC */
+
 
 QStringList TestManager::loadResolvConf()
 {
@@ -242,11 +177,22 @@ QStringList TestManager::loadResolvConf()
         struct sockaddr_in6     *sa6 = (struct sockaddr_in6 *) serv_addr;
 
         if (sa->sin_family == AF_INET) {
+#ifdef __MINGW_GCC
+            snprintf(buffer, sizeof(buffer)-1, "%d.%d.%d.%d",
+                     sa->sin_addr.S_un.S_un_b.s_b1,
+                     sa->sin_addr.S_un.S_un_b.s_b2,
+                     sa->sin_addr.S_un.S_un_b.s_b3,
+                     sa->sin_addr.S_un.S_un_b.s_b4);
+#else
             ret = inet_ntop(sa->sin_family, &sa->sin_addr,
                             buffer, sizeof(buffer)-1);
+#endif
         } else {
+#ifdef __MINGW_GCC
+#else
             ret = inet_ntop(sa6->sin6_family, &sa6->sin6_addr,
                             buffer, sizeof(buffer)-1);
+#endif
         }
         if (ret) {
             m_serverAddresses.push_back(QString(buffer));
@@ -254,6 +200,50 @@ QStringList TestManager::loadResolvConf()
 
         ns_list = ns_list->ns_next;
     }
+
+#ifdef __MINGW_GCC
+    if (m_serverAddresses.count() == 0) {
+        HKEY hKey;
+        LONG lRes =
+                RegOpenKeyExW(HKEY_LOCAL_MACHINE,
+                              L"SYSTEM\\CurrentControlSet\\services\\Tcpip\\Parameters\\Interfaces",
+                              0, KEY_READ, &hKey);
+        if (lRes == ERROR_SUCCESS) {
+            // We successfully opened the parent interaface node,
+            // now we need to find each interface identifier.
+            DWORD index = 0;
+            TCHAR keyName[256];
+            DWORD keyNameLen = sizeof(keyName)/sizeof(TCHAR);
+
+            while(RegEnumKeyEx(hKey, index++, keyName, &keyNameLen, 0, 0, 0, 0) == ERROR_SUCCESS) {
+                HKEY hSubKey;
+                std::wstring value;
+
+                // open this specific interface identifier
+                if (RegOpenKeyEx(hKey, keyName, 0, KEY_READ, &hSubKey) == ERROR_SUCCESS) {
+                    DWORD retryStatus;
+                    DWORD retryStatusSize = sizeof(retryStatus);
+
+                    // Ensure that the dhcpretrystatus exists
+                    if (RegQueryValueExW(hSubKey, L"DhcpRetryStatus", 0, NULL,
+                                         reinterpret_cast<LPBYTE>(&retryStatus),
+                                         &retryStatusSize) == ERROR_SUCCESS &&
+                            retryStatus == 0) {
+
+                        // get the dhcp name server from it
+                        if (GetStringRegKey(hSubKey, L"DhcpNameServer", value, L"") == ERROR_SUCCESS) {
+                            QString result = QString::fromWCharArray(value.data());
+                            foreach (QString part, result.split(" ")) {
+                                m_serverAddresses.push_back(part);
+                            }
+                        }
+                    }
+                }
+                keyNameLen = sizeof(keyName)/sizeof(TCHAR);
+            }
+        }
+    }
+#endif
 
     qDebug() << m_serverAddresses;
     return m_serverAddresses;
@@ -331,6 +321,10 @@ int TestManager::outStandingRequests()
     return async_requests_remaining();
 }
 
+void TestManager::cancelOutstandingRequests() {
+    async_cancel_outstanding();
+}
+
 bool TestManager::inTestLoop()
 {
     return m_inTestLoop;
@@ -340,8 +334,19 @@ void TestManager::setInTestLoop(bool newval)
 {
     bool oldval = m_inTestLoop;
     m_inTestLoop = newval;
-    if (oldval != newval)
+    if (oldval != newval) {
         emit inTestLoopChanged();
-    if (!m_inTestLoop)
-        m_socketWatchers.clear();
+        emit inTestLoopChangedBool(newval);
+    }
+}
+
+
+void TestManager::startQueuedTransactions()
+{
+    emit startQueuedTransactionsSignal();
+}
+
+void TestManager::checkAvailableUpdates()
+{
+    emit checkAvailableUpdatesSignal();
 }

@@ -75,14 +75,14 @@ use Net::DNS;
 use Net::DNS::RR;
 use MIME::Base64;
 
-$VERSION = '1.20';
+$VERSION = '1.21';
 
 my $MAXIMUM_TTL = 0x7fffffff;
 
 my $pat_ttl = qr{\d+[\dwdhms]*}i;
 my $pat_skip = qr{\s*(?:;.*)?};
-my $pat_name = qr{[-\*\w\$\d\/*]+(?:\.[-\*\w\$\d\/]+)*};
-my $pat_maybefullnameorroot = qr{(?:\.|[-\w\$\d\/*]+(?:\.[-\w\$\d\/]+)*\.?)};
+my $pat_name = qr{(?:[-\*\w\$\d\/*]|\\[0-2]\d\d)+(?:\.(?:[-\*\w\$\d\/]|\\[0-2]\d\d)+)*};
+my $pat_maybefullnameorroot = qr{(?:\.|(?:[-\w\$\d\/*]|\\[0-2]\d\d)+(?:\.(?:[-\w\$\d\/]|\\[0-2]\d\d)+)*\.?)};
 
 #
 # Added the ability to have a backslash in the SOA username.  This is to
@@ -90,7 +90,7 @@ my $pat_maybefullnameorroot = qr{(?:\.|[-\w\$\d\/*]+(?:\.[-\w\$\d\/]+)*\.?)};
 # dots in usernames.  Keeping the original version here for easy reference.
 #
 # my $pat_maybefullname = qr{[-\w\$\d\/*]+(?:\.[-\w\$\d\/]+)*\.?};
-my $pat_maybefullname   = qr{[-\+\w\$\d\/*\\]+(?:\.[-\+\w\$\d\/]+)*\.?};
+my $pat_maybefullname   = qr{(?:[-\+\w\$\d\/*\\]|\\[0-2]\d\d)+(?:\.(?:[-\+\w\$\d\/]|\\[0-2]\d\d)+)*\.?};
 
 my $debug;
 my $domain;
@@ -983,7 +983,7 @@ sub parse_line
       } elsif (/\G(nsec3)[ \t]+/igc) {
 	  error ("You are missing required modules for NSEC3 support")
 	    if (!$nsec3capable);
-          if (/\G\s*(\d+)\s+(\d+)\s+(\d+)\s+([-0-9A-Fa-f]+)\s+($pat_maybefullname)\s+(.*?)$pat_skip$/gc) {
+          if (/\G\s*(\d+)\s+(\d+)\s+(\d+)\s+([-0-9A-Fa-f]+)\s+($pat_maybefullname)\s*(.*?)$pat_skip$/gc) {
               # XXX: set the typebm field ourselves?
               my ($alg, $flags, $iters, $salt, $nxthash, $typelist) =
                 ($1, $2, $3, $4, $5, $6);
@@ -1335,7 +1335,7 @@ sub parse_tlsa
 sub parse_nsec3
   {
       #got more data
-      if ( /\G\s*((\w+\s+)+)\)\s*$/) {
+      if ( /\G\s*((\w+\s+)*)\)\s*$/) {
          my $typelist = $1;
 	 $typelist = join(" ",sort split(/\s+/,$typelist));
          $nsec3->{ 'typelist' } = $typelist;

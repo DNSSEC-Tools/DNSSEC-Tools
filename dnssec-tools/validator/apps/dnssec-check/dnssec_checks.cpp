@@ -19,6 +19,10 @@
 #include <arpa/nameser_compat.h>
 #endif
 
+#ifndef RES_USE_DNSSEC
+#define RES_USE_DNSSEC  0x00200000
+#endif
+
 /* libsres functions that they don't export */
 extern "C" {
     struct expected_arrival *
@@ -133,6 +137,18 @@ async_requests_remaining() {
 }
 
 void
+async_cancel_outstanding() {
+    int i;
+    for(i = 0; i < maxcount; i++) {
+        if (outstanding_queries[i].live) {
+            res_io_cancel_all_remaining_attempts(outstanding_queries[i].ea);
+            outstanding_queries[i].live = 0;
+        }
+    }
+    outstandingCount = 0;
+}
+
+void
 check_queued_sends() {
     int i;
     for(i = 0; i < maxcount; i++) {
@@ -225,11 +241,14 @@ collect_async_query_select_info(fd_set *udp_fds, int *numUdpFds, fd_set *tcp_fds
     tv.tv_sec = 0;
     tv.tv_usec = 1;
 
+    int live = 0;
     for(i = 0; i < maxcount; i++) {
         if (outstanding_queries[i].ea && outstanding_queries[i].ea->ea_using_stream)
             res_async_query_select_info(outstanding_queries[i].ea, numTcpFds, tcp_fds, &tv);
         else
             res_async_query_select_info(outstanding_queries[i].ea, numUdpFds, udp_fds, &tv);
+        if (outstanding_queries[i].live)
+            live++;
     }
 }
 
