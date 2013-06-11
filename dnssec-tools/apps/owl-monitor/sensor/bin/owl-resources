@@ -1,0 +1,1021 @@
+#!/usr/bin/perl
+#
+# Copyright 2013 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details.
+#
+# owl-resources						Owl Monitoring System
+#
+#	This script reports statistics showing how an Owl sensor is affecting
+#	the system on which it's running.  There are a few general system
+#	statistics that are also reported in order to put the Owl sensor's
+#	statistics into context.
+#
+# Revision History:
+#	2.0.0	Initial version.				130607
+#
+
+use strict;
+
+#
+# Version information.
+#
+my $NAME   = "owl-resources";
+my $VERS   = "$NAME version: 2.0.0";
+my $DTVERS = "DNSSEC-Tools version: 2.0";
+
+
+use Getopt::Long qw(:config no_ignore_case_always);
+use Cwd qw(abs_path);
+use Date::Format;
+use File::Spec;
+use Log::Dispatch;
+use Log::Dispatch::FileRotate;
+use POSIX qw(setsid SIGUSR1 SIGUSR2);
+
+use FindBin;
+use lib "$FindBin::Bin/../perllib";
+use owlutils;
+
+#------------------------------------------------------------------------
+# Defaults and some constants.
+
+my $DEF_CONFIG	= $owlutils::DEF_CONFIG;	# Default config file nodename.
+my $DEF_CONFDIR	= $owlutils::DEF_CONFDIR;	# Default config directory.
+my $DEF_DATADIR	= $owlutils::DEF_DATADIR;	# Default data directory.
+my $DEF_LOGDIR	= $owlutils::DEF_LOGDIR;	# Default log directory.
+
+my $DEF_INTERVAL = $owlutils::DEF_INTERVAL;	# Default query interval.
+my $MIN_INTERVAL = $owlutils::MIN_INTERVAL;	# Minimum query interval.
+
+my $DEF_ROLLINT = $owlutils::DEF_ROLLINT;	# Default file rollover time.
+my $MIN_ROLLINT = $owlutils::MIN_ROLLINT;	# Minimum file rollover time.
+
+my $PIDFILE	= "$NAME.pid";			# Filename of process-id file.
+
+
+#
+# Adjusting the default query interval for owl-resources.  These values
+# are *probably* not going to change very often.  We'll multiply the
+# query time by 5 so we're going 20% fewer queries.
+#
+# This is only done if the default query value is used.  If the user
+# specifies a query value, then we'll use that.
+#
+my $INTERVAL_MULT = 5;				# Query interval multiplier.
+$DEF_INTERVAL *= $INTERVAL_MULT;		# Adjusted default query int.
+
+#------------------------------------------------------------------------
+
+#
+# Data required for command line options.
+#
+my %options = ();			# Filled option array.
+my @opts =
+(
+	'confdir|cd=s',				# Specify config directory.
+	'config|cf=s',				# Specify config file.
+	'datadir=s',				# Specify data directory.
+	'interval=i',				# Time between queries.
+	'logdir=s',				# Specify log directory.
+	'rollint=i',				# File rollover time.
+
+	'cpu',					# Give CPU use.
+	'diskuse',				# Give diskuse.
+	'filesys',				# Give file system percent-full.
+	'loadavg',				# Give system load average.
+	'totals',				# Give totals only.
+	'once',					# Run-once flag.
+
+	'foreground|fg',			# Run in foreground.
+	'nolog',				# Generate no logging output.
+	'stop',					# Stop execution.
+
+	'verbose',				# Give verbose output.
+	'Version',				# Give version.
+	'help',					# Give help.
+
+);
+
+my $confdir;				# Config directory.
+my $config;				# Config file.
+my $datadir;				# Data directory.
+my $foreground;				# Foreground-execution flag.
+my $interval = 0;			# Seconds count between queries.
+my $logdir;				# Log directory.
+my $logfile;				# Log file.
+my $nolog = 0;				# No-logging flag.
+my $once = 0;				# Run-once flag.
+my $rollint  = 0;			# Seconds count between file rollover.
+my $stopper;				# Stop-execution flag.
+my $verbose = 0;			# Verbose flag.
+
+my $cpuuse  = 0;			# Give CPU use.
+my $diskuse = 0;			# Give disk use.
+my $filesys = 0;			# Give file system percent-full.
+my $loadavg = 0;			# Give system load average.
+my $totals  = 0;			# Give totals only.
+
+
+#------------------------------------------------------------------------
+# Data and log message data.
+#
+
+my $slog;				# Sensor's log object.
+my %loginfo = ();			# Logging information.
+
+my $nextroll = 0;			# Time of next datafile rollover.
+
+my $pidfile;				# Name of process-id file.
+my $sensorname;				# Sensor's name from config file.
+my $datafile;				# Name of current data file.
+my $datafd = 0;				# File descriptor to data file.
+
+my $SCALE = 1048576;			# Scale disk results to megabytes.
+
+my $outstr;				# Disk usage to report.
+my @dirs = ();				# Directories to check.
+
+#-------------------------------------------------------------------------------
+
+main();
+exit(0);
+
+#------------------------------------------------------------------------
+# Routine:	main()
+#
+# Purpose:	Main control routine.
+#
+sub main
+{
+	#
+	# Check our options.
+	#
+	doopts();
+
+	#
+	# If we're only running once, only run once.
+	#
+	if($once)
+	{
+		owl_setup($NAME,$confdir,$datadir,$logdir);
+		chkrsrcs();
+		return;
+	}
+
+	#
+	# Read the configuration file.
+	#
+	owl_setup($NAME,$confdir,$datadir,$logdir);
+	if(owl_readconfig($config,$datadir,$logdir) != 0)
+	{
+		exit(2);
+	}
+
+	#
+	# Perform initialization steps and make sure several directories exist.
+	#
+	startup();
+
+	exit(1) if(owl_chkdir('data', $datadir) == 1);
+	exit(1) if((! $nolog) && (owl_chkdir('log', $logdir) == 1));
+
+	#
+	# Daemonize ourself.
+	# 
+	if((! $foreground) && fork())
+	{
+		print "$NAME started and running as daemon\n";
+		exit(0);
+	}
+	POSIX::setsid() if(! $foreground);
+	owl_writepid();
+
+	#
+	# Wait for almost a minute before starting our loop.  This is
+	# assuming we were started by owl-sensord, and this gives the
+	# other Owl daemons a chance to get running.
+	#
+	sleep(42);
+
+	#
+	# Now we'll check those resources.
+	#
+	looper();
+
+}
+
+#------------------------------------------------------------------------
+# Routine:	doopts()
+#
+# Purpose:	Handle our options.
+#
+sub doopts
+{
+	my $homedir = abs_path("$FindBin::Bin/..");	# Owl's home directory.
+
+	#
+	# Parse the options.
+	#
+	GetOptions(\%options,@opts) || usage();
+
+	#
+	# Handle a few immediate flags.
+	#
+	version()	if(defined($options{'Version'}));
+	usage(1)	if(defined($options{'help'}));
+	owl_printdefs()	if(defined($options{'defaults'}));
+
+	#
+	# Set our option variables based on the parsed options.
+	#
+	$confdir    = $options{'confdir'}    || $DEF_CONFDIR;
+	$config	    = $options{'config'}     || $DEF_CONFIG;
+	$foreground = $options{'foreground'} || 0;
+	$nolog	    = $options{'nolog'}	     || 0;
+	$once	    = $options{'once'}	     || 0;
+	$stopper    = $options{'stop'}       || 0;
+	$verbose    = $options{'verbose'};
+
+	$datadir    = $options{'datadir'};
+	$logdir	    = $options{'logdir'};
+
+	$interval   = $options{'sleeptime'} || $DEF_INTERVAL;
+	$rollint    = $options{'rollint'}   || $DEF_ROLLINT;
+
+	$cpuuse	    = $options{'cpu'};
+	$diskuse    = $options{'diskuse'};
+	$filesys    = $options{'filesys'};
+	$loadavg    = $options{'loadavg'};
+	$totals     = $options{'totals'};
+
+	#
+	# If none of the test flags were given, we'll run all the tests.
+	#
+	if(! $cpuuse && ! $diskuse  && ! $filesys && ! $loadavg)
+	{
+		$cpuuse	 = 1;
+		$diskuse = 1;
+		$filesys = 1;
+		$loadavg = 1;
+	}
+
+	#
+	# Ensure that a few timing fields are within the valid range.
+	#
+	$interval = $DEF_INTERVAL if($interval < $MIN_INTERVAL);
+	$rollint  = $DEF_ROLLINT if($rollint  < $MIN_ROLLINT);
+
+	#
+	# If any arguments were given, we'll use them as the directories
+	# to check.  If not, we'll use our (presumed) home directory.
+	#
+	if(@ARGV > 0)
+	{
+		@dirs = @ARGV;
+		$diskuse = 1;
+	}
+	else
+	{
+		push @dirs, $homedir;
+	}
+
+	#
+	# Moosh together a few variables to build the config file.
+	#
+	$config = "$confdir/$config" if($config !~ /\//);
+
+	#
+	# Set the logging flag in the shared module.
+	#
+	$owlutils::logflag = ! $nolog;
+
+}
+
+#------------------------------------------------------------------------
+# Routine:	startup()
+#
+# Purpose:	Set up some basic things needed for Owl.
+#
+sub startup
+{
+	#
+	# Set up our signal handlers.
+	#
+	sigurd();
+
+	#
+	# Set up our log file.
+	#
+	$slog = owl_setlog($NAME) if((! $nolog) && (! $stopper));
+
+	#
+	# Shutdown any owl-resources instances that are running.
+	#
+	if($stopper)
+	{
+		owl_halt('owl-resources');
+		exit(0);
+	}
+
+	#
+	# Make sure we're the only owl-resources running.  We'll also allow
+	# a user to signal the other owl-resources to shut down.
+	#
+	if(owl_singleton(0) == 0)
+	{
+		#
+		# If we're not the only owl-resources running, we'll
+		# complain and exit.
+		#
+		owl_log($slog,1,"$NAME already running");
+		print STDERR "$NAME already running\n";
+		exit(2);
+	}
+
+	#
+	# Get some data set in our utilities.
+	#
+	$pidfile    = $owlutils::pidfile;
+	$datadir    = $owlutils::datadir;
+	$logdir	    = $owlutils::logdir;
+	$sensorname = $owlutils::hostname;
+
+	#
+	# Give some extra-tasty output.
+	#
+	if($verbose)
+	{
+		print "confdir - $confdir\n";
+		print "config  - $config\n";
+		print "datadir - $datadir\n";
+		print "logdir  - $logdir\n";
+		print "\n";
+	}
+
+}
+
+#------------------------------------------------------------------------
+# Routine:	looper()
+#
+# Purpose:	Run the periodic resource-checking queries.
+#
+sub looper
+{
+	my $dfn = '';					# Datafile name.
+	my $naptime = $interval;			# Time to sleep.
+
+	#
+	# Do stuff forever.
+	#
+	while(42)
+	{
+		my $now;				# Current time.
+		my $later;				# Next time to run.
+
+		#
+		# Get the name of the current data file and save it in
+		# $datafile.  We may roll the data file.
+		#
+		getdatafile();
+
+		#
+		# Give some verbose output about the change in datafile.
+		#
+		if($verbose && ($dfn ne $datafile))
+		{
+			print STDERR "new datafile - $datafile\n";
+			owl_log($slog,1,"new datafile - $datafile");
+			$dfn = $datafile;
+		}
+
+		#
+		# Get the time we're supposed to next run our checks.
+		#
+		$later = time() + $interval;
+
+		#
+		# Run our resource queries.
+		#
+		chkrsrcs();
+
+		#
+		# Calculate how much time we need to sleep, based on
+		# how much time we spent in the ns timing check.
+		#
+		$now = time();
+		$naptime = sprintf("%1.0f", ($later - $now));
+
+		#
+		# Wait for our next checkup time.
+		#
+		sleep($naptime);
+
+	}
+}
+
+#------------------------------------------------------------------------
+# Routine:	getdatafile()
+#
+# Purpose:	Get the name of the next data file.  If need be, we'll
+#		roll over to the next data file.
+#
+sub getdatafile
+{
+	my $ctime = time();	# Current time.
+	my @cronos;		# Current GMT time, broken out into atoms.
+	my $datafn;		# Full data path to new data file.
+	my $newdfd;		# File descriptor to new data file.
+
+	#
+	# Use the current datafile if the next rollover time is yet to come.
+	#
+	return if($nextroll > $ctime);
+
+	#
+	# Build the filename for the next datafile.
+	#
+	@cronos = gmtime($ctime);
+	$datafile = sprintf("%02d%02d%02d.%02d%02d,$sensorname.rsrc",
+						$cronos[5] % 100,
+						$cronos[4] + 1,
+						$cronos[3],
+						$cronos[2],
+						$cronos[1]);
+
+	#
+	# Create a new data file.
+	#
+	$datafn = "$datadir/$datafile";
+	if(($newdfd=new IO::File "> $datafn") == 0)
+	{
+		owl_log($slog,0,"unable to open $datafn : $!");
+	}
+
+	#
+	# Close the old data file.
+	#
+	if(($newdfd != -1) && ($datafd != 0))
+	{
+		my $dfd = $datafd;			# Datafile descriptor.
+
+		$dfd = $$dfd;
+		$dfd->close() if($dfd);
+	}
+
+	#
+	# Save the new file descriptor.
+	#
+	autoflush $newdfd, 1;
+	$datafd = \$newdfd;
+	owl_log($slog,0,"changing to new datafile $datafn");
+
+	#
+	# Calculate the time for the next datafile rollover.
+	#
+	$nextroll = $ctime + $rollint;
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	chkrsrcs()
+#
+# Purpose:	Check the resources used by Owl.  If we're only running
+#		once, we'll write the results to stdout.  Otherwise,
+#		we'll write to the log file.
+#
+sub chkrsrcs
+{
+	$outstr = '';
+
+	#
+	# Get the processor load average.
+	#
+	loadavg()	if($loadavg);
+
+	#
+	# Calculate the CPU time used by running Owl programs.
+	#
+	procuse()	if($cpuuse);
+
+	#
+	# Calculate the disk use.
+	#
+	diskuse()	if($diskuse);
+
+	#
+	# Calculate the file-system use.
+	#
+	filesysuse()	if($filesys);
+
+	#
+	# Report our results.
+	#
+	if($once)
+	{
+		print "$outstr";
+	}
+	else
+	{
+		savedatum();
+	}
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	loadavg()
+#
+# Purpose:	Get the processor load average.
+#
+sub loadavg
+{
+	my $upt;				# uptime output.
+	my $min1;				# Load average 1 minute ago.
+	my $min5;				# Load average 5 minutes ago.
+	my $min15;				# Load average 15 minutes ago.
+
+	#
+	# Get the system uptime.
+	#
+	$upt = `uptime`;
+
+	#
+	# Pull the load average out of the system uptime.
+	#
+	$upt =~ /load average: ([\d\.]+), ([\d\.]+), ([\d\.]+)/;
+	$min1 = $1;
+	$min5 = $2;
+	$min15 = $3;
+
+	$outstr = "load average:  $min1\n";
+
+	return($min1);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	procuse()
+#
+# Purpose:	Get the processor use by Owl programs.
+#
+sub procuse
+{
+	my $pscmd;			# ps command to execute.
+	my @psout = ();			# ps output.
+	my @cmds = ();			# Sensor commands to check.
+	my %cmdtimes = ();		# Execution times of commands.
+	my $total = 0;			# Total execution times of commands.
+
+	#
+	# Get a list of the Owl sensor daemons.
+	#
+	foreach my $cmd (keys(%owlutils::owldaemons))
+	{
+		if($owlutils::owldaemons{$cmd} == $owlutils::OWL_SENSOR)
+		{
+			push @cmds, $cmd;
+		}
+	}
+
+	#
+	# Nothing to report if no Owl daemons are running.
+	#
+	return if(@cmds == 0);
+
+	#
+	# Build and run a ps command to get execution times of Owl commands.
+	#
+	$pscmd = "ps -C " . join ',', @cmds;
+	@psout = `$pscmd`;
+
+	#
+	# Dig out the execution times for the commands.
+	#
+	foreach my $ln (@psout)
+	{
+		$ln =~ s/^\s+//;
+		$ln =~ s/\n//;
+
+		$ln =~ /\d+\s+\S+\s+(\S+)\s+(\S+)/;
+		$cmdtimes{$2} = $1 if($1);
+	}
+
+	#
+	# Here's what we're expecting the ps output to resemble:
+	#
+	#	  PID TTY          TIME CMD
+	#	 24977 ?        00:00:00 owl-sensord
+	#	 24998 ?        00:00:10 owl-dnstimer
+	#	 24999 ?        00:00:22 owl-rrdata
+	#	 25000 ?        00:00:05 owl-rrsec
+	#
+
+	#
+	# Calculate the execution time for each command and add it to
+	# the total.
+	#
+	foreach my $cmd (sort(keys(%cmdtimes)))
+	{
+		my $tempus = $cmdtimes{$cmd};		# Time to parse.
+		my $timer;				# Seconds executed.
+
+		$tempus =~ /(\d\d):(\d\d):(\d\d)/;
+
+		$timer = ($1 * 3600) + ($2 * 60) + $3;
+
+		#
+		# Scale the time into minutes and add it to the output string.
+		#
+		if(! $totals)
+		{
+			$outstr .= sprintf("execution time %-15s:  $tempus\t%4d seconds\n",
+					$cmd, $timer);
+		}
+
+		$total += $timer;
+	}
+
+	#
+	# Scale the total into minutes and add it to the output string.
+	#
+	$outstr .= sprintf("%-15s:  %2d:%02d minutes\t$total seconds\n",
+			'execution time total', ($total / 60), ($total % 60));
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	diskuse()
+#
+# Purpose:	Get the usage for the given directories.
+#
+sub diskuse
+{
+	my $dustr;				# Output from du.
+	my $total = 0;				# Total for named directories.
+
+	#
+	# Get the statistics for each of the specified directories.
+	#
+	foreach my $dir (@dirs)
+	{
+		my $datatot;			# Total size for this directory.
+		my $dstr;			# Scaled size.
+
+		#
+		# Ensure the directory exists.
+		#
+		next if(! -e $dir);
+
+		#
+		# Get the disk usage for this directory.
+		#
+		$dustr = `du -sb $dir`;
+		$dustr =~ /^(\d+)\s+/;
+		$datatot = $1;
+		$total += $datatot;
+
+		if(! $totals)
+		{
+			$dstr = sprintf("disk use %-15s:  %5.2f MB\n",
+						$dir, ($datatot / $SCALE));
+		}
+
+		$outstr .= $dstr;
+	}
+
+	#
+	# Scale the total and add it to the output string.
+	#
+	$total /= $SCALE;
+	$outstr .= sprintf("%-15s:  %5.2f MB\n", 'disk use total', $total);
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	filesysuse()
+#
+# Purpose:	Get the usage for the file system.
+#
+sub filesysuse
+{
+	my @dfout;				# Output from df.
+	my $dfstr;				# Important df output line.
+	my @dftoks;				# Tokens from $dfstr.
+	my $total = 0;				# Total for named directories.
+
+	#
+	# Get the file-system info for the filesys we're running in.
+	#
+	@dfout = `df -P .`;
+	shift @dfout if($dfout[0] !~ /^\//);
+	$dfstr = $dfout[0];
+
+	#
+	# Split the file-system stats into tokens.
+	#
+	$dfstr =~ s/\s+/ /g;
+	@dftoks = split / /, $dfstr;
+
+	#
+	# Add the stats to the output string.
+	#
+	$outstr .= sprintf("%-15s:  $dftoks[4] $dftoks[5]\n", 'file system use');
+
+}
+
+#------------------------------------------------------------------------
+# Routine:	savedatum()
+#
+# Purpose:	Save the resources to our data file.
+#
+sub savedatum
+{
+	my $msg;				# Formatted message to send.
+	my $len;				# Length of resources data.
+	my $dfd;				# Datafile descriptor.
+
+	#
+	# Get the length of our resources data.
+	#
+	$len = length($outstr);
+
+	#
+	# Send the message to our log file.
+	#
+	$msg = sprintf("%10.5f $sensorname $len\n$outstr",time());
+	owl_log($slog,0,$msg);
+
+	#
+	# Set up the data descriptor.
+	#
+	$dfd = $datafd;
+	$dfd = $$dfd;
+
+	print $dfd "$msg\n";
+
+}
+
+#------------------------------------------------------------------------
+# Routine:	sigurd()
+#
+# Purpose:	Set up signal handlers.
+#
+sub sigurd
+{
+	$SIG{HUP}  = \&cleanup;
+	$SIG{INT}  = \&cleanup;
+	$SIG{QUIT} = \&cleanup;
+	$SIG{TERM} = \&cleanup;
+	$SIG{USR1} = 'IGNORE';
+	$SIG{USR2} = \&sigmund;
+
+}
+
+#------------------------------------------------------------------------
+# Routine:	sigmund()
+#
+# Purpose:	Dummy signal handler for SIGUSR2.
+#
+sub sigmund
+{
+	print "$NAME:  use \"$NAME -stop\" to shutdown\n";
+}
+
+#------------------------------------------------------------------------
+# Routine:	cleanup()
+#
+# Purpose:	Close down and clean up.
+#
+sub cleanup
+{
+	#
+	# Remove the process-id file.
+	#
+	owl_log($slog,1,"unlinking pidfile $pidfile") if($verbose);
+	print STDERR "\n\nunlinking pidfile \"$pidfile\"\n" if($verbose);
+	unlink($pidfile);
+
+	#
+	# Wait a moment for the final log message to be written.
+	#
+	owl_log($slog,1,"shutting down...");
+	print STDERR "$NAME shutting down...\n" if($verbose);
+	sleep(1);
+	exit(0);
+}
+
+#----------------------------------------------------------------------
+# Routine:      version()
+#
+sub version
+{
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+	exit(0);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:      usage()
+#
+sub usage
+{
+	print STDERR "usage:  $0 [options] <directory list>\n";
+
+	print STDERR "\t\where options are:\n";
+	print STDERR "\t\t-cd config-directory\n";
+	print STDERR "\t\t-cf config-file\n";
+	print STDERR "\t\t-confdir config-directory\n";
+	print STDERR "\t\t-config config-file\n";
+	print STDERR "\t\t-cpu\n";
+	print STDERR "\t\t-datadir data-directory\n";
+	print STDERR "\t\t-diskuse\n";
+	print STDERR "\t\t-fg\n";
+	print STDERR "\t\t-filesys\n";
+	print STDERR "\t\t-foreground\n";
+	print STDERR "\t\t-interval\n";
+	print STDERR "\t\t-loadavg\n";
+	print STDERR "\t\t-logdir log-directory\n";
+	print STDERR "\t\t-nolog\n";
+	print STDERR "\t\t-once\n";
+	print STDERR "\t\t-rollint\n";
+	print STDERR "\t\t-stop\n";
+	print STDERR "\t\t-totals\n";
+	print STDERR "\t\t-help\n";
+	print STDERR "\t\t-verbose\n";
+	print STDERR "\t\t-Version\n";
+
+	exit(0);
+}
+
+1;
+
+###############################################################################
+
+=pod
+
+=head1 NAME
+
+owl-resources - Reports system usage of an Owl sensor on its host
+
+=head1 SYNOPSIS
+
+  owl-resources [options] <directory list>
+
+=head1 DESCRIPTION
+
+B<owl-resources> reports statistics showing how an Owl sensor is affecting the
+system on which it's running.  There are a few general system statistics that
+are also reported in order to put the Owl sensor's statistics into context.
+
+The following statistics may be reported:
+
+    - system load average
+    - accumulated CPU time of the executing Owl programs
+    - total accumulated CPU time of the executing Owl programs
+    - disk usage of the hierarchy in which owl-resources executes
+    - disk usage of the hierarchy in which owl-resources executes
+    - total disk usage of the reported hierarchies
+    - percent full of the file system in which owl-resources executes
+
+Normally, B<owl-resources> runs as a daemon and periodically writes its
+results to a data file.  If the I<-once> option is used, then B<owl-resources>
+only runs a single time and writes its results to standard output.
+It is not anticipated that the usage statistics will change quickly.
+Therefore, when the interval time is not specified (with the I<-interval>
+option), the default interval will be multiplied by five.
+
+If directories are given on the command line, then disk space used in those
+directories will be reported.  Otherwise, the reported disk use will be for the
+hierarchy in which B<owl-resources> executes.  Sizes are determined with the
+"B<du -bs>" command.  The I<-diskuse> option is implied if any directories
+are given on the command line.
+
+"B<df -P .>" is used to gather the information about file systems.  This
+invocation works as needed on FreeBSD, Linux, and Mac OSX.  This is the first
+thing to investigate if filesystem statistics stop being reported as expected.
+
+If none of the I<-cpu>, I<-diskuse>, I<-filesys>, or I<-loadavg> options are
+given, then statistics are reported for all of them.  If a subset of those
+options are given, only those specified will be reported.
+
+=head1 OPTIONS
+
+The following options are recognized by B<owl-resources>:
+
+=over 4
+
+=item B<-confdir config-directory>
+
+=item B<-cd config-directory>
+
+Specifies the directory that holds the Owl configuration file.  If this is
+not given, then the default B<conf> name will be used.  If this is a relative
+path, it will be relative from the point of execution.
+
+The B<owl-resources.pid> file is also stored in this directory.
+
+=item B<-config config-file>
+
+=item B<-cf config-file>
+
+Specifies the Owl configuration file.  If I<config-file> does not contain
+any directory nodes, then the specified name will be prefixed with the
+configuration directory.  If it does contain directory nodes, the
+configuration directory (default or option-specified) will be ignored.
+If this is not given, then the default B<owl.conf> name will be used.
+
+=item I<-cpu>
+
+Display the processor use for each executing Owl program.
+
+=item B<-datadir data-directory>
+
+Specifies the directory that will hold the B<owl-resources> data files.  If
+this is not given, then the default B<data> name will be used.  If this is
+a relative path, it will be relative from the point of execution.  If this
+directory doesn't exist, it will be created.
+
+=item I<-diskuse>
+
+Display the disk space used by the Owl sensor.  This option is implied if any
+directories are given on the command line.
+
+=item I<-filesys>
+
+Display the percent-full statistic of the file system in which
+B<owl-resources> is running.
+
+=item B<-foreground>
+
+=item B<-fg>
+
+B<owl-resources> will run as a foreground process if either of these options
+is given.  Otherwise, it will run as a daemon.
+
+=item B<-interval query-interval>
+
+Gives the interval between queries, when B<owl-resources> is running in
+daemon mode.  I<query-interval> is specified in seconds.
+
+=item B<-logdir log-directory>
+
+Specifies the directory that will hold the B<owl-resources> log files.
+If this is not given, then the default B<log> name will be used.  If this
+is a relative path, it will be relative from the point of execution.  If
+this directory doesn't exist, it will be created.
+
+=item I<-loadavg>
+
+Display the system load average.
+
+=item I<-nolog>
+
+Do not write to the log file.
+
+=item I<-once>
+
+Display the selected statistics to standard output and exit.
+B<owl-resources> will not run as a daemon.
+
+=item B<-rollint dataroll-interval>
+
+Gives the interval between data-file rollover, when B<owl-resources> is
+running in daemon mode.  I<query-interval> is specified in seconds.
+
+=item I<-stop>
+
+Stops the execution of an existing B<owl-resources> process.
+
+=item I<-totals>
+
+Only show the totals for disk usage and CPU usage.
+
+=item I<-Version>
+
+Display the program version and exit.
+
+=item I<-verbose>
+
+Give verbose output.
+
+=item I<-help>
+
+Display a usage message and exit.
+
+=back
+
+=head1 SEE ALSO
+
+B<df(1)>,
+B<du(1)>,
+B<ps(1)>,
+B<uptime(1)>
+
+=head1 COPYRIGHT
+
+Copyright 2013 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@tislabs.com
+
+=cut
+
