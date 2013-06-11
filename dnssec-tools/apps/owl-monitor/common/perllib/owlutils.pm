@@ -70,14 +70,14 @@ our $DEF_CONFIG     = "owl.conf";			# Default config file.
 # Constants for configuration data.
 #
 
-my $DEF_INTERVAL = 60;		# Default interval between transfers.
-my $MIN_INTERVAL = 60;		# Minimum interval between transfers.
+our $DEF_INTERVAL = 60;		# Default interval between transfers.
+our $MIN_INTERVAL = 60;		# Minimum interval between transfers.
 
-my $MININT	= 10;		# Minimum query interval.
-my $DEF_QUINT	= 60;		# Default query interval.
+our $MININT	= 10;		# Minimum query interval.
+our $DEF_QUINT	= 60;		# Default query interval.
 				# Default query timeout is half query interval.
 
-my $MINTO	= 5;		# Minimum query timeout.
+our $MINTO	= 5;		# Minimum query timeout.
 
 #
 # Amount of time between rolling the data files.
@@ -87,9 +87,9 @@ my $MINTO	= 5;		# Minimum query timeout.
 # my $DEF_ROLLINT = 60 * 20;		# Roll once every 20 minutes.
 # my $DEF_ROLLINT = 60 * 15;		# Roll once every 15 minutes.
 
-my $DEF_ROLLINT = 60 * 30;	#  XXX - testing
+our $DEF_ROLLINT = 60 * 30;	#  XXX - testing
 
-my $MIN_ROLLINT = 60 * 10;		#  Minimum file rollover interval.
+our $MIN_ROLLINT = 60 * 10;		#  Minimum file rollover interval.
 
 #
 # The default and valid DNS queries.
@@ -120,17 +120,18 @@ my %dnstimer_queries =
 my $progname;					# Program we're part of.
 my $owllog;					# The log object.
 
-my $OWL_SENSOR	= 1;				# Owl sensor daemon.
-my $OWL_MANAGER	= 2;				# Owl manager.
+our $OWL_SENSOR	 = 1;				# Owl sensor daemon.
+our $OWL_MANAGER = 2;				# Owl manager.
 
 #
 # Owl program/Owl host mapping.
 # The hash key is the Owl program.
 # The hash value is a flag indicating if it runs on the sensor or manager.
 #
-my %owldaemons =				# Owl daemons.
+our %owldaemons =				# Owl daemons.
 (
 	'owl-dnstimer'		=> $OWL_SENSOR,
+	'owl-resources'		=> $OWL_SENSOR,
 	'owl-rrdata'		=> $OWL_SENSOR,
 	'owl-rrsec' 		=> $OWL_SENSOR,
 	'owl-sensord'		=> $OWL_SENSOR,
@@ -185,6 +186,7 @@ our @sshusers = ();			# Users on remote hosts for data.
 #
 our $dnstimerargs;			# Arguments for the owl-dnstimer daemon.
 our $transferargs;			# Arguments for owl-transfer daemon.
+our $resourcesargs;			# Arguments for owl-resources daemon.
 our $rrdataargs;			# Arguments for owl-rrdata daemon.
 our $rrsecargs;				# Arguments for owl-rrsec daemon.
 our $transfermgrargs;			# Arguments for owl-transfer-mgr daemon.
@@ -942,6 +944,10 @@ sub conf_hostline
 	{
 		$dnstimerargs = join(' ', @atoms);
 	}
+	elsif($keyword =~ /^resources-args$/i)
+	{
+		$resourcesargs = join(' ', @atoms);
+	}
 	elsif($keyword =~ /^rrdata-args$/i)
 	{
 		$rrdataargs = join(' ', @atoms);
@@ -1424,6 +1430,7 @@ Data specified on a I<host> line:
                              "default", "dnstimer", "owl-dnstimer",
 			     "transfer", or "owl-transfer".
     $hostname                Name of this host.
+    $resourcesargs           Arguments for the owl-resources daemon.
     $rrdataargs              Arguments for the owl-rrdata daemon.
     $rrsecargs               Arguments for the owl-rrsec daemon.
     $transferargs            Arguments for the owl-transfer daemon.
@@ -1529,6 +1536,7 @@ Data from "host" lines:
     $owlutils::quickseconds    - seconds count that makes a quick
 			         execution
     $owlutils::hostname        - name of this host
+    $owlutils::resourcesargs   - arguments for the owl-resources daemon
     $owlutils::rrdataargs      - arguments for the owl-rrdata daemon
     $owlutils::rrsecargs       - arguments for the owl-rrsec daemon
     $owlutils::transferargs    - arguments for the owl-transfer daemon
