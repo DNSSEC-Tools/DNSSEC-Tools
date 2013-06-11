@@ -58,7 +58,6 @@ my @opts =
 	'confdir=s',		# Specify config directory.
 	'config=s',		# Specify config file.
 	'logdir=s',		# Specify log directory.
-	'heartbeat=i',		# Specify heartbeat something.
 
 	'hesitation=i',		# Sleep time between executions.
 	'hibernation=i',	# Sleep time for minion execution problems.
@@ -66,7 +65,6 @@ my @opts =
 	'quickseconds=i',	# Seconds that make a quick execution.
 
 	'foreground|fg',	# Run in foreground.
-	'restart',		# Restart daemons.
 	'stop',			# Stop execution.
 
 	'help',			# Give help message.
@@ -116,6 +114,7 @@ my $quickseconds;		# Seconds that make a quick execution.
 my @owldaemons =
 (
 	'owl-dnstimer',
+	'owl-resources',
 	'owl-rrdata',
 	'owl-rrsec',
 	'owl-transfer',
@@ -602,6 +601,7 @@ sub runcmd
 #
 #		Supported daemons:
 #			owl-dnstimer		DNS timing statistics
+#			owl-resources		Owl sensor resource usage
 #			owl-rrdata		DNS resource-record data
 #			owl-rrsec		DNSSEC resource-record data
 #			owl-transfer		transfer sensor data to manager
@@ -628,6 +628,13 @@ sub buildcmd
 		$args = $owlutils::dnstimerargs;
 
 		$cmd = "owl-dnstimer $common $args $devnull";
+	}
+
+	elsif(($daemon eq 'resources') || ($daemon eq 'owl-resources')) 
+	{
+		$args = $owlutils::resourcesargs;
+
+		$cmd = "owl-resources $common $args $devnull";
 	}
 
 	elsif(($daemon eq 'rrdata') || ($daemon eq 'owl-rrdata')) 
@@ -880,16 +887,14 @@ sub usage
 	print STDERR "usage:  $0 [options]\n";
 
 	print "options:\n";
-	print "\t-confdir <z>             Specify config directory.\n";
-	print "\t-config <z>              Specify config file.\n";
+	print "\t-confdir <config-dir>    Specify config directory.\n";
+	print "\t-config <config-file>    Specify config file.\n";
 	print "\t-foreground              Run in foreground.\n";
-	print "\t-heartbeat <z>           Specify heartbeat something.\n";
 	print "\t-hesitation <time>       Sleep time between executions.\n";
 	print "\t-hibernation <time>      Sleep time for minion execution problems.\n";
-	print "\t-logdir <z>              Specify log directory.\n";
+	print "\t-logdir <log-dir>        Specify log directory.\n";
 	print "\t-quickcount <count>      Consecutive quick executions before pausing.\n";
 	print "\t-quickseconds <count>    Seconds that make a quick execution.\n";
-	print "\t-restart                 Restart daemons.\n";
 	print "\t-stop                    Stop execution.\n";
 	print "\n";
 
@@ -914,10 +919,11 @@ owl-sensord - Oversees the Owl Monitoring System's daemons
 
 =head1 DESCRIPTION
 
-B<owl-sensord> oversees Owl Monitoring Systems' daemons.  These daemons include
-B<owl-dnstimer>, B<owl-rrdata>, B<owl-rrsec>, and B<owl-transfer>.  If one
-stops executing, then B<owl-sensord> will restart it.  The daemons listed on
-the I<host execute> line in the Owl configuration file will be started.
+B<owl-sensord> oversees Owl Monitoring Systems' daemons.  These daemons
+include B<owl-dnstimer>, B<owl-rrdata>, B<owl-rrsec>, B<owl-resources>, and
+B<owl-transfer>.  If one stops executing, then B<owl-sensord> will restart
+it.  The daemons listed on the I<host execute> line in the Owl configuration
+file will be started.
 
 In an effort to keep the sensor running, B<owl-sensord> will restart the
 daemons if it finds they aren't executing.  If a particular daemon stops and
@@ -942,6 +948,22 @@ options.
 =head1 OPTIONS
 
 =over 4
+
+=item B<-confdir config-directory>
+
+Specifies the directory that holds the Owl configuration file.  If this is
+not given, then the default B<conf> name will be used.  If this is a relative
+path, it will be relative from the point of execution.
+
+The B<owl-sensord.pid> file is also stored in this directory.
+
+=item B<-config config-file>
+
+Specifies the Owl configuration file.  If I<config-file> does not contain
+any directory nodes, then the specified name will be prefixed with the
+configuration directory.  If it does contain directory nodes, the
+configuration directory (default or option-specified) will be ignored.
+If this is not given, then the default B<owl.conf> name will be used.
 
 =item B<-foreground>
 
