@@ -1,4 +1,4 @@
-#     Validator.pm -- Perl 5 interface to the Dnssec-Tools validating resolver
+#     Validator.pm -- Perl 5 interface to the DNSSEC-Tools validating resolver
 #
 #     written by G. S. Marzot (marz@users.sourceforge.net)
 #
@@ -10,10 +10,11 @@
 #     This program is free software; you can redistribute it and/or
 #     modify it under the same terms as Perl itself.
 #
+
 package Net::DNS::SEC::Validator;
-require Net::addrinfo; # return type from getaddrinfo
-require Net::hostent; # return type from gethost*
-use Net::DNS; # to interpret DNS classes and types
+require Net::addrinfo;			# return type from getaddrinfo
+require Net::hostent;			# return type from gethost*
+use Net::DNS;				# to interpret DNS classes and types
 use Carp;
 
 our $VERSION = '1.11';   # current release version number
@@ -417,6 +418,10 @@ sub DESTROY {
 1;
 __END__
 
+########################################################################
+
+=pod
+
 =head1 NAME
 
     Net::DNS::SEC::Validator - interface to libval(3) and related constants, structures and functions.
@@ -438,36 +443,33 @@ __END__
 =head1 DESCRIPTION
 
 This Perl module is designed to implement and export functionality
-provided by the validating DNS resolver library, libval(3). The
+provided by the validating DNS resolver library, B<libval(3)>. The
 functions are provided through an easy-to-use object oriented
 interface. The interface is designed for the higher level user, hiding
 some of the complexity of validating resolvers. Nevertheless,
 application interface behavior can be customized through configuration
-files provided by libval(3) and extensive error codes returned.
+files provided by B<libval(3)> and extensive error codes returned.
 
 Details of DNSSEC and associated resolver behavior may be found in the
 core DNSSEC RFCs (4033-4035).
 
 =head1 INTERFACE:
  
-A description of the API follows:
+A description of the API follows.
 
-=head2 Contructor:
+=head2 Constructor:
 
-To create a validator object use the Net::DNS::SEC::Validator->new()
+To create a validator object use the I<Net::DNS::SEC::Validator->new()>
 method. This method optionally takes a policy label (policy =>
-'label'), or default to using the default label in the libval(3)
-dnsval.conf file.
+'label'), or default to using the default label in the B<libval(3)>
+B<dnsval.conf> file.
 
 =head2 Data Fields:
 
- $validator->{error} =>The latest method error code
- $validator->{errorStr} => the latest method error string
- $validator->{valStatus} => the val_status of last call (if single)
+ $validator->{error}        => the latest method error code
+ $validator->{errorStr}     => the latest method error string
+ $validator->{valStatus}    => the val_status of last call (if single)
  $validator->{valStatusStr} => the val_status string of last call
-
-
-=head2 Methods:
 
 
 =head2 $validator->getaddrinfo(<name>[,<service>[,<hints>]])
@@ -475,9 +477,9 @@ dnsval.conf file.
 =head3   where:
 
     <name> => is the node name or numeric address being queried
-    <service> => is the name or number represting the service
+    <service> => is the name or number representing the service
     (note: <name> or <service> may be undef, but not both)
-    <hint> => a Net::addrinfo object specying flags, family, etc.
+    <hint> => a Net::addrinfo object specifying flags, family, etc.
 
 =head3   returns:
 
@@ -506,7 +508,7 @@ dnsval.conf file.
 
     <name> 	=> is the node name or numeric address being queried
     <class> 	=> is the DNS class of the record being queried (default: IN)
-    <type>	=> is the DNS record type being queried (defailt A)
+    <type>	=> is the DNS record type being queried (default A)
 
 =head3   returns:
 
@@ -533,7 +535,7 @@ dnsval.conf file.
 
 =head3   where:
 
-    <val_status> => numeric vaildator status code
+    <val_status> => numeric validator status code
     (default: $validator->{valStatus})
 
 =head3   returns:
@@ -545,16 +547,15 @@ dnsval.conf file.
 
 =head3   where:
 
-    <val_status> => numeric vaildator status code
+    <val_status> => numeric validator status code
     (default: $validator->{valStatus})
 
 =head3   returns:
 
     A string representation of the given <val_status>.
                   
-
+                  
 =head1 EXAMPLES
-
 
   use Net::DNS::SEC::Validator;
   use Net::DNS::Packet;
@@ -585,20 +586,20 @@ dnsval.conf file.
   my $h = $validator->gethostbyname("good-A.test.dnssec-tools.org");
   if ( @{$h->addr_list}) { 
   my $i;
-    for $addr ( @{$h->addr_list} ) {
+     for $addr ( @{$h->addr_list} ) {
  	printf "\taddr #%d is [%s]\n", $i++, inet_ntoa($addr);
-    } 
- }
+     } 
+  }
 
 =head1 COPYRIGHT
 
-   Copyright (c) 2006 G. S. Marzot. All rights reserved.  This program
-   is free software; you can redistribute it and/or modify it under
-   the same terms as Perl itself.
+Copyright (c) 2006 G. S. Marzot. All rights reserved.  This program
+is free software; you can redistribute it and/or modify it under
+the same terms as Perl itself.
 
-   Copyright (c) 2006-2008 SPARTA, Inc.  All Rights Reserved.  This program
-   is free software; you can redistribute it and/or modify it under
-   the same terms as Perl itself.
+Copyright (c) 2006-2013 SPARTA, Inc.  All Rights Reserved.  This program
+is free software; you can redistribute it and/or modify it under
+the same terms as Perl itself.
 
 =head1 AUTHOR
 
