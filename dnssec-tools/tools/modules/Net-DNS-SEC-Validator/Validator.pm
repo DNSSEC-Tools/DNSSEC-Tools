@@ -457,19 +457,23 @@ core DNSSEC RFCs (4033-4035).
  
 A description of the API follows.
 
-=head2 Constructor:
+=head2 Constructor
 
 To create a validator object use the I<Net::DNS::SEC::Validator->new()>
 method. This method optionally takes a policy label (policy =>
-'label'), or default to using the default label in the B<libval(3)>
+'label'), or defaults to using the default label in the B<libval(3)>
 B<dnsval.conf> file.
 
-=head2 Data Fields:
+=head2 Data Fields
 
- $validator->{error}        => the latest method error code
- $validator->{errorStr}     => the latest method error string
- $validator->{valStatus}    => the val_status of last call (if single)
- $validator->{valStatusStr} => the val_status string of last call
+Operation status and results are found in the following validator fields:
+
+  $validator->{error}        => the latest method error code
+  $validator->{errorStr}     => the latest method error string
+  $validator->{valStatus}    => the val_status of last call (if single)
+  $validator->{valStatusStr} => the val_status string of last call
+
+Values for these fields are described in the next section.
 
 
 =head2 $validator->getaddrinfo(<name>[,<service>[,<hints>]])
@@ -554,6 +558,70 @@ B<dnsval.conf> file.
 
     A string representation of the given <val_status>.
                   
+
+=head1 VALIDATOR DATA FIELDS
+
+The validator's I<error> and I<errorStr> fields are set with values
+corresponding to those from the standard I<herror()> and I<hstrerror()>
+functions.  These values are defined in B<netdb.h>.  These values are:
+
+  error      errorStr
+    0        Resolver Error 0 (no error)
+    1        Unknown host
+    2        Host name lookup failure
+    3        Unknown server error
+    4        No address associated with name
+
+The values for the validator's I<valStatus> field are defined in
+B<.../dnssec-tools/validator/include/validator/val_errors.h>.  The values
+for the I<valStatusStr> fields are the text representation of the status
+values' constants.  These status values and strings are given below in
+two tables.  First, they are sorted alphabetically by the status string.
+Second, they are sorted numerically by the hexadecimal status value.
+
+   valStatus    valStatusStr
+    0x8a        VAL_BARE_RRSIG
+    0x01        VAL_BOGUS
+    0x02        VAL_DNS_ERROR
+    0x8b        VAL_IGNORE_VALIDATION
+    0x84        VAL_NONEXISTENT_NAME
+    0x86        VAL_NONEXISTENT_NAME_NOCHAIN
+    0x85        VAL_NONEXISTENT_TYPE
+    0x87        VAL_NONEXISTENT_TYPE_NOCHAIN
+    0x03        VAL_NOTRUST
+    0x8d        VAL_OOB_ANSWER
+    0x88        VAL_PINSECURE
+    0x89        VAL_PINSECURE_UNTRUSTED
+    0x80        VAL_SUCCESS
+    0x8e        VAL_TRUSTED_ANSWER
+    0x90        VAL_UNTRUSTED_ANSWER
+    0x8c        VAL_UNTRUSTED_ZONE
+    0x8f        VAL_VALIDATED_ANSWER
+
+   valStatus    valStatusStr
+    0x01        VAL_BOGUS
+    0x02        VAL_DNS_ERROR
+    0x03        VAL_NOTRUST
+    0x80        VAL_SUCCESS
+    0x84        VAL_NONEXISTENT_NAME
+    0x85        VAL_NONEXISTENT_TYPE
+    0x86        VAL_NONEXISTENT_NAME_NOCHAIN
+    0x87        VAL_NONEXISTENT_TYPE_NOCHAIN
+    0x88        VAL_PINSECURE
+    0x89        VAL_PINSECURE_UNTRUSTED
+    0x8a        VAL_BARE_RRSIG
+    0x8b        VAL_IGNORE_VALIDATION
+    0x8c        VAL_UNTRUSTED_ZONE
+    0x8d        VAL_OOB_ANSWER
+    0x8e        VAL_TRUSTED_ANSWER
+    0x8f        VAL_VALIDATED_ANSWER
+    0x90        VAL_UNTRUSTED_ANSWER
+
+The VAL_SUCCESS status value is defined as having the same value as
+VAL_FLAG_CHAIN_COMPLETE.  In the B<val_errors.h> file, this value (0x80)
+is OR'd to most of the status values.  This implies that those status values
+from 0x80 through 0x90 may be taken as successful results.
+
                   
 =head1 EXAMPLES
 
