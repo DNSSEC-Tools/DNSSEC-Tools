@@ -18,6 +18,7 @@
 #	2.0	Released as part of DNSSEC-Tools 2.0.		130301
 #	2.0.1	Modified to allow multiple types of queries.	130319
 #	2.0.2	Added -nolog and owl_log() calls.		130530
+#	2.0.3	Added the -nodnssec option.			130617
 #
 
 use strict;
@@ -26,7 +27,7 @@ use strict;
 # Version information.
 #
 my $NAME   = "owl-dnstimer";
-my $VERS   = "$NAME version: 2.0.2";
+my $VERS   = "$NAME version: 2.0.3";
 my $DTVERS = "DNSSEC-Tools version: 2.0";
 
 use FindBin;
@@ -39,6 +40,7 @@ use Getopt::Long qw(:config no_ignore_case_always);
 use Net::DNS;
 use Net::DNS::Packet;
 use Net::DNS::Resolver;
+use Net::DNS::SEC::Validator;
 
 #
 # Before including the threads module, we'll make sure we're able to.
@@ -85,19 +87,20 @@ my $PIDFILE	= "$NAME.pid";			# Filename of process-id file.
 my %options = ();			# Filled option array.
 my @opts =
 (
-	"confdir|cd=s",				# Specify config directory.
-	"config|cf=s",				# Specify config file.
-	"datadir=s",				# Specify data directory.
-	"logdir=s",				# Specify log directory.
+	'confdir|cd=s',				# Specify config directory.
+	'config|cf=s',				# Specify config file.
+	'datadir=s',				# Specify data directory.
+	'logdir=s',				# Specify log directory.
 
-	"defaults",				# Print defaults.
-	"foreground|fg",			# Run in foreground.
-	"nolog",				# Generate no logging output.
-	"stop",					# Stop execution.
+	'defaults',				# Print defaults.
+	'foreground|fg',			# Run in foreground.
+	'nolog',				# Generate no logging output.
+	'nodnssec',				# Don't use DNSSEC resolution.
+	'stop',					# Stop execution.
 
-	"help",					# Give help message.
-	"Version",				# Give version info.
-	"verbose",				# Give verbose output.
+	'help',					# Give help message.
+	'Version',				# Give version info.
+	'verbose',				# Give verbose output.
 );
 
 my $verbose = 0;
@@ -108,11 +111,13 @@ my $foreground;					# Foreground-execution flag.
 my $logdir;					# Log directory.
 my $logfile;					# Log file.
 my $nolog = 0;					# No-logging flag.
+my $nodnssec = 0;				# Don't-use-DNSSEC flag.
 my $stopper;					# Stop-execution flag.
 
 #------------------------------------------------------------------------
 #
 # Error strings for log messages.  This is indexed by a code set in nstimer().
+# (Actually, it isn't used right now.)
 #
 my @errors =
 (
@@ -292,6 +297,7 @@ sub doopts
 	$config	    = $options{'config'}     || $DEF_CONFIG;
 	$foreground = $options{'foreground'} || 0;
 	$nolog	    = $options{'nolog'}	     || 0;
+	$nodnssec   = $options{'nodnssec'}   || 0;
 	$stopper    = $options{'stop'}       || 0;
 	$verbose    = $options{'verbose'};
 
@@ -405,18 +411,32 @@ sub makeresolvers
 		#
 		# Build the resolver object.
 		#
-		$res = Net::DNS::Resolver->new(
+		if($nodnssec)
+		{
+			$res = Net::DNS::Resolver->new(
 						  nameservers => [$nsname],
 						  recurse     => 0,
 						  retry       => 1,
-					      );
+						      );
 
-		#
-		# Set some resolver fields.
-		#
-		$res->cdflag(1);
-		$res->tcp_timeout($timeout);
-		$res->udp_timeout($timeout);
+			#
+			# Set some resolver fields.
+			#
+			$res->cdflag(1);
+			$res->tcp_timeout($timeout);
+			$res->udp_timeout($timeout);
+		}
+		else
+		{
+			$res = new Net::DNS::SEC::Validator();
+
+#			$res = new Net::DNS::SEC::Validator(policy => ":",
+#						dnsval_conf => $dnsval_conf,
+#						root_hints  => $root_hints,
+#						resolv_conf => $resolv_conf,
+#						);
+
+		}
 
 		#
 		# Save this nameserver's resolver object.
@@ -678,11 +698,23 @@ sub nstimer
 	#
 	# Send the query to the nameserver, and time the query.
 	#
-	$time0 = time();
+	if($nodnssec)
+	{
+		$time0 = time();
+		$resp = $resolver->send($target, $qtype, $family);
+		$time1 = time();
+	}
+	else
+	{
+		$time0 = time();
+		$resp = $resolver->res_query($target, $family, $qtype);
+		$time1 = time();
+		$resp = new Net::DNS::Packet($resp);
+	}
 
-	$resp = $resolver->send($target, $qtype, $family);
-
-	$time1 = time();
+	#
+	# Calculate the time the query took.
+	#
 	$timediff = $time1 - $time0;
 
 	#
@@ -917,6 +949,7 @@ sub usage
 	print STDERR "\t\t-foreground\n";
 	print STDERR "\t\t-fg\n";
 	print STDERR "\t\t-logdir log-directory\n";
+	print STDERR "\t\t-nodnssec\n";
 	print STDERR "\t\t-nolog\n";
 	print STDERR "\t\t-stop\n";
 	print STDERR "\t\t-help\n";
@@ -960,10 +993,15 @@ version of Perl allow.  In this case, each query will be handled by its own
 thread.  If threaded execution is not allowed, then each query will be
 handled by its own process.
 
+By default, B<owl-dnstimer> resolves names with the DNSSEC-Tools
+B<Net::DNS::SEC::Validator> module.  This requires that the DNSSEC-Tools
+validator library and Perl module be installed.  If the B<-nodnssec> option
+is given, then the B<Net::DNS::Resolver> module will be used instead.
+
 =head2 FILE ORGANIZATION
 
-B<owl-dnstimer> assumes that the file hierarchy for the sensor is arranged like
-this:
+B<owl-dnstimer> assumes that the file hierarchy for the sensor is arranged
+like this:
 
     bin/owl-dnstimer
     conf/owl.conf
@@ -1029,6 +1067,10 @@ If this is not given, then the default B<log> name will be used.  If this
 is a relative path, it will be relative from the point of execution.  If
 this directory doesn't exist, it will be created.
 
+=item B<-nodnssec>
+
+Specifies that the B<Net::DNS::Resolver> module will be used.
+
 =item B<-nolog>
 
 Do not write to the log file.
@@ -1056,6 +1098,10 @@ Prints B<owl-dnstimer>'s version and exit.
 B<owl-rrdata(1)>,
 B<owl-rrsec(1)>,
 B<owl-sensord(1)>
+
+B<libval(3)>
+B<Net::DNS::SEC::Validator(3)>
+B<Net::DNS::Resolver(3)>
 
 B<owl-config(5)>,
 B<owl-data(5)>
