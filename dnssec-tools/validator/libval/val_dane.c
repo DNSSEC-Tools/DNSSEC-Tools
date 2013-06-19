@@ -722,7 +722,7 @@ val_dane_check_TA(val_context_t *context,
     int cert_datalen = 0;
     int rv;
     int i;
-    int err;
+    int success;
     int depth;
     STACK_OF(X509) *certList;
     X509 *cert = NULL;
@@ -731,13 +731,13 @@ val_dane_check_TA(val_context_t *context,
         danestatus == NULL || do_pkix_chk == NULL)
         return VAL_DANE_CHECK_FAILED;
 
-    err = X509_STORE_CTX_get_error(x509ctx);
-    if (err == 0)
+    success = X509_verify_cert(x509ctx);
+    certList = X509_STORE_CTX_get_chain(x509ctx);
+
+    if (success)
         depth = sk_X509_num(certList);
     else
         depth = X509_STORE_CTX_get_error_depth(x509ctx);
-
-    certList = X509_STORE_CTX_get_chain(x509ctx);
 
     dane_cur = danestatus;
     while(dane_cur)  {
@@ -911,21 +911,14 @@ val_X509_peer_cert_verify_cb(X509_STORE_CTX *ctx, void *arg)
                               ssl_dane_data->danestatus,
                               &do_pkix_chk)) {
         val_log(ssl_dane_data->context, 
-                LOG_DEBUG, "DANE: peer cert verification failed = %s", buf);
+                LOG_NOTICE, "DANE: peer cert verification failed = %s", buf);
         return 0; 
     }
 
     if (do_pkix_chk == 0) {
         val_log(ssl_dane_data->context, 
-                LOG_DEBUG, "DANE: skipping peer cert PKIX validation = %s", buf);
+                LOG_NOTICE, "DANE: skipping peer cert PKIX validation = %s", buf);
         return 1;
-    }
-
-    err=X509_verify_cert(ctx);
-    if (err) {
-        val_log(ssl_dane_data->context, 
-                LOG_DEBUG, "DANE: PKIX cert validation internal error = %d", buf);
-        return err;
     }
 
     /*
@@ -937,7 +930,7 @@ val_X509_peer_cert_verify_cb(X509_STORE_CTX *ctx, void *arg)
                           ssl_dane_data->danestatus,
                           &do_pkix_chk)) {
         val_log(ssl_dane_data->context, 
-                LOG_DEBUG, "DANE: TA verification failed = %s", buf);
+                LOG_NOTICE, "DANE: TA verification failed = %s", buf);
         return 0;
     }
 
@@ -949,14 +942,14 @@ val_X509_peer_cert_verify_cb(X509_STORE_CTX *ctx, void *arg)
             // XXX TODO Need to determine what these error conditions
             X509_STORE_CTX_set_error(ctx, X509_V_OK);
             val_log(ssl_dane_data->context, 
-                    LOG_DEBUG, "DANE: skipping TA PKIX validation = %s", buf);
+                    LOG_NOTICE, "DANE: skipping TA PKIX validation = %s", buf);
             return 1;
         }
         return 0;
     }
 
     val_log(ssl_dane_data->context, 
-            LOG_DEBUG, "DANE: passed certificate/TA constraints = %s", buf);
+            LOG_NOTICE, "DANE: passed certificate/TA constraints = %s", buf);
     return 1;
 }
 
