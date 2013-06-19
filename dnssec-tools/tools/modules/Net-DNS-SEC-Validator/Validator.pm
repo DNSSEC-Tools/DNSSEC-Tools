@@ -424,47 +424,219 @@ __END__
 
 =head1 NAME
 
-    Net::DNS::SEC::Validator - interface to libval(3) and related constants, structures and functions.
+B<Net::DNS::SEC::Validator> - interface to B<libval(3)> and related constants, structures and functions
 
 =head1 SYNOPSIS
 
- use Net::DNS::SEC::Validator;
- use Net::DNS::Packet;
- use Net::hostent;
- use Net::addrinfo;
- use Socket qw(:all);
+  use Net::DNS::SEC::Validator;
+  use Net::DNS::Packet;
+  use Net::hostent;
+  use Net::addrinfo;
+  use Socket qw(:all);
 
- my $validator = new Net::DNS::SEC::Validator(policy => ":");
- my (@r) = $validator->getaddrinfo("good-A.test.dnssec-tools.org");
- my $r = $validator->res_query("marzot.net", "IN", "MX");
- my $h = $validator->gethostbyname("good-AAAA.test.dnssec-tools.org",
-    AF_INET6);
+  my $validator = new Net::DNS::SEC::Validator(policy => ":");
+  my (@r) = $validator->getaddrinfo("good-A.test.dnssec-tools.org");
+  my $r = $validator->res_query("marzot.net", "IN", "MX");
+  my $h = $validator->gethostbyname("good-AAAA.test.dnssec-tools.org",
+                                    AF_INET6);
 
 =head1 DESCRIPTION
 
-This Perl module is designed to implement and export functionality
-provided by the validating DNS resolver library, B<libval(3)>. The
-functions are provided through an easy-to-use object oriented
-interface. The interface is designed for the higher level user, hiding
-some of the complexity of validating resolvers. Nevertheless,
-application interface behavior can be customized through configuration
-files provided by B<libval(3)> and extensive error codes returned.
+The B<Validator> module provides provides access to the B<libval(3)>
+validating DNS resolver library.  The library functions are accessed through
+an object-oriented interface.  The interface is designed to hide some of the
+complexity of validating resolvers.  Application-interface behavior can be
+customized through configuration files provided by B<libval>, and extensive
+error codes are returned.
 
-Details of DNSSEC and associated resolver behavior may be found in the
-core DNSSEC RFCs (4033-4035).
+Since B<Validator> is a gateway to B<libval>, documentation for B<libval>
+will provide further details on how the B<Validator> interfaces and parameters
+may be used.
 
-=head1 INTERFACE:
+Details of DNSSEC and associated resolver behavior may be found in the core
+DNSSEC RFCs (4033-4035).
+
+=head1 INTERFACE
  
 A description of the API follows.
 
-=head2 Constructor
+=head2 B<Validator> Constructor
+
+This constructor builds a new validator object, which is used to make the
+various resolver calls.  When the validator object is created, a I<policy>
+object is created.  The I<policy> object provides a number of settings that
+will control various aspects of the DNS resolution.
 
 To create a validator object use the I<Net::DNS::SEC::Validator->new()>
-method. This method optionally takes a policy label (policy =>
-'label'), or defaults to using the default label in the B<libval(3)>
-B<dnsval.conf> file.
+method.  This method takes a number of optional parameters, which will be
+described below.
 
-=head2 Data Fields
+A policy object may be named with the I<policy> parameter, which associates
+a label with a particular policy.  This allows that policy to be referenced
+at a later time.  If the label isn't specified, then it will be given the
+the default label from the B<libval> B<dnsval.conf> file.
+
+The parameters to the constructor are passed as a hash, with both key and
+value given in the call.  Besides the policy label, there are two sets of
+constructor parameters.  These are separated based on how they are stored
+and used in B<libval>.
+
+=head3 Context Options
+
+This group of parameters are stored in a I<val_context_opt> structure in
+B<libval>.  This structure is defined in
+B<dnssec/validator/include/validator/validator.h>.  The context options
+below are the hash-key values used in the constructor call.
+
+=over 4
+
+=item I<dnsval_conf>
+
+Configuration policy for the B<libval> library.
+
+This file contains the validator policy.  The default value is
+B</usr/local/etc/dnssec-tools/dnsval.conf>, but this may have been
+changed when B<libval> was built and installed.
+
+I<val_context_opt> field:  I<vc_val_conf>
+
+=item I<nslist>
+
+This is a list of name servers that should be used in resolving names.
+This must be a white-space delimited list of IP or IPv6 addresses.
+
+I<val_context_opt> field:  I<vc_nslist>
+
+=item I<polflags>
+
+This is a set of bitmapped policy flags.  The valid flags are defined in
+B<dnssec/validator/include/validator/validator.h>.  The default value is
+B<CTX_DYN_POL_RES_OVR>.
+
+I<val_context_opt> field:  I<vc_polflags>
+
+=item I<qflags>
+
+This is the set of default query flags.  The valid flags are defined in
+B<dnssec/validator/include/validator/validator.h>.  The default value is 0.
+
+I<val_context_opt> field:  I<vc_qflags>
+
+=item I<resolv_conf>
+
+This file contains nameserver and search options for the B<libval> library.
+The default value is B</usr/local/etc/dnssec-tools/resolv.conf>, but this may
+have been changed when B<libval> was built and installed.
+
+I<val_context_opt> field:  I<vc_res_conf>
+
+=item I<root_hints>
+
+This file contains bootstrapping information for the name resolver.
+The default value is B</usr/local/etc/dnssec-tools/root.hints>, but this may
+have been changed when B<libval> was built and installed.
+
+I<val_context_opt> field:  I<vc_root_conf>
+
+=item I<valpol>
+
+This supplies a customized piece of validator configuration to the default
+validator configuration as an extension or an override.  This is null by
+default.
+
+I<val_context_opt> field:  I<vc_valpol>
+
+=back
+
+=head3 Global Options
+
+This group of parameters are stored in a I<val_global_opt> structure, which
+is itself stored in a the I<gopt> field of the I<val_context_opt> structure.
+This structure is defined in B<dnssec/validator/include/validator/validator.h>.
+The global options below are the hash-key values used in the constructor call.
+
+For all but the I<log_target> field, a value of -1 indicates an "ignore"
+condition.  This means that the validator will not include dynamically
+supplied global options with a value of -1 when creating its context.
+This allows an application to override a subset of global options while
+using the global options supplied in the B<dnsval.conf> file by default.
+
+Even though B<libval> uses the global options in a separate structure from
+the context options, they are all specified in the same hash when passed as
+parameters to the B<Validator> constructor.
+
+=over 4
+
+=item I<app_policy>
+
+This field is equivalent to the I<env-policy> option in a B<dnsval.conf>
+file.  The following are the legal values and their I<env-policy>
+equivalences:
+
+    VAL_POL_GOPT_DISABLE       "disable"
+    VAL_POL_GOPT_ENABLE        "enable"
+    VAL_POL_GOPT_OVERRIDE      "override"
+
+The default value is -1.
+
+I<val_global_opt> field:  I<gopt.app_policy>
+
+=item I<closest_ta_only>
+
+This field is equivalent to the I<closest-ta-only> option in a B<dnsval.conf>
+file.  Setting this to 1 is equivalent to setting I<closest-ta-only> to "yes";
+setting it to 0 is equivalent to "no".  The default value is -1.
+
+I<val_global_opt> field:  I<gopt.closest_ta_only>
+
+=item I<edns0_size>
+
+This field is equivalent to the I<edns0-size> option in a B<dnsval.conf>
+file.  The default value is -1.
+
+I<val_global_opt> field:  I<gopt.edns0_size>
+
+=item I<env_policy>
+
+This field is equivalent to the I<env-policy> option in a B<dnsval.conf>
+file.  The following are the legal values and their I<env-policy>
+equivalences:
+
+    VAL_POL_GOPT_DISABLE       "disable"
+    VAL_POL_GOPT_ENABLE        "enable"
+    VAL_POL_GOPT_OVERRIDE      "override"
+
+The default value is -1.
+
+I<val_global_opt> field:  I<gopt.env_policy>
+
+=item I<local_is_trusted>
+
+This field is equivalent to the I<trust-oob-answers> option in a
+B<dnsval.conf> file.  Setting this to 1 is equivalent to setting
+I<trust-oob-answers> to "yes"; setting it to 0 is equivalent to "no".
+The default value is -1.
+
+I<val_global_opt> field:  I<gopt.local_is_trusted>
+
+=item I<log_target>
+
+This field allows the caller to specify additional log targets to those given
+in the B<dnsval.conf> file.  No additional logs are listed by default.
+
+I<val_global_opt> field:  I<gopt.log_target>
+
+=item I<rec_fallback>
+
+This field is equivalent to the I<rec-fallback> option in a B<dnsval.conf>
+file.  Setting this to 1 is equivalent to setting I<rec-fallback> to "yes";
+setting it to 0 is equivalent to "no".  The default value is -1.
+
+I<val_global_opt> field:  I<gopt.rec_fallback>
+
+=back
+
+=head3 Validator Result Fields
 
 Operation status and results are found in the following validator fields:
 
@@ -659,6 +831,14 @@ from 0x80 through 0x90 may be taken as successful results.
      } 
   }
 
+=head1 SEE ALSO
+
+B<libval(3)>,
+B<dnsval.conf(3)>,
+B<resolv.conf(3)>,
+B<root.hints(3)>
+
+
 =head1 COPYRIGHT
 
 Copyright (c) 2006 G. S. Marzot. All rights reserved.  This program
@@ -674,3 +854,4 @@ the same terms as Perl itself.
  G. S. Marzot (marz@users.sourceforge.net)
 
 =cut
+
