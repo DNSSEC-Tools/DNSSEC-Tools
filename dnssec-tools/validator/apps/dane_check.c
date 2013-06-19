@@ -158,6 +158,7 @@ main(int argc, char *argv[])
     char           *label_str = NULL;
     struct val_daneparams daneparams;
     struct val_danestatus *danestatus = NULL;
+    struct val_ssl_data *ssl_dane_data = NULL;
     int port = 443;
     int proto = DANE_PARAM_PROTO_TCP;
     val_context_t *context = NULL;
@@ -167,6 +168,7 @@ main(int argc, char *argv[])
     int ret = 0;
     int dane_retval = VAL_DANE_INTERNAL_ERROR;
     int ai_retval = 0;
+    int err;
 
     /* Parse the command line */
     while (1) {
@@ -353,8 +355,10 @@ done:
         /* Set up the SSL connection */
         SSL_library_init();
         SSL_load_error_strings();
+
         const SSL_METHOD *meth = SSLv23_client_method();
-        SSL_CTX *ctx = SSL_CTX_new(meth);
+        SSL_CTX *sslctx = SSL_CTX_new(meth);
+
         struct addrinfo *ai = NULL;
         int presetup_okay;
 
@@ -373,7 +377,7 @@ done:
 #endif
             ;
 
-        if (!SSL_CTX_set_options(ctx, ssl_options)) {
+        if (!SSL_CTX_set_options(sslctx, ssl_options)) {
             fprintf(stderr, "Failed to set SSL context options (%ld): %s\n",
               ssl_options, ssl_error());
             presetup_okay = 0;
@@ -381,12 +385,17 @@ done:
             presetup_okay = 1;
         }
 
+        if (VAL_NO_ERROR != (err = val_enable_dane_ssl(context, sslctx,
+                        &danestatus, &ssl_dane_data))) {
+            fprintf(stderr,
+                    "Could not set danestatus for SSL connection %s\n",
+                    p_val_error(err));
+        }
 
         ai = val_ainfo;
         while(presetup_okay && ai && (ai->ai_protocol == IPPROTO_TCP) && 
              (ai->ai_family == AF_INET || ai->ai_family == AF_INET6)) {
 
-            int do_pathval = 0;
             int sock;
             char buf[INET6_ADDRSTRLEN];
             size_t buflen = sizeof(buf);
@@ -404,27 +413,19 @@ done:
             fprintf(stderr, "Connecting to %s\n", addr);
 
             if (0 == connect(sock, ai->ai_addr, ai->ai_addrlen)) {
-                int err;
-                SSL *ssl = SSL_new(ctx);
+                SSL *ssl = SSL_new(sslctx);
                 BIO * sbio = BIO_new_socket(sock,BIO_NOCLOSE);
+
 
 #if OPENSSL_VERSION_NUMBER >= 0x0090806fL && !defined(OPENSSL_NO_TLSEXT)
                 SSL_set_tlsext_host_name(ssl, node);
 #endif
 
                 SSL_set_bio(ssl,sbio,sbio);
-                if((err = SSL_connect(ssl)) == 1) {
-                    dane_retval = val_dane_check(context,
-                                                 ssl,
-                                                 danestatus,
-                                                 &do_pathval);
-                    fprintf(stderr,
-                            "DANE validation for %s returned %s(%d)\n", 
-                            node,
-                            p_dane_error(dane_retval), dane_retval);
-                } else {
+
+                if ((err = SSL_connect(ssl)) != 1) {
                     fprintf(stderr, "SSL Connect to %s failed: %d\n", node, err);
-                }
+                } 
                 SSL_shutdown(ssl);
                 SSL_free(ssl);
             } else {
@@ -449,9 +450,8 @@ done:
     if (val_ainfo != NULL)
         val_freeaddrinfo(val_ainfo);    
 
-    if (context)
-        val_free_context(context);
-
+    val_free_dane_ssl(ssl_dane_data);/* MUST happen before we free the context*/
+    val_free_context(context);
     val_free_validator_state();
 
     return ret;

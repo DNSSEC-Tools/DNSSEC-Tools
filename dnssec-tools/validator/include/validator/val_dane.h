@@ -88,6 +88,12 @@ struct val_danestatus {
     struct val_danestatus *next;
 };
 
+
+struct val_ssl_data {
+    val_context_t *context;
+    struct val_danestatus *danestatus;
+};
+
 typedef int (*val_dane_callback)(void *callback_data, 
                                  int retval,
                                  struct val_danestatus **res);
@@ -112,10 +118,13 @@ int val_dane_match(val_context_t *ctx,
                    struct val_danestatus *dane_cur, 
                    const unsigned char *data, 
                    int len);
-int val_dane_check(val_context_t *context,
-                   SSL *con,
-                   struct val_danestatus *danestatus,
-                   int *do_pathval);
+
+int val_enable_dane_ssl(val_context_t *context,
+                        SSL_CTX *ctx,
+                        struct val_danestatus **danestatus,
+                        struct val_ssl_data **ssl_dane_data);
+
+void val_free_dane_ssl(struct val_ssl_data *ssl_dane_data);
 
 #ifdef __cplusplus
 }                               /* extern "C" */
