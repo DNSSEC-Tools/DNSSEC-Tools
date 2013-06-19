@@ -15,7 +15,6 @@
 #include "val_context.h"
 #include "validator/val_dane.h"
 
-
 /*
  * Internal callback structure
  */
@@ -27,13 +26,13 @@ typedef struct _val_dane_async_status {
     val_async_status *das; /* helps us cancel this lookup */
 } _val_dane_async_status_t;
 
-
 /*
  * Construct a linked list of DANE structures from the result linked
  * list
  */
 static int 
-get_dane_from_result(struct val_daneparams *dparam,
+get_dane_from_result(val_context_t *ctx,
+                     struct val_daneparams *dparam,
                      struct val_result_chain *results,
                      struct val_danestatus **dres)
 {
@@ -105,6 +104,7 @@ get_dane_from_result(struct val_daneparams *dparam,
                      * Don't have enough data for the fixed length TLSA
                      * fields
                      */
+                    FREE(dcur);
                     rc = VAL_DANE_MALFORMED_TLSA;
                     goto err;
                 }
@@ -117,18 +117,19 @@ get_dane_from_result(struct val_daneparams *dparam,
                 dcur->selector = *cp++;
                 dcur->type = *cp++;
                 dcur->datalen = end - cp;
-                dcur->next = NULL;
-                if (dcur->datalen > 0) {
-                    dcur->data = (u_char *) MALLOC (dcur->datalen * sizeof(u_char));
-                    if (dcur->data == NULL) {
-                        rc = VAL_DANE_INTERNAL_ERROR;
-                        goto err;
-                    }
-                    memcpy(dcur->data, cp, dcur->datalen);
-                } else {
-                    dcur->data = NULL;
+                if (dcur->datalen <= 0) {
+                    FREE(dcur);
+                    rc = VAL_DANE_MALFORMED_TLSA;
+                    goto err;
                 }
-
+                dcur->next = NULL;
+                dcur->data = (u_char *) MALLOC (dcur->datalen * sizeof(u_char));
+                if (dcur->data == NULL) {
+                    FREE(dcur);
+                    rc = VAL_DANE_INTERNAL_ERROR;
+                    goto err;
+                }
+                memcpy(dcur->data, cp, dcur->datalen);
                 if (dtail == NULL) {
                     /* add the head element */
                     dtail = dcur;
@@ -223,7 +224,8 @@ _dane_async_callback(val_async_status *as, int event,
     /* 
      * XXX Use struct val_daneparams to filter our results
      */
-    dane_rc = get_dane_from_result(dstat->dparam,
+    dane_rc = get_dane_from_result(ctx,
+                                   dstat->dparam,
                                    cbp->results, 
                                    &dres);
 
@@ -425,7 +427,8 @@ int val_getdaneinfo(val_context_t *context,
     /* 
      * XXX Use struct val_daneparams to filter our results
      */
-    dane_rc = get_dane_from_result(params,
+    dane_rc = get_dane_from_result(ctx,
+                                   params,
                                    results, 
                                    dres);
     val_log(ctx, LOG_DEBUG,
@@ -503,8 +506,6 @@ int val_dane_match(val_context_t *context,
     }
 
     if (dane_cur->type == DANE_MATCH_EXACT) {
-        X509 *cert;
-        X509 *tlsa_cert;
 #if 0
     {
         char buf1[1028];
@@ -519,21 +520,15 @@ int val_dane_match(val_context_t *context,
 #endif
 
         if (dane_cur->selector == DANE_SEL_FULLCERT) {
-            const unsigned char *tmp = data;
-            const unsigned char *tmp2 = dane_cur->data;
-            cert = d2i_X509(NULL, &tmp, len);
-            tlsa_cert = d2i_X509(NULL, &tmp2, 
-                                 dane_cur->datalen);
-            if ((cert != NULL) && (X509_cmp(tlsa_cert, cert) == 0)) {
-                X509_free(cert);
-                X509_free(tlsa_cert);
+            if (len == dane_cur->datalen &&
+                    !memcmp(data, dane_cur->data, len)) {
+
                 val_log(ctx, LOG_INFO, "val_dane_match(): DANE_SEL_FULLCERT/DANE_MATCH_EXACT success");
                 CTX_UNLOCK_POL(ctx);
                 return VAL_DANE_NOERROR;
             }
+
             val_log(ctx, LOG_NOTICE, "val_dane_match(): DANE_SEL_FULLCERT/DANE_MATCH_EXACT failed");
-            X509_free(cert);
-            X509_free(tlsa_cert);
             CTX_UNLOCK_POL(ctx);
             return VAL_DANE_CHECK_FAILED;
 
@@ -662,14 +657,13 @@ int val_dane_match(val_context_t *context,
     return VAL_DANE_CHECK_FAILED;
 }
 
+static int
+val_dane_check_TA(val_context_t *context,
+                  X509_STORE_CTX *x509ctx,
+                  struct val_danestatus *danestatus,
+                  int *do_pkix_chk)
 
-int val_dane_check(val_context_t *ctx,
-                   SSL *con,
-                   struct val_danestatus *danestatus,
-                   int *do_pathval) 
 {
-    STACK_OF(X509) *certList = NULL;
-    X509 *cert = NULL;
     struct val_danestatus *dane_cur = NULL;
     int have_dane = 0;
     unsigned char *cert_data = NULL;
@@ -677,38 +671,43 @@ int val_dane_check(val_context_t *ctx,
     int cert_datalen = 0;
     int rv;
     int i;
-    val_context_t *context;
+    int err;
+    int depth;
+    STACK_OF(X509) *certList;
+    X509 *cert = NULL;
 
-    if (con == NULL || danestatus == NULL || do_pathval == NULL)
+    if (context == NULL || x509ctx == NULL || certList == NULL || 
+        danestatus == NULL || do_pkix_chk == NULL)
         return VAL_DANE_CHECK_FAILED;
 
-    context = val_create_or_refresh_context(ctx);/* does CTX_LOCK_POL_SH */
-    if (context == NULL)
-        return VAL_DANE_INTERNAL_ERROR;
+    err = X509_STORE_CTX_get_error(x509ctx);
+    if (err == 0)
+        depth = sk_X509_num(certList);
+    else
+        depth = X509_STORE_CTX_get_error_depth(x509ctx);
+
+    certList = X509_STORE_CTX_get_chain(x509ctx);
 
     dane_cur = danestatus;
     while(dane_cur)  {
-        have_dane = 1;
-        *do_pathval = 1;
     
-        val_log(context, LOG_INFO, 
-                "Checking DANE {sel=%d, type=%d, usage=%d}",
-                dane_cur->selector,
-                dane_cur->type,
-                dane_cur->usage);
-
+        *do_pkix_chk = 1;
         switch (dane_cur->usage) {
             case DANE_USE_TA_ASSERTION: /*2*/
+                *do_pkix_chk = 0;
+                /* fall-through */
             case DANE_USE_CA_CONSTRAINT: /*0*/ {
+                val_log(context, LOG_INFO, 
+                    "Checking DANE {sel=%d, type=%d, usage=%d}",
+                    dane_cur->selector,
+                    dane_cur->type,
+                    dane_cur->usage);
+                have_dane = 1;
                 /* 
                  * Check that the TLSA cert matches one of the certs
                  * in the chain
                  */
-                certList = SSL_get_peer_cert_chain(con);
-                if (!certList) {
-                    break;
-                }
-                for (i = 0; i < sk_X509_num(certList); i++) {
+                for (i = 0; i <= depth; i++) {
                     cert = sk_X509_value(certList, i);
                     cert_datalen = i2d_X509(cert, NULL);
                     if (cert_datalen > 0) {
@@ -721,68 +720,78 @@ int val_dane_check(val_context_t *ctx,
                                     dane_cur,
                                     (const unsigned char *)cert_data,
                                     cert_datalen) == 0) {
-
-                                if (dane_cur->usage == DANE_USE_CA_CONSTRAINT) {
-                                    val_log(context, LOG_INFO, "DANE: val_dane_match() success");
                                     rv = VAL_DANE_NOERROR;
                                     OPENSSL_free(cert_data);
                                     goto done;
                                 }
-                                /* DANE_USE_TA_ASSERTION */
-#if 0
-                                SSL_CTX *sslctx = SSL_get_SSL_CTX(con);
-                                X509_STORE *store;
-                                if (NULL == (store = X509_STORE_new())) {
-                                    val_log(context, LOG_INFO, 
-                                            "DANE Error: X509_STORE_new() failed");
-                                } else if (0 == X509_STORE_add_cert(store, cert)) {
-                                    val_log(context, LOG_INFO, 
-                                            "DANE Error: X509_STORE_add_cert() failed");
-                                } else {
-                                    SSL_CTX_set_cert_store(sslctx, store); 
-                                    if (X509_V_OK != (rv =
-                                             SSL_get_verify_result(con))) {
-                                        val_log(context, LOG_INFO, 
-                                                "DANE Error: SSL_get_verify_result() returned %d", rv);
-                                    } else {
-                                        val_log(context, LOG_INFO, "DANE: cert match success");
-                                        rv = VAL_DANE_NOERROR;
-                                        goto done;
-                                    }
-                                }
-#endif
-                                X509_STORE *store = X509_STORE_new();
-                                X509_STORE_CTX *store_ctx = X509_STORE_CTX_new();
-                                X509_STORE_add_cert(store, cert);
-                                X509_STORE_CTX_init(store_ctx, store,
-                                        SSL_get_peer_certificate(con), 
-                                        certList);
-                                if (1 != (rv = X509_verify_cert(store_ctx))) {
-                                    val_log(context, LOG_INFO, 
-                                            "DANE Error: SSL_get_verify_result() returned %d", rv);
-                                } else {
-                                    val_log(context, LOG_INFO, "DANE: cert match success");
-                                    rv = VAL_DANE_NOERROR;
-                                    goto done;
-                                }
-                                X509_STORE_CTX_free(store_ctx);
-                                X509_STORE_free(store);
                             }
                             OPENSSL_free(cert_data);
                         }
                     }
                 }
                 val_log(context, LOG_NOTICE, 
-                        "DANE: val_dane_check() for usage %d failed",
+                        "DANE: val_dane_check_TA() for usage %d failed",
                         dane_cur->usage);
                 break;
-            }
 
+            default:
+                break;
+        }
+
+        dane_cur = dane_cur->next;
+    }
+
+    if (have_dane)
+        rv = VAL_DANE_CHECK_FAILED; 
+    else 
+        rv = VAL_DANE_NOERROR;
+
+done:
+    if (have_dane) {
+        if (rv == VAL_DANE_NOERROR)
+            val_log(context, LOG_INFO, "DANE check successful");
+        else {
+            val_log(context, LOG_NOTICE, "DANE check failed");
+        }
+    }
+
+    return rv;
+}
+
+static int 
+val_dane_check_EE(val_context_t *context,
+                  X509_STORE_CTX *x509ctx,
+                  struct val_danestatus *danestatus,
+                  int *do_pkix_chk) 
+{
+    struct val_danestatus *dane_cur = NULL;
+    int have_dane = 0;
+    unsigned char *cert_data = NULL;
+    unsigned char *c = NULL;
+    int cert_datalen = 0;
+    int rv;
+    X509 *cert;
+
+    if (context == NULL || x509ctx == NULL || 
+        danestatus == NULL || do_pkix_chk == NULL)
+        return VAL_DANE_CHECK_FAILED;
+
+    cert = x509ctx->cert;
+
+    dane_cur = danestatus;
+    while(dane_cur)  {
+        *do_pkix_chk = 1;
+        switch (dane_cur->usage) {
             case DANE_USE_DOMAIN_ISSUED: /*3*/
-                *do_pathval = 0;
+                *do_pkix_chk = 0;
                 /* fall-through */
             case DANE_USE_SVC_CONSTRAINT: /*1*/ 
-                cert = SSL_get_peer_certificate(con);
+                val_log(context, LOG_INFO, 
+                        "Checking DANE {sel=%d, type=%d, usage=%d}",
+                        dane_cur->selector,
+                        dane_cur->type,
+                        dane_cur->usage);
+                have_dane = 1;
                 cert_datalen = i2d_X509(cert, NULL);
                 if (cert_datalen > 0) {
                     cert_data = OPENSSL_malloc(cert_datalen);
@@ -803,51 +812,21 @@ int val_dane_check(val_context_t *ctx,
                     }
                 }
                 val_log(context, LOG_NOTICE, 
-                        "DANE: val_dane_check() for usage %d failed",
+                        "DANE: val_dane_check_EE() for usage %d failed",
                         dane_cur->usage);
                 break;
 
-#if 0
-            case DANE_USE_TA_ASSERTION: /*2*/ {
-                SSL_CTX *ctx = SSL_get_SSL_CTX(con);
-                X509_STORE *store;
-                *do_pathval = 0;
-                if (store = X509_STORE_new()) {
-                    X509 *tlsa_cert = NULL;
-                    c = dane_cur->data;
-                    tlsa_cert = d2i_X509(NULL, (const unsigned char **)&c, 
-                                         dane_cur->datalen);
-                    X509_STORE_add_cert(store, tlsa_cert);
-                    SSL_CTX_set_cert_store(ctx, store);
-                    rv = SSL_get_verify_result(con);
-                    if (rv == X509_V_OK || 
-                        rv == X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN) {
-                        val_log(context, LOG_INFO, "DANE: cert match success");
-                        rv = VAL_DANE_NOERROR;
-                        goto done;
-                    } else {
-                        val_log(context, LOG_INFO, 
-                                "DANE: SSL_get_verify_result() returned %d", rv);
-                    }
-
-                }
-                val_log(context, LOG_NOTICE, 
-                        "DANE: val_dane_check() for usage %d failed",
-                        dane_cur->usage);
-                break;
-            }
-#endif
             default:
-                val_log(context, LOG_NOTICE, 
-                        "DANE: val_dane_check() for usage %d failed",
-                        dane_cur->usage);
                 break;
         }
 
         dane_cur = dane_cur->next;
     }
 
-    rv = VAL_DANE_CHECK_FAILED; 
+    if (have_dane)
+        rv = VAL_DANE_CHECK_FAILED; 
+    else 
+        rv = VAL_DANE_NOERROR;
 
 done:
     if (have_dane) {
@@ -858,7 +837,133 @@ done:
         }
     }
 
-    CTX_UNLOCK_POL(context);
     return rv;
 }
 
+static int 
+val_X509_peer_cert_verify_cb(X509_STORE_CTX *ctx, void *arg)
+{
+    char    buf[256];           
+    struct val_ssl_data *ssl_dane_data;
+    int err;
+    int do_pkix_chk = 0;
+
+    ssl_dane_data = (struct val_ssl_data *) arg;
+    if (ssl_dane_data == NULL)
+        return 0;
+
+    X509_NAME_oneline(X509_get_subject_name(ctx->cert), buf, 256);
+    printf("DEBUG: val_X509_peer_cert_verify_cb peer subject = %s\n", buf);
+
+    if (VAL_DANE_NOERROR != 
+            val_dane_check_EE(ssl_dane_data->context, 
+                              ctx,
+                              ssl_dane_data->danestatus,
+                              &do_pkix_chk))
+       return 0; 
+
+
+    if (do_pkix_chk == 0)
+        return 1;
+
+    err=X509_verify_cert(ctx);
+    if (err) {
+        printf("DEBUG: X509_verify_cert() error = %d\n", err);
+        return err;
+    }
+
+    /*
+     * Check trust anchors
+     */
+    if (VAL_DANE_NOERROR !=
+        val_dane_check_TA(ssl_dane_data->context,
+                          ctx,
+                          ssl_dane_data->danestatus,
+                          &do_pkix_chk))
+        return 0;
+
+    err = X509_STORE_CTX_get_error(ctx);
+    if (err) {
+        if (do_pkix_chk == 0) {
+            /* reset err status */
+            // XXX TODO Only reset the error for certain error conditions
+            // XXX TODO Need to determine what these error conditions
+            X509_STORE_CTX_set_error(ctx, X509_V_OK);
+            return 1;
+        }
+        return 0;
+    }
+
+    return 1;
+}
+
+/*
+ * NOTE: This does a CTX_LOCK
+ */
+int
+val_enable_dane_ssl(val_context_t *context,
+                    SSL_CTX *sslctx,
+                    struct val_danestatus **danestatus,
+                    struct val_ssl_data **ssl_dane_data)
+{
+    int ret = VAL_NO_ERROR;
+
+    if (context == NULL || sslctx == NULL || 
+        danestatus == NULL || ssl_dane_data == NULL)
+        return VAL_BAD_ARGUMENT;
+
+
+    *ssl_dane_data = (struct val_ssl_data *)MALLOC(sizeof(struct val_ssl_data));
+    if (*ssl_dane_data == NULL) {
+        return VAL_OUT_OF_MEMORY;
+    }
+
+    if (*danestatus == NULL) {
+        /* Lookup DANE information if we don't already have it */
+        SSL *con;
+        BIO *bio;
+        char *node;
+        struct val_daneparams daneparams;
+
+        bio = SSL_get_wbio(con);
+        node = BIO_get_conn_hostname(bio);
+        memset(&daneparams, 0, sizeof(daneparams));
+        daneparams.port = atoi(BIO_get_conn_port(bio));
+        daneparams.proto = DANE_PARAM_PROTO_TCP;
+
+        ret = val_getdaneinfo(context, node, &daneparams, 
+                              danestatus);
+
+        if (ret == VAL_DANE_IGNORE_TLSA) {
+            return VAL_NO_ERROR;
+        } 
+        
+        if (ret != VAL_NO_ERROR) {
+            goto err;
+        }
+    }
+
+    (*ssl_dane_data)->context = context;
+    (*ssl_dane_data)->danestatus = *danestatus;
+
+    /*
+     * Callback from EE cert validation
+     */ 
+    SSL_CTX_set_cert_verify_callback(sslctx, 
+                                     val_X509_peer_cert_verify_cb,
+                                     (void *)(*ssl_dane_data));
+
+err:
+    return ret;
+
+}
+
+void
+val_free_dane_ssl(struct val_ssl_data *ssl_dane_data)
+{
+    if (ssl_dane_data == NULL)
+        return;
+
+    CTX_UNLOCK_POL(ssl_dane_data->context);
+    FREE(ssl_dane_data);
+}
