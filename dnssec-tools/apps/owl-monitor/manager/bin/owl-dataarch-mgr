@@ -13,6 +13,7 @@
 #
 #	2.0	Released as part of DNSSEC-Tools 2.0.		130301
 #	2.0.1	Added .rrsec files to those to be backed up.	130513
+#	2.0.2	Added .rsrc files to those to be backed up.	130619
 #
 
 use strict;
@@ -26,7 +27,7 @@ use Time::Local;
 # Version information.
 #
 my $NAME   = "owl-dataarch-mgr";
-my $VERS   = "$NAME version: 2.0.1";
+my $VERS   = "$NAME version: 2.0.2";
 my $DTVERS = "DNSSEC-Tools version: 2.0";
 
 ###################################################
@@ -52,7 +53,7 @@ my $verbose	= 0;				# Display verbose output.
 
 my $MV = "/bin/mv";
 
-my $EXTENSIONS = "*.dns *.rrec *.rrsec";	# Data-file extensions to save.
+my $EXTENSIONS = "*.dns *.rrec *.rrsec *.rsrc";	# Data-file extensions to save.
 
 my $archdir;					# Archive directory.
 my $curdir;					# Current directory.
