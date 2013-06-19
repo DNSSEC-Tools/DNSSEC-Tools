@@ -973,7 +973,7 @@ val_enable_dane_ssl(val_context_t *ctx,
     int ret = VAL_NO_ERROR;
     struct val_danestatus *danestatus_p = NULL;
 
-    if (sslctx == NULL || ssl_dane_data == NULL)
+    if (sslctx == NULL || ssl_dane_data == NULL || danestatus == NULL)
         return VAL_BAD_ARGUMENT;
 
     context = val_create_or_refresh_context(ctx);/* does CTX_LOCK_POL_SH */
@@ -986,36 +986,7 @@ val_enable_dane_ssl(val_context_t *ctx,
         return VAL_OUT_OF_MEMORY;
     }
 
-    if (danestatus == NULL) {
-        /* Lookup DANE information if we don't already have it */
-        SSL *con;
-        BIO *bio;
-        char *node;
-        struct val_daneparams daneparams;
-
-        bio = SSL_get_wbio(con);
-        node = BIO_get_conn_hostname(bio);
-        memset(&daneparams, 0, sizeof(daneparams));
-        daneparams.port = atoi(BIO_get_conn_port(bio));
-        daneparams.proto = DANE_PARAM_PROTO_TCP;
-
-        ret = val_getdaneinfo(context, node, &daneparams, 
-                              &danestatus_p);
-
-        if (ret == VAL_DANE_IGNORE_TLSA) {
-            FREE(*ssl_dane_data);
-            CTX_UNLOCK_POL(context);
-            return VAL_NO_ERROR;
-        } 
-        
-        if (ret != VAL_NO_ERROR) {
-            FREE(*ssl_dane_data);
-            CTX_UNLOCK_POL(context);
-            return ret;
-        }
-    } else if (VAL_NO_ERROR != 
-            (ret = clone_danestatus(danestatus, 
-                                    &danestatus_p))) {
+    if (VAL_NO_ERROR != (ret = clone_danestatus(danestatus, &danestatus_p))) {
         FREE(*ssl_dane_data);
         CTX_UNLOCK_POL(context);
         return ret;
