@@ -119,9 +119,9 @@ int val_dane_match(val_context_t *ctx,
                    const unsigned char *data, 
                    int len);
 
-int val_enable_dane_ssl(val_context_t *context,
-                        SSL_CTX *ctx,
-                        struct val_danestatus **danestatus,
+int val_enable_dane_ssl(val_context_t *ctx,
+                        SSL_CTX *sslctx,
+                        struct val_danestatus *danestatus,
                         struct val_ssl_data **ssl_dane_data);
 
 void val_free_dane_ssl(struct val_ssl_data *ssl_dane_data);

@@ -386,7 +386,7 @@ done:
         }
 
         if (VAL_NO_ERROR != (err = val_enable_dane_ssl(context, sslctx,
-                        &danestatus, &ssl_dane_data))) {
+                                        danestatus, &ssl_dane_data))) {
             fprintf(stderr,
                     "Could not set danestatus for SSL connection %s\n",
                     p_val_error(err));

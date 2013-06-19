@@ -26,6 +26,76 @@ typedef struct _val_dane_async_status {
     val_async_status *das; /* helps us cancel this lookup */
 } _val_dane_async_status_t;
 
+/* 
+ * Free up the list of DANE TLSA records 
+ */
+void val_free_dane(struct val_danestatus *dres)
+{
+    struct val_danestatus *prev, *cur;
+
+    prev = NULL;
+    cur = dres;
+
+    while (cur) {
+        prev = cur;
+        cur = cur->next;
+        if (prev->data)
+            FREE(prev->data);
+        FREE(prev);
+    }
+}
+
+static int
+clone_danestatus(struct val_danestatus *dstatus,
+                 struct val_danestatus **dstatus_p)
+{
+    struct val_danestatus *dcur = NULL;
+    struct val_danestatus *dtail = NULL;
+    struct val_danestatus *dnew = NULL;
+
+    if (dstatus == NULL || dstatus_p == NULL)
+        return VAL_BAD_ARGUMENT;
+
+    *dstatus_p = NULL;
+    dcur = dstatus;
+
+    while (dcur) {
+
+        dnew = (struct val_danestatus *) MALLOC (sizeof (struct
+                    val_danestatus));
+        if (dnew == NULL)
+            goto err;
+
+        dnew->ttl = dcur->ttl;
+        dnew->usage = dcur->usage;
+        dnew->selector = dcur->selector;
+        dnew->type = dcur->type;
+        dnew->datalen = dcur->datalen;
+        dnew->data = (unsigned char *) MALLOC (dcur->datalen *
+                sizeof(unsigned char));
+        if (dnew->data == NULL) {
+            FREE(dnew);
+            goto err;
+        }
+        memcpy(dnew->data, dcur->data, dcur->datalen);
+        dnew->next = NULL;
+        if (dtail) {
+            dtail->next = dnew;
+        } else {
+            *dstatus_p = dnew;
+        }
+        dtail = dnew;
+        dcur = dcur->next;
+    }
+
+    return VAL_NO_ERROR;
+
+err:
+    val_free_dane(*dstatus_p);
+    *dstatus_p = NULL;
+    return VAL_OUT_OF_MEMORY;
+}
+
 /*
  * Construct a linked list of DANE structures from the result linked
  * list
@@ -287,25 +357,6 @@ const char *p_dane_error(int rc)
     }
 
     return err;
-}
-
-/* 
- * Free up the list of DANE TLSA records 
- */
-void val_free_dane(struct val_danestatus *dres)
-{
-    struct val_danestatus *prev, *cur;
-
-    prev = NULL;
-    cur = dres;
-
-    while (cur) {
-        prev = cur;
-        cur = cur->next;
-        if (prev->data)
-            FREE(prev->data);
-        FREE(prev);
-    }
 }
 
 /*
@@ -676,7 +727,7 @@ val_dane_check_TA(val_context_t *context,
     STACK_OF(X509) *certList;
     X509 *cert = NULL;
 
-    if (context == NULL || x509ctx == NULL || certList == NULL || 
+    if (context == NULL || x509ctx == NULL || 
         danestatus == NULL || do_pkix_chk == NULL)
         return VAL_DANE_CHECK_FAILED;
 
@@ -846,29 +897,34 @@ val_X509_peer_cert_verify_cb(X509_STORE_CTX *ctx, void *arg)
     char    buf[256];           
     struct val_ssl_data *ssl_dane_data;
     int err;
-    int do_pkix_chk = 0;
+    int do_pkix_chk = 1;
 
     ssl_dane_data = (struct val_ssl_data *) arg;
     if (ssl_dane_data == NULL)
         return 0;
 
     X509_NAME_oneline(X509_get_subject_name(ctx->cert), buf, 256);
-    printf("DEBUG: val_X509_peer_cert_verify_cb peer subject = %s\n", buf);
 
     if (VAL_DANE_NOERROR != 
             val_dane_check_EE(ssl_dane_data->context, 
                               ctx,
                               ssl_dane_data->danestatus,
-                              &do_pkix_chk))
-       return 0; 
+                              &do_pkix_chk)) {
+        val_log(ssl_dane_data->context, 
+                LOG_DEBUG, "DANE: peer cert verification failed = %s", buf);
+        return 0; 
+    }
 
-
-    if (do_pkix_chk == 0)
+    if (do_pkix_chk == 0) {
+        val_log(ssl_dane_data->context, 
+                LOG_DEBUG, "DANE: skipping peer cert PKIX validation = %s", buf);
         return 1;
+    }
 
     err=X509_verify_cert(ctx);
     if (err) {
-        printf("DEBUG: X509_verify_cert() error = %d\n", err);
+        val_log(ssl_dane_data->context, 
+                LOG_DEBUG, "DANE: PKIX cert validation internal error = %d", buf);
         return err;
     }
 
@@ -879,8 +935,11 @@ val_X509_peer_cert_verify_cb(X509_STORE_CTX *ctx, void *arg)
         val_dane_check_TA(ssl_dane_data->context,
                           ctx,
                           ssl_dane_data->danestatus,
-                          &do_pkix_chk))
+                          &do_pkix_chk)) {
+        val_log(ssl_dane_data->context, 
+                LOG_DEBUG, "DANE: TA verification failed = %s", buf);
         return 0;
+    }
 
     err = X509_STORE_CTX_get_error(ctx);
     if (err) {
@@ -889,11 +948,15 @@ val_X509_peer_cert_verify_cb(X509_STORE_CTX *ctx, void *arg)
             // XXX TODO Only reset the error for certain error conditions
             // XXX TODO Need to determine what these error conditions
             X509_STORE_CTX_set_error(ctx, X509_V_OK);
+            val_log(ssl_dane_data->context, 
+                    LOG_DEBUG, "DANE: skipping TA PKIX validation = %s", buf);
             return 1;
         }
         return 0;
     }
 
+    val_log(ssl_dane_data->context, 
+            LOG_DEBUG, "DANE: passed certificate/TA constraints = %s", buf);
     return 1;
 }
 
@@ -901,24 +964,29 @@ val_X509_peer_cert_verify_cb(X509_STORE_CTX *ctx, void *arg)
  * NOTE: This does a CTX_LOCK
  */
 int
-val_enable_dane_ssl(val_context_t *context,
+val_enable_dane_ssl(val_context_t *ctx,
                     SSL_CTX *sslctx,
-                    struct val_danestatus **danestatus,
+                    struct val_danestatus *danestatus,
                     struct val_ssl_data **ssl_dane_data)
 {
+    val_context_t *context = NULL;
     int ret = VAL_NO_ERROR;
+    struct val_danestatus *danestatus_p = NULL;
 
-    if (context == NULL || sslctx == NULL || 
-        danestatus == NULL || ssl_dane_data == NULL)
+    if (sslctx == NULL || ssl_dane_data == NULL)
         return VAL_BAD_ARGUMENT;
 
+    context = val_create_or_refresh_context(ctx);/* does CTX_LOCK_POL_SH */
+    if (context == NULL)
+        return VAL_OUT_OF_MEMORY;
 
     *ssl_dane_data = (struct val_ssl_data *)MALLOC(sizeof(struct val_ssl_data));
     if (*ssl_dane_data == NULL) {
+        CTX_UNLOCK_POL(context);
         return VAL_OUT_OF_MEMORY;
     }
 
-    if (*danestatus == NULL) {
+    if (danestatus == NULL) {
         /* Lookup DANE information if we don't already have it */
         SSL *con;
         BIO *bio;
@@ -932,19 +1000,29 @@ val_enable_dane_ssl(val_context_t *context,
         daneparams.proto = DANE_PARAM_PROTO_TCP;
 
         ret = val_getdaneinfo(context, node, &daneparams, 
-                              danestatus);
+                              &danestatus_p);
 
         if (ret == VAL_DANE_IGNORE_TLSA) {
+            FREE(*ssl_dane_data);
+            CTX_UNLOCK_POL(context);
             return VAL_NO_ERROR;
         } 
         
         if (ret != VAL_NO_ERROR) {
-            goto err;
+            FREE(*ssl_dane_data);
+            CTX_UNLOCK_POL(context);
+            return ret;
         }
+    } else if (VAL_NO_ERROR != 
+            (ret = clone_danestatus(danestatus, 
+                                    &danestatus_p))) {
+        FREE(*ssl_dane_data);
+        CTX_UNLOCK_POL(context);
+        return ret;
     }
 
+    (*ssl_dane_data)->danestatus = danestatus_p;
     (*ssl_dane_data)->context = context;
-    (*ssl_dane_data)->danestatus = *danestatus;
 
     /*
      * Callback from EE cert validation
@@ -952,10 +1030,12 @@ val_enable_dane_ssl(val_context_t *context,
     SSL_CTX_set_cert_verify_callback(sslctx, 
                                      val_X509_peer_cert_verify_cb,
                                      (void *)(*ssl_dane_data));
+    /*
+     * Don't call CTX_UNLOCK_POL since we release the lock only when we
+     * free ssl_dane_data
+     */
 
-err:
-    return ret;
-
+    return VAL_NO_ERROR;
 }
 
 void
@@ -964,6 +1044,7 @@ val_free_dane_ssl(struct val_ssl_data *ssl_dane_data)
     if (ssl_dane_data == NULL)
         return;
 
+    val_free_dane(ssl_dane_data->danestatus);
     CTX_UNLOCK_POL(ssl_dane_data->context);
     FREE(ssl_dane_data);
 }
