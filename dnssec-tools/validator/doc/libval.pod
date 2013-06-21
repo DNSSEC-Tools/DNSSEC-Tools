@@ -69,7 +69,7 @@ I<val_log_add_optarg> - control log message verbosity and output location
 =head1 DESCRIPTION
 
 The I<val_resolve_and_check()> function queries a set of name servers for
-the I<<domain_name, type, class>> tuple and to verifies and validates the
+the I<<domain_name, type, class>> tuple and verifies and validates the
 response.  Verification involves checking the RRSIGs, and validation is
 verification of an authentication chain from a configured trust anchor.
 
@@ -81,71 +81,73 @@ for this field:
 
 =item B<VAL_QUERY_DONT_VALIDATE> 
 
-causes the validator to disable validation for this query.  
+This flag causes the validator to disable validation for this query.  
 
 =item B<VAL_QUERY_IGNORE_SKEW> 
 
-causes the validator to disable checking signature inception and
+This flag causes the validator to disable checking signature inception and
 expiration times on RRSIGs.  
 
 =item B<VAL_QUERY_AC_DETAIL> 
 
-causes the validator to copy the authentication chain details into the 
-val_rc_answer member within the returned val_result_chain structure. 
+This flag causes the validator to copy the authentication chain details into
+the I<val_rc_answer> member within the returned I<val_result_chain> structure.
 
 =item B<VAL_QUERY_ASYNC> 
 
-enables asynchronous query resolution for that lookup. 
+This flag enables asynchronous query resolution for that lookup. 
 
 =item B<VAL_QUERY_NO_DLV> 
 
-causes the validator to disable DLV processing for this query.  
-This is only available if the I<libval(3)> library has
+This flag causes the validator to disable DLV processing for this query.  
+This is only available if the B<libval(3)> library has
 been compiled with DLV support.
 
 =item B<VAL_QUERY_NO_EDNS0_FALLBACK>
 
-In querying various name servers, libsres will also attempt multiple EDNS0
-sizes, ending with a query that has EDNS0 disabled (i.e. no CD bit set).
-This option causes libval to disable EDNS0 fallback for the query.
+In querying various name servers, B<libsres(3)> will also attempt multiple
+EDNS0 sizes, ending with a query that has EDNS0 disabled (i.e. no CD bit set).
+This flag causes B<libval> to disable EDNS0 fallback for the query.
 
 =item B<VAL_QUERY_ITERATE>
 
-forces libval to iteratively answer the query by querying
+This flag forces B<libval> to iteratively answer the query by querying
 various name servers in the delegation hierarchy, instead of
 requesting this information from
-any caching name server that may be configured in B<dnsval.conf>
+any caching name server that may be configured in B<dnsval.conf>.
 
 =item B<VAL_QUERY_SKIP_RESOLVER>
 
-forces libval to only look at its cache while trying to resolve a name. 
+This flag forces B<libval> to only look at its cache while trying to resolve a
+name.
 
 =item B<VAL_QUERY_SKIP_CACHE>
 
-forces libval to ignore cached data while trying to resolve a name. 
+This flag forces B<libval> to ignore cached data while trying to resolve a
+name.
 
 =back
 
 The first parameter to I<val_resolve_and_check()> is the validator context.
 Applications can create a new validator context using the
 I<val_create_context()> function.  This function parses the resolver and
-validator configuration files and creates the handle I<newcontext> to this
-parsed information.  Information stored as part of validator context includes
-the validation policy and resolver policy.
+validator configuration files and creates the I<newcontext> handle for this
+parsed information.  Information stored as part of the validator context
+includes the validation policy the and resolver policy.
 
 Validator and resolver policies are read from the B</etc/dnsval.conf> and
 B</etc/resolv.conf> files by default.  B</etc/root.hints> provides
 bootstrapping information for the validator when it functions as a full
-resolver (see I<dnsval.conf(3)>). These defaults may be different if 
-any other value was specified at library configure time. If the default 
-resolver configuration file is not found at the specified location, libval
-will also try to fallback to /etc/resolv.conf as a last resort.
+resolver (see B<dnsval.conf(3)>). These defaults may be different if 
+any other value was specified at library configure time.  If the default 
+resolver configuration file is not found at the specified location, B<libval>
+will also try to fall back to B</etc/resolv.conf> as a last resort.
 
-Applications may also create validator context with a custom policy 
+Applications may also create a validator context with a custom policy 
 using the I<val_create_context_ex()> function. 
 
 The I<opt> argument in I<val_create_context_ex()> points to the
-following structure.
+following structure:
 
     typedef struct val_context_opt {
         unsigned int vc_qflags;
@@ -159,56 +161,52 @@ following structure.
     } val_context_opt_t;
 
 
-vc_qflags specify the default query flags for queries associated with
+I<vc_qflags> specify the default query flags for queries associated with
 the context. This field is identical to the I<flags> argument in the
 I<val_resolve_and_check()> function.
 
-The vc_val_conf, vc_res_conf and vc_root_conf fields can be used to
-specify alternative configuration files in place of the default files
-used for the validator, resolver and root hints configuration
-information.
+The I<vc_val_conf>, I<vc_res_conf>, and I<vc_root_conf> fields can be used to
+specify alternative configuration files in place of the default files used for
+the validator, resolver, and root hints configuration information.
 
-The vc_valpol field can be used to supply a custom validator
+The I<vc_valpol> field can be used to supply a custom validator
 configuration "snippet" to the validator. The validator parses this
 information and applies it to the default validator configuration either
-as an extension or as an override, as specified by the vc_polflags
-field. The vc_nslist field, similarly, can be used to supply a custom
+as an extension or as an override, as specified by the I<vc_polflags>
+field. The I<vc_nslist> field, similarly, can be used to supply a custom
 list of recursive name servers to send queries to, in addition (or in
 place of) the list of name servers specified in the B<resolv.conf> file.
-The list of name servers in vc_res_conf must be specified as a
+The list of name servers in I<vc_res_conf> must be specified as a
 white-space delimited list of IP or IPv6 addresses.
 
-vc_polflags can be configured with the following values:
+I<vc_polflags> can be configured with the following values:
 
 =over 4
 
 =item B<CTX_DYN_POL_VAL_OVR> 
 
 When this flag is set only the validator configuration specified in the
-vc_valpol field is used for the validator configuration. Options
-specified in the dnsval.conf file are ignored. 
+I<vc_valpol> field is used for the validator configuration.  Options
+specified in the B<dnsval.conf> file are ignored. 
 
 =item B<CTX_DYN_POL_RES_OVR> 
 
 When this flag is set only the name servers specified in the
-vc_nslist field is used for the resolver configuration. Options
-specified in the resolv.conf file are ignored. 
+I<vc_nslist> field is used for the resolver configuration.  Options
+specified in the B<resolv.conf> file are ignored. 
 
 =item B<CTX_DYN_POL_GLO_OVR> 
 
-When this flag is set only the global options set in gopt field are
-used. Global options specified in the dnsval.conf file are ignored.
+When this flag is set only the global options set in I<gopt> field are
+used.  Global options specified in the B<dnsval.conf> file are ignored.
 
 =item B<CTX_DYN_POL_RES_NRD> 
 
 When this flag is set outgoing queries have the Recursion Desired (RD)
-bit set to 0. This is useful if queries need to be sent to an
+bit set to 0.  This is useful if queries need to be sent to an
 authoritative-only name server.
 
 =back
-
-
-
 
 The I<gopt> field points to the following structure:
 
@@ -222,36 +220,34 @@ The I<gopt> field points to the following structure:
         int rec_fallback;
     } val_global_opt_t;
 
-Setting a value of 1 for local_is_trusted is equivalent to specifying the
-B<trust-oob-answers> option in the I<dnsval.conf> file to B<yes>. 
-Similarly, setting the closest_ta_only and rec_fallback
-members to 1 is equivalent to setting the closest-ta-only
-and rec-fallback options to B<yes> in the B<dnsval.conf> file. 
+Setting a value of 1 for I<local_is_trusted> is equivalent to specifying the
+I<trust-oob-answers> option in the B<dnsval.conf> file to B<yes>. 
+Similarly, setting the I<closest_ta_only> and I<rec_fallback>
+members to 1 is equivalent to setting the I<closest-ta-only>
+and I<rec-fallback> options to B<yes> in the B<dnsval.conf> file. 
 A value of 0 is equivalent to the B<no> setting for these option.
 
-Setting the edns0_size member to a particular value is identical to
-setting the B<edns0-size> ption in the dnsval.conf file.
+Setting the I<edns0_size> member to a particular value is identical to
+setting the I<edns0-size> option in the B<dnsval.conf> file.
 
-env_policy and app_policies can be set to one of VAL_POL_GOPT_DISABLE,
-VAL_POL_GOPT_ENABLE or VAL_POL_GOPT_OVERRIDE, which
-correspond directly with the B<disable>, B<enable> and
-B<override> options for the env-policy and app-policy settings
-in the B<dnsval.conf> file.
+I<env_policy> and I<app_policy> can be set to one of B<VAL_POL_GOPT_DISABLE>,
+B<VAL_POL_GOPT_ENABLE>, or B<VAL_POL_GOPT_OVERRIDE>.  These values correspond
+directly to the I<disable>, I<enable> and I<override> options for the
+I<env-policy> and I<app-policy> settings in the B<dnsval.conf> file.
 
 Values of -1 for the above fields are treated as "ignore" conditions
 in that the validator will not include dynamically supplied global
-options with a value of -1 when creating its context. This allows an
+options with a value of -1 when creating its context.  This allows an
 application to overriding a subset of global options while using the
 global options supplied in the B<dnsval.conf> file by default.
 
 The log_target field enables the application to supply log targets 
-I<in additions> to the ones configured in the configuration file.
+I<in addition> to the ones configured in the configuration file.
 
-
-See I<dnsval.conf(3)> for more details on specifying validator policy.
+See B<dnsval.conf(3)> for more details on specifying validator policy.
 
 Default query flags can be set and unset for a given context using 
-I<val_context_setqflags()>. This allows an application to alter the 
+I<val_context_setqflags()>.  This allows an application to alter the 
 DNSSEC validator processing, while still having most of the more 
 granular default configuration specified in its configuration file.  
 The I<action> parameter can be set to one of the following.
@@ -260,52 +256,49 @@ The I<action> parameter can be set to one of the following.
 
 =item B<VAL_CTX_FLAG_SET> 
 
-causes the validator to set the given flag as one of the default 
+This option causes the validator to set the given flag as one of the default 
 query flags. 
 
 =item B<VAL_CTX_FLAG_RESET> 
 
-causes the validator to reset the given flag if it was set as one 
+This option causes the validator to reset the given flag if it was set as one 
 of the default query flags for the context.
 
 =back
 
 Answers returned by I<val_resolve_and_check()> are made available in the
-I<*results> linked list.  Each answer corresponds to a distinct RRset; multiple
-RRs within the RRset are part of the same answer.  Multiple answers are possible when
-I<type> is I<ns_t_any> or I<ns_t_rrsig>.
+I<*results> linked list.  Each answer corresponds to a distinct RRset;
+multiple RRs within the RRset are part of the same answer.  Multiple answers
+are possible when I<type> is I<ns_t_any> or I<ns_t_rrsig>.
 
 Individual elements in I<*results> point to I<val_authentication_chain> linked
-lists.  The authentication chain elements in I<val_authentication_chain> contain
-the actual RRsets returned by  the name server in response to the query.
+lists.  The authentication chain elements in I<val_authentication_chain>
+contain the actual RRsets returned by the name server in response to the query.
 
-Validation result values returned in I<val_result_chain> and
-authentication chain status values returned in each element of the
-I<val_authentication_chain> linked list can be can be converted into ASCII
-format using the I<p_val_status()> and I<p_ac_status()> functions respectively.
+Validation result values returned in I<val_result_chain> can be can be
+converted into ASCII format using the I<p_val_status()>.  Authentication chain
+status values returned in each element of the I<val_authentication_chain>
+linked list can be can be converted into ASCII format using the
+I<p_ac_status()> functions.
 
 While some applications such as DNSSEC troubleshooting utilities and packet
-inspection tools may look at individual authentication
-chain elements to identify the actual reasons for validation error,
-most applications will only be interested in a single error code for determining
-the authenticity of data.
+inspection tools may look at individual authentication chain elements to
+identify the actual reasons for validation error, most applications will only
+be interested in a single error code for determining the authenticity of data.
 
-I<val_isvalidated()> identifies if a given
-validation result status value corresponds to an answer that was
-cryptographically verified and validated using a locally configured
-trust anchor.
+I<val_isvalidated()> identifies if a given validation result status value
+corresponds to an answer that was cryptographically verified and validated
+using a locally configured trust anchor.
 
-I<val_istrusted()> identifies if a given
-validator status value is trusted.  An answer may be locally trusted
-without being validated.
+I<val_istrusted()> identifies if a given validator status value is trusted.
+An answer may be locally trusted without being validated.
 
-I<val_does_not_exist()> identifies if a given
-validator status value corresponds to one of the non-existence types.
+I<val_does_not_exist()> identifies if a given validator status value
+corresponds to one of the non-existence types.
 
 The I<libval> library internally allocates memory for I<*results> and this
 must be freed by the invoking application using the I<free_result_chain()>
 interface.
-
 
 =head1 DATA STRUCTURES
 
@@ -326,7 +319,6 @@ interface.
 
 =over 4
 
-
 =item I<val_rc_answer>
 
 Authentication chain for a given RRset.
@@ -342,18 +334,19 @@ returned for the query.
 
 =item I<val_rc_proof_count>
 
-Number of proof elements stored in I<val_rc_proofs>. The number cannot exceed
+Number of proof elements stored in I<val_rc_proofs>.  The number cannot exceed
 B<MAX_PROOFS>.
 
 =item I<val_rc_alias>
 
-For an val_result_chain element that points to a name alias, this field contains the target value.
+For an val_result_chain element that points to a name alias, this field
+contains the target value.
 
 =item I<val_rc_rrset>
 
-For an val_result_chain element that contains a valid (not NULL) val_rc_answer field, 
-the val_rc_rrset field points to the top-most val_rrset_rec element in the val_rc_answer 
-authentication chain. 
+For a I<val_result_chain> element that contains a valid (not NULL)
+I<val_rc_answer> field, the I<val_rc_rrset> field points to the top-most
+I<val_rrset_rec> element in the I<val_rc_answer> authentication chain.
 
 =item I<val_rc_status>
 
@@ -361,90 +354,78 @@ Validation status for a given RRset.  This can be one of the following:
 
 =over 4
 
-=item VAL_SUCCESS
+=item B<VAL_SUCCESS>
 
 Answer received and validated successfully.
 
-=item VAL_NONEXISTENT_NAME
+=item B<VAL_NONEXISTENT_NAME>
 
-No name was present and a valid proof of non-
-existence confirming the missing name (NSEC or
-NSEC3 span) was returned. The components of
-the proof were also individually validated.
-
-=item VAL_NONEXISTENT_TYPE
-
-No type exists for the name and a valid proof
-of non-existence confirming the missing name
-was returned.  The components of the proof
-were also individually validated.
-
-=item VAL_NONEXISTENT_NAME_NOCHAIN
-
-No name was present and a valid proof of non-
-existence confirming the missing name was
-returned. The components of the proof were also
-identified to be trustworthy, but they were
-not individually validated.
-
-=item VAL_NONEXISTENT_TYPE_NOCHAIN
-
-No type exists for the name and a valid proof
-of non-existence confirming the missing name
-(NSEC or NSEC3 span) was returned.  The
-components of the proof were also identified
-to be trustworthy, but they were not
+No name was present and a valid proof of non-existence confirming the missing
+name (NSEC or NSEC3 span) was returned.  The components of the proof were also
 individually validated.
 
-=item VAL_PINSECURE
+=item B<VAL_NONEXISTENT_TYPE>
 
-The record or some ancestor of the record in
-the authentication chain towards the trust
-anchor was known to be provably insecure.
+No type exists for the name and a valid proof of non-existence confirming the
+missing name was returned.  The components of the proof were also individually
+validated.
 
-=item VAL_PINSECURE_UNTRUSTED
+=item B<VAL_NONEXISTENT_NAME_NOCHAIN>
 
-The record or some ancestor of the record in the
-authentication chain towards the trust anchor was
-known to be provably insecure. But the provably
-insecure condition was configured as untrustworthy.
+No name was present and a valid proof of non-existence confirming the missing
+name was returned.  The components of the proof were also identified to be
+trustworthy, but they were not individually validated.
 
-=item VAL_BARE_RRSIG
+=item B<VAL_NONEXISTENT_TYPE_NOCHAIN>
 
-No DNSSEC validation possible, query was
-for an RRSIG.
+No type exists for the name and a valid proof of non-existence confirming the
+missing name (NSEC or NSEC3 span) was returned.  The components of the proof
+were also identified to be trustworthy, but they were not individually
+validated.
 
-=item VAL_IGNORE_VALIDATION
+=item B<VAL_PINSECURE>
 
-Local policy was configured to ignore validation
-for the zone from which this data was received.
+The record or some ancestor of the record in the authentication chain towards
+the trust anchor was known to be provably insecure.
 
-=item VAL_UNTRUSTED_ZONE
+=item B<VAL_PINSECURE_UNTRUSTED>
 
-Local policy was configured to reject
-any data received from the given zone.
+The record or some ancestor of the record in the authentication chain towards
+the trust anchor was known to be provably insecure. But the provably insecure
+condition was configured as untrustworthy.
 
-=item VAL_OOB_ANSWER
+=item B<VAL_BARE_RRSIG>
 
-Answer was obtained using some Out of Band 
-method, such as a local configuration file.
+No DNSSEC validation possible, query was for an RRSIG.
 
-=item VAL_BOGUS
+=item B<VAL_IGNORE_VALIDATION>
 
-Response could not be validated due to signature
-verification failures or the inability to verify
-proofs for an indeterminate number of components
-in the authentication chain.
+Local policy was configured to ignore validation for the zone from which this
+data was received.
 
-=item VAL_DNS_ERROR     
+=item B<VAL_UNTRUSTED_ZONE>
 
-Some error was encountered during DNS processing. 
+Local policy was configured to reject any data received from the given zone.
 
-=item VAL_NOTRUST
+=item B<VAL_OOB_ANSWER>
 
-All available components in the authentication
-chain verified properly, but there was no trust
-anchor available.
+Answer was obtained using some Out Of Band method, such as a local
+configuration file.
+
+=item B<VAL_BOGUS>
+
+Response could not be validated due to signature verification failures or the
+inability to verify proofs for an indeterminate number of components in the
+authentication chain.
+
+=item B<VAL_DNS_ERROR>
+
+Some error was encountered during DNS processing.
+
+=item B<VAL_NOTRUST>
+
+All available components in the authentication chain verified properly, but
+there was no trust anchor available.
 
 =back
 
@@ -470,90 +451,82 @@ in ASCII format using I<p_val_status()>.
 
 =item I<val_ac_status>
 
-Validation state of the authentication chain element.  This field will
-contain the status code for the given component in the authentication chain.
-This field may contain one of the following values:
+Validation state of the authentication chain element.  This field will contain
+the status code for the given component in the authentication chain.  This
+field may contain one of the following values:
 
 =over 4
 
-=item VAL_AC_UNSET
+=item B<VAL_AC_UNSET>
 
-The status could not be determined. 
+The status could not be determined.
 
-=item VAL_AC_IGNORE_VALIDATION
+=item B<VAL_AC_IGNORE_VALIDATION>
 
-Validation for the given resource record was ignored,
-either because of some local policy directive or
-because of some protocol-specific behavior.
+Validation for the given resource record was ignored, either because of some
+local policy directive or because of some protocol-specific behavior.
 
-=item VAL_AC_UNTRUSTED_ZONE
+=item B<VAL_AC_UNTRUSTED_ZONE>
 
-Local policy defined a given zone as untrusted,
-with no further validation being deemed necessary.
+Local policy defined a given zone as untrusted, with no further validation
+being deemed necessary.
 
-=item VAL_AC_PINSECURE
+=item B<VAL_AC_PINSECURE>
 
-The authentication chain from a trust anchor to a
-given zone could not be constructed due to the
-provable absence of a DS record for this zone in
-the parent.
+The authentication chain from a trust anchor to a given zone could not be
+constructed due to the provable absence of a DS record for this zone in the
+parent.
 
-=item VAL_AC_BARE_RRSIG
+=item B<VAL_AC_BARE_RRSIG>
 
-The response was for a query of type RRSIG.  RRSIGs
-contain the cryptographic signatures for other DNS
-data and cannot themselves be validated.
+The response was for a query of type RRSIG.  RRSIGs contain the cryptographic
+signatures for other DNS data and cannot themselves be validated.
 
-=item VAL_AC_NO_LINK
+=item B<VAL_AC_NO_LINK>
 
-There was no trust anchor configured for a given
-authentication chain or the chain didn't link up.
+There was no trust anchor configured for a given authentication chain or the
+chain didn't link up.
 
-=item VAL_AC_TRUST
+=item B<VAL_AC_TRUST>
 
-At least one of the signatures covering the given
-DNSKEY RRset was directly verified using a key that was
-configured as a DNSSEC trust anchor.
+At least one of the signatures covering the given DNSKEY RRset was directly
+verified using a key that was configured as a DNSSEC trust anchor.
 
-=item VAL_AC_RRSIG_MISSING
+=item B<VAL_AC_RRSIG_MISSING>
 
-RRSIG data could not be retrieved for a
-resource record.
+RRSIG data could not be retrieved for a resource record.
 
-=item VAL_AC_DNSKEY_MISSING
+=item B<VAL_AC_DNSKEY_MISSING>
 
-The DNSKEY for an RRSIG covering a resource
-record could not be retrieved.
+The DNSKEY for an RRSIG covering a resource record could not be retrieved.
 
-=item VAL_AC_DS_MISSING
+=item B<VAL_AC_DS_MISSING>
 
-The DS record covering a DNSKEY record was
-not available.
+The DS record covering a DNSKEY record was not available.
 
-=item VAL_AC_DATA_MISSING
+=item B<VAL_AC_DATA_MISSING>
 
-No data were returned for a query and the
-DNS did not indicate an error.
+No data were returned for a query and the DNS did not indicate an error.
 
-=item VAL_AC_DNS_ERROR
+=item B<VAL_AC_DNS_ERROR>
 
-Some error was encountered during DNS processing. 
+Some error was encountered during DNS processing.
 
-=item VAL_AC_NOT_VERIFIED
+=item B<VAL_AC_NOT_VERIFIED>
 
-All RRSIGs covering the RRset could not
-be verified.
+All RRSIGs covering the RRset could not be verified.
 
-=item VAL_AC_VERIFIED
+=item B<VAL_AC_VERIFIED>
 
-At least one RRSIG covering a resource
-record had a status of VAL_AC_RRSIG_VERIFIED.
+At least one RRSIG covering a resource record had a status of
+B<VAL_AC_RRSIG_VERIFIED>.
 
 =back
 
 =item I<val_ac_rrset>
 
-Pointer to an RRset of type I<struct val_rrset_rec> obtained from the DNS response.
+Pointer to an RRset of type I<struct val_rrset_rec> obtained from the DNS
+response.
 
 =item I<val_ac_trust>
 
@@ -606,8 +579,8 @@ TTL of the RRset.
 
 =item I<val_rrset_section>
 
-Section in which the RRset was received.  This value may be B<VAL_FROM_ANSWER>,
-B<VAL_FROM_AUTHORITY>, or B<VAL_FROM_ADDITIONAL>.
+Section in which the RRset was received.  This value may be
+B<VAL_FROM_ANSWER>, B<VAL_FROM_AUTHORITY>, or B<VAL_FROM_ADDITIONAL>.
 
 =item I<val_rrset_server>
 
@@ -701,8 +674,8 @@ authentication chain I<val_ac_rrset>, the validation status is stored in the
 variable I<rr_status> and can return one of the following values:
 
     VAL_AC_TRUST_POINT
-    The given DNSKEY or a DS record was configured 
-    as a DNSSEC trust anchor.
+        The given DNSKEY or a DS record was configured 
+        as a DNSSEC trust anchor.
 
     VAL_AC_SIGNING_KEY
 	This DNSKEY was used to create an RRSIG for
@@ -728,12 +701,11 @@ variable I<rr_status> and can return one of the following values:
 	exist in the parent DS record set.
 
     VAL_AC_INVALID_KEY
-	The key used to verify the RRSIG was not a valid
-	DNSKEY.
+	The key used to verify the RRSIG was not a valid DNSKEY.
 
     VAL_AC_INVALID_DS
-	The DS used to validatate the DNSKEY could not be
-    parsed 
+	The DS used to validate the DNSKEY could not be parsed.
+
 =back
 
 =item I<rr_next>
@@ -742,17 +714,15 @@ Points to the next resource record in the RRset.
 
 =back
 
-=back
-
 =head1 LOGGING 
 
-libval provides the val_log_add_optarg() function for controlling the 
+B<libval> provides the I<val_log_add_optarg()> function for controlling the 
 verbosity and location of log message output.
 
-The val_log_add_optarg() function takes two arguments: the first argument
-args is a character string value that specifies the location and verbosity,
-the second argument, use_stderr, if set to a value greater than 0 allows 
-libval to send log messages to stderr.
+The I<val_log_add_optarg()> function takes two arguments: the first argument
+I<args> is a character-string value that specifies the location and verbosity.
+The second argument, I<use_stderr>, if set to a value greater than 0 allows 
+B<libval> to send log messages to stderr.
 
 The character string that specifies log target location and verbosity has 
 a specific format:
@@ -771,12 +741,12 @@ The log levels can be roughly translated into different types of log messages
 as follows (the messages returned for each level in this list subsumes the 
 messages returned for the level above it):
 
-    3 : Error : errror encountered
+    3 : Error   : error encountered
     4 : Warning : recovering from error
-    5 : Notice : gives final validation results for a query 
-                 and details on policy files and labels used 
-    6 : Info : gives details on authentication chains 
-    7 : Debug : gives debug level information
+    5 : Notice  : gives final validation results for a query 
+                  and details on policy files and labels used 
+    6 : Info    : gives details on authentication chains 
+    7 : Debug   : gives debug level information
     
 =head1 RETURN VALUES
 
@@ -828,7 +798,7 @@ The policy identifier being referenced was invalid.
 The validator library reads configuration information from two files,
 B<resolv.conf> and B<dnsval.conf>.
 
-See B<dnsval.conf(5)> for a description of syntax for these files.
+See B<dnsval.conf(5)> for a description of the syntax for these files.
 
 =head1 COPYRIGHT
 
@@ -841,7 +811,7 @@ Suresh Krishnaswamy, Robert Story
 
 =head1 SEE ALSO
 
-I<libsres(3)>
+B<libsres(3)>
 
 B<dnsval.conf(5)>
 

@@ -2,8 +2,10 @@
 
 =head1 NAME
 
-dnsval.conf, resolv.conf, root.hints - Configuration policy for the DNSSEC validator library libval(3).
+dnsval.conf, resolv.conf, root.hints - Configuration policy for the DNSSEC validator library libval(3)
+
 val_add_valpolicy - Dynamically add a new policy to the validator context
+
 val_remove_valpolicy - Remove a dynamically added policy from the validator context
 
 =head1 SYNOPSIS
@@ -135,7 +137,7 @@ An example is given below.
 =item zone-security-expectation
 
 For the "zone-security-expectation" attribute additional-data
-is a sequence of  &lt;domain name,value&gt; tuples representing 
+is a sequence of E<lt>domain name,valueE<gt> tuples representing 
 the security expectation for names in that domain, where value 
 can be one of the following:
 

@@ -1,4 +1,4 @@
-#     Validator.pm -- Perl 5 interface to the Dnssec-Tools validating resolver
+#     Validator.pm -- Perl 5 interface to the DNSSEC-Tools validating resolver
 #
 #     written by G. S. Marzot (marz@users.sourceforge.net)
 #
@@ -10,10 +10,11 @@
 #     This program is free software; you can redistribute it and/or
 #     modify it under the same terms as Perl itself.
 #
+
 package Net::DNS::SEC::Validator;
-require Net::addrinfo; # return type from getaddrinfo
-require Net::hostent; # return type from gethost*
-use Net::DNS; # to interpret DNS classes and types
+require Net::addrinfo;			# return type from getaddrinfo
+require Net::hostent;			# return type from gethost*
+use Net::DNS;				# to interpret DNS classes and types
 use Carp;
 
 our $VERSION = '1.11';   # current release version number
@@ -417,57 +418,234 @@ sub DESTROY {
 1;
 __END__
 
+########################################################################
+
+=pod
+
 =head1 NAME
 
-    Net::DNS::SEC::Validator - interface to libval(3) and related constants, structures and functions.
+B<Net::DNS::SEC::Validator> - interface to B<libval(3)> and related constants, structures and functions
 
 =head1 SYNOPSIS
 
- use Net::DNS::SEC::Validator;
- use Net::DNS::Packet;
- use Net::hostent;
- use Net::addrinfo;
- use Socket qw(:all);
+  use Net::DNS::SEC::Validator;
+  use Net::DNS::Packet;
+  use Net::hostent;
+  use Net::addrinfo;
+  use Socket qw(:all);
 
- my $validator = new Net::DNS::SEC::Validator(policy => ":");
- my (@r) = $validator->getaddrinfo("good-A.test.dnssec-tools.org");
- my $r = $validator->res_query("marzot.net", "IN", "MX");
- my $h = $validator->gethostbyname("good-AAAA.test.dnssec-tools.org",
-    AF_INET6);
+  my $validator = new Net::DNS::SEC::Validator(policy => ":");
+  my (@r) = $validator->getaddrinfo("good-A.test.dnssec-tools.org");
+  my $r = $validator->res_query("marzot.net", "IN", "MX");
+  my $h = $validator->gethostbyname("good-AAAA.test.dnssec-tools.org",
+                                    AF_INET6);
 
 =head1 DESCRIPTION
 
-This Perl module is designed to implement and export functionality
-provided by the validating DNS resolver library, libval(3). The
-functions are provided through an easy-to-use object oriented
-interface. The interface is designed for the higher level user, hiding
-some of the complexity of validating resolvers. Nevertheless,
-application interface behavior can be customized through configuration
-files provided by libval(3) and extensive error codes returned.
+The B<Validator> module provides provides access to the B<libval(3)>
+validating DNS resolver library.  The library functions are accessed through
+an object-oriented interface.  The interface is designed to hide some of the
+complexity of validating resolvers.  Application-interface behavior can be
+customized through configuration files provided by B<libval>, and extensive
+error codes are returned.
 
-Details of DNSSEC and associated resolver behavior may be found in the
-core DNSSEC RFCs (4033-4035).
+Since B<Validator> is a gateway to B<libval>, documentation for B<libval>
+will provide further details on how the B<Validator> interfaces and parameters
+may be used.
 
-=head1 INTERFACE:
+Details of DNSSEC and associated resolver behavior may be found in the core
+DNSSEC RFCs (4033-4035).
+
+=head1 INTERFACE
  
-A description of the API follows:
+A description of the API follows.
 
-=head2 Contructor:
+=head2 B<Validator> Constructor
 
-To create a validator object use the Net::DNS::SEC::Validator->new()
-method. This method optionally takes a policy label (policy =>
-'label'), or default to using the default label in the libval(3)
-dnsval.conf file.
+This constructor builds a new validator object, which is used to make the
+various resolver calls.  When the validator object is created, a I<policy>
+object is created.  The I<policy> object provides a number of settings that
+will control various aspects of the DNS resolution.
 
-=head2 Data Fields:
+To create a validator object use the I<Net::DNS::SEC::Validator->new()>
+method.  This method takes a number of optional parameters, which will be
+described below.
 
- $validator->{error} =>The latest method error code
- $validator->{errorStr} => the latest method error string
- $validator->{valStatus} => the val_status of last call (if single)
- $validator->{valStatusStr} => the val_status string of last call
+A policy object may be named with the I<policy> parameter, which associates
+a label with a particular policy.  This allows that policy to be referenced
+at a later time.  If the label isn't specified, then it will be given the
+the default label from the B<libval> B<dnsval.conf> file.
 
+The parameters to the constructor are passed as a hash, with both key and
+value given in the call.  Besides the policy label, there are two sets of
+constructor parameters.  These are separated based on how they are stored
+and used in B<libval>.
 
-=head2 Methods:
+=head3 Context Options
+
+This group of parameters are stored in a I<val_context_opt> structure in
+B<libval>.  This structure is defined in
+B<dnssec/validator/include/validator/validator.h>.  The context options
+below are the hash-key values used in the constructor call.
+
+=over 4
+
+=item I<dnsval_conf>
+
+Configuration policy for the B<libval> library.
+
+This file contains the validator policy.  The default value is
+B</usr/local/etc/dnssec-tools/dnsval.conf>, but this may have been
+changed when B<libval> was built and installed.
+
+I<val_context_opt> field:  I<vc_val_conf>
+
+=item I<nslist>
+
+This is a list of name servers that should be used in resolving names.
+This must be a white-space delimited list of IP or IPv6 addresses.
+
+I<val_context_opt> field:  I<vc_nslist>
+
+=item I<polflags>
+
+This is a set of bitmapped policy flags.  The valid flags are defined in
+B<dnssec/validator/include/validator/validator.h>.  The default value is
+B<CTX_DYN_POL_RES_OVR>.
+
+I<val_context_opt> field:  I<vc_polflags>
+
+=item I<qflags>
+
+This is the set of default query flags.  The valid flags are defined in
+B<dnssec/validator/include/validator/validator.h>.  The default value is 0.
+
+I<val_context_opt> field:  I<vc_qflags>
+
+=item I<resolv_conf>
+
+This file contains nameserver and search options for the B<libval> library.
+The default value is B</usr/local/etc/dnssec-tools/resolv.conf>, but this may
+have been changed when B<libval> was built and installed.
+
+I<val_context_opt> field:  I<vc_res_conf>
+
+=item I<root_hints>
+
+This file contains bootstrapping information for the name resolver.
+The default value is B</usr/local/etc/dnssec-tools/root.hints>, but this may
+have been changed when B<libval> was built and installed.
+
+I<val_context_opt> field:  I<vc_root_conf>
+
+=item I<valpol>
+
+This supplies a customized piece of validator configuration to the default
+validator configuration as an extension or an override.  This is null by
+default.
+
+I<val_context_opt> field:  I<vc_valpol>
+
+=back
+
+=head3 Global Options
+
+This group of parameters are stored in a I<val_global_opt> structure, which
+is itself stored in a the I<gopt> field of the I<val_context_opt> structure.
+This structure is defined in B<dnssec/validator/include/validator/validator.h>.
+The global options below are the hash-key values used in the constructor call.
+
+For all but the I<log_target> field, a value of -1 indicates an "ignore"
+condition.  This means that the validator will not include dynamically
+supplied global options with a value of -1 when creating its context.
+This allows an application to override a subset of global options while
+using the global options supplied in the B<dnsval.conf> file by default.
+
+Even though B<libval> uses the global options in a separate structure from
+the context options, they are all specified in the same hash when passed as
+parameters to the B<Validator> constructor.
+
+=over 4
+
+=item I<app_policy>
+
+This field is equivalent to the I<env-policy> option in a B<dnsval.conf>
+file.  The following are the legal values and their I<env-policy>
+equivalences:
+
+    VAL_POL_GOPT_DISABLE       "disable"
+    VAL_POL_GOPT_ENABLE        "enable"
+    VAL_POL_GOPT_OVERRIDE      "override"
+
+The default value is -1.
+
+I<val_global_opt> field:  I<gopt.app_policy>
+
+=item I<closest_ta_only>
+
+This field is equivalent to the I<closest-ta-only> option in a B<dnsval.conf>
+file.  Setting this to 1 is equivalent to setting I<closest-ta-only> to "yes";
+setting it to 0 is equivalent to "no".  The default value is -1.
+
+I<val_global_opt> field:  I<gopt.closest_ta_only>
+
+=item I<edns0_size>
+
+This field is equivalent to the I<edns0-size> option in a B<dnsval.conf>
+file.  The default value is -1.
+
+I<val_global_opt> field:  I<gopt.edns0_size>
+
+=item I<env_policy>
+
+This field is equivalent to the I<env-policy> option in a B<dnsval.conf>
+file.  The following are the legal values and their I<env-policy>
+equivalences:
+
+    VAL_POL_GOPT_DISABLE       "disable"
+    VAL_POL_GOPT_ENABLE        "enable"
+    VAL_POL_GOPT_OVERRIDE      "override"
+
+The default value is -1.
+
+I<val_global_opt> field:  I<gopt.env_policy>
+
+=item I<local_is_trusted>
+
+This field is equivalent to the I<trust-oob-answers> option in a
+B<dnsval.conf> file.  Setting this to 1 is equivalent to setting
+I<trust-oob-answers> to "yes"; setting it to 0 is equivalent to "no".
+The default value is -1.
+
+I<val_global_opt> field:  I<gopt.local_is_trusted>
+
+=item I<log_target>
+
+This field allows the caller to specify additional log targets to those given
+in the B<dnsval.conf> file.  No additional logs are listed by default.
+
+I<val_global_opt> field:  I<gopt.log_target>
+
+=item I<rec_fallback>
+
+This field is equivalent to the I<rec-fallback> option in a B<dnsval.conf>
+file.  Setting this to 1 is equivalent to setting I<rec-fallback> to "yes";
+setting it to 0 is equivalent to "no".  The default value is -1.
+
+I<val_global_opt> field:  I<gopt.rec_fallback>
+
+=back
+
+=head3 Validator Result Fields
+
+Operation status and results are found in the following validator fields:
+
+  $validator->{error}        => the latest method error code
+  $validator->{errorStr}     => the latest method error string
+  $validator->{valStatus}    => the val_status of last call (if single)
+  $validator->{valStatusStr} => the val_status string of last call
+
+Values for these fields are described in the next section.
 
 
 =head2 $validator->getaddrinfo(<name>[,<service>[,<hints>]])
@@ -475,9 +653,9 @@ dnsval.conf file.
 =head3   where:
 
     <name> => is the node name or numeric address being queried
-    <service> => is the name or number represting the service
+    <service> => is the name or number representing the service
     (note: <name> or <service> may be undef, but not both)
-    <hint> => a Net::addrinfo object specying flags, family, etc.
+    <hint> => a Net::addrinfo object specifying flags, family, etc.
 
 =head3   returns:
 
@@ -506,7 +684,7 @@ dnsval.conf file.
 
     <name> 	=> is the node name or numeric address being queried
     <class> 	=> is the DNS class of the record being queried (default: IN)
-    <type>	=> is the DNS record type being queried (defailt A)
+    <type>	=> is the DNS record type being queried (default A)
 
 =head3   returns:
 
@@ -533,7 +711,7 @@ dnsval.conf file.
 
 =head3   where:
 
-    <val_status> => numeric vaildator status code
+    <val_status> => numeric validator status code
     (default: $validator->{valStatus})
 
 =head3   returns:
@@ -545,7 +723,7 @@ dnsval.conf file.
 
 =head3   where:
 
-    <val_status> => numeric vaildator status code
+    <val_status> => numeric validator status code
     (default: $validator->{valStatus})
 
 =head3   returns:
@@ -553,8 +731,71 @@ dnsval.conf file.
     A string representation of the given <val_status>.
                   
 
-=head1 EXAMPLES
+=head1 VALIDATOR DATA FIELDS
 
+The validator's I<error> and I<errorStr> fields are set with values
+corresponding to those from the standard I<herror()> and I<hstrerror()>
+functions.  These values are defined in B<netdb.h>.  These values are:
+
+  error      errorStr
+    0        Resolver Error 0 (no error)
+    1        Unknown host
+    2        Host name lookup failure
+    3        Unknown server error
+    4        No address associated with name
+
+The values for the validator's I<valStatus> field are defined in
+B<.../dnssec-tools/validator/include/validator/val_errors.h>.  The values
+for the I<valStatusStr> fields are the text representation of the status
+values' constants.  These status values and strings are given below in
+two tables.  First, they are sorted alphabetically by the status string.
+Second, they are sorted numerically by the hexadecimal status value.
+
+   valStatus    valStatusStr
+    0x8a        VAL_BARE_RRSIG
+    0x01        VAL_BOGUS
+    0x02        VAL_DNS_ERROR
+    0x8b        VAL_IGNORE_VALIDATION
+    0x84        VAL_NONEXISTENT_NAME
+    0x86        VAL_NONEXISTENT_NAME_NOCHAIN
+    0x85        VAL_NONEXISTENT_TYPE
+    0x87        VAL_NONEXISTENT_TYPE_NOCHAIN
+    0x03        VAL_NOTRUST
+    0x8d        VAL_OOB_ANSWER
+    0x88        VAL_PINSECURE
+    0x89        VAL_PINSECURE_UNTRUSTED
+    0x80        VAL_SUCCESS
+    0x8e        VAL_TRUSTED_ANSWER
+    0x90        VAL_UNTRUSTED_ANSWER
+    0x8c        VAL_UNTRUSTED_ZONE
+    0x8f        VAL_VALIDATED_ANSWER
+
+   valStatus    valStatusStr
+    0x01        VAL_BOGUS
+    0x02        VAL_DNS_ERROR
+    0x03        VAL_NOTRUST
+    0x80        VAL_SUCCESS
+    0x84        VAL_NONEXISTENT_NAME
+    0x85        VAL_NONEXISTENT_TYPE
+    0x86        VAL_NONEXISTENT_NAME_NOCHAIN
+    0x87        VAL_NONEXISTENT_TYPE_NOCHAIN
+    0x88        VAL_PINSECURE
+    0x89        VAL_PINSECURE_UNTRUSTED
+    0x8a        VAL_BARE_RRSIG
+    0x8b        VAL_IGNORE_VALIDATION
+    0x8c        VAL_UNTRUSTED_ZONE
+    0x8d        VAL_OOB_ANSWER
+    0x8e        VAL_TRUSTED_ANSWER
+    0x8f        VAL_VALIDATED_ANSWER
+    0x90        VAL_UNTRUSTED_ANSWER
+
+The VAL_SUCCESS status value is defined as having the same value as
+VAL_FLAG_CHAIN_COMPLETE.  In the B<val_errors.h> file, this value (0x80)
+is OR'd to most of the status values.  This implies that those status values
+from 0x80 through 0x90 may be taken as successful results.
+
+                  
+=head1 EXAMPLES
 
   use Net::DNS::SEC::Validator;
   use Net::DNS::Packet;
@@ -585,23 +826,32 @@ dnsval.conf file.
   my $h = $validator->gethostbyname("good-A.test.dnssec-tools.org");
   if ( @{$h->addr_list}) { 
   my $i;
-    for $addr ( @{$h->addr_list} ) {
+     for $addr ( @{$h->addr_list} ) {
  	printf "\taddr #%d is [%s]\n", $i++, inet_ntoa($addr);
-    } 
- }
+     } 
+  }
+
+=head1 SEE ALSO
+
+B<libval(3)>,
+B<dnsval.conf(3)>,
+B<resolv.conf(3)>,
+B<root.hints(3)>
+
 
 =head1 COPYRIGHT
 
-   Copyright (c) 2006 G. S. Marzot. All rights reserved.  This program
-   is free software; you can redistribute it and/or modify it under
-   the same terms as Perl itself.
+Copyright (c) 2006 G. S. Marzot. All rights reserved.  This program
+is free software; you can redistribute it and/or modify it under
+the same terms as Perl itself.
 
-   Copyright (c) 2006-2008 SPARTA, Inc.  All Rights Reserved.  This program
-   is free software; you can redistribute it and/or modify it under
-   the same terms as Perl itself.
+Copyright (c) 2006-2013 SPARTA, Inc.  All Rights Reserved.  This program
+is free software; you can redistribute it and/or modify it under
+the same terms as Perl itself.
 
 =head1 AUTHOR
 
  G. S. Marzot (marz@users.sourceforge.net)
 
 =cut
+
