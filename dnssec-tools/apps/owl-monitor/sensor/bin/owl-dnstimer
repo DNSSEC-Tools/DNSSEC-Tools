@@ -316,6 +316,22 @@ sub doopts
 	#
 	$owlutils::logflag = ! $nolog;
 
+	#
+	# TEMPORARY:	Don't allow Validator use for now.  Validator
+	#		seems to have problems on Linux when using
+	#		multiple validator objects.
+	#
+	if(! $nodnssec)
+	{
+		print STDERR "\n";
+		print STDERR "\n";
+		print STDERR "Net::DNS::SEC::Validator is not currently supported; using Net::DNS::Resolver in the interim\n";
+		print STDERR "\n";
+		print STDERR "\n";
+
+		$nodnssec = 1;
+	}
+
 }
 
 #------------------------------------------------------------------------
