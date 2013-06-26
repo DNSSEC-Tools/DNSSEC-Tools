@@ -41,6 +41,8 @@ use Net::DNS;
 use Net::DNS::Packet;
 use Net::DNS::Resolver;
 use Net::DNS::SEC::Validator;
+use Net::hostent;
+use Socket;
 
 #
 # Before including the threads module, we'll make sure we're able to.
@@ -394,6 +396,8 @@ sub startup
 #
 sub makeresolvers
 {
+	my $mrez = undef;				# Master resolver.
+
 	for(my $ind=0; $ind < @cf_servers; $ind++)
 	{
 		my $nsname;				# Name server's name.
@@ -428,14 +432,40 @@ sub makeresolvers
 		}
 		else
 		{
-			$res = new Net::DNS::SEC::Validator();
+			my $hent;		# Name server's host entry.
+			my $host;		# Name server's text address.
+			my $nsaddr;		# Name server's real address.
 
-#			$res = new Net::DNS::SEC::Validator(policy => ":",
-#						dnsval_conf => $dnsval_conf,
-#						root_hints  => $root_hints,
-#						resolv_conf => $resolv_conf,
-#						);
+			#
+			# Get the resolver from which other resolvers will
+			# be found.
+			#
+			if($mrez == undef)
+			{
+				$mrez = new Net::DNS::SEC::Validator();
+			}
 
+			#
+			# Ge the host entry for this name server.
+			#
+			$hent = $mrez->gethostbyname($nsname);
+			if(! defined($hent))
+			{
+				print "undefined name server $nsname\n";
+				next;
+			}
+
+			#
+			# Get the name server's address from the host entry.
+			#
+			$host = shift @{$hent->addr_list};
+			$nsaddr = inet_ntoa($host);
+
+			#
+			# Finally, we'll get the resolver for this name server.
+			#
+			$res = undef;
+			$res = new Net::DNS::SEC::Validator(nslist => $nsaddr);
 		}
 
 		#
@@ -706,10 +736,12 @@ sub nstimer
 	}
 	else
 	{
+		my $err;
+
 		$time0 = time();
 		$resp = $resolver->res_query($target, $family, $qtype);
 		$time1 = time();
-		$resp = new Net::DNS::Packet($resp);
+		($resp,$err) = new Net::DNS::Packet(\$resp);
 	}
 
 	#
@@ -993,15 +1025,10 @@ version of Perl allow.  In this case, each query will be handled by its own
 thread.  If threaded execution is not allowed, then each query will be
 handled by its own process.
 
-By default, B<owl-dnstimer> resolves names with the DNSSEC-Tools
-B<Net::DNS::SEC::Validator> module.  This requires that the DNSSEC-Tools
-validator library and Perl module be installed.  If the B<-nodnssec> option
-is given, then the B<Net::DNS::Resolver> module will be used instead.
-
 =head2 FILE ORGANIZATION
 
-B<owl-dnstimer> assumes that the file hierarchy for the sensor is arranged
-like this:
+B<owl-dnstimer> assumes that the file hierarchy for the sensor is arranged like
+this:
 
     bin/owl-dnstimer
     conf/owl.conf
@@ -1069,7 +1096,9 @@ this directory doesn't exist, it will be created.
 
 =item B<-nodnssec>
 
-Specifies that the B<Net::DNS::Resolver> module will be used.
+By default, B<owl-dnstimer> resolves names with the DNSSEC-Tools
+B<Net::DNS::SEC::Validator> module.  If this option is given, then
+the B<Net::DNS::Resolver> module will be used instead.
 
 =item B<-nolog>
 
@@ -1098,10 +1127,6 @@ Prints B<owl-dnstimer>'s version and exit.
 B<owl-rrdata(1)>,
 B<owl-rrsec(1)>,
 B<owl-sensord(1)>
-
-B<libval(3)>
-B<Net::DNS::SEC::Validator(3)>
-B<Net::DNS::Resolver(3)>
 
 B<owl-config(5)>,
 B<owl-data(5)>
