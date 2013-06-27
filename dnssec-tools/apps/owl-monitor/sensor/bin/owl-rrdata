@@ -578,7 +578,7 @@ sub askaway
 	my $rcode = -1;					# send() error code.
 
 	my $qarg;					# Query argument.
-	my $ns = "";				# Name server argument. 
+	my $ns = '';					# Name server argument. 
 
 	my $time0;					# Start time.
 	my $time1;					# Stop time.
@@ -812,7 +812,8 @@ B<owl-rrdata> starts a set of threads, each of which periodically executes
 the B<dig> command for a specified target host.  The DNS query type and target
 are defined in the Owl configuration file.  Along with the query's resource
 records, the time taken from query to response is saved in a file
-specifically for that target and query type.
+specifically for that target and query type.  Data files for B<owl-rrdata>
+have a B<.rrec> file extension.
 
 The Owl configuration file defines which target hosts are contacted, as well
 as how often they are contacted.  B<owl-rrdata> maintains a log file that
