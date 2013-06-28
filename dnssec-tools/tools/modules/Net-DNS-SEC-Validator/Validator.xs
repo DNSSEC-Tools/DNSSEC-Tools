@@ -459,7 +459,7 @@ pval_create_context_ex(optref)
 
     // Find the policy label
     SV **label_svp = hv_fetch((HV*)SvRV(optref), "policy", 6, 1);
-    label = (SvOK(*label_svp) ? SvPV_nolen(*label_svp) : NULL);
+    label = (SvOK(*label_svp) ? SvPV_nolen(*label_svp) : ":");
 
     // Context options
     SV **vc_qflags_svp = hv_fetch((HV*)SvRV(optref), "qflags", 6, 1);
@@ -848,6 +848,7 @@ vc_DESTROY(vc_ptr)
 	CODE:
 	{
 	  val_free_context( vc_ptr );
+      vc_ptr = NULL;
 	}
 
 
