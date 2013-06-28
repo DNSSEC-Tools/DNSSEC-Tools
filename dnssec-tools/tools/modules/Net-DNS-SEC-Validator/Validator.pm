@@ -436,7 +436,7 @@ B<Net::DNS::SEC::Validator> - interface to B<libval(3)> and related constants, s
 
   my $validator = new Net::DNS::SEC::Validator(policy => ":");
   my (@r) = $validator->getaddrinfo("good-A.test.dnssec-tools.org");
-  my $r = $validator->res_query("marzot.net", "IN", "MX");
+  my $r = $validator->res_query("dnssec-tools.org", "IN", "MX");
   my $h = $validator->gethostbyname("good-AAAA.test.dnssec-tools.org",
                                     AF_INET6);
 
@@ -747,53 +747,32 @@ functions.  These values are defined in B<netdb.h>.  These values are:
 The values for the validator's I<valStatus> field are defined in
 B<.../dnssec-tools/validator/include/validator/val_errors.h>.  The values
 for the I<valStatusStr> fields are the text representation of the status
-values' constants.  These status values and strings are given below in
-two tables.  First, they are sorted alphabetically by the status string.
-Second, they are sorted numerically by the hexadecimal status value.
+values' constants.  The different possible values for I<valStatus> are
+listed below, and further details are provided in B<libval(3)>:
 
-   valStatus    valStatusStr
-    0x8a        VAL_BARE_RRSIG
-    0x01        VAL_BOGUS
-    0x02        VAL_DNS_ERROR
-    0x8b        VAL_IGNORE_VALIDATION
-    0x84        VAL_NONEXISTENT_NAME
-    0x86        VAL_NONEXISTENT_NAME_NOCHAIN
-    0x85        VAL_NONEXISTENT_TYPE
-    0x87        VAL_NONEXISTENT_TYPE_NOCHAIN
-    0x03        VAL_NOTRUST
-    0x8d        VAL_OOB_ANSWER
-    0x88        VAL_PINSECURE
-    0x89        VAL_PINSECURE_UNTRUSTED
-    0x80        VAL_SUCCESS
-    0x8e        VAL_TRUSTED_ANSWER
-    0x90        VAL_UNTRUSTED_ANSWER
-    0x8c        VAL_UNTRUSTED_ZONE
-    0x8f        VAL_VALIDATED_ANSWER
+    VAL_BARE_RRSIG
+    VAL_BOGUS
+    VAL_DNS_ERROR
+    VAL_IGNORE_VALIDATION
+    VAL_NONEXISTENT_NAME
+    VAL_NONEXISTENT_NAME_NOCHAIN
+    VAL_NONEXISTENT_TYPE
+    VAL_NONEXISTENT_TYPE_NOCHAIN
+    VAL_NOTRUST
+    VAL_OOB_ANSWER
+    VAL_PINSECURE
+    VAL_PINSECURE_UNTRUSTED
+    VAL_SUCCESS
+    VAL_TRUSTED_ANSWER
+    VAL_UNTRUSTED_ANSWER
+    VAL_UNTRUSTED_ZONE
+    VAL_VALIDATED_ANSWER
 
-   valStatus    valStatusStr
-    0x01        VAL_BOGUS
-    0x02        VAL_DNS_ERROR
-    0x03        VAL_NOTRUST
-    0x80        VAL_SUCCESS
-    0x84        VAL_NONEXISTENT_NAME
-    0x85        VAL_NONEXISTENT_TYPE
-    0x86        VAL_NONEXISTENT_NAME_NOCHAIN
-    0x87        VAL_NONEXISTENT_TYPE_NOCHAIN
-    0x88        VAL_PINSECURE
-    0x89        VAL_PINSECURE_UNTRUSTED
-    0x8a        VAL_BARE_RRSIG
-    0x8b        VAL_IGNORE_VALIDATION
-    0x8c        VAL_UNTRUSTED_ZONE
-    0x8d        VAL_OOB_ANSWER
-    0x8e        VAL_TRUSTED_ANSWER
-    0x8f        VAL_VALIDATED_ANSWER
-    0x90        VAL_UNTRUSTED_ANSWER
-
-The VAL_SUCCESS status value is defined as having the same value as
-VAL_FLAG_CHAIN_COMPLETE.  In the B<val_errors.h> file, this value (0x80)
-is OR'd to most of the status values.  This implies that those status values
-from 0x80 through 0x90 may be taken as successful results.
-
+The I<istrusted()> and I<isvalidated()> functions can be used to test if
+a particular I<valStatus> value corresponds to a trusted or a
+validated status condition. Status values that are neither trusted nor
+validated are un-trustworthy and must be treated as such by the 
+application. 
                   
 =head1 EXAMPLES
 
@@ -817,7 +796,7 @@ from 0x80 through 0x90 may be taken as successful results.
   }
  
   # query an MX record
-  my $r = $validator->res_query("marzot.net", "IN", "MX");
+  my $r = $validator->res_query("dnssec-tools.org", "IN", "MX");
   my ($pkt, $err) = new Net::DNS::Packet(\$r);
   print ($validator->istrusted ? 
  	"result is trusted\n" : 
