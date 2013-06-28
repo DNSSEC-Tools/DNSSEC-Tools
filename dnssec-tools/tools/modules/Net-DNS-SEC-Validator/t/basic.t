@@ -134,18 +134,18 @@ ok(ref $r eq 'Net::hostent');
 $r = $validator->gethostbyname("good-A.test.dnssec-tools.org");
 ok(ref $r eq 'Net::hostent');
 
-$r = $validator->gethostbyname("www.marzot.net");
+$r = $validator->gethostbyname("www.dnssec-tools.org");
 ok(ref $r eq 'Net::hostent');
 
 
-$r = $validator->res_query("marzot.net", "IN", "MX");
+$r = $validator->res_query("dnssec-tools.org", "IN", "MX");
 ok($r);
 
 ($pkt, $err) = new Net::DNS::Packet(\$r);
 ok(not $err);
 
 # this be locally trusted but not validated
-$r = $validator->res_query("marzot.net", "IN", "MX");
+$r = $validator->res_query("dnssec-tools.org", "IN", "MX");
 ok($r);
 ok($validator->{valStatus} == VAL_TRUSTED_ANSWER);
 ok($validator->istrusted());
