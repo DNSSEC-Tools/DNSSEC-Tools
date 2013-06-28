@@ -426,16 +426,16 @@ val_create_context_internal( char *label,
         /* Update the dynamic policies */
         if (the_default_context->dyn_valpolopt != NULL) {
             FREE(the_default_context->dyn_valpolopt);
-            the_default_context->dyn_valpolopt = dyn_valpolopt;
         }
+        the_default_context->dyn_valpolopt = dyn_valpolopt;
         if (the_default_context->dyn_valpol != NULL) {
             destroy_valpolovr(&the_default_context->dyn_valpol);
-            the_default_context->dyn_valpol = dyn_valpol;
         }
+        the_default_context->dyn_valpol = dyn_valpol;
         if (the_default_context->dyn_nslist != NULL) {
             free_name_servers(&the_default_context->dyn_nslist);
-            the_default_context->dyn_nslist = dyn_nslist;
         }
+        the_default_context->dyn_nslist = dyn_nslist;
         the_default_context->dyn_polflags = polflags;
 
         *newcontext = the_default_context;
