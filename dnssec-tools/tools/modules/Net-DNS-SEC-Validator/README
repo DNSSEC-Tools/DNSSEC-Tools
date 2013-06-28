@@ -197,7 +197,7 @@ foreach $a (@r) {
 }
 
 # query an MX record
-my $r = $validator->res_query("marzot.net", "IN", "MX");
+my $r = $validator->res_query("dnssec-tools.org", "IN", "MX");
 my ($pkt, $err) = new Net::DNS::Packet(\$r);
 print ($validator->istrusted ? 
 	"result is trusted\n" : 
