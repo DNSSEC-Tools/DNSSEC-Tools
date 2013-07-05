@@ -818,6 +818,11 @@ done:
     return rv;
 }
 
+/*
+ * Checks a DANE record to see if it matches an end-entity certificate
+ * in a X.509 certificate store.
+ * Returns either VAL_DANE_CHECK_FAILED or VAL_DANE_NOERROR;
+ */
 static int 
 val_dane_check_EE(val_context_t *context,
                   X509_STORE_CTX *x509ctx,
