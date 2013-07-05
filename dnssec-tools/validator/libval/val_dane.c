@@ -126,8 +126,8 @@ get_dane_from_result(val_context_t *ctx,
         if (!val_istrusted(res->val_rc_status))
             return VAL_DANE_NOTVALIDATED;
 
-        /* 
-         * not validated is okay for non-existence conditions
+        /*
+         * Ensure that the record is validated.
          */
         if (!validated || !val_isvalidated(res->val_rc_status))
             validated = 0;
@@ -139,6 +139,9 @@ get_dane_from_result(val_context_t *ctx,
             continue;
         }
 
+        /* 
+         * provably non-existence conditions are okay
+         */
         if (val_does_not_exist(res->val_rc_status))
             return VAL_DANE_IGNORE_TLSA;
 
