@@ -153,8 +153,7 @@ get_dane_from_result(val_context_t *ctx,
             return VAL_DANE_NOTVALIDATED;
 
         rrset = res->val_rc_rrset;
-        if(!res->val_rc_alias && rrset && 
-                rrset->val_rrset_type == ns_t_tlsa) {
+        if(rrset && rrset->val_rrset_type == ns_t_tlsa) {
             struct val_rr_rec  *rr = rrset->val_rrset_data; 
 
             while (rr) {
