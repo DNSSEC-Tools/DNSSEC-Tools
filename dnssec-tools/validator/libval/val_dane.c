@@ -529,6 +529,10 @@ int get_pkeybuf(const unsigned char *data, int len,
     return rv;
 }
 
+/*
+ * Matches a DANE record against the correct part of a key, either in
+ * raw or a calculated hash of the part.
+ */
 int val_dane_match(val_context_t *context,
                    struct val_danestatus *dane_cur, 
                    const unsigned char *data, 
