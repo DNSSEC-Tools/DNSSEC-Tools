@@ -712,6 +712,11 @@ int val_dane_match(val_context_t *context,
     return VAL_DANE_CHECK_FAILED;
 }
 
+/*
+ * checks a DANE record to see if it matches a certificate
+ * in a X.509 certificate store.
+ * Returns either VAL_DANE_CHECK_FAILED or VAL_DANE_NOERROR;
+ */
 static int
 val_dane_check_TA(val_context_t *context,
                   X509_STORE_CTX *x509ctx,
