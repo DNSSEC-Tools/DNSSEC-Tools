@@ -126,8 +126,8 @@ get_dane_from_result(val_context_t *ctx,
         if (!val_istrusted(res->val_rc_status))
             return VAL_DANE_NOTVALIDATED;
 
-        /* 
-         * not validated is okay for non-existence conditions
+        /*
+         * Ensure that the record is validated.
          */
         if (!validated || !val_isvalidated(res->val_rc_status))
             validated = 0;
@@ -139,6 +139,9 @@ get_dane_from_result(val_context_t *ctx,
             continue;
         }
 
+        /* 
+         * provably non-existence conditions are okay
+         */
         if (val_does_not_exist(res->val_rc_status))
             return VAL_DANE_IGNORE_TLSA;
 
@@ -150,8 +153,7 @@ get_dane_from_result(val_context_t *ctx,
             return VAL_DANE_NOTVALIDATED;
 
         rrset = res->val_rc_rrset;
-        if(!res->val_rc_alias && rrset && 
-                rrset->val_rrset_type == ns_t_tlsa) {
+        if(rrset && rrset->val_rrset_type == ns_t_tlsa) {
             struct val_rr_rec  *rr = rrset->val_rrset_data; 
 
             while (rr) {
@@ -529,6 +531,10 @@ int get_pkeybuf(const unsigned char *data, int len,
     return rv;
 }
 
+/*
+ * Matches a DANE record against the correct part of a key, either in
+ * raw or a calculated hash of the part.
+ */
 int val_dane_match(val_context_t *context,
                    struct val_danestatus *dane_cur, 
                    const unsigned char *data, 
@@ -708,6 +714,11 @@ int val_dane_match(val_context_t *context,
     return VAL_DANE_CHECK_FAILED;
 }
 
+/*
+ * checks a DANE record to see if it matches a certificate
+ * in a X.509 certificate store.
+ * Returns either VAL_DANE_CHECK_FAILED or VAL_DANE_NOERROR;
+ */
 static int
 val_dane_check_TA(val_context_t *context,
                   X509_STORE_CTX *x509ctx,
@@ -809,6 +820,11 @@ done:
     return rv;
 }
 
+/*
+ * Checks a DANE record to see if it matches an end-entity certificate
+ * in a X.509 certificate store.
+ * Returns either VAL_DANE_CHECK_FAILED or VAL_DANE_NOERROR;
+ */
 static int 
 val_dane_check_EE(val_context_t *context,
                   X509_STORE_CTX *x509ctx,
