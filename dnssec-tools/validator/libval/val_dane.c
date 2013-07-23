@@ -723,11 +723,11 @@ static int
 val_dane_check_TA(val_context_t *context,
                   X509_STORE_CTX *x509ctx,
                   struct val_danestatus *danestatus,
+                  int *have_dane,
                   int *do_pkix_chk)
 
 {
     struct val_danestatus *dane_cur = NULL;
-    int have_dane = 0;
     unsigned char *cert_data = NULL;
     unsigned char *c = NULL;
     int cert_datalen = 0;
@@ -739,12 +739,21 @@ val_dane_check_TA(val_context_t *context,
     X509 *cert = NULL;
 
     if (context == NULL || x509ctx == NULL || 
-        danestatus == NULL || do_pkix_chk == NULL)
+        danestatus == NULL || have_dane == NULL ||
+        do_pkix_chk == NULL)
         return VAL_DANE_CHECK_FAILED;
 
     success = X509_verify_cert(x509ctx);
     certList = X509_STORE_CTX_get_chain(x509ctx);
 
+    /*
+     * The general approach is that we validate the X509 cert, then set
+     * checking 'depth' to either the length of the chain in the case of
+     * success, or the error depth in the case of failure. Then, when we
+     * test for a TLSA match we don't go deeper than 'depth' so that TLSA
+     * validation at a deeper level does not trump any pkix validation
+     * failures higher up.
+     */    
     if (success)
         depth = sk_X509_num(certList);
     else
@@ -764,7 +773,7 @@ val_dane_check_TA(val_context_t *context,
                     dane_cur->selector,
                     dane_cur->type,
                     dane_cur->usage);
-                have_dane = 1;
+                *have_dane = 1;
                 /* 
                  * Check that the TLSA cert matches one of the certs
                  * in the chain
@@ -791,6 +800,7 @@ val_dane_check_TA(val_context_t *context,
                         }
                     }
                 }
+                *do_pkix_chk = 1;
                 val_log(context, LOG_NOTICE, 
                         "DANE: val_dane_check_TA() for usage %d failed",
                         dane_cur->usage);
@@ -803,13 +813,13 @@ val_dane_check_TA(val_context_t *context,
         dane_cur = dane_cur->next;
     }
 
-    if (have_dane)
+    if (*have_dane)
         rv = VAL_DANE_CHECK_FAILED; 
     else 
         rv = VAL_DANE_NOERROR;
 
 done:
-    if (have_dane) {
+    if (*have_dane) {
         if (rv == VAL_DANE_NOERROR)
             val_log(context, LOG_INFO, "DANE check successful");
         else {
@@ -829,10 +839,10 @@ static int
 val_dane_check_EE(val_context_t *context,
                   X509_STORE_CTX *x509ctx,
                   struct val_danestatus *danestatus,
+                  int *have_dane,
                   int *do_pkix_chk) 
 {
     struct val_danestatus *dane_cur = NULL;
-    int have_dane = 0;
     unsigned char *cert_data = NULL;
     unsigned char *c = NULL;
     int cert_datalen = 0;
@@ -840,7 +850,8 @@ val_dane_check_EE(val_context_t *context,
     X509 *cert;
 
     if (context == NULL || x509ctx == NULL || 
-        danestatus == NULL || do_pkix_chk == NULL)
+        danestatus == NULL || have_dane == NULL ||
+        do_pkix_chk == NULL)
         return VAL_DANE_CHECK_FAILED;
 
     cert = x509ctx->cert;
@@ -858,7 +869,7 @@ val_dane_check_EE(val_context_t *context,
                         dane_cur->selector,
                         dane_cur->type,
                         dane_cur->usage);
-                have_dane = 1;
+                *have_dane = 1;
                 cert_datalen = i2d_X509(cert, NULL);
                 if (cert_datalen > 0) {
                     cert_data = OPENSSL_malloc(cert_datalen);
@@ -896,7 +907,7 @@ val_dane_check_EE(val_context_t *context,
         rv = VAL_DANE_NOERROR;
 
 done:
-    if (have_dane) {
+    if (*have_dane) {
         if (rv == VAL_DANE_NOERROR)
             val_log(context, LOG_INFO, "DANE check successful");
         else {
@@ -913,25 +924,28 @@ val_X509_peer_cert_verify_cb(X509_STORE_CTX *ctx, void *arg)
     char    buf[256];           
     struct val_ssl_data *ssl_dane_data;
     int err;
+    int have_dane;
     int do_pkix_chk = 1;
 
     ssl_dane_data = (struct val_ssl_data *) arg;
     if (ssl_dane_data == NULL)
         return 0;
 
-    X509_NAME_oneline(X509_get_subject_name(ctx->cert), buf, 256);
+    X509_NAME_oneline(X509_get_subject_name(ctx->cert), buf, sizeof(buf));
 
+    have_dane = 0;
     if (VAL_DANE_NOERROR != 
             val_dane_check_EE(ssl_dane_data->context, 
                               ctx,
                               ssl_dane_data->danestatus,
+                              &have_dane,
                               &do_pkix_chk)) {
         val_log(ssl_dane_data->context, 
                 LOG_NOTICE, "DANE: peer cert verification failed = %s", buf);
         return 0; 
     }
 
-    if (do_pkix_chk == 0) {
+    if (have_dane && do_pkix_chk == 0) {
         val_log(ssl_dane_data->context, 
                 LOG_NOTICE, "DANE: skipping peer cert PKIX validation = %s", buf);
         return 1;
@@ -940,32 +954,42 @@ val_X509_peer_cert_verify_cb(X509_STORE_CTX *ctx, void *arg)
     /*
      * Check trust anchors
      */
+    have_dane = 0;
     if (VAL_DANE_NOERROR !=
         val_dane_check_TA(ssl_dane_data->context,
                           ctx,
                           ssl_dane_data->danestatus,
+                          &have_dane,
                           &do_pkix_chk)) {
         val_log(ssl_dane_data->context, 
                 LOG_NOTICE, "DANE: TA verification failed = %s", buf);
         return 0;
     }
 
-    err = X509_STORE_CTX_get_error(ctx);
-    if (err) {
-        if (do_pkix_chk == 0) {
-            /* reset err status */
-            // XXX TODO Only reset the error for certain error conditions
-            // XXX TODO Need to determine what these error conditions
-            X509_STORE_CTX_set_error(ctx, X509_V_OK);
-            val_log(ssl_dane_data->context, 
-                    LOG_NOTICE, "DANE: skipping TA PKIX validation = %s", buf);
-            return 1;
+    if (have_dane) {
+        err = X509_STORE_CTX_get_error(ctx);
+        if (err) {
+            /*
+             * Only bypass errors related to cert issuer
+             */
+            if (do_pkix_chk == 0 &&
+                (err == X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT ||
+                 err == X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY ||
+                 err == X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT ||
+                 err == X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN )) {
+
+                /* reset err status */
+                X509_STORE_CTX_set_error(ctx, X509_V_OK);
+                val_log(ssl_dane_data->context, 
+                        LOG_NOTICE, "DANE: skipping TA PKIX validation = %s", buf);
+                return 1;
+            }
+            return 0;
         }
-        return 0;
+        val_log(ssl_dane_data->context, 
+                LOG_NOTICE, "DANE: passed certificate/TA constraints = %s", buf);
     }
 
-    val_log(ssl_dane_data->context, 
-            LOG_NOTICE, "DANE: passed certificate/TA constraints = %s", buf);
     return 1;
 }
 
