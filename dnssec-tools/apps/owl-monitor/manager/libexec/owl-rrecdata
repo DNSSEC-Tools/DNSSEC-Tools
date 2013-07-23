@@ -643,17 +643,32 @@ sub calcret
 # Purpose:	Generate a line of DNS resource-record output for Nagios.
 #		The return code is added for graphing purposes.
 #		We want a non-zero normal code, so the line rises above
-#		the axis, and we're therefore incrementing the return code
-#		by 1.
+#		the axis.  We're adjusting the return code given in this
+#		output line to be really big so that the spike won't be
+#		averaged out so easily in the long-term graphs.
 #
 sub nagiout
 {
-	my $kronos     = shift;			# Command's time of execution.
-	my $rc	     = shift;			# Command's return code.
+	my $kronos = shift;			# Command's time of execution.
+	my $rc	   = shift;			# Command's return code.
+	my $outrc  = 120;			# Return value for graphing.
 
-	$rc++;
+	if($rc == $RC_CRITICAL)
+	{
+		$outrc = 80;
+	}
+	elsif($rc == $RC_WARNING)
+	{
+		$outrc = 40;
+	}
+	elsif($rc == $RC_NORMAL)
+	{
+		$outrc = 10;
+	}
 
-	print "$rrdata|owl-rrecdata=$kronos:$rc;\n";
+# $outrc = $rc + 1;
+
+	print "$rrdata|owl-rrecdata=$kronos:$outrc;\n";
 }
 
 #-----------------------------------------------------------------------------
