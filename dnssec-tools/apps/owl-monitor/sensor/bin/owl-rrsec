@@ -16,6 +16,7 @@
 #	2.0	Initial version.				130321
 #	2.0.1	Pod and comment fixes.				130327
 #	2.0.2	Added -nolog and owl_log() calls.		130530
+#	2.0.3	Fixed a comparison operator.			130726
 #
 
 use strict;
@@ -590,7 +591,7 @@ sub askaway
 	#
 	$target   = $cf_targets[$qind];
 	$qarg	  = $cf_qargs[$qind];
-	$ns       = "\@$cf_servers[$qind]" if ($cf_servers[$qind] != "");
+	$ns       = "\@$cf_servers[$qind]" if ($cf_servers[$qind] ne "");
 
 	#
 	# Send the query to the nameserver, and time the query.
