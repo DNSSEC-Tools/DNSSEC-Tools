@@ -31,27 +31,19 @@ pastdate-aaaa.rollzsk-ns.test.dnssec-tools.org:
 
 reverseddates-a.rollzsk-ns.test.dnssec-tools.org:
   Location:    db.rollzsk-ns.test.dnssec-tools.org.zs.signed.modified:390
-  Error:       RRSIG is nearing its expiration time
+  Error:       RRSIG record for
+	       reverseddates-a.rollzsk-ns.test.dnssec-tools.org has expired
 
 reverseddates-aaaa.rollzsk-ns.test.dnssec-tools.org:
   Location:    db.rollzsk-ns.test.dnssec-tools.org.zs.signed.modified:406
-  Error:       RRSIG is nearing its expiration time
+  Error:       RRSIG record for
+	       reverseddates-aaaa.rollzsk-ns.test.dnssec-tools.org has
+	       expired
 
 reverseddates-a.rollzsk-ns.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       reverseddates-a.rollzsk-ns.test.dnssec-tools.org type: A
 	       failed to verify: RSA Verification failed
-
-pastdate-a.rollzsk-ns.test.dnssec-tools.org:
-  Error:       RRSIG on name: pastdate-a.rollzsk-ns.test.dnssec-tools.org
-	       type: A failed to verify: Signature has expired since:
-	       20130728034955
-
-pastdate-aaaa.rollzsk-ns.test.dnssec-tools.org:
-  Error:       RRSIG on name:
-	       pastdate-aaaa.rollzsk-ns.test.dnssec-tools.org type: AAAA
-	       failed to verify: Signature has expired since:
-	       20130728034955
 
 reverseddates-aaaa.rollzsk-ns.test.dnssec-tools.org:
   Error:       RRSIG on name:
@@ -61,7 +53,7 @@ reverseddates-aaaa.rollzsk-ns.test.dnssec-tools.org:
 futuredate-a.rollzsk-ns.test.dnssec-tools.org:
   Error:       RRSIG on name: futuredate-a.rollzsk-ns.test.dnssec-tools.org
 	       type: A failed to verify: Signature may only be used in the
-	       future; after 20130926035455
+	       future; after 20130926155917
 
 addedlater-nosig-AAAA.rollzsk-ns.test.dnssec-tools.org:
   Error:       name addedlater-nosig-AAAA.rollzsk-ns.test.dnssec-tools.org
@@ -81,7 +73,7 @@ futuredate-aaaa.rollzsk-ns.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       futuredate-aaaa.rollzsk-ns.test.dnssec-tools.org type: AAAA
 	       failed to verify: Signature may only be used in the future;
-	       after 20130926035455
+	       after 20130926155917
 
 badsign-aaaa.rollzsk-ns.test.dnssec-tools.org:
   Error:       RRSIG on name: badsign-aaaa.rollzsk-ns.test.dnssec-tools.org
@@ -120,4 +112,4 @@ addedlater-nosig-A.rollzsk-ns.test.dnssec-tools.org:
 	       does not have a RRSIG record, which is required for secure
 	       domains.
 
-24 errors found in db.rollzsk-ns.test.dnssec-tools.org.zs.signed.modified
+22 errors found in db.rollzsk-ns.test.dnssec-tools.org.zs.signed.modified
