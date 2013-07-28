@@ -31,21 +31,19 @@ pastdate-aaaa.nosig-ns.test.dnssec-tools.org:
 
 reverseddates-a.nosig-ns.test.dnssec-tools.org:
   Location:    db.nosig-ns.test.dnssec-tools.org.zs.signed.modified:390
-  Error:       RRSIG is nearing its expiration time
+  Error:       RRSIG record for
+	       reverseddates-a.nosig-ns.test.dnssec-tools.org has expired
 
 reverseddates-aaaa.nosig-ns.test.dnssec-tools.org:
   Location:    db.nosig-ns.test.dnssec-tools.org.zs.signed.modified:406
-  Error:       RRSIG is nearing its expiration time
+  Error:       RRSIG record for
+	       reverseddates-aaaa.nosig-ns.test.dnssec-tools.org has
+	       expired
 
 reverseddates-aaaa.nosig-ns.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       reverseddates-aaaa.nosig-ns.test.dnssec-tools.org type: AAAA
 	       failed to verify: RSA Verification failed
-
-pastdate-aaaa.nosig-ns.test.dnssec-tools.org:
-  Error:       RRSIG on name: pastdate-aaaa.nosig-ns.test.dnssec-tools.org
-	       type: AAAA failed to verify: Signature has expired since:
-	       20130728034952
 
 addedlater-nosig-AAAA.nosig-ns.test.dnssec-tools.org:
   Error:       name addedlater-nosig-AAAA.nosig-ns.test.dnssec-tools.org
@@ -65,22 +63,17 @@ futuredate-aaaa.nosig-ns.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       futuredate-aaaa.nosig-ns.test.dnssec-tools.org type: AAAA
 	       failed to verify: Signature may only be used in the future;
-	       after 20130926035452
+	       after 20130926155914
 
 addedlater-withsig-AAAA.nosig-ns.test.dnssec-tools.org:
   Error:       name addedlater-withsig-AAAA.nosig-ns.test.dnssec-tools.org
 	       does not have an NSEC record, which is required for secure
 	       domains.
 
-pastdate-a.nosig-ns.test.dnssec-tools.org:
-  Error:       RRSIG on name: pastdate-a.nosig-ns.test.dnssec-tools.org
-	       type: A failed to verify: Signature has expired since:
-	       20130728034952
-
 futuredate-a.nosig-ns.test.dnssec-tools.org:
   Error:       RRSIG on name: futuredate-a.nosig-ns.test.dnssec-tools.org
 	       type: A failed to verify: Signature may only be used in the
-	       future; after 20130926035452
+	       future; after 20130926155914
 
 addedlater-nosig-A.nosig-ns.test.dnssec-tools.org:
   Error:       name addedlater-nosig-A.nosig-ns.test.dnssec-tools.org does
@@ -118,4 +111,4 @@ reverseddates-a.nosig-ns.test.dnssec-tools.org:
 	       reverseddates-a.nosig-ns.test.dnssec-tools.org type: A
 	       failed to verify: RSA Verification failed
 
-24 errors found in db.nosig-ns.test.dnssec-tools.org.zs.signed.modified
+22 errors found in db.nosig-ns.test.dnssec-tools.org.zs.signed.modified

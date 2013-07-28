@@ -31,16 +31,14 @@ pastdate-aaaa.badsign-ns.test.dnssec-tools.org:
 
 reverseddates-a.badsign-ns.test.dnssec-tools.org:
   Location:    db.badsign-ns.test.dnssec-tools.org.zs.signed.modified:390
-  Error:       RRSIG is nearing its expiration time
+  Error:       RRSIG record for
+	       reverseddates-a.badsign-ns.test.dnssec-tools.org has expired
 
 reverseddates-aaaa.badsign-ns.test.dnssec-tools.org:
   Location:    db.badsign-ns.test.dnssec-tools.org.zs.signed.modified:406
-  Error:       RRSIG is nearing its expiration time
-
-pastdate-a.badsign-ns.test.dnssec-tools.org:
-  Error:       RRSIG on name: pastdate-a.badsign-ns.test.dnssec-tools.org
-	       type: A failed to verify: Signature has expired since:
-	       20130728034952
+  Error:       RRSIG record for
+	       reverseddates-aaaa.badsign-ns.test.dnssec-tools.org has
+	       expired
 
 badsign-aaaa.badsign-ns.test.dnssec-tools.org:
   Error:       RRSIG on name: badsign-aaaa.badsign-ns.test.dnssec-tools.org
@@ -70,7 +68,7 @@ futuredate-aaaa.badsign-ns.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       futuredate-aaaa.badsign-ns.test.dnssec-tools.org type: AAAA
 	       failed to verify: Signature may only be used in the future;
-	       after 20130926035452
+	       after 20130926155914
 
 addedlater-nosig-AAAA.badsign-ns.test.dnssec-tools.org:
   Error:       name addedlater-nosig-AAAA.badsign-ns.test.dnssec-tools.org
@@ -101,12 +99,6 @@ reverseddates-aaaa.badsign-ns.test.dnssec-tools.org:
 	       reverseddates-aaaa.badsign-ns.test.dnssec-tools.org type:
 	       AAAA failed to verify: RSA Verification failed
 
-pastdate-aaaa.badsign-ns.test.dnssec-tools.org:
-  Error:       RRSIG on name:
-	       pastdate-aaaa.badsign-ns.test.dnssec-tools.org type: AAAA
-	       failed to verify: Signature has expired since:
-	       20130728034952
-
 badsign-a.badsign-ns.test.dnssec-tools.org:
   Error:       RRSIG on name: badsign-a.badsign-ns.test.dnssec-tools.org
 	       type: A failed to verify: RSA Verification failed
@@ -118,6 +110,6 @@ baddata-aaaa.badsign-ns.test.dnssec-tools.org:
 futuredate-a.badsign-ns.test.dnssec-tools.org:
   Error:       RRSIG on name: futuredate-a.badsign-ns.test.dnssec-tools.org
 	       type: A failed to verify: Signature may only be used in the
-	       future; after 20130926035452
+	       future; after 20130926155914
 
-24 errors found in db.badsign-ns.test.dnssec-tools.org.zs.signed.modified
+22 errors found in db.badsign-ns.test.dnssec-tools.org.zs.signed.modified
