@@ -11,7 +11,9 @@
 #	system as a means of tracking sensor availability.
 #
 # Revision History:
-#       1.0     121201   Initial version.
+#       1.0     Initial version.				121201
+#
+#	2.0	Released as part of DNSSEC-Tools 2.0.		130301
 #
 
 use strict;
