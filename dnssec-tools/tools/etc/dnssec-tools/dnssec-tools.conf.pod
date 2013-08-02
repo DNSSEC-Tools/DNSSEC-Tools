@@ -179,6 +179,10 @@ The random device generator to be passed to B<dnssec-keygen>.
 
 The path to the B<rndc> command.
 
+=item rndc-opts
+
+Options to pass to the B<rndc> command.
+
 =item roll_loadzone
 
 A flag indicating if B<rollerd> should have the DNS daemon reload zones.
@@ -310,6 +314,7 @@ The following is an example B<dnssec-tools.conf> configuration file.
     #
     keygen          /usr/local/sbin/dnssec-keygen
     rndc            /usr/local/sbin/rndc
+    rndc-opts       -p 2288
     zonecheck       /usr/local/sbin/named-checkzone
     zonecheck-opts  -i local -k ignore
     zonesign        /usr/local/sbin/dnssec-signzone
