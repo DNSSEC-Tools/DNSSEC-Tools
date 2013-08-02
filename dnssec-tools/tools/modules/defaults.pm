@@ -60,6 +60,7 @@ my %defaults =
 	'prog-zsk4'	   => 'default',	# Program for ZSK phase 4.
 	'random'	   => "/dev/urandom",	# Random no. generator device.
 	'rndc'		   => getprefixdir() . "/sbin/rndc",
+	'rndc-opts'	   => '',		# Options for rndc.
 	'roll_loadzone'	   => 1,		# Zone-reloading flag.
 	'roll_logfile'	   => makelocalstatedir() . "/log.rollerd",
 	'roll_loglevel'	   => "phase",		# Rollerd's logging level.
