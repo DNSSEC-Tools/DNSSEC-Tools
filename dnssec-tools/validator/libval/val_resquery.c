@@ -179,6 +179,7 @@ find_matching_glue(val_context_t *context,
             return retval;
         glueptr = glue_qfq->qfq_query;/* Can never be NULL if glue_qfq is not NULL */
 
+
         /* Add pc and gluptr to our dependency list */
         for (b=*bucket; b; b=b->next_bucket) {
             if (b->qfq == qfq_pc) {
@@ -417,7 +418,7 @@ merge_glue_in_referral(val_context_t *context,
  * Check queries in list for missing glue
  * Merge any glue that is available into the relevant query
  * Set *data_missing if some query in the list still remains
- * unanswered
+ * unanswered or received an error response
  */
 int
 fix_glue(val_context_t * context,
@@ -433,9 +434,6 @@ fix_glue(val_context_t * context,
    
     if (context == NULL || queries == NULL || data_missing == NULL)
         return VAL_BAD_ARGUMENT;
-
-    if (*data_missing == 0)
-        return VAL_NO_ERROR;
 
     *data_missing = 0;
     for (next_q = *queries; next_q; next_q = next_q->qfq_next) {
@@ -1751,8 +1749,39 @@ digest_response(val_context_t * context,
 
             if (nothing_other_than_alias) {
                 /*
-                 * check if we received a non-alias or had explicitly asked for this alias 
+                 * check if we received an alias and had not explicitly
+                 * asked for it 
                  */
+                if (((set_type_h == ns_t_cname && query_type_h != ns_t_cname) || 
+                     (set_type_h == ns_t_dname && query_type_h != ns_t_dname)) &&
+                    (ALIAS_MATCH_TYPE(query_type_h))) {
+
+                    int referral_error = 0;
+                    /* process CNAMEs or DNAMEs if they exist */
+                    if ((VAL_NO_ERROR != (ret_val = 
+                            process_cname_dname_responses(name_n, type_h, rdata, 
+                                                  matched_q, qnames, 
+                                                  &referral_error))) || 
+                            (referral_error)) {
+                        if (referral_error) 
+                            val_log(context, LOG_DEBUG, "digest_response(): CNAME/DNAME error or loop encountered");
+                        goto done;
+                    }
+                    /* forget the current zonecut */
+                    if (matched_q->qc_zonecut_n) {
+                        FREE(matched_q->qc_zonecut_n);
+                        matched_q->qc_zonecut_n = NULL;
+                        rrs_zonecut_n = NULL; 
+                    }
+                } else {
+                    /* 
+                     * We've presumably reached targets of the alias. 
+                     * Don't follow aliases For types that cannot be aliased
+                     */
+                    nothing_other_than_alias = 0;
+                }
+
+#if 0
                 if ((set_type_h != ns_t_cname && set_type_h != ns_t_dname) ||
                     ((query_type_h == ns_t_cname) && (set_type_h == ns_t_cname)) ||
                     ((query_type_h == ns_t_dname) && (set_type_h == ns_t_dname)) ||
@@ -1781,6 +1810,7 @@ digest_response(val_context_t * context,
                 } else {
                     nothing_other_than_alias = 0;
                 }
+#endif
             }
             SAVE_RR_TO_LIST(resp_ns, 
                             &learned_answers, name_n, type_h,
