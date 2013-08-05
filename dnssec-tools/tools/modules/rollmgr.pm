@@ -1135,21 +1135,22 @@ sub unix_set_idfile
 sub unix_loadzone
 {
 	my $rndc = shift;				# Nameserver controller.
-	my $zone = shift;                               # Zone to reload.
-	my $ret;                                        # Execution return code.
+	my $opts = shift;				# Options for cntlr.
+	my $zone = shift;				# Zone to reload.
+	my $ret;					# Execution return code.
 
 # print "unix_loadzone\n";
 
 	#
 	# Get the path to the name server control program.
 	#
-	$rndc = dnssec_tools_default("rndc") if($rndc eq "");
-	return(0) if($rndc eq "");
+	$rndc = dnssec_tools_default('rndc') if($rndc eq '');
+	return(0) if($rndc eq '');
 
 	#
 	# Reload the zone.
 	#
-	`$rndc reload $zone >/dev/null 2>&1`;
+	`$rndc $opts reload $zone >/dev/null 2>&1`;
 	$ret = $? >> 8;
 
 	return($ret);
@@ -2134,6 +2135,23 @@ returned.
     signaled.
     (This should only ever be 1.)
 
+=item I<rollmgr_loadzone(ctlprog,opts,zone)>
+
+This routine informs a name server to reload a zone's zone file.  The
+I<$ctlprog> argument is the command that will be run to control the name
+server.  If this is an empty string, then the default value for DNSSEC-Tools
+will be used.  The I<$opts> argument is a set of options to be passed to
+I<ctlprog>.  The I<$zone> argument is the name of the zone to be reloaded.
+
+The command line to be run is built in this format:
+
+    <$zone> <$opts> reload <$zone>
+
+This format assumes that the B<rndc> command will be used for signalling
+the name server.
+
+The return value will be the return code from running I<$ctlprog>.
+
 =item I<rollmgr_phasemsg()>
 
 This routine sets the phase-message length.  of phase-related log messages
@@ -2325,6 +2343,7 @@ B<Net::DNS::SEC::Tools::keyrec.pm(3)>
 B<Net::DNS::SEC::Tools::rolllog.pm(3)>
 B<Net::DNS::SEC::Tools::rollrec.pm(3)>
 
+B<rndc(8)>,
 B<rollerd(8)>
 
 =cut
