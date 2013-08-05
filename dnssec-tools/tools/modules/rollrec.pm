@@ -68,7 +68,7 @@ use Net::DNS::SEC::Tools::conf;
 use Net::DNS::SEC::Tools::rollmgr;
 
 our $VERSION = "2.0";
-our $MODULE_VERSION = "2.0.0";
+our $MODULE_VERSION = "2.0.1";
 
 our @ISA = qw(Exporter);
 
@@ -151,6 +151,7 @@ my @ROLLFIELDS = (
 			'zsargs',
 			'curerrors',
 			'maxerrors',
+			'rndc-opts',
 			'ksk_rollsecs',
 			'ksk_rolldate',
 			'zsk_rollsecs',
