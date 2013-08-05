@@ -151,7 +151,7 @@ my @ROLLFIELDS = (
 			'zsargs',
 			'curerrors',
 			'maxerrors',
-			'rndc-opts',
+			'rndc_opts',
 			'ksk_rollsecs',
 			'ksk_rolldate',
 			'zsk_rollsecs',
