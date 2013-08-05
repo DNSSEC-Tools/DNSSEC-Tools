@@ -81,6 +81,8 @@ my $rndc;				# BIND name server control program.
 my $rrchk;				# Rollrec file checking program.
 my $zonesigner;				# Zone-signing program.
 
+my $rndcopts;				# Options for rndc.
+
 my $PWD = '/bin/pwd';
 
 my $DEFAULT_NAP	= 60;
@@ -109,6 +111,7 @@ my $DT_LOADZONE	= 'roll_loadzone';
 my $DT_LOGFILE	= 'roll_logfile';
 my $DT_LOGLEVEL	= 'roll_loglevel';
 my $DT_LOGTZ	= 'log_tz';
+my $DT_RNDCOPTS	= 'rndc-opts';
 my $DT_SLEEP	= 'roll_sleeptime';
 my $DT_USERNAME	= 'roll_username';
 
@@ -2134,7 +2137,7 @@ sub zsk_phase2
 	#
 	# Reload the zone.
 	#
-	$ret = loadzone($rndc,$rname,$rr{'zonename'},"ZSK phase 2");
+	$ret = loadzone($rndc,$rname,\%rr,"ZSK phase 2");
 	if($ret != 0)
 	{
 		rolllog_log(LOG_ERR,$rname,"ZSK phase 2:  unable to reload zone, rc - $ret");
@@ -2213,7 +2216,7 @@ sub zsk_phase4
 	#
 	# Reload the zone.
 	#
-	$ret = loadzone($rndc,$rname,$rr{'zonename'},"ZSK phase 4");
+	$ret = loadzone($rndc,$rname,\%rr,"ZSK phase 4");
 	if($ret != 0)
 	{
 		rolllog_log(LOG_ERR,$rname,"ZSK phase 4:  unable to reload zone, rc - $ret");
@@ -2580,7 +2583,7 @@ sub ksk_phase2
 	#
 	# Reload the zone.
 	#
-	$ret = loadzone($rndc,$rname,$rr{'zonename'},"KSK phase 2");
+	$ret = loadzone($rndc,$rname,\%rr,"KSK phase 2");
 	if($ret != 0)
 	{
 		rolllog_log(LOG_ERR,$rname,"KSK phase 2:  unable to reload zone, rc - $ret");
@@ -2756,7 +2759,7 @@ sub ksk_phase7
 	#
 	# Reload the zone.
 	#
-	$ret = loadzone($rndc,$rname,$rr{'zonename'},"KSK phase 7");
+	$ret = loadzone($rndc,$rname,\%rr,"KSK phase 7");
 	if($ret != 0)
 	{
 		rolllog_log(LOG_ERR,$rname,"KSK phase 7:  unable to reload zone, rc - $ret");
@@ -4104,6 +4107,11 @@ sub optsandargs
 	rolllog_file($logfile,1);
 
 	#
+	# Set the called-command options.
+	#
+	$rndcopts = $dtconf{$DT_RNDCOPTS};
+
+	#
 	# Set a dummy value to turn off KSK phase 5 mail, iff no recipient
 	# has been set.
 	#
@@ -4156,6 +4164,7 @@ sub getprogs
 		$zonesigner = "$ENV{'PAR_TEMP'}/inc/zonesigner";
 
 		delete($opts{'rndc'});
+		delete($opts{'rndcopts'});
 		$opts{'keyarch'}     = "keyarch";
 		$opts{'rollchk'}     = "rollchk";
 		$opts{'zonesigner'}  = "zonesigner";
@@ -4172,6 +4181,7 @@ sub getprogs
 	#
 	$keyarch = $dtconf{'keyarch'}	  || dnssec_tools_default("keyarch");
 	$rndc 	 = $dtconf{'rndc'}	  || dnssec_tools_default("rndc");
+	$rndc 	 = $dtconf{'rndcopts'}	  || dnssec_tools_default("rndcopts");
 	$rrchk	 = $dtconf{'rollrec_chk'} || dnssec_tools_default("rollrec_check");
 }
 
@@ -6713,9 +6723,21 @@ sub loadzone
 {
 	my $rndc = shift;				# Zone-loading program.
 	my $rname = shift;				# Rollrec name of zone.
-	my $zonename = shift;				# Zone to reload.
+	my $rrr = shift;				# Reference to rollrec.
 	my $phase = shift;				# Zone's current phase.
+
+	my %rr = %$rrr;					# Rollrec hash.
+	my $zonename;					# Zone to reload.
+	my $useopts;					# Options for rndc.
 	my $ret;					# Return code.
+
+	#
+	# Get the rollrec for this name.  If it doesn't have one,
+	# whinge and continue to the next.
+	# (This should never happen, but...)
+	#
+	$zonename = $rr{'zonename'};
+	$useopts = defined($rr{'rndc_opts'}) ? $rr{'rndc_opts'} : $rndcopts;
 
 	#
 	# If the user doesn't want to reload the zone, we'll pretend we have.
@@ -6730,7 +6752,7 @@ sub loadzone
 	# Reload the zone for real.
 	#
 	rolllog_log(LOG_INFO,$rname,"reloading zone for $phase\n");
-	$ret = rollmgr_loadzone($rndc,$zonename);
+	$ret = rollmgr_loadzone($rndc,$useopts,$zonename);
 	return($ret);
 }
 
