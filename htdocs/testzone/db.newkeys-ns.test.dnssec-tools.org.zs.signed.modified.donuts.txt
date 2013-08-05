@@ -10,20 +10,23 @@ pastdate-aaaa.newkeys-ns.test.dnssec-tools.org:
 
 reverseddates-a.newkeys-ns.test.dnssec-tools.org:
   Location:    db.newkeys-ns.test.dnssec-tools.org.zs.signed.modified:414
-  Error:       RRSIG record for
-	       reverseddates-a.newkeys-ns.test.dnssec-tools.org has expired
+  Error:       RRSIG is nearing its expiration time
 
 reverseddates-aaaa.newkeys-ns.test.dnssec-tools.org:
   Location:    db.newkeys-ns.test.dnssec-tools.org.zs.signed.modified:430
-  Error:       RRSIG record for
-	       reverseddates-aaaa.newkeys-ns.test.dnssec-tools.org has
-	       expired
+  Error:       RRSIG is nearing its expiration time
 
 addedlater-withsig-AAAA.newkeys-ns.test.dnssec-tools.org:
   Error:       name
 	       addedlater-withsig-AAAA.newkeys-ns.test.dnssec-tools.org
 	       does not have an NSEC record, which is required for secure
 	       domains.
+
+pastdate-aaaa.newkeys-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name:
+	       pastdate-aaaa.newkeys-ns.test.dnssec-tools.org type: AAAA
+	       failed to verify: Signature has expired since:
+	       20130804173057
 
 badsign-a.newkeys-ns.test.dnssec-tools.org:
   Error:       RRSIG on name: badsign-a.newkeys-ns.test.dnssec-tools.org
@@ -46,7 +49,7 @@ futuredate-aaaa.newkeys-ns.test.dnssec-tools.org:
   Error:       RRSIG on name:
 	       futuredate-aaaa.newkeys-ns.test.dnssec-tools.org type: AAAA
 	       failed to verify: Signature may only be used in the future;
-	       after 20130927161334
+	       after 20131003173557
 
 addedlater-nosig-A.newkeys-ns.test.dnssec-tools.org:
   Error:       name addedlater-nosig-A.newkeys-ns.test.dnssec-tools.org
@@ -74,7 +77,7 @@ baddata-a.newkeys-ns.test.dnssec-tools.org:
 futuredate-a.newkeys-ns.test.dnssec-tools.org:
   Error:       RRSIG on name: futuredate-a.newkeys-ns.test.dnssec-tools.org
 	       type: A failed to verify: Signature may only be used in the
-	       future; after 20130927161334
+	       future; after 20131003173557
 
 addedlater-nosig-AAAA.newkeys-ns.test.dnssec-tools.org:
   Error:       name addedlater-nosig-AAAA.newkeys-ns.test.dnssec-tools.org
@@ -91,4 +94,9 @@ reverseddates-a.newkeys-ns.test.dnssec-tools.org:
 	       reverseddates-a.newkeys-ns.test.dnssec-tools.org type: A
 	       failed to verify: RSA Verification failed
 
-19 errors found in db.newkeys-ns.test.dnssec-tools.org.zs.signed.modified
+pastdate-a.newkeys-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name: pastdate-a.newkeys-ns.test.dnssec-tools.org
+	       type: A failed to verify: Signature has expired since:
+	       20130804173057
+
+21 errors found in db.newkeys-ns.test.dnssec-tools.org.zs.signed.modified
