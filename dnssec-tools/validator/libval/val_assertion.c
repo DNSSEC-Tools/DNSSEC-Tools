@@ -6299,6 +6299,9 @@ construct_authentication_chain(val_context_t * context,
                                               VAL_IRRELEVANT_PROOF);
         }
 
+        /* 
+         * XXX This needs to go into a general-purpose fallback function
+         */
         /* if any of the results are bad try re-querying from root */
         for (res=*results; res; res=res->val_rc_next) {
             if (res->val_rc_status == VAL_BOGUS) {
@@ -6933,18 +6936,10 @@ val_async_submit(val_context_t * ctx,  const char * domain_name, int class_h,
         retval = _ask_cache_one(context, &as->val_as_queries, added_q,
                                 &data_received, &data_missing, &more_data);
         // xxx-rks did we get answer? if so, return results?
-        if ((VAL_NO_ERROR == retval) &&
-            (added_q->qfq_query->qc_state == Q_ANSWERED)) {
-            int data_missing = 1; /* assume yes */
-
-            if (VAL_NO_ERROR == retval)
-                retval = fix_glue(context, &queries, &data_missing);
-
-
-
+        if (VAL_NO_ERROR == retval) {
 
             // xxx-rks construct_authentication_chain (see resolve_and_check)
-            if (!data_missing) {
+            if (data_received || !data_missing) {
                 struct val_internal_result *w_results = NULL;
                 int                         done = 0;
 
@@ -6966,7 +6961,7 @@ val_async_submit(val_context_t * ctx,  const char * domain_name, int class_h,
                 
                 _free_w_results(w_results);
                 w_results = NULL;
-#endif
+#endif    
             }
 
         }
@@ -7255,6 +7250,7 @@ val_async_check_wait(val_context_t *ctx, fd_set *pending_desc,
     int                         count = 0, completed = 0;
     val_context_t *context;
     int retval = VAL_NO_ERROR;
+    fd_set local_fdset;
 
     /*
      * get context, if needed
@@ -7296,7 +7292,6 @@ val_async_check_wait(val_context_t *ctx, fd_set *pending_desc,
 
     /** if caller didn't call select, do it for them */
     if ((pending_desc == NULL) || (NULL == nfds)) {
-        fd_set local_fdset;
         int    local_nfds = 0;
         int    waiting;
 
