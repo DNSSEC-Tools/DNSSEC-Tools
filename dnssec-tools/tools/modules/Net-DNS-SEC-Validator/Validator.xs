@@ -672,11 +672,11 @@ pval_res_query(self,dname,class,type)
 
 
 SV *
-pval_resolve_and_check(self,domain,type,class,flags)
+pval_resolve_and_check(self,domain,class,type,flags)
 	SV * self
 	char * domain
-        int type
         int class
+        int type
         int flags
 	CODE:
 	{
