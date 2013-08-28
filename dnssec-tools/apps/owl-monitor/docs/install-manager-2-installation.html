@@ -555,9 +555,9 @@ of what must be installed on your system.
 
 There is a small amount of manager-specific software in the Owl Monitor.  Most
 of the work on the manager is performed by Nagios and the other third-party
-software.  The Owl Monitor software on the manager host consists of two Nagios
-plugins that will interpret Owl sensor data for Nagios and add Owl sensor data
-to graphing databases.  There is also a small number of administrator
+software.  The Owl Monitor software on the manager host consists of several
+Nagios plugins that will interpret Owl sensor data for Nagios.
+There is also a small number of administrator
 programs for managing the large amounts of Owl sensor data.
 
 <p>
@@ -567,11 +567,12 @@ programs for managing the large amounts of Owl sensor data.
 <a name="ig-manager-2.1.3.1."></a>
 <h3>2.1.3.1. Unpacking the Owl Monitor Software</h3>
 
-The Owl Monitor software comes in a <b>bzip2</b>'d <b>tar</b> file.  In most
+The Owl Monitor software comes in a <b>bzip2</b>'d <b>tar</b> file.  This
+contains Owl administrative commands and Owl plugins for Nagios.  In most
 modern Unix systems, this can be unpacked with this command:
 
 <pre>
-        $ tar xzf owl-monitor.tar.gz
+        $ tar xf owl-monitor.tar.gz
 </pre>
 
 This command unpacks the Owl distribution in the current directory.  This
@@ -580,17 +581,24 @@ manager's home directory.
 
 <p>
 
-Most of the Owl commands will be in the <b>owl-manager/bin</b> directory.
-These commands can stay in that directory or be moved elsewhere.  If they
-remain in their own directory, it would be helpful to add the directory
-to your shell's path.
+The Owl commands should be installed in a convenient directory, such as
+<b>~/owl-manager/bin</b>.  This could be anything that is suited for you;
+e.g., <b>/usr/bin</b>, <b>/usr/local/bin</b>, <b>~/mystuff</b>, or
+<b>/owl/scripts</b>.  It would be helpful to add the directory to your
+shell's path.
+
+<p>
+
+The Owl plugins must be installed in the Nagios plugin directory.  This
+directory depends on how you installed Nagios, and it is probably something
+like <b>/owl/nagios/libexec</b>.
 
 <p>
 
 <!------------------------->
 
 <a name="ig-manager-2.1.3.2."></a>
-<h3>2.1.3.2. <b>owl-dnswatch</b></h3>
+<h3>2.1.3.2. <b>owl-dnswatch</b> (plugin)</h3>
 
 The <b>owl-dnswatch</b> command is a Nagios plugin that reads Owl monitoring
 data and reports the latest results to Nagios.  Each execution of
@@ -613,11 +621,6 @@ your installation hierarchy, but it will likely look something like:
 
 <p>
 
-<li>Copy <b>owl-dnswatch</b> to the Nagios plugin directory.  This directory
-is probably something like <b>/owl/nagios/libexec</b>.
-
-<p>
-
 </ul>
 
 <p>
@@ -625,7 +628,7 @@ is probably something like <b>/owl/nagios/libexec</b>.
 <!------------------------->
 
 <a name="ig-manager-2.1.3.3."></a>
-<h3>2.1.3.3. <b>owl-perfdata</b></h3>
+<h3>2.1.3.3. <b>owl-perfdata</b> (plugin)</h3>
 
 The <b>owl-perfdata</b> command is a Nagios plugin that acts as a front-end
 for inserting Owl monitoring data into an RRD database.  These databases are
@@ -644,11 +647,6 @@ installed <b>nagiosgraph</b>, but it will likely look something like:
 
 <p>
 
-<li>Copy <b>owl-perfdata</b> to the Nagios plugin directory.  This directory
-is probably something like <b>/owl/nagios/libexec</b>.
-
-<p>
-
 </ul>
 
 <p>
@@ -656,7 +654,7 @@ is probably something like <b>/owl/nagios/libexec</b>.
 <!------------------------->
 
 <a name="ig-manager-2.1.3.4."></a>
-<h3>2.1.3.4. <b>owl-newsensor</b></h3>
+<h3>2.1.3.4. <b>owl-newsensor</b> (command)</h3>
 
 There are a set of Nagios objects that must be created for each Owl
 sensor.  Once the Owl manager has sensor data files in its data directory,
@@ -670,16 +668,10 @@ No local modifications are required for <b>owl-newsensor</b>.
 
 <p>
 
-Copy <b>owl-newsensor</b> to a directory which will be its home.
-This could be anything that is convenient for you; e.g., <b>/usr/bin</b>,
-<b>/usr/local/bin</b>, <b>~/mystuff</b>, or <b>/owl/scripts</b>.
-
-<p>
-
 <!------------------------->
 
 <a name="ig-manager-2.1.3.5."></a>
-<h3>2.1.3.5. <b>owl-transfer-mgr</b></h3>
+<h3>2.1.3.5. <b>owl-transfer-mgr</b> (command)</h3>
 
 If the Owl manager transfers data from a sensor, it will use the
 <b>owl-transfer-mgr</b> to retrieve the data.
@@ -988,7 +980,7 @@ must be taken:
 
 <p>
 
-<li>Copy the contents of <b>ng-owl-conf</b> After the lines setting
+<li>Copy the contents of <b>ng-owl-conf</b> after the lines setting
 <i>xffs</i>.  These are reasonable values, but don't change them unless
 you know what you're doing.
 <p>
