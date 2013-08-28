@@ -32,6 +32,45 @@ and push @s, [ "anycast_$4",
 	      [ 'anycast', GAUGE, $2 ] ];
 
 
+###########################################################
+
+#
+# Service type: Owl Monitor - DNS resource-record data from owl-rrecdata
+#	template:  /perfdata:owl-rrecdata=t:n/
+#
+#	example:   owl-rrecdata=1350491407:0
+#
+
+/perfdata:.*owl-rrecdata=(\d+):(\d+);/
+and push @s, [ 'rrecdata',
+	      [ 'rrecdata', GAUGE, $2 ] ];
+
+
+###########################################################
+
+#
+# Service type: Owl Monitor - Disk use on piper:/uem
+#	template:  /perfdata:owl-disk=t:n/
+#
+#	example:   owl-disk=1350491407:42
+#
+
+/perfdata:.*owl-disk=(\d+):(\d+)/
+and push @s, [ 'diskuse',
+	      [ 'diskuse', GAUGE, $2 ] ];
+
+###########################################################
+
+#
+# Service type: Owl Monitor - Disk use on piper:/uem
+#	template:  /perfdata:owl-disk=t:n/
+#
+#	example:   owl-diskuse=1350491407:42
+#
+
+/perfdata:.*owl-diskuse=(\d+):(\d+.\d+)/
+and push @s, [ 'diskuse',
+	      [ 'diskuse', GAUGE, $2 ] ];
 
 ###############################################################################
 
