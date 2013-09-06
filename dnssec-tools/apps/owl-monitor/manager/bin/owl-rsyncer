@@ -1,0 +1,290 @@
+#!/usr/bin/perl
+#
+# Copyright 2013 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details.
+#
+# owl-rsyncer						Owl Monitoring System
+#
+#	This script assists with receiving data gathered by an Owl sensor.
+#	It is intended as a wrapper for rrsync, but it may be used with
+#	other methods of data retrieval.  It allows for site-specific
+#	pre-rrsync and post-rrsync operations.  It runs on the Owl manager.
+#
+# Revision History
+#	2.0	Initial version.				130301
+#
+
+use strict;
+
+use Getopt::Long qw(:config no_ignore_case_always);
+use Fcntl ':flock';
+use File::Path;
+
+#######################################################################
+#
+# Version information.
+#
+my $NAME   = "owl-rsyncer";
+my $VERS   = "$NAME version: 2.0.0";
+my $DTVERS = "DNSSEC-Tools version: 2.0";
+
+#######################################################################
+
+#
+# Data required for command line options.
+#
+my %options = ();			# Filled option array.
+my @opts =
+(
+	'verbose',			# Display verbose information.
+	'Version',			# Display the version number.
+	'help',				# Give a usage message and exit.
+);
+
+my $verbose = 0;			# Verbose output flag.
+
+#######################################################################
+
+my $err = 0;
+my $retriever = '';			# Data-retrieval command. 
+my $rc;					# Return code from retrieval execution.
+
+$rc = main();
+exit($rc);
+
+#------------------------------------------------------------------------
+# Routine:	main()
+#
+sub main
+{
+	my $ret;				# Retrieval's return code.
+
+	#
+	# Get our arguments.
+	#
+	argulator();
+
+	#
+	# Run whatever pre-data-receipt actions are required.
+	#
+	predata();
+
+	#
+	# Retrieve the data.
+	#
+	$ret = getdata();
+
+	#
+	# Run whatever post-data-receipt actions are required.
+	#
+	postdata();
+
+	return($ret);
+}
+
+#------------------------------------------------------------------------
+# Routine:	argulator()
+#
+# Purpose:	Get our options and arguments from the command line.
+#
+sub argulator
+{
+	#
+	# Parse the command line.
+	#
+	GetOptions(\%options,@opts) || usage();
+
+	#
+	# Show the version number or usage if requested.
+	#
+	version()    if(defined($options{'Version'}));
+	usage()	     if(defined($options{'help'}));
+
+	$verbose = $options{'verbose'};
+
+	usage() if(@ARGV == 0);
+
+	#
+	# Build the command to be executed.
+	#
+	$retriever = join ' ', @ARGV;
+
+	if($verbose)
+	{
+		print "retrieval command - \"$retriever\"\n";
+	}
+}
+
+#------------------------------------------------------------------------
+# Routine:	predata()
+#
+# Purpose:	Things to be done before retrieving data.
+#
+sub predata
+{
+
+}
+
+#------------------------------------------------------------------------
+# Routine:	postdata()
+#
+# Purpose:	Things to be done after retrieving data.
+#
+#		rrsync retrieval:
+#			- Ensure the sensor's data directory and its
+#			  immediate contents have the needed permissions.
+#			  This allows file ownership by one user and file
+#			  management by another.
+#
+sub postdata
+{
+	if($retriever =~ /rrsync/)
+	{
+		my @atoms;		# Pieces of retrieval command.
+		my $datapath;		# Path to sensor's data.
+		my @dirs;		# Directories in sensor's data path.
+		my $datadirs;		# String of data directories.
+
+		#
+		# Get the local data path from the rrsync command.
+		# 
+		@atoms = split /\s+/, $retriever;
+		$datapath = "$atoms[1]/data";
+
+		#
+		# Get the directories in the sensor's data path.
+		# 
+		@dirs = glob("$datapath/*");
+		$datadirs = join ' ', @dirs;
+
+		#
+		# Ensure the local data path and its subdirectories have
+		# the proper permissions.
+		#
+		chmod 0775, $datapath, glob("$datapath/*");
+	}
+
+}
+
+#------------------------------------------------------------------------
+# Routine:	getdata()
+#
+# Purpose:	Retrieve the data from the sensor.
+#
+sub getdata
+{
+	my $ret;				# Retrieval's return code.
+
+	#
+	# Run the data-retrieval command.
+	#
+	system($retriever);
+	$ret = $?;
+
+	#
+	# Give an error message if we couldn't execute the data-retrieval
+	# command.
+	#
+	if($ret == -1)
+	{
+		print STDERR "$0:  failed to execute \"$retriever\":  $!\n";
+	}
+
+	return($ret);
+}
+
+#------------------------------------------------------------------------
+# Routine:	version()
+#
+sub version
+{
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+	exit(0);
+}
+
+#------------------------------------------------------------------------
+# Routine:	usage()
+#
+sub usage
+{
+	print "usage: $0 [options] <retrieval command>\n";
+	exit(0);
+}
+
+
+###############################################################################
+
+=pod
+
+=head1 NAME
+
+owl-rsyncer - Wrapper for receiving Owl sensor data
+
+=head1 SYNOPSIS
+
+  owl-rsyncer [options] <retrieval command>
+
+=head1 DESCRIPTION
+
+B<owl-rsyncer> assists with receiving data gathered by an Owl sensor.
+It is intended as a wrapper for B<rrsync>, but it may be used with
+other methods of data retrieval.  It allows for site-specific
+pre-B<rrsync> and post-B<rrsync> operations.
+
+The I<retrieval command> argument is the command that actually retrieves
+the data from the Owl sensor.  Owl uses the B<rrsync> (restricted B<rsync>)
+command, but other commands may be used.  The command and arguments are
+executed without validation.
+
+If local processing of data is required then B<owl-rsyncer> may be modified
+to perform this processing.  The I<predata()> routine will be run prior to
+data retrieval; the I<postdata()> routine will be run following data retrieval.
+This may be needed, for example, if the sensor is using file or directory
+permissions that are not appropriate for the Owl manager.
+
+This script runs on the Owl manager and is intended to be run by B<ssh>.
+It is used by specifying it in a <i>command=</i> option on an entry
+in a B<authorized_keys> file used by B<.ssh>.  The entry should look
+something like this:
+
+    command="/owl/bin/owl-rsync /usr/local/bin/rrsync /owl/data/testbed1" ssh-rsa A...b9 owl-sensor@sensor42.example.com
+
+(The key has been abbreviated here.)
+
+=head1 OPTIONS
+
+The following options are recognized by B<owl-rsyncer>:
+
+=over 4
+
+=item I<-Version>
+
+Display the program version and exit.
+
+=item I<-help>
+
+Display a usage message and exit.
+
+=item I<-verbose>
+
+Display the verbose information.
+
+=back
+
+=head1 COPYRIGHT
+
+Copyright 2013 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@tislabs.com
+
+=head1 SEE ALSO
+
+B<rrsync(1)>,
+B<rsync(1)>,
+B<ssh(1)>
+
+=cut
