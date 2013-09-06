@@ -9,7 +9,7 @@
 #	files.  This is used when adding a new Owl sensor to a manager.
 #
 # Revision History
-#	1.0	121201	Initial version.
+#	1.0	Initial version.				121201
 #			This was adapted from the owl-archdata script.
 #
 #	2.0	Released as part of DNSSEC-Tools 2.0.		130301
@@ -21,6 +21,7 @@ use strict;
 
 use Cwd;
 use Getopt::Long qw(:config no_ignore_case_always);
+use owlutils;
 
 #
 # Version information.
@@ -155,12 +156,25 @@ sub getfiles
 	# Go to the data directory.
 	#
 	$cur = getcwd();
-	chdir($datadir);
 
 	#
-	# Get a list of the sensor data files.
+	# Get a list of the sensor data files from the data subdirectories.
 	#
-	@files = sort(glob($EXTENSIONS));
+	foreach my $subdir (sort(keys(%owlutils::owlexts)))
+	{
+		my $sdir;
+		my @subfiles = ();
+
+		$sdir = "$datadir/$subdir";
+
+		next if(! -e $sdir);
+		next if(chdir($sdir) == 0);
+
+		@subfiles = glob($EXTENSIONS);
+		@files = (@files, @subfiles);
+
+		chdir($cur);
+	}
 
 	#
 	# Make sure we found some files.
@@ -176,6 +190,7 @@ sub getfiles
 	#
 	# And return from whence we came.
 	#
+	@files = sort(@files);
 	chdir($cur);
 }
 
@@ -189,6 +204,7 @@ sub parsefiles
 	foreach my $fn (@files)
 	{
 		my @atoms;			# Pieces of the filename.
+		my $fnext;			# File name extension.
 		my $sensor;			# Sensor from filename.
 		my $target;			# Target from filename.
 		my $server;			# Server from filename.
@@ -196,10 +212,11 @@ sub parsefiles
 
 		#
 		# Ensure we're looking at one of our data files, then
-		# get rid of the suffix.
+		# get rid of the suffix and also save it.
 		#
-		next if($fn !~ /\.(dns,rrec,rrsec,rsrc)$/);
-		$fn =~ s/\.(dns,rrec,rrsec,rsrc)$//;
+		next if($fn !~ /\.(dns|rrec|rrsec|rsrc)$/);
+		$fn =~ s/\.(dns|rrec|rrsec|rsrc)$//;
+		$fnext = $1;
 
 		#
 		# Break the name into its pieces.
@@ -210,12 +227,12 @@ sub parsefiles
 		$server	= $atoms[3];
 		$query	= $atoms[4];
 
-		$nagobjs{$sensor}{$server}{$target}{$query}++;
+		$nagobjs{$sensor}{$fnext}{$server}{$target}{$query}++;
 	}
 
 	#
 	# Make sure we found some files.
-	# (This shouldn't happen, given a similar check in getfiles().)
+	# (This shouldn't fail, given a similar check in getfiles().)
 	#
 	if(keys(%nagobjs) == 0)
 	{
@@ -257,46 +274,60 @@ sub buildobjects
 	@sensors = sort(keys(%nagobjs));
 	foreach my $sensor (@sensors)
 	{
-		my %servers;
-		my $servers;
+		my %fnexts;
+		my $fnexts;
 
-		$servers = $nagobjs{$sensor};
-		%servers = %$servers;
+		$fnexts = $nagobjs{$sensor};
+		%fnexts = %$fnexts;
 
 # print "sensor $sensor\n";
 
-		foreach my $server (sort(keys(%servers)))
+		foreach my $fnext (sort(keys(%fnexts)))
 		{
-			my %targets;
-			my $targets;
+			my %servers;
+			my $servers;
+
+			$servers = $nagobjs{$sensor}{$fnext};
+			%servers = %$servers;
+
+# print "fnext $fnext\n";
+
+			foreach my $server (sort(keys(%servers)))
+			{
+				my %targets;
+				my $targets;
 
 # print "\tserver $server\n";
 
-			$targets = $nagobjs{$sensor}{$server};
-			%targets = %$targets;
+				$targets = $nagobjs{$sensor}{$fnext}{$server};
+				%targets = %$targets;
 
-			foreach my $target (sort(keys(%targets)))
-			{
-				my %queries;
-				my $queries;
+				foreach my $target (sort(keys(%targets)))
+				{
+					my %queries;
+					my $queries;
 
 # print "\ttarget $target\n";
 
-				$queries = $nagobjs{$sensor}{$server}{$target};
-				%queries = %$queries;
+					$queries = $nagobjs{$sensor}{$fnext}{$server}{$target};
+					%queries = %$queries;
 
-				foreach my $query (sort(keys(%queries)))
-				{
-					newservice($sensor,$server,$target,$query);
+					foreach my $query (sort(keys(%queries)))
+					{
+						newservice($sensor,$fnext,$server,$target,$query);
+					}
+
 				}
+
+				separator(20);
 
 			}
 
-			separator(20);
+			separator(40);
 
 		}
 
-		separator(40);
+		separator(60);
 
 		#
 		# Create a heartbeat service if asked.
@@ -315,7 +346,27 @@ sub buildobjects
 	#
 	foreach my $sensor (sort(keys(%nagobjs)))
 	{
-		newsvcgrp($sensor);
+		my %fnexts;
+		my $fnexts;
+
+		$fnexts = $nagobjs{$sensor};
+		%fnexts = %$fnexts;
+
+# print "sensor $sensor\n";
+
+		foreach my $fnext (sort(keys(%fnexts)))
+		{
+			my %servers;
+			my $servers;
+
+			$servers = $nagobjs{$sensor}{$fnext};
+			%servers = %$servers;
+
+			foreach my $server (sort(keys(%servers)))
+			{
+				newsvcgrp($server);
+			}
+		}
 	}
 
 }
@@ -388,9 +439,33 @@ define host {
 sub newservice
 {
 	my $sensor = shift;			# Sensor name.
+	my $fnext  = shift;			# Filename's extension.
 	my $server = shift;			# Nameserver name.
 	my $target = shift;			# Target name.
 	my $query  = shift;			# Query type.
+	my $nagcmd;				# Nagios command for service.
+
+	if($fnext eq 'dns')
+	{
+		$nagcmd = 'owl-dnswatch';
+	}
+	elsif($fnext eq 'rrec')
+	{
+		$nagcmd = 'owl-rrecdata';
+	}
+	elsif($fnext eq 'rrsec')
+	{
+		$nagcmd = 'owl-collect-rrsec';
+	}
+	elsif($fnext eq 'rsrc')
+	{
+		$nagcmd = 'owl-sensor-rsrcs';
+	}
+	else
+	{
+		print STDERR "unknown sensor service - \"$fnext\"\n";
+	}
+
 	#
 	# Handle a heartbeat service specially.
 	#
@@ -420,7 +495,7 @@ define service {
 define service {
 	service_description	$server $target $query
 	host_name		$sensor
-	check_command		owl-dnswatch!$sensor!$target!$server!$query
+	check_command		$nagcmd!$sensor!$target!$server!$query
 	active_checks_enabled	1
 	use			owl-service
 }\n";
