@@ -14,9 +14,11 @@ use Net::DNS::SEC::Tools::Donuts::Output;
 
 our $VERSION="2.1";
 
-#require Exporter;
-#our @ISA = qw(Exporter);
-#our @EXPORT = qw();
+my $global_donuts;
+
+require Exporter;
+our @ISA = qw(Exporter);
+our @EXPORT = qw(donuts_records_by_name);
 
 sub new {
     my $type = shift;
@@ -37,7 +39,13 @@ sub new {
     $self->{'resolver'} = Net::DNS::Resolver->new if (!exists($self->{'resolver'}));
     $self->{'output'} = Net::DNS::SEC::Tools::Donuts::Output->new if (!defined($self->{'output'}));
 
+    $self->set_global();
+
     return $self;
+}
+
+sub set_global {
+    $global_donuts = $_[0];
 }
 
 #
@@ -397,6 +405,7 @@ sub load_zone {
     $self->{'domain'} = $domain;
     $self->{'zonesource'} = $file;
     $self->clear_zone_records();
+    $self->set_global();
 
     my $rrset;
     my $parseerror = 0;
@@ -421,6 +430,8 @@ sub load_zone {
 sub analyze_records {
     my ($self, $level, $verbose, $recordByNameType) = @_;
     my $firstrun = 1;
+    $self->set_global();
+
     my @rules = $self->rules();
     my $rrset = $self->zone_records();
 
@@ -474,6 +485,7 @@ sub analyze_names {
     my $firstrun = 1;
     my ($rulecount, $errcount) = (0,0);
     my @rules = $self->rules();
+    $self->set_global();
 
     my ( $errorsfound, $rulesrun);
 
@@ -509,6 +521,10 @@ sub analyze_names {
 
 sub find_records_by_name {
     my ($self, $name, $recordByNameTypeCache) = @_;
+    if (ref($self) ne 'Net::DNS::SEC::Tools::Donuts') {
+	$self = $global_donuts;
+	($name, $recordByNameTypeCache) = @_;
+    }
     if (!$recordByNameTypeCache) {
 	if (!exists($self->{'recordByNameTypeCache'}) || !defined($self->{'recordByNameTypeCache'})) {
 	    $self->{'recordByNameTypeCache'} = $self->create_name_type_cache();
@@ -518,8 +534,13 @@ sub find_records_by_name {
     return $self->{'recordByNameTypeCache'}{$name};
 }
 
+sub donuts_records_by_name {
+    find_records_by_name(@_);
+}
+
 sub analyze {
     my ($self, $level) = @_;
+    $self->set_global();
 
     my ($rulecount, $errcount) = (0,0);
 
