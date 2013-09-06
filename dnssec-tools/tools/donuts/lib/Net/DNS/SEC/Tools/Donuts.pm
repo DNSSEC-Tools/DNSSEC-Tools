@@ -373,6 +373,7 @@ sub clear_zone_records {
     # nuke 
     my ($self) = @_;
     $self->{'RRs'} = [];
+    delete $self->{'recordByNameTypeCache'};
 }
 
 sub zone_records {
@@ -467,6 +468,7 @@ sub create_name_type_cache {
 
     return \%recordByNameTypeCache;
 }
+
 sub analyze_names {
     my ($self, $level, $verbose, $recordByNameTypeCache) = @_;
     my $firstrun = 1;
@@ -503,6 +505,17 @@ sub analyze_names {
     $self->output()->EndOutput();
 
     return ($rulecount, $errcount);
+}
+
+sub find_records_by_name {
+    my ($self, $name, $recordByNameTypeCache) = @_;
+    if (!$recordByNameTypeCache) {
+	if (!exists($self->{'recordByNameTypeCache'}) || !defined($self->{'recordByNameTypeCache'})) {
+	    $self->{'recordByNameTypeCache'} = $self->create_name_type_cache();
+	}
+	$recordByNameTypeCache = $self->{'recordByNameTypeCache'};
+    }
+    return $self->{'recordByNameTypeCache'}{$name};
 }
 
 sub analyze {
