@@ -259,7 +259,6 @@ desc: RFC4034 section 3.0: The TTL value of an RRSIG RR MUST match the TTL value
       push @{$rrsigs{$rec->typecovered}{$rec->name}}, $rec;
   }
   #
-  my %gluerecs;
   # for each record type for a given name
   # reverse sort these so NS records are seen before the glue records
   foreach my $type (sort { $b cmp $a } keys(%{$records})) {
