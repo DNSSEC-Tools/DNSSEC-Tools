@@ -18,7 +18,7 @@ my $global_donuts;
 
 require Exporter;
 our @ISA = qw(Exporter);
-our @EXPORT = qw(donuts_records_by_name);
+our @EXPORT = qw(donuts_records_by_name donuts_records_by_name_and_type);
 
 sub new {
     my $type = shift;
@@ -519,13 +519,39 @@ sub analyze_names {
     return ($rulecount, $errcount);
 }
 
+#
+# finds records from the cache using a (fqdn) name and returns just
+# the "type"'s sub-array
+#
+sub find_records_by_name_and_type {
+    my ($self, $name, $type, $recordByNameTypeCache) = @_;
+
+    if (ref($self) ne 'Net::DNS::SEC::Tools::Donuts') {
+	$self = $global_donuts;
+	($name, $type, $recordByNameTypeCache) = @_;
+    }
+    $type = uc($type);
+
+    my $namerecords = $self->find_records_by_name($name, $recordByNameTypeCache);
+    
+    if (defined($namerecords) &&
+	exists($namerecords->{$type}) &&
+	$#{$namerecords->{$type}} > -1) {
+	return $namerecords->{$type};
+    }
+    return undef; # yes, this is done anyway
+}
+
+#
+# finds records from the cache using a (fqdn) name
+#
 sub find_records_by_name {
     my ($self, $name, $recordByNameTypeCache) = @_;
-    $name = lc($name);
     if (ref($self) ne 'Net::DNS::SEC::Tools::Donuts') {
 	$self = $global_donuts;
 	($name, $recordByNameTypeCache) = @_;
     }
+    $name = lc($name);
     if (!$recordByNameTypeCache) {
 	if (!exists($self->{'recordByNameTypeCache'}) || !defined($self->{'recordByNameTypeCache'})) {
 	    $self->{'recordByNameTypeCache'} = $self->create_name_type_cache();
@@ -537,6 +563,10 @@ sub find_records_by_name {
 
 sub donuts_records_by_name {
     find_records_by_name(@_);
+}
+
+sub donuts_records_by_name_and_type {
+    find_records_by_name_and_type(@_);
 }
 
 sub analyze {
