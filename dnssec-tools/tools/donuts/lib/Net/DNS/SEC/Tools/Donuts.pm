@@ -779,7 +779,51 @@ sub record_data {
 
   Net::DNS::SEC::Tools::Donuts - Execute DNS and DNSSEC lint-like tests on zone data
 
+=head1 SYNOPSIS
+
+  # load a zone, rules and analyze everything
+  #   by default, this will print errors in 'wrapped text' format
+  #   to stdout.
+  my $donuts = new Net::DNS::SEC::Tools::Donuts();
+  $donuts->load_zone("/path/to/example.com.signed", "example.com");
+  $donuts->load_rule_files("/path/to/installed/rules/*.txt");
+  my ($rulecount, $errorcount) = $donuts->analyze();
+
+  # send the output in json format to /tmp/foo.json instead
+  $donuts->set_output_format('json');
+  $donuts->set_output_location('file:/tmp/foo.json');
+  $donuts->analyze();
+
+  # display the available features
+  print "features: ", join(", ", $donuts->available_features()), "\n";
+
+  # enable the 'live' and 'check_data' features in the rule sets
+  $donuts->set_feature_list('live', 'check_data);
+
+  # ignore some rules (regexp's to match against rule names)
+  $donuts->set_ignore_list('NSEC');
+
+  # retrieve the rules loaded into the zone
+  my @rules = $donuts->rules();
+
+  # retrieve the records from the loaded zone
+  #  (these will be Net::DNS::RR based records)
+  my @records = $donuts->zone_records();
+
+  # or just of a certain name:
+  #   (these will be a hash reference like { type => [records] })
+  my $records = $donuts->find_records_by_name('www.example.com');
+
+  # or of just a type for a name:
+  #   (these will be an array reference to the [records])
+  my $records =
+     $donuts->find_records_by_name_and_type('www.example.com', 'A');
+
 =head1 DESCRIPTION
+
+The I<Net::DNS::SEC::Tools::Donuts> (aka I<Donuts>) module is capable
+of loading a zone file, rules to test against it and then analyzing
+the rules and reporting the results.
 
 =back
 
