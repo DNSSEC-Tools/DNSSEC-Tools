@@ -9,7 +9,7 @@
 #	It is a modified version of the owl-dataarch command for Owl sensors.
 #
 # Revision History
-#	1.0	121201     Initial version.
+#	1.0	Initial version.				121201
 #
 #	2.0	Released as part of DNSSEC-Tools 2.0.		130301
 #	2.0.1	Added .rrsec files to those to be backed up.	130513
@@ -21,6 +21,10 @@ use strict;
 use Cwd;
 use Getopt::Long qw(:config no_ignore_case_always);
 use Time::Local;
+
+use FindBin;
+use lib "$FindBin::Bin";
+use owlutils;
 
 #######################################################################
 #
@@ -51,7 +55,7 @@ my $verbose	= 0;				# Display verbose output.
 
 ###################################################
 
-my $MV = "/bin/mv";
+my $MV = "/bin/mv -f";
 
 my $EXTENSIONS = "*.dns *.rrec *.rrsec *.rsrc";	# Data-file extensions to save.
 
@@ -104,7 +108,7 @@ sub main
 	{
 		my $sfx = ($errs != 1) ? 's' : '';	# Pluralization suffix.
 
-		print "$NAME:  $errs error$sfx found during initialization; halting...\n";
+		print STDERR "$NAME:  $errs error$sfx found during initialization; halting...\n";
 		exit(1);
 	}
 
@@ -116,7 +120,10 @@ sub main
 	#
 	# Archive the specified data files.
 	#
-	archer(@keepdate);
+	foreach my $subdir (sort(keys(%owlutils::owlexts)))
+	{
+		archer($subdir,@keepdate);
+	}
 }
 
 #-----------------------------------------------------------------------------
@@ -285,17 +292,25 @@ sub getkeepdate
 #
 sub archer
 {
+	my $subdir = shift;			# Subdirectory to archive.
 	my @keepdate = @_;			# Earliest date info.
+	my $dsdir;				# Data subdirectory.
 	my @files = ();				# Data files to check.
 	my $lastind;				# Index of last old file.
 
 	#
-	# Move into this sensor's data directory.
+	# Don't do anything if this sensor has no data in this subdirectory.
 	#
-	if(chdir($datadir) == 0)
+	$dsdir = "$datadir/$subdir";
+	return if(! -e $dsdir);
+
+	#
+	# Move into this sensor's data subdirectory.
+	#
+	if(chdir($dsdir) == 0)
 	{
-		print STDERR "unable to move to directory \"$datadir\"\n";
-		next;
+		print STDERR "unable to move to directory \"$dsdir\"\n";
+		return;
 	}
 
 	#
@@ -333,8 +348,8 @@ sub archer
 	#
 	# Archive the files.
 	#
-	print "archiving $datadir\n" if($verbose);
-	filesaver(\@files,$datadir);
+	print "archiving $dsdir\n" if($verbose);
+	filesaver(\@files,$subdir);
 
 }
 
@@ -380,7 +395,7 @@ sub firstfile
 sub filesaver
 {
 	my $fileref = shift;			# Reference to file list.
-	my $destdir = shift;			# Destination directory.
+	my $subdir = shift;			# Subdirectory.
 	my @files;				# List of files to archive.
 	my $first;				# First file's timestamp.
 	my $last;				# Last file's timestamp.
@@ -407,7 +422,7 @@ sub filesaver
 	#
 	for(my $ind=$first; $ind <= $last; $ind++)
 	{
-		my @fns = glob("$datadir/$ind*");
+		my @fns = glob("$datadir/$subdir/$ind*");
 		if(@fns > 0)
 		{
 			$yymms{$ind}++;
@@ -415,8 +430,8 @@ sub filesaver
 	}
 
 	#
-	# Make sure our directories (sensor's directory and monthly
-	# directories)  exist, and create them if they don't.
+	# Make sure our directories (sensor's directory, monthly directory,
+	# and data sub-directory) exist, and create them if they don't.
 	#
 	$archtop = "$archdir/$sensor";
 	foreach my $ind (sort(keys(%yymms)))
@@ -426,6 +441,9 @@ sub filesaver
 
 		vprint("checking data archive $archtop/data-$ind\n");
 		checkdir("$archtop/data-$ind","data archive destination",1);
+
+		vprint("checking data $subdir archive $archtop/$subdir/data-$ind\n");
+		checkdir("$archtop/data-$ind/$subdir","data $subdir archive destination",1);
 	}
 
 	#
@@ -450,7 +468,7 @@ sub filesaver
 		#
 		# Build the destination directory.
 		#
-		$ddir = "$archtop/data-$yymm/";
+		$ddir = "$archtop/data-$yymm/$subdir/";
 
 		$cmd = "$MV $fn $ddir";
 
