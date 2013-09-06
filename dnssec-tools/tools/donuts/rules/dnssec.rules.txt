@@ -331,15 +331,6 @@ desc: RFC4035: section 2.3: An NSEC record (and its associated RRSIG RRset) MUST
   }
 </test>
 
-name: DNSSEC_MEMORIZE_KEYS
-type: DNSKEY
-level: 1
-internal: yes
-<test>
-  push @{$donuts::dnskeys}, $record;
-  return;
-</test>
-
 name: DNSSEC_RRSIGS_VERIFY
 type: RRSIG
 level: 1
@@ -355,7 +346,7 @@ ruletype: name
       donuts_error("keytag not found on RRSIG #$count for $recordname");
       next;
     }
-    foreach my $key (@{$donuts::dnskeys}) {
+    foreach my $key (@{donuts_records_by_name_and_type($current_domain, 'DNSKEY')}) {
        if ($key->keytag eq $sig->keytag) {
          $dhkey = $key;
          last;
