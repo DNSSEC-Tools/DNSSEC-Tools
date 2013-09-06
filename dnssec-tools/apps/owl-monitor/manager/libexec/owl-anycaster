@@ -19,6 +19,7 @@
 #		the original UEM system.
 #
 #	2.0	Initial version for the Owl Monitoring System.	130430
+#	2.0.1	Moved data to <data/dns> subdirectory.		130731
 #
 
 use strict;
@@ -31,7 +32,8 @@ use Fcntl ':flock';
 # Version information.
 #
 my $NAME   = "owl-anycaster";
-my $VERS   = "$NAME version: 2.0";
+my $VERS   = "$NAME version: 2.0.1";
+my $DTVERS = "DNSSEC-Tools version: 2.0";
 
 #######################################################################
 #
@@ -45,6 +47,8 @@ my $OWL_DIR	 = "/owl";			# Owl directory.
 my $OWL_DATA		= "$OWL_DIR/data";	# Owl DNS data directory.
 my $OWL_HISTORY		= "history";		# Owl DNS history data dir.
 my $OWL_ANYCASTDATA	= "data";		# Owl DNS data.
+
+my $FILEEXT = 'dns';			# Subdirectory for dnstimer data.
 
 my $historydir;					# History data directory.
 my $datadir;					# Data directory.
@@ -306,10 +310,17 @@ sub getdatadir
 	dirchk($historydir);
 
 	#
-	# Build and verify the name of our response data directory.
+	# Build and verify the name of our sensor data directory.
 	#
 	$datadir = "$OWL_DATA/$sensor/$OWL_ANYCASTDATA";
 	dirchk($datadir);
+
+	#
+	# Build and verify the name of our response data subdirectory.
+	#
+	$datadir = "$datadir/$FILEEXT";
+	dirchk($datadir);
+
 }
 
 #-----------------------------------------------------------------------------
@@ -432,15 +443,15 @@ sub getfns
 
 #
 # example path:
-#   /owl/data/sensor1/data/130109.0019,snsor1,.,h.root-servers.net,ANYCAST.dns
+#  /owl/data/sensor1/data/dns/130109.0019,snsr1,.,h.root-servers.net,ANYCAST.dns
 
-# out("looking for <$datadir/*,$ns,ANYCAST.dns>");
+# out("looking for <$datadir/*,$ns,ANYCAST.$FILEEXT>");
 
 	#
 	# Get the list of extant files for this service.  Give an unknown
 	# error if there aren't any.
 	#
-	@files = sort(glob("$datadir/*,$ns,ANYCAST.dns"));
+	@files = sort(glob("$datadir/*,$ns,ANYCAST.$FILEEXT"));
 	if(@files == 0)
 	{
 		print "no ANYCAST files matching \"$ns\"\n";
@@ -452,7 +463,7 @@ sub getfns
 	#
 	if(!defined($lfile))
 	{
-		print "no anycast history defined for $ns\n";
+		print "no anycast history defined for $ns in \"$lfile\"\n";
 		exit($RC_UNKNOWN);
 	}
 
@@ -750,7 +761,7 @@ owl-anycaster - Nagios plugin to retrieve log Owl ANYCAST response data
 
 B<owl-anycaster> parses the DNS ANYCAST nameserver name data gathered by
 an Owl Monitoring System sensor and writes the parsed data to the Nagios
-B<perfdata> file.  The sensor data is expected to be gathered by the
+B<perfdata> file.  The sensor data are expected to be gathered by the
 B<owl-dnstimer> sensor program.  The sensor's anycast history file is
 updated to record the last entry for a particular root server from that
 sensor.
@@ -769,7 +780,7 @@ appropriate RRD databases.  These data will be used in graphing the response
 times.
 
 The data directories are hard-coded in B<owl-anycaster>.
-DNS ANYCAST response time data are in B</owl/data/E<lt>sensorE<gt>/data/>.
+DNS ANYCAST response time data are in B</owl/data/E<lt>sensorE<gt>/data/dns/>.
 The history file for the sensor/nameserver pair is in
 B</owl/data/E<lt>sensorE<gt>/history/anycast-E<lt>sensorE<gt>>.
 
