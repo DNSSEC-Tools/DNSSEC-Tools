@@ -10,9 +10,11 @@
 #	monitoring environment.
 #
 # Revision History
-#	1.0	121201	Initial version.
+#	1.0	Initial version.				121201
 #			This was adapted from the uemarch script from
 #			the original UEM system.
+#
+#	2.0	Released as part of DNSSEC-Tools 2.0.		130301
 #
 
 use strict;
@@ -183,13 +185,14 @@ sub checkdir
 #
 sub archsensors
 {
+	my $vflag = $verbose ? '-verbose' : '';		# Verbose flag.
+
 	#
 	# Go through the list of sensors and archive each one's data.
 	#
 	foreach my $sdir (sort(glob("$datadir/*")))
 	{
 		my $sensor;			# Name of this sensor.
-		my $ddir;			# Sensor's data directory.
 		my @files;			# Sensor's data files.
 
 		#
@@ -205,17 +208,27 @@ sub archsensors
 		next if(@files == 0);
 
 		print "archiving sensor $sensor\n";
-# print "\t\tfiles to check:  " . @files . "\n";
 
 		#
 		# Archive this sensor's data.
 		#
-		system("du -skh $ddir") if($verbose);
-		print "running \"./owl-dataarch-mgr $sensor $sdir/data $archdir\"\n" if($verbose);
+		system("du -skh $sdir") if($verbose);
+		print "running \"owl-dataarch-mgr $vflag $sensor $sdir/data $archdir\"\n" if($verbose);
 
-		system("owl-dataarch-mgr $sensor $sdir/data $archdir");
+		system("owl-dataarch-mgr $vflag $sensor $sdir/data $archdir");
 
-		system("du -skh $ddir") if($verbose);
+		#
+		# If we couldn't execute owl-dataarch-mgr, we'll complain
+		# and return.  There's no point trying to run it multiple
+		# times if it couldn't be run the first time.
+		#
+		if($? == -1)
+		{
+			print STDERR "owl-dataarch-mgr failed to execute:  $!\n";
+			return;
+		}
+
+		system("du -skh $sdir") if($verbose);
 	}
 
 }
@@ -282,8 +295,10 @@ Data from these directories will be move to I<archive-directory>.
 See the documentation for B<owl-dataarch-mgr> for a discussion of how the
 archived data are organized in I<archive-directory>.
 
-The path of the executing process B<must> contain the path in which
-B<owl-dataarch-mgr> lives, or B<owl-archdata> will not be able to execute it.
+The path of the executing process B<must> contain the directory in which
+B<owl-dataarch-mgr> lives, or B<owl-archdata> will not be able to execute
+it.  If B<owl-archdata> is being run as a B<cron> job, the user's I<crontab>
+must contain a relevant "PATH" line.
 
 =head1 OPTIONS
 
