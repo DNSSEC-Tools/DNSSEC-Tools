@@ -5,21 +5,6 @@
 # This file implements rules to check live nameservers for served data
 #
 
-#
-# memorize NS records for a zone
-#
-name: MEMORIZE_NS_ADDRS
-internal: yes
-level: 1
-feature: check_data
-type: NS
-<test>
-  if ($record->name eq $current_domain) {
-    $DONUTS::DNSSEC::NSADDRS{$record->nsdname} = $record->name;
-  }
-  return;
-</test>
-
 name: DNS_SERVERS_MATCH_DATA
 ruletype: name
 level: 5
@@ -30,7 +15,8 @@ desc: Checks to see if each of the zone's name servers are properly serving the 
   my @results;
 
   # check each resolver from our memorized NS records for data
-  foreach my $ns (keys(%DONUTS::DNSSEC::NSADDRS)) {
+  foreach my $nsrr (@{donuts_records_by_name($current_domain)->{'NS'}}) {
+      my $ns = $nsrr->nsdname();
       # create a resolver directly to this NS server
       my $resolver = Net::DNS::Resolver->new(nameservers => [$ns],
 					     recurse => 0);
@@ -47,18 +33,7 @@ desc: Checks to see if each of the zone's name servers are properly serving the 
 	      map { $err .= "      ".$_->string()."\n"; } @answers;
  	      $err .= "    loaded records: \n";
 	      map { $err .= "      ".$_->string()."\n"; } @{$records->{$recordtype}};
-#  	      use Data::Dumper;
-#  	      $err .= Dumper(\@answers);
-#  	      $err .= Dumper($records->{$recordtype});
 	      donuts_error($err);
-	  } else {
-#  	      print STDERR "matched ($#answers = $#{$records->{$recordtype}}): $recordtype:$recordname from server $ns\n";
-#  	      if ($recordname =~ /domainkey/) {
-#  		  print STDERR "    live records:\n";
-#  		  map { print STDERR  "      ".$_->string()."\n"; } @answers;
-#  		  print STDERR  "    loaded records: \n";
-#  		  map { print STDERR  "      ".$_->string()."\n"; } @{$records->{$recordtype}};
-#  	      }
 	  }
       }
   }
