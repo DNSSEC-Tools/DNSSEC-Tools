@@ -825,6 +825,76 @@ The I<Net::DNS::SEC::Tools::Donuts> (aka I<Donuts>) module is capable
 of loading a zone file, rules to test against it and then analyzing
 the rules and reporting the results.
 
+=head2 Creating a Donuts instance
+
+Creating an instance of a Donuts object is straightforward:
+
+  use Net::DNS::SEC::Tools::Donuts
+  my $donuts = new Net::DNS::SEC::Tools::Donuts();
+
+=head2 Loading and Accessing Zone Data
+
+=head3 load_zone(I<SPECIFIER>, I<ZONENAME>)
+
+Zone data can be loaded into the Donuts module using the
+I<load_zone()> function.  This function takes a file path as an
+argument by default, or one of the special specifiers listed below as
+well.
+
+=over
+
+=item $donuts->load_zone("/path/to/file", "example.com");
+
+Loads a file from a typicla (text based) zone data file.  It uses the
+I<Net::DNS::Zonefile::Fast> module for parsing the zone file into
+I<Net::DNS::RR> records.
+
+=item $donuts->load_zone("axfr:example.com", "example.com");
+
+If the host has the ability to perform an I<axfr> transfer of a given
+zone, this specifier can be used to dynamically transfer the zone data
+from the online servers.
+
+=item $donuts->load_zone("live:www,ftp:aaaa,ns", "example.com");
+
+When the I<live:> specifier prefix is used, the Donuts module will
+attempt to perform single queries from the zone for the specified list
+of domain name prefixes for the zone.  The default list (i.e. just
+"live:") of zone records to query for is just "www".  Query types may
+be specified by separating the label with a ':' character, as in the
+example above which indicates a AAAA record should be queried for the
+'ftp' host.
+
+In addition to the list specified within teh specifier itself, each
+zone is always queried for the following entries as well:
+
+=over
+
+=item - ZONENAME:DNSKEY
+
+=item - ZONENAME:SOA
+
+=item - ZONENAME:NS
+
+=back
+
+Note that because the zone won't be entirely complete, careful
+selection or exclusion of rules (see "Ignoring and Only Executing
+Rules") will likely be required to filter out bad results during any
+analysis that is performed.
+
+=back
+
+=head2 Loading Donuts Rules
+
+=head2 Analyzing Zones Using Rules
+
+=head2 Features
+
+=head2 Ignoring and Only Executing Rules
+
+=head2 Configuration 
+
 =back
 
 =head1 COPYRIGHT
