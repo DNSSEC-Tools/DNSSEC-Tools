@@ -17,31 +17,17 @@ desc: Checks for the existence of an SOA record in a zone.
 </test>
 
 #
-# memorize NS records for a zone
-#
-name: MEMORIZE_NS_CNAME_RECORDS
-internal: yes
-level: 1
-type: NS
-<test>
-  if ($record->name eq $current_domain) {
-    $DONUTS::DNSSEC::NSCNAMECHECK{$record->nsdname} = $record->name;
-  }
-  return;
-</test>
-
-#
-# memorize NS records for a zone
+# check that NS records don't point to CNAMEs
 #
 name: DNS_NS_NO_CNAME
 level: 4
-type: CNAME
+type: NS
 desc: Checks to make sure that NS records don't point to CNAMEs
 <test>
-  if (exists($DONUTS::DNSSEC::NSCNAMECHECK{$record->name})) {
-    donuts_error("A NS record for " .
-		 $DONUTS::DNSSEC::NSCNAMECHECK{$record->name} .
-		 " points to " . $record->name .
+  my $data = donuts_records_by_name($record->nsdname);
+  if (exists($data->{'CNAME'})) {
+    donuts_error("A NS record for " . $record->name .
+		 " points to " . $record->nsdname .
 		 " which is a CNAME instead of an address record");
   }
   return;
