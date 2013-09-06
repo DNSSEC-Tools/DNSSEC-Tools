@@ -34,7 +34,7 @@ desc:     This rule checks to see if all the NSEC3 records are complete and cont
   # only do this check once
   return if ($current_domain ne $recordname);
 
-  if ($DONUTS::DNSSEC::NSEC3ZONE) {
+  if (defined(donuts_records_by_name_and_type($recordname, 'NSEC3PARAM'))) {
     my @sorted = sort { $a->name cmp $b->name } @DONUTS::DNSSEC::NSEC3;
     my @results;
 
@@ -70,7 +70,7 @@ desc:     This rule checks to see if all the NSEC records are complete and conta
   # only do this check once
   return if ($current_domain ne $recordname);
 
-  if (!$DONUTS::DNSSEC::NSEC3ZONE) {
+  if (!defined(donuts_records_by_name_and_type($recordname, 'NSEC3PARAM'))) {
     my @sorted = sort { 
         @dname1=Net::DNS::name2labels($a->name());
         @dname2=Net::DNS::name2labels($b->name());

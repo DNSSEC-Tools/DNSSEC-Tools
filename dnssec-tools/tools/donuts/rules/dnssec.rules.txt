@@ -21,22 +21,6 @@ type:  RRSIG
 </test>
 
 #
-# Is this an NSEC3 zone?
-#
-name: DNSSEC_CHECK_IF_NSEC3
-desc: Checks to see if a given zone contains an NSEC3PARAM record.
-level: 1
-type: NSEC3PARAM
-internal: yes
-<test>
-  if ($record->name eq $current_domain &&
-      $record->type eq 'NSEC3PARAM') {
-      $DONUTS::DNSSEC::NSEC3ZONE = 1;
-      return;
-  }
-</test>
-
-#
 # NSEC is present?
 #
 name: DNSSEC_MISSING_NSEC_RECORD1
@@ -46,7 +30,7 @@ ruletype: name
 <test>
     if (!exists($records->{'NSEC'}) &&
         !defined(donuts_records_by_name_and_type($recordname, 'NS')) &&
-	!$DONUTS::DNSSEC::NSEC3ZONE) {
+        !defined(donuts_records_by_name_and_type($recordname, 'NSEC3PARAM'))) {
 	donuts_error("name $recordname does not have an NSEC record, which is required for secure domains.");
     }
 </test>
