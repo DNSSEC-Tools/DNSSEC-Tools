@@ -561,9 +561,8 @@ sub maybe_output_to_web {
     # some stuff for web purposes should be redirected to the screen
     #
     if (defined($Getopt::GUI::Long::GUI_qw) && $Getopt::GUI::Long::GUI_qw->{'generator'} =~ /HTML/) {
-	close STDERR;
-	*STDERR = *STDOUT;  # alias stderr to stdout so it'll go to the web
-	print "<br /><pre>\n\n";
+	$donuts->set_output_format('html');
+	$donuts->set_output_location('stdout');
     }
 }
 
