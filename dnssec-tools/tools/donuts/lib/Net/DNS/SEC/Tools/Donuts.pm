@@ -75,6 +75,36 @@ sub rule_is_ignored {
 
 
 #
+# ignore list of rules to skip
+#
+sub set_only_list {
+    my ($self, @list) = @_;
+    $self->{'onlylist'} = \@list;
+}
+
+sub only_list {
+    my ($self) = @_;
+    return @{$self->{'onlylist'}};
+}
+
+sub rule_is_only {
+    my ($self, $rule) = @_;
+    # only certain rules
+
+    # if no onlylist is set, every rule is ok
+    return 1 if ($#{$self->{'onlylist'}} == -1);
+
+    # otherwise only certain ones should be considered
+    foreach my $only (@{$self->{'onlylist'}}) {
+	if ($rule->{'name'} =~ /$only/) {
+	    return 1;
+	}
+    }
+    return 0;
+}
+
+
+#
 # feature lists/hashes
 #
 sub set_feature_list {
@@ -445,6 +475,7 @@ sub analyze_records {
     foreach my $rec (@$rrset) {
 	foreach my $r (@rules) {
 	    next if ($self->rule_is_ignored($r));
+	    next if (!$self->rule_is_only($r));
 
 	    ($rulesrun, $errorsfound) =
 	      $r->test_record($rec, $self->{'zonesource'},

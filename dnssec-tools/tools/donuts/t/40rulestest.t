@@ -57,3 +57,10 @@ $donuts->set_ignore_list('TEST_DNS_NO_MX');
 ($rulecount, $errcount) = $donuts->analyze(9);
 ok($errcount == 1, "1 errors were found in the ignore run (got: $errcount)");
 ok($rulecount == 1, "1 rule was run in the ignore run (got: $rulecount)");
+
+# now only test specific rules via the only list
+$donuts->set_ignore_list();
+$donuts->set_only_list('TEST_DNS_NO_MX');
+($rulecount, $errcount) = $donuts->analyze(9);
+ok($errcount == 3, "3 errors were found in the only run (got: $errcount)");
+ok($rulecount == 1, "1 rule was run in the only run (got: $rulecount)");
