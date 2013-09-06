@@ -455,7 +455,7 @@ sub analyze_records {
 
 	# allow the calling function to cache things by name/type
 	if (defined($recordByNameType)) {
-	    push @{$recordByNameType->{$rec->name}{$rec->type}}, $rec;
+	    push @{$recordByNameType->{lc($rec->name)}{$rec->type}}, $rec;
 	}
 	$firstrun = 0;
     }
@@ -474,7 +474,7 @@ sub create_name_type_cache {
     
     my %recordByNameTypeCache;
     foreach my $rec (@$rrset) {
-	push @{$recordByNameTypeCache{$rec->name}{$rec->type}}, $rec;
+	push @{$recordByNameTypeCache{lc($rec->name)}{$rec->type}}, $rec;
     }
 
     return \%recordByNameTypeCache;
@@ -521,6 +521,7 @@ sub analyze_names {
 
 sub find_records_by_name {
     my ($self, $name, $recordByNameTypeCache) = @_;
+    $name = lc($name);
     if (ref($self) ne 'Net::DNS::SEC::Tools::Donuts') {
 	$self = $global_donuts;
 	($name, $recordByNameTypeCache) = @_;
