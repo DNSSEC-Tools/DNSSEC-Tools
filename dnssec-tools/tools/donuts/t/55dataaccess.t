@@ -24,6 +24,6 @@ ok(ref($records) eq 'HASH', "something was a hash");
 ok($#{$records->{'MX'}} == 0, "data returned contains 1 MX record");
 ok($#{$records->{'A'}} == 0, "data returned contains 1 A record");
 
-my $records = donuts_records_by_name('www.example.com');
+$records = donuts_records_by_name('www.example.com');
 ok($#{$records->{'A'}} == 0, "data returned contains 1 A record from global");
 
