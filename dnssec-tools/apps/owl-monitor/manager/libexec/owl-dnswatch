@@ -10,9 +10,9 @@
 #	monitoring environment.
 #
 #	File organization:
-#		/owl/data/owldev1/data/
-#		/owl/data/owldev1/history/
-#		/owl/data/owldev1/history/dnstimer
+#		/owl/data/<sensor>/data/dns
+#		/owl/data/<sensor>/history/
+#		/owl/data/<sensor>/history/dnstimer
 #
 #
 # Revision History
@@ -22,6 +22,7 @@
 #
 #	2.0	Released as part of DNSSEC-Tools 2.0.		130301
 #	2.0.1	Added -rotate option.				130321
+#	2.0.2	Moved data to <data/dns> subdirectory.		130731
 #
 
 use strict;
@@ -35,7 +36,7 @@ use File::Path;
 # Version information.
 #
 my $NAME   = "owl-dnswatch";
-my $VERS   = "$NAME version: 2.0.1";
+my $VERS   = "$NAME version: 2.0.2";
 my $DTVERS = "DNSSEC-Tools version: 2.0";
 
 #######################################################################
@@ -44,18 +45,23 @@ my $DTVERS = "DNSSEC-Tools version: 2.0";
 #
 #	The installer must set the value of $OWLDIR to reflect the
 #	desired file hierarchy.
-#	The $sub_data and $subhist values may be set, but the values
+#	The $SUBDATA and $SUBHIST values may be set, but the values
 #	given below are sufficient.
+#
+#	Putting together the various values below will give:
+#		/owl/data/<sensor>/data/dns
 #
 
 my $OWLDIR	 = '/owl';		# Owl directory.
 
-my $sub_data = 'data';			# Subdirectory for dnstimer data.
-my $sub_hist = 'history';		# Subdirectory for history data.
+my $OWLDATA	 = "$OWLDIR/data";	# Owl's top-level data directory.
+
+my $SUBDATA = 'data';			# Subdirectory for sensor's data.
+my $SUBHIST = 'history';		# Subdirectory for history data.
+
+my $FILEEXT = 'dns';			# Subdirectory for dnstimer data.
 
 #####
-
-my $OWLDATA	 = "$OWLDIR/data";	# Owl DNS data directory.
 
 my $hist_dnstimer = 'dnstimer';		# History file for dnstimer data.
 
@@ -295,7 +301,7 @@ sub doopts
 	#
 	# Combine the arguments.
 	#
-	$tetrad = "$sensor,$target,$server,$query.dns";
+	$tetrad = "$sensor,$target,$server,$query.$FILEEXT";
 
 }
 
@@ -313,8 +319,8 @@ sub getdirs
 	#
 	# Build the directory names we'll need.
 	#
-	$datadir    = "$OWLDATA/$sensor/$sub_data";
-	$historydir = "$OWLDATA/$sensor/$sub_hist";
+	$datadir    = "$OWLDATA/$sensor/$SUBDATA";
+	$historydir = "$OWLDATA/$sensor/$SUBHIST";
 
 	#
 	# Ensure the data directory exists.
@@ -326,6 +332,22 @@ sub getdirs
 			if(mkpath($datadir) == 0)
 			{
 				print "data directory \"$datadir\" does not exist\n";
+				exit($RC_CRITICAL);
+			}
+		}
+	}
+
+	#
+	# Ensure the data subdirectory exists.
+	#
+	$datadir = "$datadir/$FILEEXT";
+	if(! -e $datadir)
+	{
+		if($mkflag)
+		{
+			if(mkpath($datadir) == 0)
+			{
+				print "$FILEEXT data directory \"$datadir\" does not exist\n";
 				exit($RC_CRITICAL);
 			}
 		}
@@ -888,7 +910,7 @@ formatted for use in Nagios' own display and for adding to the
 B<nagiosgraph> databases for display in time-based graphs.
 
 The data directories are hard-coded in B<owl-dnswatch>.  DNS response time
-data are in B</owl/data/<sensor>/data>.
+data are in B</owl/data/E<lt>sensorE<gt>/data/dns>.
 
 The specified service name determines which file will be selected from the
 appropriate data directory.  The file names in the data directory have this

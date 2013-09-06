@@ -113,7 +113,9 @@ href="https://www.dnssec-tools.org/wiki/index.php/Dnsval.conf#With_DLV_support">
           DANE support in Bloodhound is enabled through the DNSSEC-Tools
           <a
             href="https://www.dnssec-tools.org/wiki/index.php/Libval_and_libsres">dnsval</a>
-          package, specifically the libval and libsres libraries. <br>
+          package, specifically the libval and libsres libraries. DANE
+          support is still under development and should be considered
+          experimental for now. <br>
         </p>
         <p>For a list of DANE test sites please see <a
 href="http://www.internetsociety.org/deploy360/resources/dane-test-sites/">this</a>
@@ -122,14 +124,6 @@ href="http://www.internetsociety.org/deploy360/resources/dane-test-sites/">this<
           ensure that DLV is enabled in your validator configuration
           file as described <a
 href="https://www.dnssec-tools.org/wiki/index.php/Dnsval.conf#With_DLV_support">here</a>.
-          Further, there seems to be some discrepancy between the hash
-          values returned in the TLSA records for some of these tests
-          sites and the expected hash values computed by <a
-href="https://www.dnssec-deployment.org/wiki/index.php/Lastmile_tools_matrix">other
-
-
-            stand-alone DANE test programs</a>. This inconsistency needs
-          to be checked and clarified by the DANE community.<br>
         </p>
         <h2>Additional Links<br>
         </h2>

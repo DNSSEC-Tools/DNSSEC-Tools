@@ -163,6 +163,19 @@ my %DEF_QUERYARG =
 	'rrsec'		=> '',
 );
 
+#
+# Owl data file extensions.
+# The hash key is a file extension for a data file.
+# The hash value is the program that uses that file extension.
+#
+our %owlexts =
+(
+	'dns'		=> 'owl-dnstimer',
+	'rrec'		=> 'owl-rrdata',
+	'rrsec'		=> 'owl-rrsec',
+	'rsrc'		=> 'owl-resources',
+);
+
 #------------------------------------------------------------------------
 # Shared data.
 #

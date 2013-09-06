@@ -14,9 +14,11 @@ use Net::DNS::SEC::Tools::Donuts::Output;
 
 our $VERSION="2.1";
 
-#require Exporter;
-#our @ISA = qw(Exporter);
-#our @EXPORT = qw();
+my $global_donuts;
+
+require Exporter;
+our @ISA = qw(Exporter);
+our @EXPORT = qw(donuts_records_by_name donuts_records_by_name_and_type);
 
 sub new {
     my $type = shift;
@@ -37,7 +39,13 @@ sub new {
     $self->{'resolver'} = Net::DNS::Resolver->new if (!exists($self->{'resolver'}));
     $self->{'output'} = Net::DNS::SEC::Tools::Donuts::Output->new if (!defined($self->{'output'}));
 
+    $self->set_global();
+
     return $self;
+}
+
+sub set_global {
+    $global_donuts = $_[0];
 }
 
 #
@@ -59,6 +67,36 @@ sub rule_is_ignored {
 
     foreach my $ignore (@{$self->{'ignorelist'}}) {
 	if ($rule->{'name'} =~ /$ignore/) {
+	    return 1;
+	}
+    }
+    return 0;
+}
+
+
+#
+# ignore list of rules to skip
+#
+sub set_only_list {
+    my ($self, @list) = @_;
+    $self->{'onlylist'} = \@list;
+}
+
+sub only_list {
+    my ($self) = @_;
+    return @{$self->{'onlylist'}};
+}
+
+sub rule_is_only {
+    my ($self, $rule) = @_;
+    # only certain rules
+
+    # if no onlylist is set, every rule is ok
+    return 1 if ($#{$self->{'onlylist'}} == -1);
+
+    # otherwise only certain ones should be considered
+    foreach my $only (@{$self->{'onlylist'}}) {
+	if ($rule->{'name'} =~ /$only/) {
 	    return 1;
 	}
     }
@@ -373,6 +411,7 @@ sub clear_zone_records {
     # nuke 
     my ($self) = @_;
     $self->{'RRs'} = [];
+    delete $self->{'recordByNameTypeCache'};
 }
 
 sub zone_records {
@@ -396,6 +435,7 @@ sub load_zone {
     $self->{'domain'} = $domain;
     $self->{'zonesource'} = $file;
     $self->clear_zone_records();
+    $self->set_global();
 
     my $rrset;
     my $parseerror = 0;
@@ -420,6 +460,8 @@ sub load_zone {
 sub analyze_records {
     my ($self, $level, $verbose, $recordByNameType) = @_;
     my $firstrun = 1;
+    $self->set_global();
+
     my @rules = $self->rules();
     my $rrset = $self->zone_records();
 
@@ -433,6 +475,7 @@ sub analyze_records {
     foreach my $rec (@$rrset) {
 	foreach my $r (@rules) {
 	    next if ($self->rule_is_ignored($r));
+	    next if (!$self->rule_is_only($r));
 
 	    ($rulesrun, $errorsfound) =
 	      $r->test_record($rec, $self->{'zonesource'},
@@ -443,7 +486,7 @@ sub analyze_records {
 
 	# allow the calling function to cache things by name/type
 	if (defined($recordByNameType)) {
-	    push @{$recordByNameType->{$rec->name}{$rec->type}}, $rec;
+	    push @{$recordByNameType->{lc($rec->name)}{$rec->type}}, $rec;
 	}
 	$firstrun = 0;
     }
@@ -462,16 +505,18 @@ sub create_name_type_cache {
     
     my %recordByNameTypeCache;
     foreach my $rec (@$rrset) {
-	push @{$recordByNameTypeCache{$rec->name}{$rec->type}}, $rec;
+	push @{$recordByNameTypeCache{lc($rec->name)}{$rec->type}}, $rec;
     }
 
     return \%recordByNameTypeCache;
 }
+
 sub analyze_names {
     my ($self, $level, $verbose, $recordByNameTypeCache) = @_;
     my $firstrun = 1;
     my ($rulecount, $errcount) = (0,0);
     my @rules = $self->rules();
+    $self->set_global();
 
     my ( $errorsfound, $rulesrun);
 
@@ -505,8 +550,59 @@ sub analyze_names {
     return ($rulecount, $errcount);
 }
 
+#
+# finds records from the cache using a (fqdn) name and returns just
+# the "type"'s sub-array
+#
+sub find_records_by_name_and_type {
+    my ($self, $name, $type, $recordByNameTypeCache) = @_;
+
+    if (ref($self) ne 'Net::DNS::SEC::Tools::Donuts') {
+	$self = $global_donuts;
+	($name, $type, $recordByNameTypeCache) = @_;
+    }
+    $type = uc($type);
+
+    my $namerecords = $self->find_records_by_name($name, $recordByNameTypeCache);
+    
+    if (defined($namerecords) &&
+	exists($namerecords->{$type}) &&
+	$#{$namerecords->{$type}} > -1) {
+	return $namerecords->{$type};
+    }
+    return undef; # yes, this is done anyway
+}
+
+#
+# finds records from the cache using a (fqdn) name
+#
+sub find_records_by_name {
+    my ($self, $name, $recordByNameTypeCache) = @_;
+    if (ref($self) ne 'Net::DNS::SEC::Tools::Donuts') {
+	$self = $global_donuts;
+	($name, $recordByNameTypeCache) = @_;
+    }
+    $name = lc($name);
+    if (!$recordByNameTypeCache) {
+	if (!exists($self->{'recordByNameTypeCache'}) || !defined($self->{'recordByNameTypeCache'})) {
+	    $self->{'recordByNameTypeCache'} = $self->create_name_type_cache();
+	}
+	$recordByNameTypeCache = $self->{'recordByNameTypeCache'};
+    }
+    return $self->{'recordByNameTypeCache'}{$name};
+}
+
+sub donuts_records_by_name {
+    find_records_by_name(@_);
+}
+
+sub donuts_records_by_name_and_type {
+    find_records_by_name_and_type(@_);
+}
+
 sub analyze {
     my ($self, $level) = @_;
+    $self->set_global();
 
     my ($rulecount, $errcount) = (0,0);
 
@@ -683,7 +779,121 @@ sub record_data {
 
   Net::DNS::SEC::Tools::Donuts - Execute DNS and DNSSEC lint-like tests on zone data
 
+=head1 SYNOPSIS
+
+  # load a zone, rules and analyze everything
+  #   by default, this will print errors in 'wrapped text' format
+  #   to stdout.
+  my $donuts = new Net::DNS::SEC::Tools::Donuts();
+  $donuts->load_zone("/path/to/example.com.signed", "example.com");
+  $donuts->load_rule_files("/path/to/installed/rules/*.txt");
+  my ($rulecount, $errorcount) = $donuts->analyze();
+
+  # send the output in json format to /tmp/foo.json instead
+  $donuts->set_output_format('json');
+  $donuts->set_output_location('file:/tmp/foo.json');
+  $donuts->analyze();
+
+  # display the available features
+  print "features: ", join(", ", $donuts->available_features()), "\n";
+
+  # enable the 'live' and 'check_data' features in the rule sets
+  $donuts->set_feature_list('live', 'check_data);
+
+  # ignore some rules (regexp's to match against rule names)
+  $donuts->set_ignore_list('NSEC');
+
+  # retrieve the rules loaded into the zone
+  my @rules = $donuts->rules();
+
+  # retrieve the records from the loaded zone
+  #  (these will be Net::DNS::RR based records)
+  my @records = $donuts->zone_records();
+
+  # or just of a certain name:
+  #   (these will be a hash reference like { type => [records] })
+  my $records = $donuts->find_records_by_name('www.example.com');
+
+  # or of just a type for a name:
+  #   (these will be an array reference to the [records])
+  my $records =
+     $donuts->find_records_by_name_and_type('www.example.com', 'A');
+
 =head1 DESCRIPTION
+
+The I<Net::DNS::SEC::Tools::Donuts> (aka I<Donuts>) module is capable
+of loading a zone file, rules to test against it and then analyzing
+the rules and reporting the results.
+
+=head2 Creating a Donuts instance
+
+Creating an instance of a Donuts object is straightforward:
+
+  use Net::DNS::SEC::Tools::Donuts
+  my $donuts = new Net::DNS::SEC::Tools::Donuts();
+
+=head2 Loading and Accessing Zone Data
+
+=head3 load_zone(I<SPECIFIER>, I<ZONENAME>)
+
+Zone data can be loaded into the Donuts module using the
+I<load_zone()> function.  This function takes a file path as an
+argument by default, or one of the special specifiers listed below as
+well.
+
+=over
+
+=item $donuts->load_zone("/path/to/file", "example.com");
+
+Loads a file from a typicla (text based) zone data file.  It uses the
+I<Net::DNS::Zonefile::Fast> module for parsing the zone file into
+I<Net::DNS::RR> records.
+
+=item $donuts->load_zone("axfr:example.com", "example.com");
+
+If the host has the ability to perform an I<axfr> transfer of a given
+zone, this specifier can be used to dynamically transfer the zone data
+from the online servers.
+
+=item $donuts->load_zone("live:www,ftp:aaaa,ns", "example.com");
+
+When the I<live:> specifier prefix is used, the Donuts module will
+attempt to perform single queries from the zone for the specified list
+of domain name prefixes for the zone.  The default list (i.e. just
+"live:") of zone records to query for is just "www".  Query types may
+be specified by separating the label with a ':' character, as in the
+example above which indicates a AAAA record should be queried for the
+'ftp' host.
+
+In addition to the list specified within teh specifier itself, each
+zone is always queried for the following entries as well:
+
+=over
+
+=item - ZONENAME:DNSKEY
+
+=item - ZONENAME:SOA
+
+=item - ZONENAME:NS
+
+=back
+
+Note that because the zone won't be entirely complete, careful
+selection or exclusion of rules (see "Ignoring and Only Executing
+Rules") will likely be required to filter out bad results during any
+analysis that is performed.
+
+=back
+
+=head2 Loading Donuts Rules
+
+=head2 Analyzing Zones Using Rules
+
+=head2 Features
+
+=head2 Ignoring and Only Executing Rules
+
+=head2 Configuration 
 
 =back
 

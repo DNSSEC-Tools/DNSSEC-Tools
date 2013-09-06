@@ -1987,7 +1987,7 @@ skipfileread:
         val_log_add_optarg_to_list(&ctx->val_log_targets, ctx->g_opt->log_target, 1);
     }
     /* enable logging as specified by dynamic policy */
-    if (ctx->dyn_valpolopt && ctx->g_opt->log_target) {
+    if (ctx->dyn_valpolopt && ctx->dyn_valpolopt->log_target) {
         val_log_add_optarg_to_list(&ctx->val_log_targets,
                 ctx->dyn_valpolopt->log_target, 1);
     }

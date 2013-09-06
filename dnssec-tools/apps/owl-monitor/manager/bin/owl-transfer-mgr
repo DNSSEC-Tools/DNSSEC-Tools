@@ -9,7 +9,9 @@
 #       This script transfers Owl sensor data from the sensor to the manager.
 #
 # Revision History:
-#	1.0	130116	Initial version.
+#	1.0	Initial version.				130116
+#
+#	2.0	Released as part of DNSSEC-Tools 2.0.		130301
 #
 
 use strict;
@@ -353,7 +355,7 @@ sub teleporter
 	#
 	# Set up our immutable command-line arguments.
 	#
-	$args = "--timeout=60 --partial --append --stats";
+	$args = "--timeout=60 --partial --append --stats --recursive";
 
 	print STDERR "$NAME starting\n";
 

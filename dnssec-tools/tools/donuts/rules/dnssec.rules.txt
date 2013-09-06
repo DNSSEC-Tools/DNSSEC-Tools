@@ -21,39 +21,6 @@ type:  RRSIG
 </test>
 
 #
-# memorize things that are only glue records (IE, have NS records
-# pointing to them)
-#
-name: DNSSEC_MEMORIZE_NS_RECORDS
-internal: yes
-level: 1
-type: NS
-<test>
-  if ($record->name eq $current_domain) {
-    $DONUTS::DNSSEC::NS{lc($record->nsdname)} = 2;
-  } elsif ($DONUTS::DNSSEC::NS{lc($record->nsdname)} != 2) {
-    $DONUTS::DNSSEC::NS{lc($record->nsdname)} = 1;
-  }
-  return;
-</test>
-
-#
-# Is this an NSEC3 zone?
-#
-name: DNSSEC_CHECK_IF_NSEC3
-desc: Checks to see if a given zone contains an NSEC3PARAM record.
-level: 1
-type: NSEC3PARAM
-internal: yes
-<test>
-  if ($record->name eq $current_domain &&
-      $record->type eq 'NSEC3PARAM') {
-      $DONUTS::DNSSEC::NSEC3ZONE = 1;
-      return;
-  }
-</test>
-
-#
 # NSEC is present?
 #
 name: DNSSEC_MISSING_NSEC_RECORD1
@@ -62,8 +29,8 @@ level: 3
 ruletype: name
 <test>
     if (!exists($records->{'NSEC'}) &&
-        !exists($DONUTS::DNSSEC::NS{lc($recordname)}) &&
-	!$DONUTS::DNSSEC::NSEC3ZONE) {
+        !defined(donuts_records_by_name_and_type($recordname, 'NS')) &&
+        !defined(donuts_records_by_name_and_type($recordname, 'NSEC3PARAM'))) {
 	donuts_error("name $recordname does not have an NSEC record, which is required for secure domains.");
     }
 </test>
@@ -76,8 +43,10 @@ desc: Checks to see if a name contains a RRSIG record.
 level: 3
 ruletype: name
 <test>
+    # this ensures that sub-domain NS records aren't marked with errors
+    # (NS records for sub domains aren't signed)
     if (!exists($records->{'RRSIG'}) &&
-        !exists($DONUTS::DNSSEC::NS{lc($recordname)})) {
+        !defined(donuts_records_by_name_and_type($recordname, 'NS'))) {
 	donuts_error("name $recordname does not have a RRSIG record, which is required for secure domains.");
     }
 </test>
@@ -105,11 +74,11 @@ desc: Checks to see if an NS record exists with glue data but also a RRSIG cover
 <test>
   my $suffix = $recordname;
   $suffix =~ s/^[^\.]+\.//;
-  if (exists($records->{'RRSIG'}) &&
-      $current_domain ne $recordname &&
-      $current_domain ne $suffix &&
-      exists($DONUTS::DNSSEC::NS{lc($recordname)}) &&
-      $DONUTS::DNSSEC::NS{lc($recordname)} != 2) {
+  if (exists($records->{'RRSIG'}) &&    # has an RRSIG at point
+      $current_domain ne $recordname && # not the top level
+      $current_domain ne $suffix &&     # contains at least one sub-label more
+      # has NS records at point
+      defined(donuts_records_by_name_and_type($recordname, 'NS'))) {
       donuts_error("name $recordname is pointed to by an NS record and thus should be a glue record.  But it also has an RRSIG record which should not be present for glue records.");
   }
 </test>
@@ -124,10 +93,11 @@ ruletype: name
 <test>
   my $suffix = $recordname;
   $suffix =~ s/^[^\.]+\.//;
-  if (exists($records->{'NSEC'}) &&
-      exists($DONUTS::DNSSEC::NS{lc($recordname)}) &&
-      $current_domain ne $suffix &&
-      $DONUTS::DNSSEC::NS{lc($recordname)} != 2) {
+  if (exists($records->{'RRSIG'}) &&    # has an RRSIG at point
+      $current_domain ne $recordname && # not the top level
+      $current_domain ne $suffix &&     # contains at least one sub-label more
+      # has NS records at point
+      defined(donuts_records_by_name_and_type($recordname, 'NS'))) {
       donuts_error("name $recordname is pointed to by an NS record and thus should be a glue record.  But it also has an NSEC record which should not be present for glue records.")
   }
 </test>
@@ -289,7 +259,6 @@ desc: RFC4034 section 3.0: The TTL value of an RRSIG RR MUST match the TTL value
       push @{$rrsigs{$rec->typecovered}{$rec->name}}, $rec;
   }
   #
-  my %gluerecs;
   # for each record type for a given name
   # reverse sort these so NS records are seen before the glue records
   foreach my $type (sort { $b cmp $a } keys(%{$records})) {
@@ -361,15 +330,6 @@ desc: RFC4035: section 2.3: An NSEC record (and its associated RRSIG RRset) MUST
   }
 </test>
 
-name: DNSSEC_MEMORIZE_KEYS
-type: DNSKEY
-level: 1
-internal: yes
-<test>
-  push @{$donuts::dnskeys}, $record;
-  return;
-</test>
-
 name: DNSSEC_RRSIGS_VERIFY
 type: RRSIG
 level: 1
@@ -385,7 +345,7 @@ ruletype: name
       donuts_error("keytag not found on RRSIG #$count for $recordname");
       next;
     }
-    foreach my $key (@{$donuts::dnskeys}) {
+    foreach my $key (@{donuts_records_by_name_and_type($current_domain, 'DNSKEY')}) {
        if ($key->keytag eq $sig->keytag) {
          $dhkey = $key;
          last;

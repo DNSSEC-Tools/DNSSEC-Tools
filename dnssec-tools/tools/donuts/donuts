@@ -60,8 +60,9 @@ if (runpacked()) {
 }
 
 our ($rf, $current_zone_file,
-    @ignorelist, $netdns, $netdns_error, %outstructure, $current_domain,
-    @filestested);
+     @ignorelist, @onlylist, 
+     $netdns, $netdns_error, %outstructure, $current_domain,
+     @filestested);
 
 
 my %primaries = 
@@ -164,6 +165,8 @@ DTGetOptions(\%opts,
 		],
 		["i|ignore=s", "Regular expression for rules to ignore",
 		 indent => 1],
+		["only=s", "Regular expression for rules to include (default = all)",
+		 indent => 1],
 		["f|features=s", "Extra features to turn on",
 		 helpdesc => '(comma separated)',
 		 indent => 1],
@@ -232,6 +235,10 @@ $donuts->set_output_location($opts{'L'});
 #
 if ($opts{'i'}) {
     $donuts->set_ignore_list(split(/,\s*/, $opts{'i'}));
+}
+
+if ($opts{'only'}) {
+    $donuts->set_only_list(split(/,\s*/, $opts{'only'}));
 }
 
 #
@@ -561,9 +568,8 @@ sub maybe_output_to_web {
     # some stuff for web purposes should be redirected to the screen
     #
     if (defined($Getopt::GUI::Long::GUI_qw) && $Getopt::GUI::Long::GUI_qw->{'generator'} =~ /HTML/) {
-	close STDERR;
-	*STDERR = *STDOUT;  # alias stderr to stdout so it'll go to the web
-	print "<br /><pre>\n\n";
+	$donuts->set_output_format('html');
+	$donuts->set_output_location('stdout');
     }
 }
 

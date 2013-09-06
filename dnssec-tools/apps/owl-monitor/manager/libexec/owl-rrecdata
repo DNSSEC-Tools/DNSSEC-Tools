@@ -16,9 +16,11 @@
 #
 #
 # Revision History
-#	2.0	Initial version.				3/15/2013
+#	2.0	Initial version.				130315
 #		This was adapted from the owl-dnstimer plugin.
-#	2.0.1	Added history recording.			4/01/2013
+#	2.0.1	Added history recording.			130401
+#	2.0.2	Moved data to <data/dns> subdirectory.		130903
+#		Fixed use of name server.
 #
 
 use strict;
@@ -32,7 +34,7 @@ use File::Path;
 # Version information.
 #
 my $NAME   = "owl-rrecdata";
-my $VERS   = "$NAME version: 2.0.1";
+my $VERS   = "$NAME version: 2.0.2";
 my $DTVERS = "DNSSEC-Tools version: 2.0";
 
 #######################################################################
@@ -41,18 +43,22 @@ my $DTVERS = "DNSSEC-Tools version: 2.0";
 #
 #	The installer must set the value of $OWLDIR to reflect the
 #	desired file hierarchy.
-#	The $sub_data and $subhist values may be set, but the values
+#	The $SUBDATA and $subhist values may be set, but the values
 #	given below are sufficient.
 #
+#	Putting together the various values below will give:
+#		/owl/data/<sensor>/data/rrec
+#
 
-my $OWLDIR	 = '/owl';		# Owl directory.
+my $OWLDIR	= '/owl';		# Owl directory.
+my $OWLDATA	= "$OWLDIR/data";	# Owl sensor data directory
 
-my $sub_data = 'data';			# Subdirectory for rrdata data.
-my $sub_hist = 'history';		# Subdirectory for history data.
+my $SUBDATA = 'data';			# Directory for sensor data.
+my $SUBHIST = 'history';		# Subdirectory for history data.
+
+my $FILEEXT = 'rrec';			# Subdirectory for sensor data.
 
 #####
-
-my $OWLDATA	= "$OWLDIR/data";	# Owl DNS resource-record data dir.
 
 my $datadir;				# Data directory.
 
@@ -119,6 +125,7 @@ my $savehist = 1;			# Save history.
 
 my $sensor = '';			# Owl sensor host.
 my $target = '';			# Target host.
+my $nsrvr  = '';			# Name server host.
 my $query = '';				# Type of DNS query.
 
 my $triad = '';				# Combination of arguments.
@@ -241,7 +248,7 @@ sub doopts
 
 	$savehist = 0 if(defined($options{'nohistory'}));
 
-	usage() if(@ARGV != 3);
+	usage() if(@ARGV != 4);
 
 	#
 	# Ensure the thresholds are not negative.
@@ -266,12 +273,13 @@ sub doopts
 	#
 	$sensor	= $ARGV[0];
 	$target	= $ARGV[1];
-	$query	= $ARGV[2];
+	$nsrvr	= $ARGV[2];
+	$query	= $ARGV[3];
 
 	#
 	# Combine the arguments.
 	#
-	$triad = "$sensor,$target,example.com,$query.rrec";
+	$triad = "$sensor,$target,$nsrvr,$query.$FILEEXT";
 
 }
 
@@ -289,8 +297,8 @@ sub getdirs
 	#
 	# Build the directory names we'll need.
 	#
-	$datadir    = "$OWLDATA/$sensor/$sub_data";
-	$historydir = "$OWLDATA/$sensor/$sub_hist";
+	$datadir    = "$OWLDATA/$sensor/$SUBDATA";
+	$historydir = "$OWLDATA/$sensor/$SUBHIST";
 
 	#
 	# Ensure the data directory exists.
@@ -302,6 +310,22 @@ sub getdirs
 			if(mkpath($datadir) == 0)
 			{
 				print "data directory \"$datadir\" does not exist\n";
+				exit($RC_CRITICAL);
+			}
+		}
+	}
+
+	#
+	# And now for the sensor-data subdirectory.
+	#
+	$datadir = "$OWLDATA/$sensor/$SUBDATA/$FILEEXT";
+	if(! -e $datadir)
+	{
+		if($mkflag)
+		{
+			if(mkpath($datadir) == 0)
+			{
+				print "rrec data subdirectory \"$datadir\" does not exist\n";
 				exit($RC_CRITICAL);
 			}
 		}
@@ -336,7 +360,7 @@ sub gethistory
 	#
 	# Get the history file for this triad.
 	#
-	$histfile = "$historydir/$hist_rrdata,$target,$query";
+	$histfile = "$historydir/$hist_rrdata,$target,$nsrvr,$query";
 
 	#
 	# If the history file doesn't exist, we'll create it and return.
@@ -439,27 +463,31 @@ sub rrecdata
 		my $line = $lines[$ind];	# Line to examine.
 		my $kronos;			# Timestamp from file.
 		my $thost;			# Target host from file.
+		my $namesrvr;			# Name server from file.
 		my $resptime;			# DNS response time from file.
 		my $errval;			# Error value from file.
 		my $datalen;			# Length of rrec data.
 		my $rcnt = 0;			# Count of rrec data read.
 
-#    1349291568.73732 example.com A 0.011641979217529 0 142
-#    <142 bytes of data follow>
+#    1349291568.73732 example.com ns.example.com A 0.011641979217529 0 14
+#    <14 bytes of data follow>
 
 # print "rrecdata:  $ind  line - <$line>\n";
+
 		#
 		# Split the line into its atoms.
 		#
-		$line =~ /^([0-9]+).[0-9]+\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)/;
+		$line =~ /^([0-9]+).[0-9]+\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)\s+(\S+)/;
 		$kronos	  = $1;
 		$thost	  = $2;
-		$qarg	  = $3;
-		$resptime = $4;
-		$errval	  = $5;
-		$datalen  = $6;
+		$namesrvr = $3;
+		$qarg	  = $4;
+		$resptime = $5;
+		$errval	  = $6;
+		$datalen  = $7;
 
-# print "rrecdata:  <$thost> <$qarg> <$resptime> <$errval> <$datalen>\n";
+# print "rrecdata:  <$thost> <$namesrvr> <$qarg> <$resptime> <$errval> <$datalen>\n";
+
 		#
 		# Skip this line on a few conditions.
 		#
@@ -565,6 +593,7 @@ sub calcret
 	my $kronos = shift;			# Time of this entry.
 	my $rc;					# Return code.
 	my $timediff;				# Time since last data change.
+
 
 	#
 	# If our history is a blank slate, then all is well.
@@ -746,7 +775,7 @@ Copyright 2013 SPARTA, Inc.  All rights reserved.
 
 This script retrieves the DNS resource-record data gathered by a Owl sensor.
 
-usage:  owl-rrecdata [options] <sensor> <target> <rrec-type>
+usage:  owl-rrecdata [options] <sensor> <target> <nameserver> <rrec-type>
 	options:
 		-warning <num>     warning threshold (in seconds)
 		-critical <num>    critical threshold (in seconds)
@@ -772,7 +801,7 @@ owl-rrecdata - Nagios plugin to display DNS resource-record data from an Owl sen
 
 =head1 SYNOPSIS
 
-  owl-rrecdata [options] <sensor> <target> <rrec-type>
+  owl-rrecdata [options] <sensor> <target> <nameserver> <rrec-type>
 
 =head1 DESCRIPTION
 
@@ -784,8 +813,8 @@ The data are formatted for use in Nagios' own display.
 The current set of Nagios objects and configuration files are B<not>
 set up to provide time-based graphing of DNS resource-record data.
 
-To improve performance, the data directories are hard-coded in
-B<owl-rrecdata>.  DNS response time data are in B</owl/data/<sensor>/data>.
+To improve performance, the data directories are hard-coded in B<owl-rrecdata>.
+DNS resource-record data are in B</owl/data/<sensor>/data/rrec>.
 
 The specified service name determines which file will be selected from
 the appropriate data directory.  The file names in the data directory
@@ -793,14 +822,11 @@ have this format:
 
     timestamp,sensor,target,nameserver,query.rrec
 
-The I<nameserver> field is currently a dummy field, used as a placeholder
-to support the naming scheme for other Owl sensor files.
+For example, if the sensor "sensor3" was monitoring NS records for the
+target domain "example.com" from the name server "ns.example.com", then
+a datafile would be named something like this:
 
-For example, if the sensor "sensor3" was monitoring NS records for 
-the target domain "example.com", then a datafile would be named
-something like this:
-
-    130401.0215,sensor3,example.com,NS.rrec
+    130401.0215,sensor3,example.com,ns.example.com,NS.rrec
 
 The most recent file whose I<servicename> matches the service name given on
 the command line will be consulted.  The DNS response data will be taken from
@@ -845,13 +871,13 @@ of how the objects should be defined:
 
     define command {
          command_name    dnsresp
-         command_line    $USER1$/owl-rrecdata $ARG1$ $ARG2$ $ARG3$
+         command_line    $USER1$/owl-rrecdata $ARG1$ $ARG2$ $ARG3$ $ARG4$
     }
 
     define service {
          service_description     example.com NS          
          host_name               sensor3
-         check_command		 owl-rrecdata!sensor3!example.com!NS           
+         check_command		 owl-rrecdata!sensor3!example.com!ns.example.com!NS
          active_checks_enabled   1 
          ...
     }
