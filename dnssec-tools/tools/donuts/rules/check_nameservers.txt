@@ -14,7 +14,7 @@ desc: Checks to see if each of the zone's name servers are properly serving the 
 <test>
   my @results;
 
-  # check each resolver from our memorized NS records for data
+  # check each resolver from the NS records for matching data
   foreach my $nsrr (@{donuts_records_by_name($current_domain)->{'NS'}}) {
       my $ns = $nsrr->nsdname();
       # create a resolver directly to this NS server
