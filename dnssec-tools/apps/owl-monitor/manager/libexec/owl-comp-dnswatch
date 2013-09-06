@@ -16,6 +16,7 @@
 #
 # Revision History
 #	2.0	Initial version.				130327
+#	2.0.1	Moved data to <data/dns> subdirectory.		130731
 #
 
 use strict;
@@ -29,7 +30,7 @@ use File::Path;
 # Version information.
 #
 my $NAME   = "owl-comp-dnswatch";
-my $VERS   = "$NAME version: 2.0.0";
+my $VERS   = "$NAME version: 2.0.1";
 my $DTVERS = "DNSSEC-Tools version: 2.0";
 
 #######################################################################
@@ -38,15 +39,18 @@ my $DTVERS = "DNSSEC-Tools version: 2.0";
 #
 #	The installer must set the value of $OWLDIR to reflect the
 #	desired file hierarchy.
-#	The $subdata value may be set, but the values given below
+#	The $SUBDATA value may be set, but the values given below
 #	are sufficient.
+#
+#	Putting together the various values below will give:
+#		/owl/data/<sensor>/data/dns
 #
 
 my $OWLDIR	 = '/owl';		# Owl directory.
-
-my $subdata = 'data';			# Subdirectory for dnstimer data.
-
 my $OWLDATA	 = "$OWLDIR/data";	# Owl DNS data directory.
+
+my $SUBDATA = 'data';			# Subdirectory for sensor's data.
+my $FILEEXT = 'dns';			# Subdirectory for dnstimer data.
 
 my $datadir;				# Data directory.
 
@@ -200,9 +204,9 @@ sub doopts
 	#
 	# Set a few options.
 	#
-	$rtwarn	= defined($options{'w'}) ? $options{'w'} : $WARNING_THRESHOLD;
-	$rtcrit	= defined($options{'c'}) ? $options{'c'} : $CRITICAL_THRESHOLD;
-	$maxquery = defined($options{'m'}) ? $options{'m'} : $MAXQUERYDIFF;
+	$rtwarn	  = defined($options{'w'}) ? $options{'w'}: $WARNING_THRESHOLD;
+	$rtcrit	  = defined($options{'c'}) ? $options{'c'}: $CRITICAL_THRESHOLD;
+	$maxquery = defined($options{'m'}) ? $options{'m'}: $MAXQUERYDIFF;
 	$showmax  = defined($options{'showmax'});
 	$showmin  = defined($options{'showmin'});
 
@@ -217,13 +221,14 @@ sub doopts
 #-----------------------------------------------------------------------------
 # Routine:	atomizer()
 #
-# Purpose:	This routine splits a query tertrad into its constituent
+# Purpose:	This routine splits a query tetrad into its constituent
 #		pieces and saves them into global arrays.
 #
 sub atomizer
 {
-	my %tetrads = ();			# Query groups.
-	my $errs = 0;				# Error count.
+	my %tetrads = ();					# Query groups.
+	my $errs = 0;						# Error count.
+	my $errstr = '';					# Error string.
 
 	#
 	# Make sure we have some query groups to check.
@@ -241,7 +246,7 @@ sub atomizer
 		#
 		if(! $found)
 		{
-			print "invalid format:  \"$arg\"\n";
+			$errstr .= "invalid format:  \"$arg\"\n";
 			$errs++;
 			next;
 		}
@@ -270,14 +275,18 @@ sub atomizer
 	{
 		next if($tetrads{$tet} == 1);
 
-		print "duplicated query group - \"$tet\"\n";
+		$errstr .= "duplicated query group - \"$tet\"\n";
 		$errs++;
 	}
 
 	#
 	# Bail if there were any errors.
 	#
-	exit($RC_UNKNOWN) if($errs);
+	if($errs)
+	{
+		print "$errstr";
+		exit($RC_UNKNOWN);
+	}
 
 }
 
@@ -296,7 +305,7 @@ sub getfns
 	#
 	# Build the data directory name.
 	#
-	$datadir = "$OWLDATA/$sensor/$subdata";
+	$datadir = "$OWLDATA/$sensor/$SUBDATA";
 
 	#
 	# Ensure the data directory exists.
@@ -308,13 +317,27 @@ sub getfns
 	}
 
 	#
+	# Add in the data subdirectory name.
+	#
+	$datadir = "$datadir/$FILEEXT";
+
+	#
+	# Ensure the data subdirectory exists.
+	#
+	if(! -e $datadir)
+	{
+		print "$FILEEXT data subdirectory \"$datadir\" does not exist\n";
+		exit($RC_UNKNOWN);
+	}
+
+	#
 	# Get the list of extant files for this tetrad.  Give an unknown
 	# error if there aren't any.
 	#
-	@files = sort(glob("$datadir/*,$tetrad.dns"));
+	@files = sort(glob("$datadir/*,$tetrad.$FILEEXT"));
 	if(@files == 0)
 	{
-		print "no data are available for \"$tetrad.dns\"|$outstr";
+		print "no data are available for \"$tetrad.$FILEEXT\"|$outstr";
 		print "datadir - <$datadir>\n";
 		print "tetrad  - <$tetrad>\n";
 		print "glob($datadir/*,$tetrad.dns) returned nothing\n\n";
@@ -707,7 +730,7 @@ These default values were chosen after watching B<owl-dnswatch> sensor
 results.  They may be adjusted with additional experience.
 
 The data directories are hard-coded in B<owl-comp-dnswatch>.  DNS response
-time data are in B</owl/data/E<lt>sensorE<gt>/data>.  The same directories
+time data are in B</owl/data/E<lt>sensorE<gt>/data/dns>.  The same directories
 used by B<owl-dnswatch> must be used by B<owl-comp-dnswatch>.
 
 The specified service name determines which file will be selected from the
