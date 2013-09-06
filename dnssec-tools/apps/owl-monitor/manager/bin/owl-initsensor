@@ -9,7 +9,9 @@
 #	It runs on the Owl manager.
 #
 # Revision History
-#	1.0	121201	Initial version.
+#	1.0	Initial version.				121201
+#
+#	2.0	Released as part of DNSSEC-Tools 2.0.		130301
 #
 
 use strict;
@@ -311,6 +313,10 @@ sets of files:
 The files and directories in the data directory must be writable by the
 manager's Owl user and the manager's web server.  The archive directory
 must be writable by the Owl user.
+
+When operational, a sensor's data files will be saved in subdirectories
+beneath the data directory.  These subdirectories are not created in
+advance, but will be created as needed.
 
 =head1 OPTIONS
 
