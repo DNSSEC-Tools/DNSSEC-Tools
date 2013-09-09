@@ -1,4 +1,22 @@
 #!/usr/bin/perl
+#
+# Copyright 2013 SPARTA, Inc.  All rights reserved.
+# See the COPYING file distributed with this software for details.
+#
+# owl-collect-rrsec
+#
+# Revision History
+#	2.0	Released as part of DNSSEC-Tools 2.0.		130506
+#	2.0.1	Added header, version, and pod skeleton.	130909
+#
+
+#######################################################################
+#
+# Version information.
+#
+my $NAME   = "owl-collect-rrsec";
+my $VERS   = "$NAME version: 2.0.0";
+my $DTVERS = "DNSSEC-Tools version: 2.0";
 
 use strict;
 use Data::Dumper;
@@ -14,7 +32,7 @@ my $tmpfile = "/tmp/rrsec-collected-$domain.$$";
 my $lastdate = 0;
 my @files;
 
-# find all the most recent revalant files
+# find all the most recent relevant files
 opendir(DIR, $datadir) || die "$@";
 while ($_ = readdir(DIR)) {
     next if (!/rrsec$/);
@@ -66,4 +84,46 @@ $exitstatus = 2 if ($_ !~ /:0/);
 close(DONUTS);
 unlink($tmpfile);
 exit $exitstatus;
+
+
+1;
+
+###############################################################################
+
+=pod
+
+=head1 NAME
+
+owl-collect-rrsec - Nagios plugin to do something with Owl sensor data
+
+=head1 SYNOPSIS
+
+  owl-collect-rrsec <domain> <sourcesensor>
+
+=head1 DESCRIPTION
+
+(to be added)
+
+=head1 NAGIOS USE
+
+(to be added)
+
+=head1 OPTIONS
+
+(to be added)
+
+=head1 SEE ALSO
+
+(to be added)
+
+=head1 COPYRIGHT
+
+Copyright 2013 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wes Hardaker, hardaker@tislabs.com
+
+=cut
 
