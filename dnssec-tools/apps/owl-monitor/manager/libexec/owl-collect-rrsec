@@ -1,0 +1,69 @@
+#!/usr/bin/perl
+
+use strict;
+use Data::Dumper;
+
+if ($#ARGV != 1) {
+    die "usage: $0 DOMAIN SOURCESENSOR";
+}
+
+my ($domain, $source) = @ARGV;
+my $datadir = '/owl/data/uemdev1/data/';
+my $tmpfile = "/tmp/rrsec-collected-$domain.$$";
+
+my $lastdate = 0;
+my @files;
+
+# find all the most recent revalant files
+opendir(DIR, $datadir) || die "$@";
+while ($_ = readdir(DIR)) {
+    next if (!/rrsec$/);
+    next if (!/$domain/);
+
+    my @fields = split(/,/);
+
+    # make sure we have the right sensor
+    next if ($fields[1] ne $source);
+
+    if ($fields[0] > $lastdate) {
+	$lastdate = $fields[0];
+	@files = ([$_, @fields]);
+    } elsif ($fields[0] == $lastdate) {
+	push @files, [$_, @fields];
+    }
+}
+
+#print Dumper(\@files);
+
+# join the last outputs from them into a separate file
+open(T,">$tmpfile");
+my $text = "";
+foreach my $file (@files) {
+    open(F, "$datadir/$file->[0]");
+    while (<F>) {
+	if ($text =~ /<<>> DiG/) {
+	    # start of new output
+	    $text = "";
+	}
+	$text .= $_;
+    }
+
+    print T $text;
+}
+
+# run donuts
+open(DONUTS,"perl -I /usr/local/dnssec-tools-wes/lib/perl5 -I /usr/local/dnssec-tools-wes/lib/perl5/x86_64-linux-thread-multi/ /usr/local/dnssec-tools-wes/bin/donuts -v -i 'DNSSEC_RRSIG_TTL_MATCH_ORGTTL|DNSSEC_RRSIG_TTL_MUST_MATCH_RECORD|DNSSEC_MISSING_NSEC'  -O nagiossummary $tmpfile $domain|");
+
+# output the single expected line
+$_ = <DONUTS>;
+print;
+
+# set the exit status
+my $exitstatus = 0;
+$exitstatus = 2 if ($_ !~ /:0/);
+
+# clean up and exit
+close(DONUTS);
+unlink($tmpfile);
+exit $exitstatus;
+
