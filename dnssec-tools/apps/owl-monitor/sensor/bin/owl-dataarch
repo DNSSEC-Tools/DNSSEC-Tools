@@ -79,6 +79,8 @@ my $confdir  = $DEF_CONFDIR;			# Configuration directory.
 my $conffile = "$DEF_CONFDIR/$DEF_CONFIG";	# Default config file path.
 my $datadir  = '';				# Top-level data directory.
 
+my @subdirs = ();				# Data subdirectories.
+
 ###################################################
 
 my @actions = ();				# Archive actions to take.
@@ -136,9 +138,21 @@ sub main
 	@keepdate = getkeepdate();
 
 	#
-	# Archive the specified data files.
+	# Ensure the subdirectories exist in the archive directory.
 	#
-	archer(@keepdate);
+	for(my $ind = 0; $ind < @subdirs; $ind++)
+	{
+		my $sdir;				# Archive subdirectory.
+
+#		$sdir = "$archdir/$subdirs[$ind]";
+		$sdir = $subdirs[$ind];
+
+		#
+		# Archive the specified data files.
+		#
+		archer($sdir,@keepdate);
+	}
+
 }
 
 #-----------------------------------------------------------------------------
@@ -190,6 +204,24 @@ sub setup
 	#
 	$archdir = dodir('archive',$archdir,1);
 	$datadir = dodir('data',$datadir,0);
+
+	#
+	# Get a list of data subdirectories.
+	#
+	@subdirs = glob("$datadir/*");
+	if(@subdirs == 0)
+	{
+		print "nothing to archive\n";
+		exit(0);
+	}
+
+	#
+	# Remove the data-directory portion of the data subdirectory names.
+	#
+	for(my $ind = 0; $ind < @subdirs; $ind++)
+	{
+		$subdirs[$ind] =~ s/^$datadir\///;
+	}
 
 	#
 	# Don't proceed on errors.
@@ -342,16 +374,24 @@ sub getkeepdate
 #
 sub archer
 {
+	my $sdir = shift;			# Subdirectory name.
 	my @keepdate = @_;			# Earliest date info.
 	my @files = ();				# Files in data directory.
 	my $lastind;				# Last file in @files to save.
 
+	my $dsdir;				# Data subdirectory.
+
+	#
+	# Build the data subdirectory name.
+	#
+	$dsdir = "$datadir/$sdir";
+
 	#
 	# Move into the data directory.
 	#
-	if(chdir($datadir) == 0)
+	if(chdir($dsdir) == 0)
 	{
-		print STDERR "unable to move to directory \"$datadir\"\n";
+		print STDERR "unable to move to directory \"$dsdir\"\n";
 		return;
 	}
 
@@ -390,8 +430,8 @@ sub archer
 	#
 	# Archive the files.
 	#
-	print "archiving $datadir\n";
-	filesaver(\@files);
+	print "archiving $dsdir\n";
+	filesaver($sdir,\@files);
 
 	#
 	# Return to the starting directory.
@@ -436,6 +476,7 @@ sub firstfile
 #
 sub filesaver
 {
+	my $sdir = shift;			# Subdirectory name.
 	my $fileref = shift;			# Reference to file list.
 	my @files;				# List of files to archive.
 	my $first;				# First file's timestamp.
@@ -464,6 +505,11 @@ sub filesaver
 
 		vprint("checking data archive $datatop\n");
 		dodir("data archive",$datatop,1);
+
+		#
+		# Ensure the subdirectory exists in the archive directory.
+		#
+		dodir("archive subdirectory $sdir","$datatop/$sdir",1);
 	}
 
 	for(my $ind=0; $ind < @files; $ind++)
@@ -484,7 +530,7 @@ sub filesaver
 		#
 		# Build the destination directory.
 		#
-		$ddir = "$archdir/data-$yymm/";
+		$ddir = "$archdir/data-$yymm/$sdir";
 		dodir("data archive destination",$ddir,1);
 
 		$cmd = "$MV $fn $ddir";
