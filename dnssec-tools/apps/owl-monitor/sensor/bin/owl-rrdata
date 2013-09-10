@@ -16,6 +16,7 @@
 #	2.0.1	Pod and comment fixes.				130327
 #	2.0.2	Added -nolog and owl_log() calls.		130530
 #	2.0.3	Fixed a comparison operator.			130726
+#	2.0.4	Moved data to <data/rrec> subdirectory.		130726
 #
 
 use strict;
@@ -24,7 +25,7 @@ use strict;
 # Version information.
 #
 my $NAME   = "owl-rrdata";
-my $VERS   = "$NAME version: 2.0.3";
+my $VERS   = "$NAME version: 2.0.4";
 my $DTVERS = "DNSSEC-Tools version: 2.0";
 
 use FindBin;
@@ -74,6 +75,9 @@ my $DEF_DATADIR	= $owlutils::DEF_DATADIR;	# Default data directory.
 my $DEF_LOGDIR	= $owlutils::DEF_LOGDIR;	# Default log directory.
 
 my $PIDFILE	= "$NAME.pid";			# Filename of process-id file.
+
+my $FILEEXT = "rrec";			# File extension for data files and
+					# name of sensor's data subdirectory.
 
 #------------------------------------------------------------------------
 
@@ -354,6 +358,13 @@ sub startup
 	@cf_states     = @owlutils::cf_states;
 
 	#
+	# Check that the top-level data directory exists, then set
+	# the name for the sensor module's data subdirectory.
+	#
+	exit(1) if(owl_chkdir('data', $datadir) == 1);
+	$datadir .= "/$FILEEXT";
+
+	#
 	# Give some extra-tasty output.
 	#
 	if($verbose)
@@ -518,7 +529,7 @@ sub getdatafile
 	$tg = $cf_targets[$qind];
 	$qt = $cf_qargs[$qind];
 	@cronos = gmtime($ctime);
-	$datafiles[$qind] = sprintf("%02d%02d%02d.%02d%02d,$sensorname,$tg,$ns,$qt.rrec",
+	$datafiles[$qind] = sprintf("%02d%02d%02d.%02d%02d,$sensorname,$tg,$ns,$qt.$FILEEXT",
 						$cronos[5] % 100,
 						$cronos[4] + 1,
 						$cronos[3],
@@ -638,7 +649,7 @@ sub poc_savedatum
 	#
 	$succstr = $rcode;
 
-	$msg = sprintf("%10.5f $cf_targets[$qind] $qarg %10.15f $succstr %d",$cronos,$td,(length($reply)+1));
+	$msg = sprintf("%10.5f $cf_targets[$qind] $cf_servers[$qind] $qarg %10.15f $succstr %d",$cronos,$td,(length($reply)+1));
 
 
 	#
