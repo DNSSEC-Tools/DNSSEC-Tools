@@ -21,27 +21,34 @@ my $DTVERS = "DNSSEC-Tools version: 2.0";
 use strict;
 use Data::Dumper;
 
-if ($#ARGV != 1) {
-    die "usage: $0 DOMAIN SOURCESENSOR";
+if ($#ARGV != 2) {
+    die "usage: $0 SOURCESENSOR DOMAIN NAMESERVER";
 }
 
-my ($domain, $source) = @ARGV;
-my $datadir = '/owl/data/uemdev1/data/';
+my $FILEEXT = 'rrsec';
+
+my ($source, $domain, $nsrvr) = @ARGV;
+my $datadir = "/owl/data/$source/data/$FILEEXT";
 my $tmpfile = "/tmp/rrsec-collected-$domain.$$";
 
 my $lastdate = 0;
-my @files;
+my @files = ();
 
 # find all the most recent relevant files
 opendir(DIR, $datadir) || die "$@";
 while ($_ = readdir(DIR)) {
     next if (!/rrsec$/);
-    next if (!/$domain/);
 
     my @fields = split(/,/);
 
     # make sure we have the right sensor
     next if ($fields[1] ne $source);
+
+    # make sure we have the right domain
+    next if ($fields[2] ne $domain);
+
+    # make sure we have the right name server
+    next if ($fields[3] ne $nsrvr);
 
     if ($fields[0] > $lastdate) {
 	$lastdate = $fields[0];
@@ -70,7 +77,9 @@ foreach my $file (@files) {
 }
 
 # run donuts
-open(DONUTS,"perl -I /usr/local/dnssec-tools-wes/lib/perl5 -I /usr/local/dnssec-tools-wes/lib/perl5/x86_64-linux-thread-multi/ /usr/local/dnssec-tools-wes/bin/donuts -v -i 'DNSSEC_RRSIG_TTL_MATCH_ORGTTL|DNSSEC_RRSIG_TTL_MUST_MATCH_RECORD|DNSSEC_MISSING_NSEC'  -O nagiossummary $tmpfile $domain|");
+# open(DONUTS,"perl -I /usr/local/dnssec-tools-wes/lib/perl5 -I /usr/local/dnssec-tools-wes/lib/perl5/x86_64-linux-thread-multi/ /usr/local/dnssec-tools-wes/bin/donuts -v -i 'DNSSEC_RRSIG_TTL_MATCH_ORGTTL|DNSSEC_RRSIG_TTL_MUST_MATCH_RECORD|DNSSEC_MISSING_NSEC'  -O nagiossummary $tmpfile $domain|");
+
+open(DONUTS,"perl /usr/local/bin/donuts -v -i 'DNSSEC_RRSIG_TTL_MATCH_ORGTTL|DNSSEC_RRSIG_TTL_MUST_MATCH_RECORD|DNSSEC_MISSING_NSEC'  -O nagiossummary $tmpfile $domain|");
 
 # output the single expected line
 $_ = <DONUTS>;
@@ -98,7 +107,7 @@ owl-collect-rrsec - Nagios plugin to do something with Owl sensor data
 
 =head1 SYNOPSIS
 
-  owl-collect-rrsec <domain> <sourcesensor>
+  owl-collect-rrsec <sourcesensor> <domain> <name server>
 
 =head1 DESCRIPTION
 
