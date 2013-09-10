@@ -55,7 +55,7 @@ my $verbose	= 0;				# Display verbose output.
 
 ###################################################
 
-my $MV = "/bin/mv -f";
+my $MV = "/bin/mv";
 
 my $EXTENSIONS = "*.dns *.rrec *.rrsec *.rsrc";	# Data-file extensions to save.
 
@@ -470,7 +470,7 @@ sub filesaver
 		#
 		$ddir = "$archtop/data-$yymm/$subdir/";
 
-		$cmd = "$MV $fn $ddir";
+		$cmd = "$MV -f $fn $ddir";
 
 		print "saving $fn to $ddir\n" if($verbose);
 		system($cmd);
