@@ -12,6 +12,7 @@
 #
 # Revision History:
 #	2.0.0	Initial version.				130607
+#	2.0.1	Moved data to <data/rsrc> subdirectory.		130729
 #
 
 use strict;
@@ -20,7 +21,7 @@ use strict;
 # Version information.
 #
 my $NAME   = "owl-resources";
-my $VERS   = "$NAME version: 2.0.0";
+my $VERS   = "$NAME version: 2.0.1";
 my $DTVERS = "DNSSEC-Tools version: 2.0";
 
 
@@ -134,6 +135,9 @@ my $SCALE = 1048576;			# Scale disk results to megabytes.
 
 my $outstr;				# Disk usage to report.
 my @dirs = ();				# Directories to check.
+
+my $FILEEXT = 'rsrc';			# File extension for data files and
+					# name of sensor's data subdirectory.
 
 #-------------------------------------------------------------------------------
 
@@ -341,6 +345,13 @@ sub startup
 	$sensorname = $owlutils::hostname;
 
 	#
+	# Check that the top-level data directory exists, then set
+	# the name for the sensor module's data subdirectory.
+	#
+	exit(1) if(owl_chkdir('data', $datadir) == 1);
+	$datadir .= "/$FILEEXT";
+
+	#
 	# Give some extra-tasty output.
 	#
 	if($verbose)
@@ -435,7 +446,7 @@ sub getdatafile
 	# Build the filename for the next datafile.
 	#
 	@cronos = gmtime($ctime);
-	$datafile = sprintf("%02d%02d%02d.%02d%02d,$sensorname.rsrc",
+	$datafile = sprintf("%02d%02d%02d.%02d%02d,$sensorname.$FILEEXT",
 						$cronos[5] % 100,
 						$cronos[4] + 1,
 						$cronos[3],
