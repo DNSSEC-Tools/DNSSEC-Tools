@@ -89,6 +89,7 @@ my @opts =
 
 	'foreground|fg',			# Run in foreground.
 	'nolog',				# Generate no logging output.
+	'querylog',				# Generate query-log entries.
 	'stop',					# Stop execution.
 
 	'verbose',				# Give verbose output.
@@ -106,6 +107,7 @@ my $logdir;				# Log directory.
 my $logfile;				# Log file.
 my $nolog = 0;				# No-logging flag.
 my $once = 0;				# Run-once flag.
+my $querylog = 0;			# Query-logging flag.
 my $rollint  = 0;			# Seconds count between file rollover.
 my $stopper;				# Stop-execution flag.
 my $verbose = 0;			# Verbose flag.
@@ -236,6 +238,7 @@ sub doopts
 	$config	    = $options{'config'}     || $DEF_CONFIG;
 	$foreground = $options{'foreground'} || 0;
 	$nolog	    = $options{'nolog'}	     || 0;
+	$querylog   = $options{'querylog'}   || 0;
 	$once	    = $options{'once'}	     || 0;
 	$stopper    = $options{'stop'}       || 0;
 	$verbose    = $options{'verbose'};
@@ -292,6 +295,14 @@ sub doopts
 	# Set the logging flag in the shared module.
 	#
 	$owlutils::logflag = ! $nolog;
+
+	#
+	# We'll only allow query logging if logging is also to be allowed.
+	#
+	if($nolog)
+	{
+		$querylog = 0;
+	}
 
 }
 
@@ -751,7 +762,7 @@ sub savedatum
 	# Send the message to our log file.
 	#
 	$msg = sprintf("%10.5f $sensorname $len\n$outstr",time());
-	owl_log($slog,0,$msg);
+	owl_log($slog,0,$msg) if($querylog);
 
 	#
 	# Set up the data descriptor.
@@ -845,6 +856,7 @@ sub usage
 	print STDERR "\t\t-logdir log-directory\n";
 	print STDERR "\t\t-nolog\n";
 	print STDERR "\t\t-once\n";
+	print STDERR "\t\t-querylog\n";
 	print STDERR "\t\t-rollint\n";
 	print STDERR "\t\t-stop\n";
 	print STDERR "\t\t-totals\n";
@@ -984,6 +996,11 @@ Do not write to the log file.
 
 Display the selected statistics to standard output and exit.
 B<owl-resources> will not run as a daemon.
+
+=item B<-querylog>
+
+Write query results to the log file.  This is only allowed if B<-nolog>
+is not specified.
 
 =item B<-rollint dataroll-interval>
 
