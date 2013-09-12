@@ -95,6 +95,7 @@ my @opts =
 	"defaults",				# Print defaults.
 	"foreground|fg",			# Run in foreground.
 	"nolog",				# Don't log anything.
+	'querylog',				# Generate query-log entries.
 	"stop",					# Stop execution.
 
 	"help",					# Give help message.
@@ -110,6 +111,7 @@ my $foreground;					# Foreground-execution flag.
 my $logdir;					# Log directory.
 my $logfile;					# Log file.
 my $nolog = 0;					# No-log flag.
+my $querylog = 0;				# Query-logging flag.
 my $stopper;					# Stop-execution flag.
 
 #------------------------------------------------------------------------
@@ -283,8 +285,10 @@ sub doopts
 	$config	    = $options{'config'}     || $DEF_CONFIG;
 	$foreground = $options{'foreground'} || 0;
 	$nolog	    = $options{'nolog'}	     || 0;
+	$querylog   = $options{'querylog'}   || 0;
 	$stopper    = $options{'stop'}	     || 0;
 	$verbose    = $options{'verbose'};
+
 
 	$datadir    = $options{'datadir'};
 	$logdir	    = $options{'logdir'};
@@ -298,6 +302,14 @@ sub doopts
 	# Set the logging flag in the shared module.
 	# 
 	$owlutils::logflag = ! $nolog;
+
+	#
+	# We'll only allow query logging if logging is also to be allowed.
+	#
+	if($nolog)
+	{
+		$querylog = 0;
+	}
 
 }
 
@@ -655,7 +667,7 @@ sub poc_savedatum
 	#
 	# Send the message to our log file.
 	#
-	owl_log($slog,0,$msg);
+	owl_log($slog,0,$msg) if($querylog);
 
 	$dfd = $datafds[$qind];
 	$dfd = $$dfd;
@@ -791,6 +803,7 @@ sub usage
 	print STDERR "\t\t-fg\n";
 	print STDERR "\t\t-logdir log-directory\n";
 	print STDERR "\t\t-nolog\n";
+	print STDERR "\t\t-querylog\n";
 	print STDERR "\t\t-stop\n";
 	print STDERR "\t\t-help\n";
 	print STDERR "\t\t-verbose\n";
@@ -909,6 +922,11 @@ this directory doesn't exist, it will be created.
 =item B<-nolog>
 
 Do not write to the log file.
+
+=item B<-querylog>
+
+Write query results to the log file.  This is only allowed if B<-nolog>
+is not specified.
 
 =item B<-stop>
 
