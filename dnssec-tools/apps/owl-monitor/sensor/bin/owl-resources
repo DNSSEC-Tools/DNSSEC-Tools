@@ -12,6 +12,7 @@
 #
 # Revision History:
 #	2.0.0	Initial version.				130607
+#	2.0.1	Moved data to <data/rsrc> subdirectory.		130729
 #
 
 use strict;
@@ -20,7 +21,7 @@ use strict;
 # Version information.
 #
 my $NAME   = "owl-resources";
-my $VERS   = "$NAME version: 2.0.0";
+my $VERS   = "$NAME version: 2.0.1";
 my $DTVERS = "DNSSEC-Tools version: 2.0";
 
 
@@ -88,6 +89,7 @@ my @opts =
 
 	'foreground|fg',			# Run in foreground.
 	'nolog',				# Generate no logging output.
+	'querylog',				# Generate query-log entries.
 	'stop',					# Stop execution.
 
 	'verbose',				# Give verbose output.
@@ -105,6 +107,7 @@ my $logdir;				# Log directory.
 my $logfile;				# Log file.
 my $nolog = 0;				# No-logging flag.
 my $once = 0;				# Run-once flag.
+my $querylog = 0;			# Query-logging flag.
 my $rollint  = 0;			# Seconds count between file rollover.
 my $stopper;				# Stop-execution flag.
 my $verbose = 0;			# Verbose flag.
@@ -134,6 +137,9 @@ my $SCALE = 1048576;			# Scale disk results to megabytes.
 
 my $outstr;				# Disk usage to report.
 my @dirs = ();				# Directories to check.
+
+my $FILEEXT = 'rsrc';			# File extension for data files and
+					# name of sensor's data subdirectory.
 
 #-------------------------------------------------------------------------------
 
@@ -232,6 +238,7 @@ sub doopts
 	$config	    = $options{'config'}     || $DEF_CONFIG;
 	$foreground = $options{'foreground'} || 0;
 	$nolog	    = $options{'nolog'}	     || 0;
+	$querylog   = $options{'querylog'}   || 0;
 	$once	    = $options{'once'}	     || 0;
 	$stopper    = $options{'stop'}       || 0;
 	$verbose    = $options{'verbose'};
@@ -289,6 +296,14 @@ sub doopts
 	#
 	$owlutils::logflag = ! $nolog;
 
+	#
+	# We'll only allow query logging if logging is also to be allowed.
+	#
+	if($nolog)
+	{
+		$querylog = 0;
+	}
+
 }
 
 #------------------------------------------------------------------------
@@ -339,6 +354,13 @@ sub startup
 	$datadir    = $owlutils::datadir;
 	$logdir	    = $owlutils::logdir;
 	$sensorname = $owlutils::hostname;
+
+	#
+	# Check that the top-level data directory exists, then set
+	# the name for the sensor module's data subdirectory.
+	#
+	exit(1) if(owl_chkdir('data', $datadir) == 1);
+	$datadir .= "/$FILEEXT";
 
 	#
 	# Give some extra-tasty output.
@@ -435,7 +457,7 @@ sub getdatafile
 	# Build the filename for the next datafile.
 	#
 	@cronos = gmtime($ctime);
-	$datafile = sprintf("%02d%02d%02d.%02d%02d,$sensorname.rsrc",
+	$datafile = sprintf("%02d%02d%02d.%02d%02d,$sensorname.$FILEEXT",
 						$cronos[5] % 100,
 						$cronos[4] + 1,
 						$cronos[3],
@@ -740,7 +762,7 @@ sub savedatum
 	# Send the message to our log file.
 	#
 	$msg = sprintf("%10.5f $sensorname $len\n$outstr",time());
-	owl_log($slog,0,$msg);
+	owl_log($slog,0,$msg) if($querylog);
 
 	#
 	# Set up the data descriptor.
@@ -834,6 +856,7 @@ sub usage
 	print STDERR "\t\t-logdir log-directory\n";
 	print STDERR "\t\t-nolog\n";
 	print STDERR "\t\t-once\n";
+	print STDERR "\t\t-querylog\n";
 	print STDERR "\t\t-rollint\n";
 	print STDERR "\t\t-stop\n";
 	print STDERR "\t\t-totals\n";
@@ -973,6 +996,11 @@ Do not write to the log file.
 
 Display the selected statistics to standard output and exit.
 B<owl-resources> will not run as a daemon.
+
+=item B<-querylog>
+
+Write query results to the log file.  This is only allowed if B<-nolog>
+is not specified.
 
 =item B<-rollint dataroll-interval>
 

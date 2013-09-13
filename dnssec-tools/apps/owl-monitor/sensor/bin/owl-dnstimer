@@ -19,6 +19,7 @@
 #	2.0.1	Modified to allow multiple types of queries.	130319
 #	2.0.2	Added -nolog and owl_log() calls.		130530
 #	2.0.3	Added the -nodnssec option.			130617
+#	2.0.4	Moved data to <data/dns> subdirectory.		130726
 #
 
 use strict;
@@ -27,7 +28,7 @@ use strict;
 # Version information.
 #
 my $NAME   = "owl-dnstimer";
-my $VERS   = "$NAME version: 2.0.3";
+my $VERS   = "$NAME version: 2.0.4";
 my $DTVERS = "DNSSEC-Tools version: 2.0";
 
 use FindBin;
@@ -81,6 +82,9 @@ my $DEF_LOGDIR	= $owlutils::DEF_LOGDIR;	# Default log directory.
 
 my $PIDFILE	= "$NAME.pid";			# Filename of process-id file.
 
+my $FILEEXT	= "dns";		# File extension for data files and
+					# name of sensor's data subdirectory.
+
 #------------------------------------------------------------------------
 
 #
@@ -96,8 +100,9 @@ my @opts =
 
 	'defaults',				# Print defaults.
 	'foreground|fg',			# Run in foreground.
-	'nolog',				# Generate no logging output.
 	'nodnssec',				# Don't use DNSSEC resolution.
+	'nolog',				# Generate no logging output.
+	'querylog',				# Generate query-log entries.
 	'stop',					# Stop execution.
 
 	'help',					# Give help message.
@@ -112,8 +117,9 @@ my $datadir;					# Data directory.
 my $foreground;					# Foreground-execution flag.
 my $logdir;					# Log directory.
 my $logfile;					# Log file.
-my $nolog = 0;					# No-logging flag.
 my $nodnssec = 0;				# Don't-use-DNSSEC flag.
+my $nolog = 0;					# No-logging flag.
+my $querylog = 0;				# Query-logging flag.
 my $stopper;					# Stop-execution flag.
 
 #------------------------------------------------------------------------
@@ -298,8 +304,9 @@ sub doopts
 	$confdir    = $options{'confdir'}    || $DEF_CONFDIR;
 	$config	    = $options{'config'}     || $DEF_CONFIG;
 	$foreground = $options{'foreground'} || 0;
-	$nolog	    = $options{'nolog'}	     || 0;
 	$nodnssec   = $options{'nodnssec'}   || 0;
+	$nolog	    = $options{'nolog'}	     || 0;
+	$querylog   = $options{'querylog'}   || 0;
 	$stopper    = $options{'stop'}       || 0;
 	$verbose    = $options{'verbose'};
 
@@ -332,6 +339,13 @@ sub doopts
 		$nodnssec = 1;
 	}
 
+	#
+	# We'll only allow query logging if logging is also to be allowed.
+	#
+	if($nolog)
+	{
+		$querylog = 0;
+	}
 }
 
 #------------------------------------------------------------------------
@@ -389,6 +403,13 @@ sub startup
 	@cf_timeouts   = @owlutils::cf_timeouts;
 	@cf_rollints   = @owlutils::cf_rollints;
 	@cf_states     = @owlutils::cf_states;
+
+	#
+	# Check that the top-level data directory exists, then set
+	# the name for the sensor module's data subdirectory.
+	#
+	exit(1) if(owl_chkdir('data', $datadir) == 1);
+	$datadir .= "/$FILEEXT";
 
 	#
 	# Give some extra-tasty output.
@@ -643,7 +664,7 @@ sub getdatafile
 	$tg = $cf_targets[$qind];
 	$qt = $cf_qargs[$qind];
 	@cronos = gmtime($ctime);
-	$datafiles[$qind] = sprintf("%02d%02d%02d.%02d%02d,$sensorname,$tg,$ns,$qt.dns",
+	$datafiles[$qind] = sprintf("%02d%02d%02d.%02d%02d,$sensorname,$tg,$ns,$qt.$FILEEXT",
 						$cronos[5] % 100,
 						$cronos[4] + 1,
 						$cronos[3],
@@ -834,9 +855,9 @@ sub savedatum
 
 
 	#
-	# Send the message to our log file.
+	# Maybe send the message to our log file.
 	#
-	owl_log($slog,0,$msg);
+	owl_log($slog,0,$msg) if($querylog);
 
 	$dfd = $datafds[$qind];
 	$dfd = $$dfd;
@@ -999,6 +1020,7 @@ sub usage
 	print STDERR "\t\t-logdir log-directory\n";
 	print STDERR "\t\t-nodnssec\n";
 	print STDERR "\t\t-nolog\n";
+	print STDERR "\t\t-querylog\n";
 	print STDERR "\t\t-stop\n";
 	print STDERR "\t\t-help\n";
 	print STDERR "\t\t-verbose\n";
@@ -1119,6 +1141,11 @@ the B<Net::DNS::Resolver> module will be used instead.
 =item B<-nolog>
 
 Do not write to the log file.
+
+=item B<-querylog>
+
+Write query results to the log file.  This is only allowed if B<-nolog>
+is not specified.
 
 =item B<-stop>
 

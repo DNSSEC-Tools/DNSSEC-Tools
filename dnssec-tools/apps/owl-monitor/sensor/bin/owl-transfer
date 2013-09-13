@@ -57,7 +57,6 @@ my @opts =
 	'help',				# Give a usage message and exit.
 );
 
-
 #
 # Flag values for the various options.  Variable/option connection should
 # be obvious.
@@ -360,7 +359,7 @@ sub teleporter
 	#
 	# Set up our immutable command-line arguments.
 	#
-	$args = "--timeout=60 --partial --append --stats";
+	$args = "--timeout=60 --partial --append --stats --recursive";
 
 	print STDERR "$NAME starting\n";
 
