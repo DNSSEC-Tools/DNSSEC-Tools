@@ -382,9 +382,14 @@ sub getlast
 	$lfn = "$historydir/anycast-$sensor";
 # out("history file - <$lfn>");
 
+	#
+	# If the required history file doesn't exist, we'll create one
+	# with a dummy entry for this name server.
+	#
 	if(! -e $lfn)
 	{
 		open(LFN,">$lfn");
+		print LFN "$ns	130101.0000-testbed1,.,$ns,ANYCAST.dns	0\n";
 		close(LFN);
 		return(@lasts);
 	}
