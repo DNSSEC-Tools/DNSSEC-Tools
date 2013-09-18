@@ -335,7 +335,6 @@ sub resolve_and_check {
 							$class,
 							$type,
 							$flags);
-
 }
 
 sub istrusted {
@@ -410,6 +409,60 @@ sub valStatusStr {
     return Net::DNS::SEC::Validator::_val_status($status);
 }
 
+
+sub async_submit {
+
+    my $self = shift;
+    my $domain = shift;
+    my $class = shift;
+    my $type = shift;
+    my $flags = shift;
+    my $cbref = shift;
+    my $cbparam = shift;
+
+    $class ||= "IN";
+    $type ||= "A";
+
+    $class = Net::DNS::classesbyname($class) unless $class =~ /^\d+$/;
+    $type = Net::DNS::typesbyname($type) unless $type =~ /^\d+$/;
+
+    return Net::DNS::SEC::Validator::_async_submit($self, $domain,
+            $class, $type, $flags, $cbref, $cbparam);
+}
+
+sub async_gather {
+
+    my $self = shift;
+    my $desc_ref = shift;
+    my $timeout = shift;
+
+    my $ret = Net::DNS::SEC::Validator::_async_gather($self, $desc_ref,
+            $timeout); 
+
+    return $ret;
+}
+
+sub async_check {
+
+    my $self = shift;
+    my $desc_ref = shift;
+
+    my $ret = Net::DNS::SEC::Validator::_async_check($self, $desc_ref); 
+
+    return $ret;
+}
+
+sub async_gather_check_wait {
+
+    my $self = shift;
+    my $timeout = shift;
+
+    my $ret = Net::DNS::SEC::Validator::_async_gather_check_wait($self,
+            $timeout);
+
+    return $ret;
+}
+
 sub DESTROY {
     my $self = shift;
 
@@ -434,11 +487,33 @@ B<Net::DNS::SEC::Validator> - interface to B<libval(3)> and related constants, s
   use Net::addrinfo;
   use Socket qw(:all);
 
+  sub callback {
+
+  }
+
   my $validator = new Net::DNS::SEC::Validator(policy => ":");
   my (@r) = $validator->getaddrinfo("good-A.test.dnssec-tools.org");
   my $r = $validator->res_query("dnssec-tools.org", "IN", "MX");
   my $h = $validator->gethostbyname("good-AAAA.test.dnssec-tools.org",
                                     AF_INET6);
+
+  $validator->async_submit("badsign-a.test.dnssec-tools.org", 
+        "IN", "A", 0, \&callback, undef);
+  do {
+    my $ref = $val->async_gather($readfds, $timeout);
+    my $ret = $ref->[0];
+    my $readfds = $ref->[1];
+    my $timeout = $ref->[2];
+
+    if (! @$readfds) {
+        last;
+    }
+
+    my @readyarr = IO::Select->new(@$readfds)->can_read($timeout);
+    $ret = $validator->async_check(\@readyarr);
+
+  } while(1);   
+
 
 =head1 DESCRIPTION
 
@@ -458,7 +533,8 @@ DNSSEC RFCs (4033-4035).
 
 =head1 INTERFACE
  
-A description of the API follows.
+This module suppors both synchronous and ansynchronous lookups. A
+description of the API follows.
 
 =head2 B<Validator> Constructor
 
@@ -809,6 +885,32 @@ application.
  	printf "\taddr #%d is [%s]\n", $i++, inet_ntoa($addr);
      } 
   }
+
+  # get details of validation
+  my $a = $validator->resolve_and_check("good-a.test.dnssec-tools.org", "IN", "A", 0);
+  foreach my $h (@$a) {
+   print "Status: " .  ${$h}{status} . "\n"; 
+   print ($validator->istrusted(${$h}{status}) ? 
+           "result is trusted\n" : 
+           "result is NOT trusted\n");
+
+   $ac = ${$h}{answer}; 
+   while ($ac) {
+        print "AC status: " . ${$ac}{status} . "\n";
+        $acr = ${$ac}{rrset};
+        $acd = ${$acr}{data};
+        foreach $d (@$acd) {
+            print "Data RR status: " . ${$d}{rrstatus} . "\n";
+            ${$d}{rrdata}->print;
+        }
+        $acs = ${$acr}{sigs};
+        foreach $d (@$acs) {
+            print "Sig RR status: " . ${$d}{rrstatus} . "\n";
+            ${$d}{rrdata}->print;
+        }
+        $ac = ${$ac}{trust};
+   } 
+}
 
 =head1 SEE ALSO
 
