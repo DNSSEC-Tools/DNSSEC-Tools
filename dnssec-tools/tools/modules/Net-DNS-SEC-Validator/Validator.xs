@@ -26,6 +26,15 @@ typedef struct libval_context ValContext;
 typedef struct val_global_opt ValContextGlOpt;
 typedef struct val_context_opt ValContextOpt;
 
+typedef struct val_cb_params_s ValCBParams;
+typedef struct val_async_status_s ValAsyncStatus;
+
+struct _pval_async_cbdata {
+    SV *cb;
+    SV *cb_data;
+};
+
+
 #if 0
 static void
 print_addrinfo(int type, void *ainfo, char *obuf)
@@ -228,7 +237,7 @@ SV *rrset_c2sv(struct val_rrset_rec *rrs_ptr)
       rr_hv_ref = newRV_noinc((SV*)rr_hv);
       (void)hv_store(rr_hv, "rrdata", strlen("rrdata"), 
 	      rr_c2sv(rrs_ptr->val_rrset_name,
-		      ns_t_rrsig,
+		      rrs_ptr->val_rrset_type,
 		      rrs_ptr->val_rrset_class,
 		      rrs_ptr->val_rrset_ttl,
 		      rr->rr_rdata_length,
@@ -398,6 +407,35 @@ SV *hostent_c2sv(struct hostent *hent_ptr)
   }
 
   return hent_av_ref;
+}
+
+int
+_pval_async_cb(ValAsyncStatus *as, int event,
+               ValContext *ctx, void *cb_data,
+               ValCBParams *cbp) 
+{
+    dSP;
+    SV *res = &PL_sv_undef;
+    int ret = -1;
+
+    struct _pval_async_cbdata *_pval_async_cbdata = 
+        (struct _pval_async_cbdata *)cb_data;
+
+    if (cbp && cbp->results) { 
+        ret = cbp->retval;
+        res = rc_c2sv(cbp->results);
+    }
+
+    PUSHMARK(SP);
+    XPUSHs(_pval_async_cbdata->cb_data);
+    XPUSHs(newSViv(ret));
+    XPUSHs(res);
+    // Push results from cbp to the callback argument stack
+    PUTBACK;
+
+    call_sv(_pval_async_cbdata->cb, G_DISCARD);
+
+    free(_pval_async_cbdata);
 }
 
 
@@ -723,7 +761,7 @@ pval_resolve_and_check(self,domain,class,type,flags)
 	    RETVAL = rc_c2sv(val_rc_ptr);
 	  } else {
 	    sv_setiv(*error_svp, res);
-	    sv_setpv(*error_str_svp, gai_strerror(res));
+	    sv_setpv(*error_str_svp, p_val_err(res));
 	  }
 
 	  val_free_result_chain(val_rc_ptr);
@@ -747,6 +785,16 @@ pval_val_status(err)
 	CODE:
 	{
 	  RETVAL = p_val_status(err);
+	}
+	OUTPUT:
+	RETVAL
+
+const char *
+pval_val_error(err)
+	int err
+	CODE:
+	{
+	  RETVAL = p_val_err(err);
 	}
 	OUTPUT:
 	RETVAL
@@ -840,6 +888,182 @@ pval_dnsval_conf_set(file)
 	OUTPUT:
 	RETVAL
 
+ValAsyncStatus * 
+pval_async_submit(self,domain,class,type,flags, cbref, cbparam)
+    SV * self
+    char *domain = (SvOK($arg) ? (char *)SvPV_nolen($arg) : NULL);
+    int class
+    int type
+    int flags
+    SV *cbref = (SvOK($arg) ? $arg : NULL);
+    SV *cbparam = (SvOK($arg) ? $arg : NULL);
+    CODE:
+    {
+        SV **ctx_ref;
+        ValContext *ctx;
+        int ret;
+        ValAsyncStatus *vas = NULL;
+
+        RETVAL = NULL;
+
+        struct _pval_async_cbdata *_pval_async_cbdata =
+            (struct _pval_async_cbdata *)malloc(sizeof(struct
+                        _pval_async_cbdata *));
+
+        ctx_ref = hv_fetch((HV*)SvRV(self), "_ctx_ptr", 8, 1);
+        ctx = (ValContext *)SvIV((SV*)SvRV(*ctx_ref));
+
+        _pval_async_cbdata->cb = newSVsv(cbref);
+        _pval_async_cbdata->cb_data = newSVsv(cbparam);
+
+        ret = val_async_submit(ctx, domain, class, type, flags,
+                         _pval_async_cb, _pval_async_cbdata,
+                         &vas);
+
+        RETVAL = (ret == VAL_NO_ERROR ? vas : NULL);
+    }
+    OUTPUT:
+    RETVAL
+
+
+SV * 
+pval_async_gather(self,active,timeout)
+    SV* self
+    SV* active
+    int timeout = (SvOK($arg) ? SvIV($arg):10);
+    INIT:
+        AV * results;
+        results = (AV *)sv_2mortal((SV *)newAV());
+    CODE:
+    {
+        SV **ctx_ref;
+        AV *active_arr;
+        AV *updated;
+        SV *fd_cur = NULL;
+        ValContext *ctx;
+        int ret;
+        fd_set  activefds;
+        struct timeval tv;
+        int nfds = -1;
+        int fd;
+        int i;
+
+        tv.tv_sec = timeout; 
+        tv.tv_usec = 0;
+
+        FD_ZERO(&activefds);
+
+        // Initialize the descriptors that are already set
+        if ((SvROK(active)) && (SvTYPE(SvRV(active)) == SVt_PVAV)) {
+            active_arr = (AV*) SvRV(active);
+            while (av_len(active_arr) >= 0) {
+                fd_cur = (SV*)av_shift((AV*)active_arr);
+                fd = SvIV(fd_cur);
+                FD_SET(fd, &activefds);
+                nfds = (fd > nfds)? fd : nfds; 
+            }
+        }
+
+        ctx_ref = hv_fetch((HV*)SvRV(self), "_ctx_ptr", 8, 1);
+        ctx = (ValContext *)SvIV((SV*)SvRV(*ctx_ref));
+
+        // Update list of sockets that are ready for current validator
+        // context
+        ret = val_async_select_info(ctx, &activefds, &nfds, &tv);
+
+        updated = newAV();
+
+        for (i = 0 ; i <= nfds ; i++) {
+            if (FD_ISSET(i, &activefds)) {
+                fd_cur = newSViv(i);
+                av_push(updated, fd_cur);
+            }
+        }
+        av_push(results, newSViv(ret));
+        av_push(results, newRV((SV*) updated));
+        av_push(results, newSVnv(tv.tv_sec + tv.tv_usec/1000000));
+
+        RETVAL = newRV((SV *)results);
+    }
+    OUTPUT:
+    RETVAL
+
+int 
+pval_async_check(self,active)
+    SV* self
+    SV* active
+    CODE:
+    {
+        SV **ctx_ref;
+        AV *active_arr;
+        SV *fd_cur = NULL;
+        ValContext *ctx;
+        int ret;
+        fd_set  activefds;
+        int nfds = 0;
+        int fd;
+        int i;
+
+        // Initialize the descriptors that are already set
+        if ((SvROK(active)) && (SvTYPE(SvRV(active)) == SVt_PVAV)) {
+            FD_ZERO(&activefds);
+
+            active_arr = (AV*) SvRV(active);
+            while (av_len(active_arr) >= 0) {
+                fd_cur = (SV*)av_shift((AV*)active_arr);
+                fd = SvIV(fd_cur);
+                FD_SET(fd, &activefds);
+                nfds = (fd > nfds)? fd : nfds; 
+            }
+        }
+
+        ctx_ref = hv_fetch((HV*)SvRV(self), "_ctx_ptr", 8, 1);
+        ctx = (ValContext *)SvIV((SV*)SvRV(*ctx_ref));
+
+        //ret = val_async_check(ctx, &activefds, &nfds, 0);
+        ret = val_async_check_wait(ctx, &activefds, &nfds, NULL, 0);
+
+        RETVAL = ret;
+    }
+    OUTPUT:
+    RETVAL
+
+
+int 
+pval_async_gather_check_wait(self,timeout)
+    SV * self
+    int timeout = (SvOK($arg) ? SvIV($arg) : 10);
+    CODE:
+    {
+        SV **ctx_ref;
+        ValContext *ctx;
+        int ret;
+        fd_set  activefds;
+        int nfds = 0;
+        struct timeval tv;
+
+        tv.tv_sec = timeout; 
+        tv.tv_usec = 0;
+
+        ctx_ref = hv_fetch((HV*)SvRV(self), "_ctx_ptr", 8, 1);
+        ctx = (ValContext *)SvIV((SV*)SvRV(*ctx_ref));
+
+        FD_ZERO(&activefds);
+
+        //ret = val_async_check_wait(ctx, NULL, NULL, &tv);
+        val_async_select_info(ctx, &activefds, &nfds, &tv);
+        ret = select(nfds+1, &activefds, NULL, NULL, &tv);
+        if (ret >= 0) {
+            ret = val_async_check(ctx, &activefds, &nfds, 0);
+        }
+
+        RETVAL = ret;
+    }
+    OUTPUT:
+    RETVAL
+
+
+
 MODULE = Net::DNS::SEC::Validator PACKAGE = ValContextPtr PREFIX = vc_
 
 void
@@ -850,7 +1074,3 @@ vc_DESTROY(vc_ptr)
 	  val_free_context( vc_ptr );
       vc_ptr = NULL;
 	}
-
-
-
-
