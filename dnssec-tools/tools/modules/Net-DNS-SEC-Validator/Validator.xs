@@ -237,7 +237,7 @@ SV *rrset_c2sv(struct val_rrset_rec *rrs_ptr)
       rr_hv_ref = newRV_noinc((SV*)rr_hv);
       (void)hv_store(rr_hv, "rrdata", strlen("rrdata"), 
 	      rr_c2sv(rrs_ptr->val_rrset_name,
-		      rrs_ptr->val_rrset_type,
+		      ns_t_rrsig,
 		      rrs_ptr->val_rrset_class,
 		      rrs_ptr->val_rrset_ttl,
 		      rr->rr_rdata_length,
