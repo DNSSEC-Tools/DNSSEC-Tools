@@ -894,8 +894,8 @@ application.
            "result is trusted\n" : 
            "result is NOT trusted\n");
 
-   $ac = ${$h}{answer}; 
-   while ($ac) {
+   $acs = ${$h}{answer}; 
+   foreach my $ac ($acs) {
         print "AC status: " . ${$ac}{status} . "\n";
         $acr = ${$ac}{rrset};
         $acd = ${$acr}{data};
@@ -908,7 +908,6 @@ application.
             print "Sig RR status: " . ${$d}{rrstatus} . "\n";
             ${$d}{rrdata}->print;
         }
-        $ac = ${$ac}{trust};
    } 
 }
 

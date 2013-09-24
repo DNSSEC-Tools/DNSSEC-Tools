@@ -23,8 +23,8 @@ foreach $h (@$a) {
            "result is trusted\n" : 
            "result is NOT trusted\n");
 
-   $ac = ${$h}{answer}; 
-   while ($ac) {
+   $acs = ${$h}{answer}; 
+   foreach my $ac ($acs) {
         print "AC status: " . ${$ac}{status} . "\n";
         $acr = ${$ac}{rrset};
         $acd = ${$acr}{data};
@@ -37,7 +37,6 @@ foreach $h (@$a) {
             print "Sig RR status: " . ${$d}{rrstatus} . "\n";
 #            ${$d}{rrdata}->print;
         }
-        $ac = ${$ac}{trust};
    } 
 }
 
@@ -47,11 +46,33 @@ sub callback {
 
     my $tc = shift;
     my $ret = shift;
-    my $res = shift;
+    my $a = shift;
 
-    print "Completed $tc\n";
+    print "Completed = $tc\n";
     print "Retval = $ret\n";
-#    print "Result = " . Data::Dumper::Dumper($res) . "\n";
+    #print "Result = " . Data::Dumper::Dumper($a) . "\n";
+
+    foreach $h (@$a) {
+        print "Status: " .  ${$h}{status} . "\n"; 
+        $acs = ${$h}{answer}; 
+        foreach $ac (@$acs) {
+            print "Answer AC status: " . ${$ac}{status} . "\n";
+            $acr = ${$ac}{rrset};
+            $acd = ${$acr}{data};
+            foreach $d (@$acd) {
+                print "\tData RR status: " . ${$d}{rrstatus} . "\n";
+#                   ${$d}{rrdata}->print;
+            }
+            $acs = ${$acr}{sigs};
+            foreach $d (@$acs) {
+                print "\tSig RR status: " . ${$d}{rrstatus} . "\n";
+#               ${$d}{rrdata}->print;
+            }
+        }
+#        foreach $ac (${$h}{proofs}) {
+#            print "Proof = " . Data::Dumper::Dumper($ac) . "\n";
+#        }
+    } 
 }
 
 my $val1 = new Net::DNS::SEC::Validator(
@@ -59,24 +80,13 @@ my $val1 = new Net::DNS::SEC::Validator(
     rec_fallback => 0,
     policy => ":",
 );
+
 $val1->async_submit("good-a.test.dnssec-tools.org", "IN", "A", 0, \&callback, "V1-1/4");
 $val1->async_submit("badsign-a.test.dnssec-tools.org", "IN", "A", 0, \&callback, "V1-2/4");
 $val1->async_submit("www.dnssec-tools.org", "IN", "A", 0, \&callback, "V1-3/4");
 $val1->async_submit("www.dnssec-deployment.org", "IN", "A", 0, \&callback, "V1-4/4");
 
-
-my $val2 = new Net::DNS::SEC::Validator(
-    nslist => "8.8.8.8",
-#    log_target => "7:stderr",
-    rec_fallback => 0,
-    policy => ":",
-);
-$val2->async_submit("addedlater-A.test.dnssec-tools.org", "IN", "A", 0, \&callback, "V2-1/4");
-$val2->async_submit("baddata-A.test.dnssec-tools.org", "IN", "A", 0, \&callback, "V2-2/4");
-$val2->async_submit("futuredate-A.test.dnssec-tools.org", "IN", "A", 0, \&callback, "V2-3/4");
-$val2->async_submit("nosig-A.pastdate-ds.test.dnssec-tools.org", "IN", "A", 0, \&callback, "V2-4/4");
-
-my @valarr = ($val1, $val2);
+my @valarr = ($val1);
 my $DEFAULT_TMOUT = 10;
 while (1)
 {
@@ -103,32 +113,5 @@ while (1)
         my @tmpready = @$ready;
         $ret = $val->async_check(\@tmpready);
     }
-}
-
-my $done = 0;
-sub callback_alt {
-
-    my $tc = shift;
-    my $ret = shift;
-    my $res = shift;
-
-    print "Completed $tc\n";
-    print "Retval = $ret\n";
-#    print "Result = " . Data::Dumper::Dumper($res) . "\n";
-
-    $done = 1;
-}
-
-my $val3 = new Net::DNS::SEC::Validator(
-#    log_target => "7:stderr",
-    rec_fallback => 0,
-    policy => ":",
-);
-$val3->async_submit("addedlater-A.test.dnssec-tools.org", "IN", "A", 0,
-        \&callback_alt, "V3-1/1");
-
-while (! $done) {
-    my $ready = $val3->async_gather_check_wait(5);
-    print "ready $ready\n";
 }
 
