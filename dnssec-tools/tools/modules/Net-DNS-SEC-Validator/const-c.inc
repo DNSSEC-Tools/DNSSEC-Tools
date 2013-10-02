@@ -751,7 +751,7 @@ constant_17 (pTHX_ const char *name, IV *iv_return) {
      SR_INTERNAL_ERROR VAL_AC_BARE_RRSIG VAL_AC_CAN_VERIFY VAL_AC_DS_MISSING
      VAL_AC_DS_NOMATCH VAL_AC_ERROR_BASE VAL_AC_INVALID_DS VAL_AC_LAST_ERROR
      VAL_AC_LAST_STATE VAL_AS_NO_ANSWERS VAL_NO_PERMISSION VAL_OUT_OF_MEMORY
-     VAL_QUERY_RECURSE */
+     VAL_QUERY_RECURSE VAL_QUERY_ITERATE */
   /* Offset 7 gives the best switch position.  */
   switch (name[7]) {
   case 'B':
@@ -874,6 +874,15 @@ constant_17 (pTHX_ const char *name, IV *iv_return) {
     /*                      ^                */
 #ifdef VAL_QUERY_RECURSE
       *iv_return = VAL_QUERY_RECURSE;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    if (memEQ(name, "VAL_QUERY_ITERATE", 17)) {
+    /*                      ^                */
+#ifdef VAL_QUERY_ITERATE
+      *iv_return = VAL_QUERY_ITERATE;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
@@ -1996,7 +2005,7 @@ my @names = (qw(LIBSRES_NS_STAGGER LOG_ALERT LOG_CRIT LOG_DEBUG LOG_EMERG
 	       VAL_QFLAGS_NOCACHE_MASK VAL_QFLAGS_USERMASK VAL_QUERY_AC_DETAIL
 	       VAL_QUERY_ASYNC VAL_QUERY_DONT_VALIDATE VAL_QUERY_EDNS0_FALLBACK
 	       VAL_QUERY_GLUE_REQUEST VAL_QUERY_NO_DLV 
-	       VAL_QUERY_NO_EDNS0_FALLBACK VAL_QUERY_RECURSE
+	       VAL_QUERY_NO_EDNS0_FALLBACK VAL_QUERY_RECURSE VAL_QUERY_ITERATE
 	       VAL_QUERY_USING_DLV
 	       VAL_RESOURCE_UNAVAILABLE VAL_SUCCESS VAL_TRUSTED_ANSWER
 	       VAL_UNTRUSTED_ANSWER VAL_UNTRUSTED_ZONE VAL_VALIDATED_ANSWER
