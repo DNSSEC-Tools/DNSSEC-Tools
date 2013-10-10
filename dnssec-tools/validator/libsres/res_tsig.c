@@ -34,12 +34,17 @@ res_tsig_sign(u_char * query,
               u_char ** signed_query, 
               size_t *signed_length)
 {
+    if (!signed_query || !signed_length)
+        return SR_TS_FAIL;
+    *signed_query = NULL;
+    *signed_length = 0;
+
     if (query && query_length) {
         if (!(ns->ns_security_options & ZONE_USE_TSIG)) {
             *signed_query = (u_char *) MALLOC(query_length * sizeof(u_char));
             if (*signed_query == NULL) 
                 return SR_TS_FAIL;
-            memcpy(*signed_query, query, query_length);
+            memcpy(*signed_query, query, query_length * sizeof(u_char));
             *signed_length = query_length;
             return SR_TS_OK;
         }
