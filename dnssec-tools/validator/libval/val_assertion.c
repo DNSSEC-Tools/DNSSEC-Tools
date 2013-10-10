@@ -7036,6 +7036,7 @@ _async_check_one(val_async_status *as, fd_set *pending_desc,
 #endif
 
     do { 
+    done = 0;
     initial_q = qfq = as->val_as_queries;
     as_remain = 0;
 
@@ -7143,7 +7144,7 @@ _async_check_one(val_async_status *as, fd_set *pending_desc,
     }
 
     /* check if more queries have been added */
-    } while (initial_q != as->val_as_queries);
+    } while (!done && initial_q != as->val_as_queries);
 
     if ((VAL_NO_ERROR == retval) && (NULL != as->val_as_results)) {
         val_log_authentication_chain(context, LOG_NOTICE,
