@@ -6855,7 +6855,6 @@ val_async_submit(val_context_t * ctx,  const char * domain_name, int class_h,
 
     int             retval;
     struct queries_for_query *added_q = NULL;
-    struct queries_for_query *queries = NULL;
     val_async_status         *as;
     val_context_t            *context;
     int data_received = 0;
