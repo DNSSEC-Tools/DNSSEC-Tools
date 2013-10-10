@@ -572,16 +572,12 @@ ds_sha_hash_is_equal(u_char * name_n,
     size_t        namelen;
     SHA_CTX         c;
     size_t          l_index;
-    u_char        *qc_name_n;
+    u_char        qc_name_n[NS_MAXCDNAME];
 
     if (rrdata == NULL || ds_hash_len != SHA_DIGEST_LENGTH)
         return 0;
 
     namelen = wire_name_length(name_n);
-    qc_name_n = (u_char *) MALLOC(namelen * sizeof(u_char));
-    if (qc_name_n == NULL) {
-        return 0;
-    }
     memcpy(qc_name_n, name_n, namelen);
     l_index = 0;
     lower_name(qc_name_n, &l_index);
@@ -592,7 +588,6 @@ ds_sha_hash_is_equal(u_char * name_n,
     SHA1_Update(&c, qc_name_n, namelen);
     SHA1_Update(&c, rrdata, rrdatalen);
     SHA1_Final(ds_digest, &c);
-    FREE(qc_name_n);
 
     if (!memcmp(ds_digest, ds_hash, SHA_DIGEST_LENGTH))
         return 1;
@@ -612,16 +607,12 @@ ds_sha256_hash_is_equal(u_char * name_n,
     size_t        namelen;
     SHA256_CTX    c;
     size_t          l_index;
-    u_char        *qc_name_n;
+    u_char        qc_name_n[NS_MAXCDNAME];
 
     if (rrdata == NULL || ds_hash_len != SHA256_DIGEST_LENGTH)
         return 0;
 
     namelen = wire_name_length(name_n);
-    qc_name_n = (u_char *) MALLOC(namelen * sizeof(u_char));
-    if (qc_name_n == NULL) {
-        return 0;
-    }
     memcpy(qc_name_n, name_n, namelen);
     l_index = 0;
     lower_name(qc_name_n, &l_index);
@@ -632,7 +623,6 @@ ds_sha256_hash_is_equal(u_char * name_n,
     SHA256_Update(&c, qc_name_n, namelen);
     SHA256_Update(&c, rrdata, rrdatalen);
     SHA256_Final(ds_digest, &c);
-    FREE(qc_name_n);
 
     if (!memcmp(ds_digest, ds_hash, SHA256_DIGEST_LENGTH))
         return 1;
@@ -651,16 +641,12 @@ ds_sha384_hash_is_equal(u_char * name_n,
     size_t        namelen;
     SHA512_CTX    c;
     size_t          l_index;
-    u_char        *qc_name_n;
+    u_char        qc_name_n[NS_MAXCDNAME];
 
     if (rrdata == NULL || ds_hash_len != SHA384_DIGEST_LENGTH)
         return 0;
 
     namelen = wire_name_length(name_n);
-    qc_name_n = (u_char *) MALLOC(namelen * sizeof(u_char));
-    if (qc_name_n == NULL) {
-        return 0;
-    }
     memcpy(qc_name_n, name_n, namelen);
     l_index = 0;
     lower_name(qc_name_n, &l_index);
@@ -671,7 +657,6 @@ ds_sha384_hash_is_equal(u_char * name_n,
     SHA384_Update(&c, qc_name_n, namelen);
     SHA384_Update(&c, rrdata, rrdatalen);
     SHA384_Final(ds_digest, &c);
-    FREE(qc_name_n);
 
     if (!memcmp(ds_digest, ds_hash, SHA384_DIGEST_LENGTH))
         return 1;
@@ -693,10 +678,8 @@ nsec3_sha_hash_compute(u_char * name_n, u_char * salt,
     size_t          i;
     size_t          l_index;
     int len = wire_name_length(name_n);
-    u_char *qc_name_n = (u_char *) MALLOC(len * sizeof(u_char));
-    if (qc_name_n == NULL) {
-        return NULL;
-    }
+    u_char qc_name_n[NS_MAXCDNAME];
+
     memcpy(qc_name_n, name_n, len);
     l_index = 0;
     lower_name(qc_name_n, &l_index);
