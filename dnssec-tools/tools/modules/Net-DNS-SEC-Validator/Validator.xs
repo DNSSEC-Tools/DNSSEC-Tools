@@ -177,7 +177,7 @@ SV *rr_c2sv(char *name, int type, int class, long ttl, size_t len, u_char *data)
   XPUSHs(sv_2mortal(newSVpv((char*)name, 0))) ;
   XPUSHs(sv_2mortal(newSVpv(p_sres_type(type), 0))) ;
   XPUSHs(sv_2mortal(newSVpv(p_class(class), 0))) ;
-  XPUSHs(sv_2mortal(newSViv(ttl))) ;
+  XPUSHs(sv_2mortal(newSVnv(ttl))) ;
   XPUSHs(sv_2mortal(newSViv(len))) ;
   XPUSHs(sv_2mortal(newRV(sv_2mortal(newSVpvn((char*)data, len))))) ;
   PUTBACK;
@@ -237,7 +237,7 @@ SV *rrset_c2sv(struct val_rrset_rec *rrs_ptr)
       rr_hv_ref = newRV_noinc((SV*)rr_hv);
       (void)hv_store(rr_hv, "rrdata", strlen("rrdata"), 
 	      rr_c2sv(rrs_ptr->val_rrset_name,
-		      rrs_ptr->val_rrset_type,
+		      ns_t_rrsig,
 		      rrs_ptr->val_rrset_class,
 		      rrs_ptr->val_rrset_ttl,
 		      rr->rr_rdata_length,
@@ -256,10 +256,17 @@ SV *rrset_c2sv(struct val_rrset_rec *rrs_ptr)
 
 SV *ac_c2sv(struct val_authentication_chain *ac_ptr)
 {
+  AV *ac_av = newAV();
+  SV *ac_av_ref = newRV_noinc((SV*)ac_av);
+
   HV *ac_hv;
   SV *ac_hv_ref = &PL_sv_undef;
 
-  if (ac_ptr) {
+  struct val_authentication_chain *t;
+
+  t = ac_ptr;
+  while(t) {
+
     ac_hv = newHV();
     ac_hv_ref = newRV_noinc((SV*)ac_hv);
 
@@ -269,11 +276,12 @@ SV *ac_c2sv(struct val_authentication_chain *ac_ptr)
     (void)hv_store(ac_hv, "rrset", strlen("rrset"), 
 	     rrset_c2sv(ac_ptr->val_ac_rrset), 0);
 
-    (void)hv_store(ac_hv, "trust", strlen("trust"), 
-	       ac_c2sv(ac_ptr->val_ac_trust), 0);
+    av_push(ac_av, ac_hv_ref);
+
+    t = t->val_ac_trust;
   }
 
-  return ac_hv_ref;
+  return ac_av_ref;
 }
 
 SV *rc_c2sv(struct val_result_chain *rc_ptr)
@@ -411,31 +419,40 @@ SV *hostent_c2sv(struct hostent *hent_ptr)
 
 int
 _pval_async_cb(ValAsyncStatus *as, int event,
-               ValContext *ctx, void *cb_data,
+               ValContext *ctx, void *callback_data,
                ValCBParams *cbp) 
 {
     dSP;
     SV *res = &PL_sv_undef;
     int ret = -1;
 
-    struct _pval_async_cbdata *_pval_async_cbdata = 
-        (struct _pval_async_cbdata *)cb_data;
+    struct _pval_async_cbdata *cbd = 
+        (struct _pval_async_cbdata *)callback_data;
 
     if (cbp && cbp->results) { 
         ret = cbp->retval;
         res = rc_c2sv(cbp->results);
+        val_free_result_chain(cbp->results);
+        cbp->results = NULL;
     }
 
+    ENTER ;
+    SAVETMPS;
+
     PUSHMARK(SP);
-    XPUSHs(_pval_async_cbdata->cb_data);
+    XPUSHs(cbd->cb_data);
     XPUSHs(newSViv(ret));
     XPUSHs(res);
-    // Push results from cbp to the callback argument stack
     PUTBACK;
 
-    call_sv(_pval_async_cbdata->cb, G_DISCARD);
+    call_sv(cbd->cb, G_DISCARD);
 
-    free(_pval_async_cbdata);
+    FREETMPS ;
+    LEAVE ;
+
+    free(cbd);
+
+    return 0;
 }
 
 
@@ -907,8 +924,7 @@ pval_async_submit(self,domain,class,type,flags, cbref, cbparam)
         RETVAL = NULL;
 
         struct _pval_async_cbdata *_pval_async_cbdata =
-            (struct _pval_async_cbdata *)malloc(sizeof(struct
-                        _pval_async_cbdata *));
+            (struct _pval_async_cbdata *)malloc(sizeof(struct _pval_async_cbdata));
 
         ctx_ref = hv_fetch((HV*)SvRV(self), "_ctx_ptr", 8, 1);
         ctx = (ValContext *)SvIV((SV*)SvRV(*ctx_ref));
@@ -1002,7 +1018,6 @@ pval_async_check(self,active)
         fd_set  activefds;
         int nfds = 0;
         int fd;
-        int i;
 
         // Initialize the descriptors that are already set
         if ((SvROK(active)) && (SvTYPE(SvRV(active)) == SVt_PVAV)) {

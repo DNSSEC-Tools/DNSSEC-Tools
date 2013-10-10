@@ -197,6 +197,7 @@ our @EXPORT = qw(
 	VAL_QUERY_MARK_FOR_DELETION
 	VAL_QUERY_IGNORE_SKEW
 	VAL_QUERY_RECURSE
+	VAL_QUERY_ITERATE
 	VAL_QUERY_SKIP_CACHE
 	VAL_QUERY_EDNS0_FALLBACK
 	VAL_QUERY_GLUE_REQUEST
@@ -894,8 +895,8 @@ application.
            "result is trusted\n" : 
            "result is NOT trusted\n");
 
-   $ac = ${$h}{answer}; 
-   while ($ac) {
+   $acs = ${$h}{answer}; 
+   foreach my $ac ($acs) {
         print "AC status: " . ${$ac}{status} . "\n";
         $acr = ${$ac}{rrset};
         $acd = ${$acr}{data};
@@ -908,7 +909,6 @@ application.
             print "Sig RR status: " . ${$d}{rrstatus} . "\n";
             ${$d}{rrdata}->print;
         }
-        $ac = ${$ac}{trust};
    } 
 }
 
