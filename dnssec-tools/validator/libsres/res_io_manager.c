@@ -76,67 +76,63 @@ static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 /*
  * Find a port in the range 1024 - 65535 
  */
+#define NUM_RND_TRIES 10
 static int
 bind_to_random_source(int af, SOCKET s)
 {   
-    struct sockaddr_storage ea_source;
-    struct sockaddr_in *sa4 = (struct sockaddr_in *) &ea_source;
+    struct sockaddr_in sa4;
 #ifdef VAL_IPV6
-    struct sockaddr_in6 *sa6 = (struct sockaddr_in6 *) &ea_source;
+    struct sockaddr_in6 sa6;
 #endif
     struct sockaddr *sa;
     size_t sock_size;
 
-    u_int16_t next_port, start_port;
-
-    memset(&ea_source, 0, sizeof(struct sockaddr_storage));
+    u_int16_t next_port;
+    int count = 0;
 
     if (af == AF_INET) {
-        sa4->sin_family = AF_INET;
-        sa4->sin_addr.s_addr = htonl(INADDR_ANY);
+        memset(&sa4, 0, sizeof(struct sockaddr_in));
+        memset(&sa4.sin_addr, 0, sizeof(sa4.sin_addr));
+        sa4.sin_family = AF_INET;
+        sa4.sin_addr.s_addr = htonl(INADDR_ANY);
 #ifdef VAL_IPV6
     } else if (af == AF_INET6) {
-        sa6->sin6_family = AF_INET6;
-        /*struct in6_addr anyaddr = IN6ADDR_ANY_INIT*/
-        /*sa6->sin6_addr = IN6ADDR_ANY_INIT*/
-        sa6->sin6_addr = in6addr_any;
+        memset(&sa6, 0, sizeof(struct sockaddr_in6));
+        memset(&sa6.sin6_addr, 0, sizeof(sa6.sin6_addr));
+        sa6.sin6_family = AF_INET6;
+        sa6.sin6_addr = in6addr_any;
 #endif
     } else {
         res_log(NULL,LOG_ERR,"libsres: could not bind to random port for unsupported address family %d", af);
         return 1; /* failure */
     }
 
-    start_port = (libsres_random() % 64512) + 1024;
-    next_port = start_port;
 
     do {
-        memset(&ea_source, 0, sizeof(ea_source));
+        next_port = (libsres_random() % 64512) + 1024;
+
         if (af == AF_INET) {
-            sa4->sin_port = htons(next_port);
-            sa = (struct sockaddr *) sa4;
+            sa4.sin_port = htons(next_port);
+            sa = (struct sockaddr *) &sa4;
             sock_size = sizeof(struct sockaddr_in);
 #ifdef VAL_IPV6
-        } else { /* AF_INET6 */
-            sa6->sin6_port = htons(next_port);
-            sa = (struct sockaddr *) sa6;
+        } else if (af == AF_INET6) {
+            sa6.sin6_port = htons(next_port);
+            sa = (struct sockaddr *) &sa6;
             sock_size = sizeof(struct sockaddr_in6);
 #endif
+        } else {
+            res_log(NULL,LOG_ERR,"libsres: could not bind to random port for unsupported address family %d", af);
+            return 1; /* failure */
         }
-
-        if (0 == bind(s, (const struct sockaddr *)sa, sock_size)) {
+        if (0 == bind(s, sa, sock_size)) {
             //res_log(NULL,LOG_ERR,"libsres: bound to random port %d", next_port);
             return 0; /* success */
-        } else  {
-            /* error */
-            if (next_port == 65535)
-                next_port = 1024;
-            else
-                next_port++;
         }
-    } while (next_port != start_port);
+    } while (count++ < NUM_RND_TRIES);
 
     /* wrapped around and still no ports found */
-    res_log(NULL,LOG_ERR,"libsres: could not bind to random port above %d", start_port);
+    res_log(NULL,LOG_ERR,"libsres: could not bind to random port");
 
     return 1; /* failure */
 }
@@ -1895,6 +1891,9 @@ res_async_query_create(const char *name, const u_int16_t type_h,
      * Loop through the list of destinations, form the query and send it
      */
     for (ns = ns_list; ns; ns = ns->ns_next) {
+
+        signed_query = NULL;
+        signed_length = 0;
 
         /** create payload */
         ret_val = res_create_query_payload(ns, name, class_h, type_h,
