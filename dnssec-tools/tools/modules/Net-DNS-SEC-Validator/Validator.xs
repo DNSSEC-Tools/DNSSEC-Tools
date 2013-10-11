@@ -950,8 +950,6 @@ pval_async_gather(self,active,timeout)
     SV* active
     int timeout = (SvOK($arg) ? SvIV($arg):10);
     INIT:
-        AV * results;
-        results = (AV *)sv_2mortal((SV *)newAV());
     CODE:
     {
         SV **ctx_ref;
@@ -965,6 +963,7 @@ pval_async_gather(self,active,timeout)
         int nfds = -1;
         int fd;
         int i;
+        AV * results = newAV();
 
         tv.tv_sec = timeout; 
         tv.tv_usec = 0;
@@ -998,10 +997,10 @@ pval_async_gather(self,active,timeout)
             }
         }
         av_push(results, newSViv(ret));
-        av_push(results, newRV((SV*) updated));
+        av_push(results, newRV_noinc((SV*) updated));
         av_push(results, newSVnv(tv.tv_sec + tv.tv_usec/1000000));
 
-        RETVAL = newRV((SV *)results);
+        RETVAL = newRV_noinc((SV *)results);
     }
     OUTPUT:
     RETVAL
