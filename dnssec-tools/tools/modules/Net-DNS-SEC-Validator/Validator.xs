@@ -441,7 +441,7 @@ _pval_async_cb(ValAsyncStatus *as, int event,
 
     PUSHMARK(SP);
     XPUSHs(cbd->cb_data);
-    XPUSHs(newSViv(ret));
+    XPUSHs(sv_2mortal(newSViv(ret)));
     XPUSHs(res);
     PUTBACK;
 
@@ -450,6 +450,8 @@ _pval_async_cb(ValAsyncStatus *as, int event,
     FREETMPS ;
     LEAVE ;
 
+    SvREFCNT_dec(cbd->cb_data);
+    SvREFCNT_dec(cbd->cb);
     free(cbd);
 
     return 0;
@@ -923,17 +925,17 @@ pval_async_submit(self,domain,class,type,flags, cbref, cbparam)
 
         RETVAL = NULL;
 
-        struct _pval_async_cbdata *_pval_async_cbdata =
+        struct _pval_async_cbdata *cbd =
             (struct _pval_async_cbdata *)malloc(sizeof(struct _pval_async_cbdata));
 
         ctx_ref = hv_fetch((HV*)SvRV(self), "_ctx_ptr", 8, 1);
         ctx = (ValContext *)SvIV((SV*)SvRV(*ctx_ref));
 
-        _pval_async_cbdata->cb = newSVsv(cbref);
-        _pval_async_cbdata->cb_data = newSVsv(cbparam);
+        cbd->cb = newSVsv(cbref);
+        cbd->cb_data = newSVsv(cbparam);
 
         ret = val_async_submit(ctx, domain, class, type, flags,
-                         _pval_async_cb, _pval_async_cbdata,
+                         _pval_async_cb, cbd,
                          &vas);
 
         RETVAL = (ret == VAL_NO_ERROR ? vas : NULL);
