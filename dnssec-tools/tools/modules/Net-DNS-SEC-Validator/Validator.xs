@@ -1021,9 +1021,10 @@ pval_async_check(self,active)
         int nfds = 0;
         int fd;
 
+        FD_ZERO(&activefds);
+
         // Initialize the descriptors that are already set
         if ((SvROK(active)) && (SvTYPE(SvRV(active)) == SVt_PVAV)) {
-            FD_ZERO(&activefds);
 
             active_arr = (AV*) SvRV(active);
             while (av_len(active_arr) >= 0) {
