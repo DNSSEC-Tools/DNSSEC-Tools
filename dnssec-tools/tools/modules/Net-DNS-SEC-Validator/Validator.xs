@@ -450,6 +450,7 @@ _pval_async_cb(ValAsyncStatus *as, int event,
     FREETMPS ;
     LEAVE ;
 
+    SvREFCNT_dec(res);
     SvREFCNT_dec(cbd->cb_data);
     SvREFCNT_dec(cbd->cb);
     free(cbd);
