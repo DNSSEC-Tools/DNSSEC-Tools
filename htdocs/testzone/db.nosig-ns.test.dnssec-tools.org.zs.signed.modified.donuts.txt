@@ -1,121 +1,305 @@
-nosig-ns.test.dnssec-tools.org:
-  Location:    db.nosig-ns.test.dnssec-tools.org.zs.signed.modified:42
-  Error:       An DNSKEY was generated with a broken version of OpenSSL. 
-	       Upgrade to a new version of bind and generate a new key. 
-	       See this web page for details: 
-	       http://marc.info/?l=bind-announce&m=116253119512445
+# loading rule file
+# /usr/local/share/dnssec-tools/donuts/rules/check_nameservers.txt
+# Rules Run:
+# DNS_SERVERS_MATCH_DATA
 
-nosig-ns.test.dnssec-tools.org:
-  Location:    db.nosig-ns.test.dnssec-tools.org.zs.signed.modified:49
-  Error:       An DNSKEY was generated with a broken version of OpenSSL. 
-	       Upgrade to a new version of bind and generate a new key. 
-	       See this web page for details: 
-	       http://marc.info/?l=bind-announce&m=116253119512445
+# loading rule file
+# /usr/local/share/dnssec-tools/donuts/rules/dns.errors.txt
+# Rules Run:
+# DNS_NS_NO_CNAME DNS_SOA_REQUIRED DNS_SERVERS_MATCH_DATA
 
-nosig-ns.test.dnssec-tools.org:
-  Location:    db.nosig-ns.test.dnssec-tools.org.zs.signed.modified:56
-  Error:       An DNSKEY was generated with a broken version of OpenSSL. 
-	       Upgrade to a new version of bind and generate a new key. 
-	       See this web page for details: 
-	       http://marc.info/?l=bind-announce&m=116253119512445
+# loading rule file
+# /usr/local/share/dnssec-tools/donuts/rules/dnssec.rules.txt
+# Rules Run:
+# DNSSEC_MISSING_RRSIG_RECORD1 DNSSEC_BOGUS_NS_MEMORIZE
+# DNSSEC_DNSKEY_PROTOCOL_MUST_BE_3 DNSSEC_MISSING_NSEC_RECORD1
+# DNSSEC_OPENSSL_KEY_ISSUES DNSSEC_NSEC_RRSEC_MUST_NOT_BE_ALONE
+# DNSSEC_RRSIG_TTL_MATCH_ORGTTL DNSSEC_NSEC_FOR_NS_GLUE_RECORD
+# DNS_SOA_REQUIRED DNS_SERVERS_MATCH_DATA DNSSEC_MISSING_NSEC_RECORD2
+# DNSSEC_RRSIG_TTL_MUST_MATCH_RECORD DNSSEC_RRSIGS_VERIFY
+# DNSSEC_RRSIG_SIGNER_NAME_MATCHES DNSSEC_RRSIG_SIGEXP
+# DNSSEC_DNSKEY_MUST_HAVE_SAME_NAME DNSSEC_TWO_ZSKS DNS_NS_NO_CNAME
+# DNSSEC_RRSIG_FOR_NS_GLUE_RECORD DNSSEC_NSEC_TTL
+# DNSSEC_MISSING_RRSIG_RECORD2 DNSSEC_RRSIG_NOT_SIGNING_RRSIG
+# DNSSEC_NSEC3_TTL
 
-pastdate-a.nosig-ns.test.dnssec-tools.org:
-  Location:    db.nosig-ns.test.dnssec-tools.org.zs.signed.modified:368
-  Error:       RRSIG record for pastdate-a.nosig-ns.test.dnssec-tools.org
-	       has expired
+# loading rule file
+# /usr/local/share/dnssec-tools/donuts/rules/nsec_check.rules.txt
+# Rules Run:
+# DNSSEC_MISSING_RRSIG_RECORD1 DNSSEC_BOGUS_NS_MEMORIZE
+# DNSSEC_DNSKEY_PROTOCOL_MUST_BE_3 DNSSEC_MISSING_NSEC_RECORD1
+# DNSSEC_NSEC_MEMORIZE DNSSEC_OPENSSL_KEY_ISSUES
+# DNSSEC_NSEC_RRSEC_MUST_NOT_BE_ALONE DNSSEC_RRSIG_TTL_MATCH_ORGTTL
+# DNSSEC_NSEC_FOR_NS_GLUE_RECORD DNSSEC_NSEC_CHECK DNS_SOA_REQUIRED
+# DNS_SERVERS_MATCH_DATA DNSSEC_NSEC3_MEMORIZE DNSSEC_MISSING_NSEC_RECORD2
+# DNSSEC_RRSIG_TTL_MUST_MATCH_RECORD DNSSEC_RRSIGS_VERIFY
+# DNSSEC_RRSIG_SIGNER_NAME_MATCHES DNSSEC_RRSIG_SIGEXP
+# DNSSEC_DNSKEY_MUST_HAVE_SAME_NAME DNSSEC_NSEC3_CHECK DNSSEC_TWO_ZSKS
+# DNS_NS_NO_CNAME DNSSEC_RRSIG_FOR_NS_GLUE_RECORD DNSSEC_NSEC_TTL
+# DNSSEC_MISSING_RRSIG_RECORD2 DNSSEC_RRSIG_NOT_SIGNING_RRSIG
+# DNSSEC_NSEC3_TTL
 
-pastdate-aaaa.nosig-ns.test.dnssec-tools.org:
-  Location:    db.nosig-ns.test.dnssec-tools.org.zs.signed.modified:383
-  Error:       RRSIG record for
-	       pastdate-aaaa.nosig-ns.test.dnssec-tools.org has expired
+# loading rule file
+# /usr/local/share/dnssec-tools/donuts/rules/parent_child.rules.txt
+# Rules Run:
+# DNSSEC_MISSING_RRSIG_RECORD1 DNSSEC_BOGUS_NS_MEMORIZE
+# DNSSEC_DNSKEY_PROTOCOL_MUST_BE_3 DNSSEC_DS_CHILD_HAS_MATCHING_DNSKEY
+# DNSSEC_MISSING_NSEC_RECORD1 DNSSEC_NSEC_MEMORIZE
+# DNSSEC_OPENSSL_KEY_ISSUES DNSSEC_NSEC_RRSEC_MUST_NOT_BE_ALONE
+# DNSSEC_DNSKEY_PARENT_HAS_VALID_DS DNSSEC_RRSIG_TTL_MATCH_ORGTTL
+# DNSSEC_NSEC_FOR_NS_GLUE_RECORD DNSSEC_NSEC_CHECK DNS_SOA_REQUIRED
+# DNS_SERVERS_MATCH_DATA DNS_MULTIPLE_NS DNSSEC_NSEC3_MEMORIZE
+# DNSSEC_MISSING_NSEC_RECORD2 DNSSEC_RRSIG_TTL_MUST_MATCH_RECORD
+# DNSSEC_RRSIGS_VERIFY DNSSEC_RRSIG_SIGNER_NAME_MATCHES DNSSEC_RRSIG_SIGEXP
+# DNSSEC_DNSKEY_MUST_HAVE_SAME_NAME DNSSEC_NSEC3_CHECK DNSSEC_TWO_ZSKS
+# DNS_NS_NO_CNAME DNSSEC_SUB_NOT_SECURE DNSSEC_RRSIG_FOR_NS_GLUE_RECORD
+# DNSSEC_NSEC_TTL DNSSEC_MISSING_RRSIG_RECORD2
+# DNSSEC_RRSIG_NOT_SIGNING_RRSIG DNSSEC_NSEC3_TTL
 
-reverseddates-a.nosig-ns.test.dnssec-tools.org:
-  Location:    db.nosig-ns.test.dnssec-tools.org.zs.signed.modified:390
-  Error:       RRSIG is nearing its expiration time
+# loading rule file
+# /usr/local/share/dnssec-tools/donuts/rules/recommendations.rules.txt
+# Rules Run:
+# DNSSEC_BOGUS_NS_MEMORIZE DNSSEC_DNSKEY_PROTOCOL_MUST_BE_3
+# DNSSEC_MISSING_NSEC_RECORD1 DNSSEC_NSEC_RRSEC_MUST_NOT_BE_ALONE
+# DNSSEC_NSEC_FOR_NS_GLUE_RECORD DNS_MULTIPLE_NS
+# DNSSEC_RRSIG_TTL_MUST_MATCH_RECORD DNSSEC_RRSIGS_VERIFY
+# DNSSEC_RRSIG_SIGNER_NAME_MATCHES DNSSEC_RRSIG_SIGEXP
+# DNS_NO_DOMAIN_MX_RECORDS DNSSEC_NSEC3_CHECK DNSSEC_SUB_NOT_SECURE
+# DNSSEC_MISSING_RRSIG_RECORD2 DNSSEC_MISSING_RRSIG_RECORD1
+# DNSSEC_DS_CHILD_HAS_MATCHING_DNSKEY DNSSEC_OPENSSL_KEY_ISSUES
+# DNSSEC_NSEC_MEMORIZE DNSSEC_DNSKEY_PARENT_HAS_VALID_DS
+# DNSSEC_RRSIG_TTL_MATCH_ORGTTL DNSSEC_NSEC_CHECK DNS_SOA_REQUIRED
+# DNS_SERVERS_MATCH_DATA DNSSEC_MISSING_NSEC_RECORD2 DNSSEC_NSEC3_MEMORIZE
+# DNS_REASONABLE_TTLS DNSSEC_DNSKEY_MUST_HAVE_SAME_NAME DNS_NS_NO_CNAME
+# DNSSEC_TWO_ZSKS DNSSEC_RRSIG_FOR_NS_GLUE_RECORD DNSSEC_NSEC_TTL
+# DNSSEC_NSEC3_TTL DNSSEC_RRSIG_NOT_SIGNING_RRSIG
 
-reverseddates-aaaa.nosig-ns.test.dnssec-tools.org:
-  Location:    db.nosig-ns.test.dnssec-tools.org.zs.signed.modified:406
-  Error:       RRSIG is nearing its expiration time
 
-reverseddates-aaaa.nosig-ns.test.dnssec-tools.org:
-  Error:       RRSIG on name:
-	       reverseddates-aaaa.nosig-ns.test.dnssec-tools.org type: AAAA
-	       failed to verify: RSA Verification failed
+Donuts Analysis: nosig-ns.test.dnssec-tools.org
+  Donuts Results: nosig-ns.test.dnssec-tools.org
+    Source:	 db.nosig-ns.test.dnssec-tools.org.zs.signed.modified
+    Record Results: 
+      # Analyzing individual records in
+      # db.nosig-ns.test.dnssec-tools.org.zs.signed.modified
+      Error: nosig-ns.test.dnssec-tools.org
+	Rule Type:   Error
+	Location:    db.nosig-ns.test.dnssec-tools.org.zs.signed.modified:4
+		     2
+	Message:     An DNSKEY was generated with a broken version of
+		     OpenSSL.  Upgrade to a new version of bind and
+		     generate a new key.  See this web page for details: 
+		     http://marc.info/?l=bind-announce&m=116253119512445
+	Details:     Tests to make sure that the vulnerability found in
+		     OpenSSL does not affect current keys within a zone.
 
-pastdate-aaaa.nosig-ns.test.dnssec-tools.org:
-  Error:       RRSIG on name: pastdate-aaaa.nosig-ns.test.dnssec-tools.org
-	       type: AAAA failed to verify: Signature has expired since:
-	       20131010132317
+      Error: nosig-ns.test.dnssec-tools.org
+	Rule Type:   Error
+	Location:    db.nosig-ns.test.dnssec-tools.org.zs.signed.modified:4
+		     9
+	Message:     An DNSKEY was generated with a broken version of
+		     OpenSSL.  Upgrade to a new version of bind and
+		     generate a new key.  See this web page for details: 
+		     http://marc.info/?l=bind-announce&m=116253119512445
+	Details:     Tests to make sure that the vulnerability found in
+		     OpenSSL does not affect current keys within a zone.
 
-addedlater-nosig-AAAA.nosig-ns.test.dnssec-tools.org:
-  Error:       name addedlater-nosig-AAAA.nosig-ns.test.dnssec-tools.org
-	       does not have an NSEC record, which is required for secure
-	       domains.
+      Error: nosig-ns.test.dnssec-tools.org
+	Rule Type:   Error
+	Location:    db.nosig-ns.test.dnssec-tools.org.zs.signed.modified:5
+		     6
+	Message:     An DNSKEY was generated with a broken version of
+		     OpenSSL.  Upgrade to a new version of bind and
+		     generate a new key.  See this web page for details: 
+		     http://marc.info/?l=bind-announce&m=116253119512445
+	Details:     Tests to make sure that the vulnerability found in
+		     OpenSSL does not affect current keys within a zone.
 
-addedlater-nosig-AAAA.nosig-ns.test.dnssec-tools.org:
-  Error:       name addedlater-nosig-AAAA.nosig-ns.test.dnssec-tools.org
-	       does not have a RRSIG record, which is required for secure
-	       domains.
+      Error: pastdate-a.nosig-ns.test.dnssec-tools.org
+	Rule Type:   Error
+	Location:    db.nosig-ns.test.dnssec-tools.org.zs.signed.modified:3
+		     68
+	Message:     RRSIG record for
+		     pastdate-a.nosig-ns.test.dnssec-tools.org has expired
+	Details:     Checks signature expiration time and warns or signals
+		     an error if the time is near or past.
 
-baddata-a.nosig-ns.test.dnssec-tools.org:
-  Error:       RRSIG on name: baddata-a.nosig-ns.test.dnssec-tools.org
-	       type: A failed to verify: RSA Verification failed
+      Error: pastdate-aaaa.nosig-ns.test.dnssec-tools.org
+	Rule Type:   Error
+	Location:    db.nosig-ns.test.dnssec-tools.org.zs.signed.modified:3
+		     83
+	Message:     RRSIG record for
+		     pastdate-aaaa.nosig-ns.test.dnssec-tools.org has
+		     expired
+	Details:     Checks signature expiration time and warns or signals
+		     an error if the time is near or past.
 
-futuredate-aaaa.nosig-ns.test.dnssec-tools.org:
-  Error:       RRSIG on name:
-	       futuredate-aaaa.nosig-ns.test.dnssec-tools.org type: AAAA
-	       failed to verify: Signature may only be used in the future;
-	       after 20131209122817
+      Error: reverseddates-a.nosig-ns.test.dnssec-tools.org
+	Rule Type:   Error
+	Location:    db.nosig-ns.test.dnssec-tools.org.zs.signed.modified:3
+		     90
+	Message:     RRSIG is nearing its expiration time
+	Details:     Checks signature expiration time and warns or signals
+		     an error if the time is near or past.
 
-addedlater-withsig-AAAA.nosig-ns.test.dnssec-tools.org:
-  Error:       name addedlater-withsig-AAAA.nosig-ns.test.dnssec-tools.org
-	       does not have an NSEC record, which is required for secure
-	       domains.
+      Error: reverseddates-aaaa.nosig-ns.test.dnssec-tools.org
+	Rule Type:   Error
+	Location:    db.nosig-ns.test.dnssec-tools.org.zs.signed.modified:4
+		     06
+	Message:     RRSIG is nearing its expiration time
+	Details:     Checks signature expiration time and warns or signals
+		     an error if the time is near or past.
 
-pastdate-a.nosig-ns.test.dnssec-tools.org:
-  Error:       RRSIG on name: pastdate-a.nosig-ns.test.dnssec-tools.org
-	       type: A failed to verify: Signature has expired since:
-	       20131010132317
+    Name Results: 
+      # Analyzing records for each name in
+      # db.nosig-ns.test.dnssec-tools.org.zs.signed.modified
+      Error: reverseddates-aaaa.nosig-ns.test.dnssec-tools.org
+	Rule Type:   Error
+	Message:     RRSIG on name:
+		     reverseddates-aaaa.nosig-ns.test.dnssec-tools.org
+		     type: AAAA failed to verify: RSA Verification failed
+	Details:     RRSIGs must cryptographically verify the records they
+		     are signing.
 
-futuredate-a.nosig-ns.test.dnssec-tools.org:
-  Error:       RRSIG on name: futuredate-a.nosig-ns.test.dnssec-tools.org
-	       type: A failed to verify: Signature may only be used in the
-	       future; after 20131209122817
+      Error: pastdate-aaaa.nosig-ns.test.dnssec-tools.org
+	Rule Type:   Error
+	Message:     RRSIG on name:
+		     pastdate-aaaa.nosig-ns.test.dnssec-tools.org type:
+		     AAAA failed to verify: Signature has expired since:
+		     20131014175145
+	Details:     RRSIGs must cryptographically verify the records they
+		     are signing.
 
-addedlater-nosig-A.nosig-ns.test.dnssec-tools.org:
-  Error:       name addedlater-nosig-A.nosig-ns.test.dnssec-tools.org does
-	       not have an NSEC record, which is required for secure
-	       domains.
+      Error: baddata-a.nosig-ns.test.dnssec-tools.org
+	Rule Type:   Error
+	Message:     RRSIG on name:
+		     baddata-a.nosig-ns.test.dnssec-tools.org type: A
+		     failed to verify: RSA Verification failed
+	Details:     RRSIGs must cryptographically verify the records they
+		     are signing.
 
-addedlater-nosig-A.nosig-ns.test.dnssec-tools.org:
-  Error:       name addedlater-nosig-A.nosig-ns.test.dnssec-tools.org does
-	       not have a RRSIG record, which is required for secure
-	       domains.
+      Error: addedlater-nosig-aaaa.nosig-ns.test.dnssec-tools.org
+	Rule Type:   Error
+	Message:     name
+		     addedlater-nosig-aaaa.nosig-ns.test.dnssec-tools.org
+		     does not have an NSEC record, which is required for
+		     secure domains.
+	Details:     checks to see if a given name is missing an NSEC
+		     record, which is require for dnssec to prove
+		     non-existence.
 
-addedlater-withsig-A.nosig-ns.test.dnssec-tools.org:
-  Error:       name addedlater-withsig-A.nosig-ns.test.dnssec-tools.org
-	       does not have an NSEC record, which is required for secure
-	       domains.
+      Error: addedlater-nosig-aaaa.nosig-ns.test.dnssec-tools.org
+	Rule Type:   Error
+	Message:     name
+		     addedlater-nosig-aaaa.nosig-ns.test.dnssec-tools.org
+		     does not have a RRSIG record, which is required for
+		     secure domains.
+	Details:     Checks to see if a name contains a RRSIG record.
 
-nsectest.nosig-ns.test.dnssec-tools.org:
-  Error:       RRSIG on name: nsectest.nosig-ns.test.dnssec-tools.org type:
-	       NSEC failed to verify: RSA Verification failed
+      Error: addedlater-nosig-a.nosig-ns.test.dnssec-tools.org
+	Rule Type:   Error
+	Message:     name addedlater-nosig-a.nosig-ns.test.dnssec-tools.org
+		     does not have an NSEC record, which is required for
+		     secure domains.
+	Details:     checks to see if a given name is missing an NSEC
+		     record, which is require for dnssec to prove
+		     non-existence.
 
-baddata-aaaa.nosig-ns.test.dnssec-tools.org:
-  Error:       RRSIG on name: baddata-aaaa.nosig-ns.test.dnssec-tools.org
-	       type: AAAA failed to verify: RSA Verification failed
+      Error: addedlater-nosig-a.nosig-ns.test.dnssec-tools.org
+	Rule Type:   Error
+	Message:     name addedlater-nosig-a.nosig-ns.test.dnssec-tools.org
+		     does not have a RRSIG record, which is required for
+		     secure domains.
+	Details:     Checks to see if a name contains a RRSIG record.
 
-badsign-a.nosig-ns.test.dnssec-tools.org:
-  Error:       RRSIG on name: badsign-a.nosig-ns.test.dnssec-tools.org
-	       type: A failed to verify: RSA Verification failed
+      Error: futuredate-aaaa.nosig-ns.test.dnssec-tools.org
+	Rule Type:   Error
+	Message:     RRSIG on name:
+		     futuredate-aaaa.nosig-ns.test.dnssec-tools.org type:
+		     AAAA failed to verify: Signature may only be used in
+		     the future; after 20131213165645
+	Details:     RRSIGs must cryptographically verify the records they
+		     are signing.
 
-badsign-aaaa.nosig-ns.test.dnssec-tools.org:
-  Error:       RRSIG on name: badsign-aaaa.nosig-ns.test.dnssec-tools.org
-	       type: AAAA failed to verify: RSA Verification failed
+      Error: pastdate-a.nosig-ns.test.dnssec-tools.org
+	Rule Type:   Error
+	Message:     RRSIG on name:
+		     pastdate-a.nosig-ns.test.dnssec-tools.org type: A
+		     failed to verify: Signature has expired since:
+		     20131014175145
+	Details:     RRSIGs must cryptographically verify the records they
+		     are signing.
 
-reverseddates-a.nosig-ns.test.dnssec-tools.org:
-  Error:       RRSIG on name:
-	       reverseddates-a.nosig-ns.test.dnssec-tools.org type: A
-	       failed to verify: RSA Verification failed
+      Error: futuredate-a.nosig-ns.test.dnssec-tools.org
+	Rule Type:   Error
+	Message:     RRSIG on name:
+		     futuredate-a.nosig-ns.test.dnssec-tools.org type: A
+		     failed to verify: Signature may only be used in the
+		     future; after 20131213165645
+	Details:     RRSIGs must cryptographically verify the records they
+		     are signing.
 
-24 errors found in db.nosig-ns.test.dnssec-tools.org.zs.signed.modified
+      Error: nsectest.nosig-ns.test.dnssec-tools.org
+	Rule Type:   Error
+	Message:     RRSIG on name: nsectest.nosig-ns.test.dnssec-tools.org
+		     type: NSEC failed to verify: RSA Verification failed
+	Details:     RRSIGs must cryptographically verify the records they
+		     are signing.
+
+      Error: addedlater-withsig-a.nosig-ns.test.dnssec-tools.org
+	Rule Type:   Error
+	Message:     name
+		     addedlater-withsig-a.nosig-ns.test.dnssec-tools.org
+		     does not have an NSEC record, which is required for
+		     secure domains.
+	Details:     checks to see if a given name is missing an NSEC
+		     record, which is require for dnssec to prove
+		     non-existence.
+
+      Error: baddata-aaaa.nosig-ns.test.dnssec-tools.org
+	Rule Type:   Error
+	Message:     RRSIG on name:
+		     baddata-aaaa.nosig-ns.test.dnssec-tools.org type: AAAA
+		     failed to verify: RSA Verification failed
+	Details:     RRSIGs must cryptographically verify the records they
+		     are signing.
+
+      Error: badsign-a.nosig-ns.test.dnssec-tools.org
+	Rule Type:   Error
+	Message:     RRSIG on name:
+		     badsign-a.nosig-ns.test.dnssec-tools.org type: A
+		     failed to verify: RSA Verification failed
+	Details:     RRSIGs must cryptographically verify the records they
+		     are signing.
+
+      Error: badsign-aaaa.nosig-ns.test.dnssec-tools.org
+	Rule Type:   Error
+	Message:     RRSIG on name:
+		     badsign-aaaa.nosig-ns.test.dnssec-tools.org type: AAAA
+		     failed to verify: RSA Verification failed
+	Details:     RRSIGs must cryptographically verify the records they
+		     are signing.
+
+      Error: addedlater-withsig-aaaa.nosig-ns.test.dnssec-tools.org
+	Rule Type:   Error
+	Message:     name
+		     addedlater-withsig-aaaa.nosig-ns.test.dnssec-tools.org
+		     does not have an NSEC record, which is required for
+		     secure domains.
+	Details:     checks to see if a given name is missing an NSEC
+		     record, which is require for dnssec to prove
+		     non-existence.
+
+      Error: reverseddates-a.nosig-ns.test.dnssec-tools.org
+	Rule Type:   Error
+	Message:     RRSIG on name:
+		     reverseddates-a.nosig-ns.test.dnssec-tools.org type: A
+		     failed to verify: RSA Verification failed
+	Details:     RRSIGs must cryptographically verify the records they
+		     are signing.
+
+  Donuts Summary: nosig-ns.test.dnssec-tools.org
+    Rules Considered: 33
+    Rules Tested: 21
+    Records Analyzed: 106
+    Names Analyzed: 27
+    Errors Found: 24
