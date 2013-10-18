@@ -271,10 +271,10 @@ SV *ac_c2sv(struct val_authentication_chain *ac_ptr)
     ac_hv_ref = newRV_noinc((SV*)ac_hv);
 
     (void)hv_store(ac_hv, "status", strlen("status"), 
-	     newSViv(ac_ptr->val_ac_status), 0);
+	     newSViv(t->val_ac_status), 0);
 
     (void)hv_store(ac_hv, "rrset", strlen("rrset"), 
-	     rrset_c2sv(ac_ptr->val_ac_rrset), 0);
+	     rrset_c2sv(t->val_ac_rrset), 0);
 
     av_push(ac_av, ac_hv_ref);
 
