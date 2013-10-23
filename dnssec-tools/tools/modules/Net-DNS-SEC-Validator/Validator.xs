@@ -271,10 +271,10 @@ SV *ac_c2sv(struct val_authentication_chain *ac_ptr)
     ac_hv_ref = newRV_noinc((SV*)ac_hv);
 
     (void)hv_store(ac_hv, "status", strlen("status"), 
-	     newSViv(ac_ptr->val_ac_status), 0);
+	     newSViv(t->val_ac_status), 0);
 
     (void)hv_store(ac_hv, "rrset", strlen("rrset"), 
-	     rrset_c2sv(ac_ptr->val_ac_rrset), 0);
+	     rrset_c2sv(t->val_ac_rrset), 0);
 
     av_push(ac_av, ac_hv_ref);
 
@@ -441,7 +441,7 @@ _pval_async_cb(ValAsyncStatus *as, int event,
 
     PUSHMARK(SP);
     XPUSHs(cbd->cb_data);
-    XPUSHs(newSViv(ret));
+    XPUSHs(sv_2mortal(newSViv(ret)));
     XPUSHs(res);
     PUTBACK;
 
@@ -450,6 +450,9 @@ _pval_async_cb(ValAsyncStatus *as, int event,
     FREETMPS ;
     LEAVE ;
 
+    SvREFCNT_dec(res);
+    SvREFCNT_dec(cbd->cb_data);
+    SvREFCNT_dec(cbd->cb);
     free(cbd);
 
     return 0;
@@ -923,17 +926,17 @@ pval_async_submit(self,domain,class,type,flags, cbref, cbparam)
 
         RETVAL = NULL;
 
-        struct _pval_async_cbdata *_pval_async_cbdata =
+        struct _pval_async_cbdata *cbd =
             (struct _pval_async_cbdata *)malloc(sizeof(struct _pval_async_cbdata));
 
         ctx_ref = hv_fetch((HV*)SvRV(self), "_ctx_ptr", 8, 1);
         ctx = (ValContext *)SvIV((SV*)SvRV(*ctx_ref));
 
-        _pval_async_cbdata->cb = newSVsv(cbref);
-        _pval_async_cbdata->cb_data = newSVsv(cbparam);
+        cbd->cb = newSVsv(cbref);
+        cbd->cb_data = newSVsv(cbparam);
 
         ret = val_async_submit(ctx, domain, class, type, flags,
-                         _pval_async_cb, _pval_async_cbdata,
+                         _pval_async_cb, cbd,
                          &vas);
 
         RETVAL = (ret == VAL_NO_ERROR ? vas : NULL);
@@ -948,8 +951,6 @@ pval_async_gather(self,active,timeout)
     SV* active
     int timeout = (SvOK($arg) ? SvIV($arg):10);
     INIT:
-        AV * results;
-        results = (AV *)sv_2mortal((SV *)newAV());
     CODE:
     {
         SV **ctx_ref;
@@ -963,6 +964,7 @@ pval_async_gather(self,active,timeout)
         int nfds = -1;
         int fd;
         int i;
+        AV * results = newAV();
 
         tv.tv_sec = timeout; 
         tv.tv_usec = 0;
@@ -996,10 +998,10 @@ pval_async_gather(self,active,timeout)
             }
         }
         av_push(results, newSViv(ret));
-        av_push(results, newRV((SV*) updated));
+        av_push(results, newRV_noinc((SV*) updated));
         av_push(results, newSVnv(tv.tv_sec + tv.tv_usec/1000000));
 
-        RETVAL = newRV((SV *)results);
+        RETVAL = newRV_noinc((SV *)results);
     }
     OUTPUT:
     RETVAL
@@ -1019,9 +1021,10 @@ pval_async_check(self,active)
         int nfds = 0;
         int fd;
 
+        FD_ZERO(&activefds);
+
         // Initialize the descriptors that are already set
         if ((SvROK(active)) && (SvTYPE(SvRV(active)) == SVt_PVAV)) {
-            FD_ZERO(&activefds);
 
             active_arr = (AV*) SvRV(active);
             while (av_len(active_arr) >= 0) {

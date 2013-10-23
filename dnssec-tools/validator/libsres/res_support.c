@@ -370,7 +370,7 @@ free_name_servers(struct name_server **ns)
 
 u_int16_t libsres_random(void)
 {
-    u_int16_t rnd;
+    u_int16_t rnd = 0;
     if (!RAND_bytes((unsigned char *)&rnd, sizeof(rnd))) {
         RAND_pseudo_bytes((unsigned char *)&rnd, sizeof(rnd));
     }
