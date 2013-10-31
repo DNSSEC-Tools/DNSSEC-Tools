@@ -167,74 +167,78 @@ static struct addrinfo *ainfo_sv2c(SV *ainfo_ref, struct addrinfo *ainfo_ptr)
 SV *rr_c2sv(char *name, int type, int class, long ttl, size_t len, u_char *data)
 {
   dSP ;
+
   SV *rr = &PL_sv_undef;
+  u_char *buf = NULL;
+  size_t buflen = 0;
+
+  if(VAL_NO_ERROR != 
+          val_create_rr_otw(name, type, class, ttl, 
+                len, data, &buflen, &buf)) {
+
+      return rr;
+  }
 
   ENTER ;
   SAVETMPS;
 
   PUSHMARK(SP);
   XPUSHs(sv_2mortal(newSVpv("Net::DNS::RR", 0))) ;
-  XPUSHs(sv_2mortal(newSVpv((char*)name, 0))) ;
-  XPUSHs(sv_2mortal(newSVpv(p_sres_type(type), 0))) ;
-  XPUSHs(sv_2mortal(newSVpv(p_class(class), 0))) ;
-  XPUSHs(sv_2mortal(newSVnv(ttl))) ;
-  XPUSHs(sv_2mortal(newSViv(len))) ;
-  XPUSHs(sv_2mortal(newRV(sv_2mortal(newSVpvn((char*)data, len))))) ;
+  XPUSHs(sv_2mortal(newRV(sv_2mortal(newSVpvn((char*)buf, buflen))))) ;
   PUTBACK;
 
-  call_method("new_from_data", G_SCALAR);
+  call_method("decode", G_SCALAR);
 
   SPAGAIN ;
-
   rr = newSVsv(POPs);
-
   PUTBACK ;
+
   FREETMPS ;
   LEAVE ;
+
+  free(buf);
+
   return rr;
 }
 
 SV *rrset_c2sv(struct val_rrset_rec *rrs_ptr)
 {
-  HV *rrset_hv;
-  SV *rrset_hv_ref = &PL_sv_undef;
-  AV *rrs_av;
-  SV *rrs_av_ref;
+  HV *rrset_hv = newHV();
+  SV *rrset_hv_ref = newRV_noinc((SV*)rrset_hv);
+  AV *rrs_avd = newAV();
+  SV *rrs_avd_ref = newRV_noinc((SV*)rrs_avd);
+  AV *rrs_avs = newAV();
+  SV *rrs_avs_ref = newRV_noinc((SV*)rrs_avs);
   HV *rr_hv;
   SV *rr_hv_ref;
   struct val_rr_rec *rr;
 
   if (rrs_ptr) {
-    rrset_hv = newHV();
-    rrset_hv_ref = newRV_noinc((SV*)rrset_hv);
-
-    rrs_av = newAV();
-    rrs_av_ref = newRV_noinc((SV*)rrs_av);
 
     for (rr = rrs_ptr->val_rrset_data; rr; rr = rr->rr_next) {
       rr_hv = newHV();
       rr_hv_ref = newRV_noinc((SV*)rr_hv);
+
       (void)hv_store(rr_hv, "rrdata", strlen("rrdata"), 
 	      rr_c2sv(rrs_ptr->val_rrset_name,
 		      rrs_ptr->val_rrset_type,
 		      rrs_ptr->val_rrset_class,
-		      rrs_ptr->val_rrset_ttl,
+	          rrs_ptr->val_rrset_ttl,
 		      rr->rr_rdata_length,
 		      rr->rr_rdata), 0);
 
       (void)hv_store(rr_hv, "rrstatus", strlen("rrstatus"),
               newSViv(rr->rr_status),0);
-      av_push(rrs_av, rr_hv_ref);
+
+      av_push(rrs_avd, rr_hv_ref);
     }
 
-    (void)hv_store(rrset_hv, "data", strlen("data"), rrs_av_ref, 0);
-
-    rrs_av = newAV();
-    rrs_av_ref = newRV_noinc((SV*)rrs_av);
+    (void)hv_store(rrset_hv, "data", strlen("data"), rrs_avd_ref, 0);
 
     for (rr = rrs_ptr->val_rrset_sig; rr; rr = rr->rr_next) {
       rr_hv = newHV();
       rr_hv_ref = newRV_noinc((SV*)rr_hv);
+
       (void)hv_store(rr_hv, "rrdata", strlen("rrdata"), 
 	      rr_c2sv(rrs_ptr->val_rrset_name,
 		      ns_t_rrsig,
@@ -245,10 +249,11 @@ SV *rrset_c2sv(struct val_rrset_rec *rrs_ptr)
 
       (void)hv_store(rr_hv, "rrstatus", strlen("rrstatus"),
               newSViv(rr->rr_status),0);
-      av_push(rrs_av, rr_hv_ref);
+
+      av_push(rrs_avs, rr_hv_ref);
     }
 
-    (void)hv_store(rrset_hv, "sigs", strlen("sigs"), rrs_av_ref, 0);
+    (void)hv_store(rrset_hv, "sigs", strlen("sigs"), rrs_avs_ref, 0);
   }
 
   return rrset_hv_ref;
@@ -259,16 +264,13 @@ SV *ac_c2sv(struct val_authentication_chain *ac_ptr)
   AV *ac_av = newAV();
   SV *ac_av_ref = newRV_noinc((SV*)ac_av);
 
-  HV *ac_hv;
-  SV *ac_hv_ref = &PL_sv_undef;
-
   struct val_authentication_chain *t;
 
   t = ac_ptr;
   while(t) {
 
-    ac_hv = newHV();
-    ac_hv_ref = newRV_noinc((SV*)ac_hv);
+    HV *ac_hv = newHV();
+    SV *ac_hv_ref = newRV_noinc((SV*)ac_hv);
 
     (void)hv_store(ac_hv, "status", strlen("status"), 
 	     newSViv(t->val_ac_status), 0);
@@ -306,7 +308,8 @@ SV *rc_c2sv(struct val_result_chain *rc_ptr)
     if (rc_ptr->val_rc_answer != NULL) {
         (void)hv_store(result_hv, "answer", strlen("answer"), 
 	        ac_c2sv(rc_ptr->val_rc_answer), 0);
-    } else {
+    } 
+    else {
         (void)hv_store(result_hv, "rrset", strlen("rrset"),
             rrset_c2sv(rc_ptr->val_rc_rrset), 0);
     }
@@ -325,6 +328,7 @@ SV *rc_c2sv(struct val_result_chain *rc_ptr)
 
     rc_ptr = rc_ptr->val_rc_next;
   }
+
 
   return rc_av_ref;
 }
@@ -1006,7 +1010,7 @@ pval_async_gather(self,active,timeout)
     OUTPUT:
     RETVAL
 
-int 
+SV * 
 pval_async_check(self,active)
     SV* self
     SV* active
@@ -1015,11 +1019,14 @@ pval_async_check(self,active)
         SV **ctx_ref;
         AV *active_arr;
         SV *fd_cur = NULL;
+        AV *updated;
         ValContext *ctx;
         int ret;
         fd_set  activefds;
         int nfds = 0;
         int fd;
+        int i;
+        AV * results = newAV();
 
         FD_ZERO(&activefds);
 
@@ -1041,7 +1048,18 @@ pval_async_check(self,active)
         //ret = val_async_check(ctx, &activefds, &nfds, 0);
         ret = val_async_check_wait(ctx, &activefds, &nfds, NULL, 0);
 
-        RETVAL = ret;
+        updated = newAV();
+
+        for (i = 0 ; i <= nfds ; i++) {
+            if (FD_ISSET(i, &activefds)) {
+                fd_cur = newSViv(i);
+                av_push(updated, fd_cur);
+            }
+        }
+
+        av_push(results, newSViv(ret));
+        av_push(results, newRV_noinc((SV*) updated));
+        RETVAL = newRV_noinc((SV *)results);
     }
     OUTPUT:
     RETVAL
