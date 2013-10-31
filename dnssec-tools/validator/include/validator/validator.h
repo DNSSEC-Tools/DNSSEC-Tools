@@ -610,6 +610,14 @@ typedef struct val_context_opt {
 
     void val_free_answer_chain(struct val_answer_chain *answers);
 
+    int  val_create_rr_otw( char *name,
+                   int type,
+                   int class,
+                   long ttl,
+                   size_t rdatalen,
+                   u_char *rdata,
+                   size_t *buflen,
+                   u_char **buf);
 
     /*
      * utility functions. mostly used internal to libval.
