@@ -169,34 +169,51 @@ SV *rr_c2sv(char *name, int type, int class, long ttl, size_t len, u_char *data)
   dSP ;
 
   SV *rr = &PL_sv_undef;
-  u_char *buf = NULL;
-  size_t buflen = 0;
-
-  if(VAL_NO_ERROR != 
-          val_create_rr_otw(name, type, class, ttl, 
-                len, data, &buflen, &buf)) {
-
-      return rr;
-  }
 
   ENTER ;
   SAVETMPS;
 
   PUSHMARK(SP);
   XPUSHs(sv_2mortal(newSVpv("Net::DNS::RR", 0))) ;
-  XPUSHs(sv_2mortal(newRV(sv_2mortal(newSVpvn((char*)buf, buflen))))) ;
+  XPUSHs(sv_2mortal(newSVpv((char*)name, 0))) ;
+  XPUSHs(sv_2mortal(newSVpv(p_sres_type(type), 0))) ;
+  XPUSHs(sv_2mortal(newSVpv(p_class(class), 0))) ;
+  XPUSHs(sv_2mortal(newSVnv(ttl))) ;
+  XPUSHs(sv_2mortal(newSViv(len))) ;
+  XPUSHs(sv_2mortal(newRV(sv_2mortal(newSVpvn((char*)data, len))))) ;
   PUTBACK;
 
-  call_method("decode", G_SCALAR);
+  call_method("new_from_data", G_SCALAR|G_EVAL);
+  if (SvTRUE(ERRSV)) {
+    /* Try the decode function */
+    u_char *buf = NULL;
+    size_t buflen = 0;
+
+    if(VAL_NO_ERROR != 
+          val_create_rr_otw(name, type, class, ttl, 
+                len, data, &buflen, &buf)) {
+        goto err;
+    }
+
+    POPs; // remove the undef value from the top of the stack
+
+    SPAGAIN ;
+    PUSHMARK(SP);
+    XPUSHs(sv_2mortal(newSVpv("Net::DNS::RR", 0))) ;
+    XPUSHs(sv_2mortal(newRV(sv_2mortal(newSVpvn((char*)buf, buflen))))) ;
+    PUTBACK;
+    call_method("decode", G_SCALAR);
+
+    free(buf);
+  }
 
   SPAGAIN ;
   rr = newSVsv(POPs);
   PUTBACK ;
 
+err:
   FREETMPS ;
   LEAVE ;
-
-  free(buf);
 
   return rr;
 }
