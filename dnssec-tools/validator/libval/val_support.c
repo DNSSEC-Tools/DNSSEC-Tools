@@ -1606,3 +1606,54 @@ merge_rrset_recs(struct rrset_rec **dest, struct rrset_rec *new_info)
 
     return;
 }
+
+int
+val_create_rr_otw( char *name, 
+                   int type,
+                   int class,
+                   long ttl,
+                   size_t rdatalen, 
+                   u_char *rdata,
+                   size_t *buflen, 
+                   u_char **buf)
+{
+    u_char domain_name_n[NS_MAXCDNAME];
+    int ret;
+    u_char *cp = NULL;
+    size_t namelen  = 0;
+    u_int16_t class_h = (u_int16_t) class;
+    u_int16_t type_h = (u_int16_t) type;
+    u_int16_t ttl_h = (u_int32_t) ttl;
+
+    if (name == NULL || rdata == NULL || buflen == NULL || buf == NULL)
+        return VAL_BAD_ARGUMENT;
+
+    *buflen = 0;
+
+    if ((ret = ns_name_pton(name, domain_name_n, NS_MAXCDNAME)) == -1) {
+        return VAL_BAD_ARGUMENT;
+    }
+    
+    namelen = wire_name_length(domain_name_n);
+    *buflen = namelen + sizeof(u_int16_t) + sizeof(u_int16_t) +
+        sizeof(u_int32_t) + sizeof(u_int16_t) + rdatalen;
+
+    *buf = (u_char *) MALLOC (*buflen * sizeof(u_char));
+    if (*buf == NULL)
+        return VAL_OUT_OF_MEMORY;
+
+    cp = *buf;
+
+    memcpy(cp, domain_name_n, namelen);
+    cp += namelen;
+
+    NS_PUT16(type_h, cp);
+    NS_PUT16(class_h, cp);
+    NS_PUT32(ttl_h, cp);
+    NS_PUT16(rdatalen, cp);
+    memcpy(cp, rdata, rdatalen);
+
+    return VAL_NO_ERROR;
+
+}
+
