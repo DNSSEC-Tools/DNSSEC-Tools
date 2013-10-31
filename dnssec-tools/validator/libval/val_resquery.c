@@ -2565,7 +2565,7 @@ val_async_select_info(val_context_t *ctx, fd_set *activefds,
             gettimeofday(&now, NULL);
             timeradd(&now, timeout, &closest);
         } else
-            memcpy(closest_event, timeout, sizeof(closest_event));
+            memcpy(closest_event, timeout, sizeof(struct timeval));
         if (closest.tv_sec < 0) {
             closest.tv_sec = 0;
             closest.tv_usec = 0;
