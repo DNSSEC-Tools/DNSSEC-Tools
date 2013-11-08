@@ -292,7 +292,7 @@ init_query_chain_node(struct val_query_chain *q)
     memcpy(q->qc_name_n, q->qc_original_name, 
             wire_name_length(q->qc_original_name));
     q->qc_state = Q_INIT;
-    q->qc_ttl_x = 0;
+    q->qc_ttl_x = 0; 
     q->qc_bad = 0;
     q->qc_zonecut_n = NULL;
     q->qc_referral = NULL;
@@ -472,10 +472,11 @@ add_to_query_chain(val_context_t *context, u_char * name_n,
                 } 
             }
 
+
+            if (-1 == ns_name_ntop(temp->qc_original_name, name_p, sizeof(name_p)))
+                snprintf(name_p, sizeof(name_p), "unknown/error");
             if (temp->qc_state >= Q_ANSWERED && tv.tv_sec >= temp->qc_ttl_x) { 
                 /* Remove this data at the next safe opportunity */ 
-                if (-1 == ns_name_ntop(temp->qc_original_name, name_p, sizeof(name_p)))
-                    snprintf(name_p, sizeof(name_p), "unknown/error");
                 val_log(context, LOG_INFO, "add_to_qfq_chain(): Data in cache timed out: {%s %s(%d) %s(%d)}", 
                         name_p, p_class(temp->qc_class_h),
                         temp->qc_class_h, p_type(temp->qc_type_h),
@@ -484,6 +485,11 @@ add_to_query_chain(val_context_t *context, u_char * name_n,
                 /* There should be no other matching query in the list, so bail out */ 
                 break;
             } else {
+                val_log(context, LOG_DEBUG, 
+                        "add_to_qfq_chain(): Found data in cache: {%s %s(%d) %s(%d)}, exp in: %ld", 
+                        name_p, p_class(temp->qc_class_h),
+                        temp->qc_class_h, p_type(temp->qc_type_h),
+                        temp->qc_type_h, temp->qc_ttl_x - tv.tv_sec);
                 /* return this cached record */
                 *added_q = temp;
                 return VAL_NO_ERROR;
@@ -3363,7 +3369,7 @@ prove_nonexistence(val_context_t * ctx,
                 u_char *cp = the_set->rrs_data->rr_rdata + offset;
                 VAL_GET32((*soa_ttl), cp);
             } else {
-                *soa_ttl = the_set->rrs_ttl_x;
+                *soa_ttl = 0; 
             }
         } else if (the_set->rrs_type_h == ns_t_nsec) {
             if ((!the_set->rrs_sig) ||
@@ -5473,11 +5479,13 @@ _ask_cache_one(val_context_t * context, struct queries_for_query **queries,
     if (next_q->qfq_query->qc_state == Q_ANSWERED) {
 
         val_log(context, LOG_INFO,
-                "ask_cache(): found matching ack/nack response for {%s %s(%d) %s(%d)}, flags=%x",
+                "ask_cache(): found matching ack/nack response for {%s %s(%d) %s(%d)}, flags=%x, exp=%ld",
                 name_p, p_class(next_q->qfq_query->qc_class_h),
                 next_q->qfq_query->qc_class_h,
                 p_type(next_q->qfq_query->qc_type_h),
-                next_q->qfq_query->qc_type_h, next_q->qfq_query->qc_flags);
+                next_q->qfq_query->qc_type_h,
+                next_q->qfq_query->qc_flags,
+                next_q->qfq_query->qc_ttl_x);
 
         /* merge any answer from the referral (alias) portion */
         if (next_q->qfq_query->qc_referral) {
