@@ -787,13 +787,7 @@ val_X509_peer_cert_verify_cb(X509_STORE_CTX *x509ctx, void *arg)
             }
             certList = X509_STORE_CTX_get_chain(x509ctx);
         }
-    }
 
-    dane_cur = ssl_dane_data->danestatus;
-    /*
-     * Keep looking for a good TLSA match
-     */
-    while(dane_cur)  {
         val_log(context, LOG_INFO, 
                "Checking DANE {sel=%d, type=%d, usage=%d}",
                dane_cur->selector,
@@ -886,7 +880,6 @@ val_X509_peer_cert_verify_cb(X509_STORE_CTX *x509ctx, void *arg)
         val_log(context, LOG_INFO, 
                 "DANE: check for usage %d failed", dane_cur->usage);
 
-        dane_cur = dane_cur->next;
     }
 
 done:
