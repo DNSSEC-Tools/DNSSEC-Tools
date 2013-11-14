@@ -820,6 +820,7 @@ val_X509_peer_cert_verify_cb(X509_STORE_CTX *x509ctx, void *arg)
                             LOG_INFO, "DANE: cert PKIX verification failed = %s", buf);
                    break; 
                 }
+                /* fall through */
             case DANE_USE_DOMAIN_ISSUED: /*3*/
                 cert_datalen = i2d_X509(cert, NULL);
                 if (cert_datalen > 0) {
@@ -850,6 +851,7 @@ val_X509_peer_cert_verify_cb(X509_STORE_CTX *x509ctx, void *arg)
                             LOG_INFO, "DANE: cert PKIX verification failed = %s", buf);
                    break; 
                 }
+                /* fall through */
             case DANE_USE_TA_ASSERTION: /*2*/
                 /* 
                  * Check that the TLSA cert matches one of the certs
