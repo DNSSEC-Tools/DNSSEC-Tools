@@ -843,7 +843,7 @@ val_X509_peer_cert_verify_cb(X509_STORE_CTX *x509ctx, void *arg)
                 }
                 break;
 
-            case DANE_USE_CA_CONSTRAINT: /*0*/ {
+            case DANE_USE_CA_CONSTRAINT: /*0*/ 
                 /* PKIX checks must pass */
                 if (!pkix_succeeded) {
                     val_log(context,
@@ -883,7 +883,6 @@ val_X509_peer_cert_verify_cb(X509_STORE_CTX *x509ctx, void *arg)
                                     rv = VAL_DANE_NOERROR;
                                     OPENSSL_free(cert_data);
                                     goto done;
-                                }
                             }
                             OPENSSL_free(cert_data);
                         }
