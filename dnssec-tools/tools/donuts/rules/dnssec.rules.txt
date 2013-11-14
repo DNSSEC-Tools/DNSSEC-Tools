@@ -15,8 +15,8 @@ type:  RRSIG
       # RRSIG is the default.
       $record->typecovered ne 'NSEC3PARAM') {
     donuts_error("RRSIG ORGTTL must match TTL name=" . $record->name .
-    ", type=" . $record->typecovered . " (" . $record->ttl . " ne
-    " . $record->orgttl . ")");
+    ", type=" . $record->typecovered . " (" . $record->ttl . " ne "
+    . $record->orgttl . ")");
   }
 </test>
 

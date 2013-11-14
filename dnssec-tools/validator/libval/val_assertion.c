@@ -292,7 +292,7 @@ init_query_chain_node(struct val_query_chain *q)
     memcpy(q->qc_name_n, q->qc_original_name, 
             wire_name_length(q->qc_original_name));
     q->qc_state = Q_INIT;
-    q->qc_ttl_x = 0;
+    q->qc_ttl_x = 0; 
     q->qc_bad = 0;
     q->qc_zonecut_n = NULL;
     q->qc_referral = NULL;
@@ -472,10 +472,11 @@ add_to_query_chain(val_context_t *context, u_char * name_n,
                 } 
             }
 
+
+            if (-1 == ns_name_ntop(temp->qc_original_name, name_p, sizeof(name_p)))
+                snprintf(name_p, sizeof(name_p), "unknown/error");
             if (temp->qc_state >= Q_ANSWERED && tv.tv_sec >= temp->qc_ttl_x) { 
                 /* Remove this data at the next safe opportunity */ 
-                if (-1 == ns_name_ntop(temp->qc_original_name, name_p, sizeof(name_p)))
-                    snprintf(name_p, sizeof(name_p), "unknown/error");
                 val_log(context, LOG_INFO, "add_to_qfq_chain(): Data in cache timed out: {%s %s(%d) %s(%d)}", 
                         name_p, p_class(temp->qc_class_h),
                         temp->qc_class_h, p_type(temp->qc_type_h),
@@ -484,6 +485,11 @@ add_to_query_chain(val_context_t *context, u_char * name_n,
                 /* There should be no other matching query in the list, so bail out */ 
                 break;
             } else {
+                val_log(context, LOG_DEBUG, 
+                        "add_to_qfq_chain(): Found data in cache: {%s %s(%d) %s(%d)}, exp in: %ld", 
+                        name_p, p_class(temp->qc_class_h),
+                        temp->qc_class_h, p_type(temp->qc_type_h),
+                        temp->qc_type_h, temp->qc_ttl_x - tv.tv_sec);
                 /* return this cached record */
                 *added_q = temp;
                 return VAL_NO_ERROR;
@@ -3286,7 +3292,7 @@ prove_nonexistence(val_context_t * ctx,
                    u_char *ce_wcard,
                    struct val_digested_auth_chain *qc_proof,
                    val_status_t * status,
-                   u_int32_t *soa_ttl)
+                   u_int32_t *soa_ttl_x)
 {
     struct val_internal_result *res;
     char   name_p[NS_MAXDNAME];
@@ -3294,6 +3300,8 @@ prove_nonexistence(val_context_t * ctx,
     int    skip_validation = 0;
     u_char *closest_zc = NULL;
     u_char *soa_name_n = NULL; 
+    struct timeval now;
+    u_int32_t soa_ttl = 0;
 
     int             nsec = 0;
 
@@ -3301,6 +3309,11 @@ prove_nonexistence(val_context_t * ctx,
         return VAL_BAD_ARGUMENT;
 
     *status = VAL_DONT_KNOW;
+    gettimeofday(&now, NULL);
+
+    if (*soa_ttl_x) {
+        *soa_ttl_x = 0;
+    }
 
     if (-1 == ns_name_ntop(qname_n, name_p, sizeof(name_p)))
         snprintf(name_p, sizeof(name_p), "unknown/error");
@@ -3361,10 +3374,9 @@ prove_nonexistence(val_context_t * ctx,
                 int offset = the_set->rrs_data->rr_rdata_length -
                                     sizeof(u_int32_t);
                 u_char *cp = the_set->rrs_data->rr_rdata + offset;
-                VAL_GET32((*soa_ttl), cp);
-            } else {
-                *soa_ttl = the_set->rrs_ttl_x;
-            }
+                VAL_GET32(soa_ttl, cp);
+            } 
+            *soa_ttl_x = soa_ttl + now.tv_sec; 
         } else if (the_set->rrs_type_h == ns_t_nsec) {
             if ((!the_set->rrs_sig) ||
                 the_set->rrs_sig->rr_rdata_length < SIGNBY) {
@@ -3378,6 +3390,7 @@ prove_nonexistence(val_context_t * ctx,
                 closest_zc = soa_name_n;
                 nsec = 1;
             }
+            SET_MIN_TTL(*soa_ttl_x, the_set->rrs_ttl_x);
         }
 #ifdef LIBVAL_NSEC3
         else if (the_set->rrs_type_h == ns_t_nsec3) {
@@ -3393,6 +3406,7 @@ prove_nonexistence(val_context_t * ctx,
                 closest_zc = soa_name_n;
                 nsec = 3;
             }
+            SET_MIN_TTL(*soa_ttl_x, the_set->rrs_ttl_x);
         }
 #endif
     }
@@ -5473,11 +5487,13 @@ _ask_cache_one(val_context_t * context, struct queries_for_query **queries,
     if (next_q->qfq_query->qc_state == Q_ANSWERED) {
 
         val_log(context, LOG_INFO,
-                "ask_cache(): found matching ack/nack response for {%s %s(%d) %s(%d)}, flags=%x",
+                "ask_cache(): found matching ack/nack response for {%s %s(%d) %s(%d)}, flags=%x, exp=%ld",
                 name_p, p_class(next_q->qfq_query->qc_class_h),
                 next_q->qfq_query->qc_class_h,
                 p_type(next_q->qfq_query->qc_type_h),
-                next_q->qfq_query->qc_type_h, next_q->qfq_query->qc_flags);
+                next_q->qfq_query->qc_type_h,
+                next_q->qfq_query->qc_flags,
+                next_q->qfq_query->qc_ttl_x);
 
         /* merge any answer from the referral (alias) portion */
         if (next_q->qfq_query->qc_referral) {
@@ -5747,9 +5763,7 @@ check_proof_sanity(val_context_t * context,
     struct val_query_chain *top_q;
     val_status_t    status = VAL_DONT_KNOW;
     int             retval = VAL_NO_ERROR;
-    u_int32_t soa_ttl = 0;
     u_int32_t soa_ttl_x = 0;
-    struct timeval  tv;
 
     if (top_qfq == NULL)
         return VAL_BAD_ARGUMENT;
@@ -5782,15 +5796,13 @@ check_proof_sanity(val_context_t * context,
              prove_nonexistence(context, w_results, queries, &proof_res, results,
                                 top_q->qc_name_n, top_q->qc_type_h,
                                 top_q->qc_class_h, NULL, top_q->qc_proof,
-                                &status, &soa_ttl)))
+                                &status, &soa_ttl_x)))
             return retval;
     }
 
     if (proof_res) {
         proof_res->val_rc_status = status;
         if (val_istrusted(status)) {
-            gettimeofday(&tv, NULL);
-            soa_ttl_x = soa_ttl + tv.tv_sec;
             SET_MIN_TTL(top_q->qc_ttl_x, soa_ttl_x);
         }
     }
@@ -5812,7 +5824,7 @@ check_wildcard_sanity(val_context_t * context,
     u_char       *zonecut_n;
     val_status_t    status;
     int             retval;
-    u_int32_t       ttl_x = 0;
+    u_int32_t       soa_ttl_x = 0;
 
     if (top_qfq == NULL)
         return VAL_BAD_ARGUMENT;
@@ -5867,15 +5879,15 @@ check_wildcard_sanity(val_context_t * context,
                                             results, top_q->qc_name_n, top_q->qc_type_h,
                                             top_q->qc_class_h, ce, 
                                             top_q->qc_proof, &status,
-                                            &ttl_x)))
+                                            &soa_ttl_x)))
                          /*prove_existence(context, top_q->qc_name_n,
                                          res->val_rc_rrset->val_ac_rrset.ac_data->
                                          rrs_type_h, zonecut_n,
                                          w_results, queries, &target_res, results,
-                                         &status, &ttl_x) */
+                                         &status, &soa_ttl_x) */
                     goto err;
 
-                SET_MIN_TTL(top_q->qc_ttl_x, ttl_x);
+                SET_MIN_TTL(top_q->qc_ttl_x, soa_ttl_x);
 
                 if (status == VAL_NONEXISTENT_NAME 
                      && target_res->val_rc_answer) {
@@ -5929,10 +5941,8 @@ check_alias_sanity(val_context_t * context,
     u_char *p;
     int   is_same_name;
     u_char temp_name[NS_MAXCDNAME];
-    u_int32_t soa_ttl = 0;
     u_int32_t soa_ttl_x = 0;
     struct val_query_chain *top_q;
-    struct timeval  tv;
 
     if (top_qfq == NULL || results == NULL)
         return VAL_BAD_ARGUMENT;
@@ -6103,15 +6113,13 @@ check_alias_sanity(val_context_t * context,
                  prove_nonexistence(context, w_results, queries, &proof_res,
                                     results, qname_n, top_q->qc_type_h,
                                     top_q->qc_class_h, NULL, top_q->qc_proof,
-                                    &status, &soa_ttl))) {
+                                    &status, &soa_ttl_x))) {
                 goto err;
             }
 
             if (proof_res) {
                 proof_res->val_rc_status = status;
                 if (val_istrusted(status)) {
-                    gettimeofday(&tv, NULL);
-                    soa_ttl_x = soa_ttl + tv.tv_sec;
                     SET_MIN_TTL(top_q->qc_ttl_x, soa_ttl_x);
                 }
             } else {
