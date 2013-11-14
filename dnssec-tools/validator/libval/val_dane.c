@@ -759,10 +759,13 @@ val_X509_peer_cert_verify_cb(X509_STORE_CTX *x509ctx, void *arg)
 
     X509_NAME_oneline(X509_get_subject_name(cert), buf, sizeof(buf));
 
+    /* 
+     * Do PKIX checks only if we need to.
+     * PKIX checks requried for all types except DANE_USE_DOMAIN_ISSUED 
+     */
     for (dane_cur = ssl_dane_data->danestatus; dane_cur; 
             dane_cur = dane_cur->next) {
 
-        /* PKIX checks requried for all types except DANE_USE_DOMAIN_ISSUED */
         if(dane_cur->usage != DANE_USE_DOMAIN_ISSUED) {
 
             pkix_succeeded = X509_verify_cert(x509ctx);
@@ -786,8 +789,23 @@ val_X509_peer_cert_verify_cb(X509_STORE_CTX *x509ctx, void *arg)
                 depth = X509_STORE_CTX_get_error_depth(x509ctx);
             }
             certList = X509_STORE_CTX_get_chain(x509ctx);
-        }
 
+            /* we only need to do PKIX checks once */
+            break;
+        }
+    }
+
+    /* 
+     * We've either completed PKIX checks or we only have TLSA records
+     * of type DANE_USE_DOMAIN_ISSUED (in which case PKIX checks are not
+     * necessary)
+     */
+
+    dane_cur = ssl_dane_data->danestatus;
+    /*
+     * Keep looking for a good TLSA match
+     */
+    while(dane_cur)  {
         val_log(context, LOG_INFO, 
                "Checking DANE {sel=%d, type=%d, usage=%d}",
                dane_cur->selector,
@@ -880,6 +898,7 @@ val_X509_peer_cert_verify_cb(X509_STORE_CTX *x509ctx, void *arg)
         val_log(context, LOG_INFO, 
                 "DANE: check for usage %d failed", dane_cur->usage);
 
+        dane_cur = dane_cur->next;
     }
 
 done:
