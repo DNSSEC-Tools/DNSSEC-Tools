@@ -797,9 +797,7 @@ val_X509_peer_cert_verify_cb(X509_STORE_CTX *x509ctx, void *arg)
                  *    X509_STORE_CTX_get_error corresponds to the
                  *    "closest" error (moving from the peer cert to the
                  *    TA); i.e.  there are no other error conditions
-                 *    between 0 and the given error depth. 
-                 *    Since openssl follows a bottom-up cert
-                 *    verification logic, I believe this is the case.
+                 *    between depth 0 and X509_STORE_CTX_get_error_depth
                  * 2) Other verification checks on this cert have passed;
                  *    else the error condition would have been
                  *    overridden by the other (more serious) error
@@ -808,8 +806,9 @@ val_X509_peer_cert_verify_cb(X509_STORE_CTX *x509ctx, void *arg)
                  *    case, but I could be wrong.
                  * 
                  * If we realize that this understanding of the openssl
-                 * code is wrong we should probably disable DANE usage
-                 * type 2 till we come up with an alternative approach.
+                 * code is wrong we should disable DANE usage
+                 * type 2 till we come up with an alternative approach
+                 * for supporting TA assertion.
                  */
                 val_log(context,
                         LOG_WARNING, "DANE: BADSTATE X509 error depth different from cert length = %s", buf);
