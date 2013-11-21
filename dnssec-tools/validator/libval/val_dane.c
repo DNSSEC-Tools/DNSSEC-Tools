@@ -759,10 +759,13 @@ val_X509_peer_cert_verify_cb(X509_STORE_CTX *x509ctx, void *arg)
 
     X509_NAME_oneline(X509_get_subject_name(cert), buf, sizeof(buf));
 
+    /* 
+     * Do PKIX checks only if we need to.
+     * PKIX checks requried for all types except DANE_USE_DOMAIN_ISSUED 
+     */
     for (dane_cur = ssl_dane_data->danestatus; dane_cur; 
             dane_cur = dane_cur->next) {
 
-        /* PKIX checks requried for all types except DANE_USE_DOMAIN_ISSUED */
         if(dane_cur->usage != DANE_USE_DOMAIN_ISSUED) {
 
             pkix_succeeded = X509_verify_cert(x509ctx);
@@ -780,14 +783,50 @@ val_X509_peer_cert_verify_cb(X509_STORE_CTX *x509ctx, void *arg)
                         LOG_INFO, "DANE: cert PKIX verification failed = %s", buf);
                 return 0;
             }
-            if (pkix_succeeded) {
-                depth = sk_X509_num(certList);
-            } else {
-                depth = X509_STORE_CTX_get_error_depth(x509ctx);
+            depth = sk_X509_num(certList);
+            if (!pkix_succeeded && 
+                    depth != X509_STORE_CTX_get_error_depth(x509ctx)) {
+                /*
+                 * All of the above error conditions should occur at the
+                 * end of the PKIX validation chain.  If this assumption
+                 * does not hold return an error condition.
+                 *
+                 * Note that I am making the following assumptions: 
+                 *
+                 * 1) that the error returned from
+                 *    X509_STORE_CTX_get_error corresponds to the
+                 *    "closest" error (moving from the peer cert to the
+                 *    TA); i.e.  there are no other error conditions
+                 *    between depth 0 and X509_STORE_CTX_get_error_depth
+                 * 2) Other verification checks on this cert have passed;
+                 *    else the error condition would have been
+                 *    overridden by the other (more serious) error
+                 *    condition. It appears from
+                 *    openssl/crypto/x509/x509_vfy.c that this is the
+                 *    case, but I could be wrong.
+                 * 
+                 * If we realize that this understanding of the openssl
+                 * code is wrong we should disable DANE usage
+                 * type 2 till we come up with an alternative approach
+                 * for supporting TA assertion.
+                 */
+                val_log(context,
+                        LOG_WARNING, "DANE: BADSTATE X509 error depth different from cert length = %s", buf);
+                return 0;
             }
+
             certList = X509_STORE_CTX_get_chain(x509ctx);
+
+            /* we only need to do PKIX checks once */
+            break;
         }
     }
+
+    /* 
+     * We've either completed PKIX checks or we only have TLSA records
+     * of type DANE_USE_DOMAIN_ISSUED (in which case PKIX checks are not
+     * necessary)
+     */
 
     dane_cur = ssl_dane_data->danestatus;
     /*
@@ -808,6 +847,7 @@ val_X509_peer_cert_verify_cb(X509_STORE_CTX *x509ctx, void *arg)
                             LOG_INFO, "DANE: cert PKIX verification failed = %s", buf);
                    break; 
                 }
+                /* fall through */
             case DANE_USE_DOMAIN_ISSUED: /*3*/
                 cert_datalen = i2d_X509(cert, NULL);
                 if (cert_datalen > 0) {
@@ -831,27 +871,19 @@ val_X509_peer_cert_verify_cb(X509_STORE_CTX *x509ctx, void *arg)
                 }
                 break;
 
-            case DANE_USE_CA_CONSTRAINT: /*0*/ {
+            case DANE_USE_CA_CONSTRAINT: /*0*/ 
                 /* PKIX checks must pass */
                 if (!pkix_succeeded) {
                     val_log(context,
                             LOG_INFO, "DANE: cert PKIX verification failed = %s", buf);
                    break; 
                 }
+                /* fall through */
             case DANE_USE_TA_ASSERTION: /*2*/
                 /* 
                  * Check that the TLSA cert matches one of the certs
                  * in the chain
                  */
-                /*
-                 * The general approach is that we validate the X509
-                 * cert, then set checking 'depth' to either the length
-                 * of the chain in the case of success, or the error
-                 * depth in the case of failure. Then, when we test for
-                 * a TLSA match we don't go deeper than 'depth' so that
-                 * TLSA validation at a deeper level does not trump any
-                 * pkix validation failures higher up.
-                 */    
                 for (i = 0; i <= depth; i++) {
                     cert = sk_X509_value(certList, i);
                     cert_datalen = i2d_X509(cert, NULL);
@@ -871,7 +903,6 @@ val_X509_peer_cert_verify_cb(X509_STORE_CTX *x509ctx, void *arg)
                                     rv = VAL_DANE_NOERROR;
                                     OPENSSL_free(cert_data);
                                     goto done;
-                                }
                             }
                             OPENSSL_free(cert_data);
                         }
