@@ -122,10 +122,8 @@ Donuts Analysis: rsamd5keys-ns.test.dnssec-tools.org
       # db.rsamd5keys-ns.test.dnssec-tools.org.zs.signed.modified
       Error: futuredate-aaaa.rsamd5keys-ns.test.dnssec-tools.org
 	Rule Type:   Error
-	Message:     RRSIG on name:
+	Message:     Can not find a matching DNSKEY for RRSIG #2 for
 		     futuredate-aaaa.rsamd5keys-ns.test.dnssec-tools.org
-		     type: AAAA failed to verify: Signature may only be
-		     used in the future; after 20140123191245
 	Details:     RRSIGs must cryptographically verify the records they
 		     are signing.
 
@@ -146,6 +144,14 @@ Donuts Analysis: rsamd5keys-ns.test.dnssec-tools.org
 	Details:     checks to see if a given name is missing an NSEC
 		     record, which is require for dnssec to prove
 		     non-existence.
+
+      Error: addedlater-withsig-a.rsamd5keys-ns.test.dnssec-tools.org
+	Rule Type:   Error
+	Message:     Can not find a matching DNSKEY for RRSIG #1 for
+		     addedlater-withsig-a.rsamd5keys-ns.test.dnssec-tools.o
+		     rg
+	Details:     RRSIGs must cryptographically verify the records they
+		     are signing.
 
       Error: baddata-a.rsamd5keys-ns.test.dnssec-tools.org
 	Rule Type:   Error
@@ -183,10 +189,8 @@ Donuts Analysis: rsamd5keys-ns.test.dnssec-tools.org
 
       Error: pastdate-a.rsamd5keys-ns.test.dnssec-tools.org
 	Rule Type:   Error
-	Message:     RRSIG on name:
-		     pastdate-a.rsamd5keys-ns.test.dnssec-tools.org type: A
-		     failed to verify: Signature has expired since:
-		     20131124190745
+	Message:     Can not find a matching DNSKEY for RRSIG #2 for
+		     pastdate-a.rsamd5keys-ns.test.dnssec-tools.org
 	Details:     RRSIGs must cryptographically verify the records they
 		     are signing.
 
@@ -234,10 +238,8 @@ Donuts Analysis: rsamd5keys-ns.test.dnssec-tools.org
 
       Error: futuredate-a.rsamd5keys-ns.test.dnssec-tools.org
 	Rule Type:   Error
-	Message:     RRSIG on name:
-		     futuredate-a.rsamd5keys-ns.test.dnssec-tools.org type:
-		     A failed to verify: Signature may only be used in the
-		     future; after 20140123191245
+	Message:     Can not find a matching DNSKEY for RRSIG #2 for
+		     futuredate-a.rsamd5keys-ns.test.dnssec-tools.org
 	Details:     RRSIGs must cryptographically verify the records they
 		     are signing.
 
@@ -259,12 +261,18 @@ Donuts Analysis: rsamd5keys-ns.test.dnssec-tools.org
 		     record, which is require for dnssec to prove
 		     non-existence.
 
+      Error: addedlater-withsig-aaaa.rsamd5keys-ns.test.dnssec-tools.org
+	Rule Type:   Error
+	Message:     Can not find a matching DNSKEY for RRSIG #1 for
+		     addedlater-withsig-aaaa.rsamd5keys-ns.test.dnssec-tool
+		     s.org
+	Details:     RRSIGs must cryptographically verify the records they
+		     are signing.
+
       Error: pastdate-aaaa.rsamd5keys-ns.test.dnssec-tools.org
 	Rule Type:   Error
-	Message:     RRSIG on name:
+	Message:     Can not find a matching DNSKEY for RRSIG #2 for
 		     pastdate-aaaa.rsamd5keys-ns.test.dnssec-tools.org
-		     type: AAAA failed to verify: Signature has expired
-		     since: 20131124190745
 	Details:     RRSIGs must cryptographically verify the records they
 		     are signing.
 
@@ -273,4 +281,4 @@ Donuts Analysis: rsamd5keys-ns.test.dnssec-tools.org
     Rules Tested: 21
     Records Analyzed: 108
     Names Analyzed: 27
-    Errors Found: 21
+    Errors Found: 23
