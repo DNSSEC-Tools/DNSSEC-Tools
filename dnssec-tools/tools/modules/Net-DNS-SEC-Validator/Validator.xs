@@ -543,9 +543,6 @@ pval_create_context_ex(optref)
     // Context options
     SV **vc_qflags_svp = hv_fetch((HV*)SvRV(optref), "qflags", 6, 1);
     opt.vc_qflags = (SvOK(*vc_qflags_svp) ? SvIV(*vc_qflags_svp) : 0);
-    SV **vc_polflags_svp = hv_fetch((HV*)SvRV(optref), "polflags", 8, 1);
-    opt.vc_polflags = (SvOK(*vc_polflags_svp) ? SvIV(*vc_polflags_svp) : 
-                                                CTX_DYN_POL_RES_OVR);
     SV **vc_valpol_svp = hv_fetch((HV*)SvRV(optref), "valpol", 6, 1);
     opt.vc_valpol = (SvOK(*vc_valpol_svp) ? SvPV_nolen(*vc_valpol_svp) : NULL);
     SV **vc_nslist_svp = hv_fetch((HV*)SvRV(optref), "nslist", 6, 1);
@@ -556,6 +553,17 @@ pval_create_context_ex(optref)
     opt.vc_res_conf = (SvOK(*resolv_conf_svp) ?  SvPV_nolen(*resolv_conf_svp) : NULL);
     SV **root_conf_svp = hv_fetch((HV*)SvRV(optref), "root_hints", 10, 1);
     opt.vc_root_conf = (SvOK(*root_conf_svp) ?  SvPV_nolen(*root_conf_svp) : NULL);
+
+    // Set the policy override flags to override resolver information,
+    // but only if it was defined
+    SV **vc_polflags_svp = hv_fetch((HV*)SvRV(optref), "polflags", 8, 1);
+    if (SvOK(*vc_polflags_svp)) {
+        opt.vc_polflags = SvIV(*vc_polflags_svp);
+    } else if (opt.vc_nslist != NULL) {
+        opt.vc_polflags = CTX_DYN_POL_RES_OVR;
+    } else {
+        opt.vc_polflags = 0;
+    }
 
     // Global options
     SV **local_is_trusted_svp = hv_fetch((HV*)SvRV(optref), "local_is_trusted", 16, 1);
@@ -784,7 +792,6 @@ pval_resolve_and_check(self,domain,class,type,flags)
 
 	RETVAL = &PL_sv_undef;
 	//fprintf(stderr, "here we are way before\n");
-
 
 	  //fprintf(stderr, "here we are before\n");
 	  res = val_resolve_and_check(ctx, domain, 
