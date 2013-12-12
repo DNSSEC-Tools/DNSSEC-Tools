@@ -528,11 +528,19 @@ int check_small_edns0_results(u_char *response, size_t response_size, char *buf,
     if (!found_edns0)
         RETURN_ERROR("No EDNS0 record was found in the response but one was expected.");
 
+    /* per discussion with many folk (especially Olafur), this test is invalid as
+     * EDNS0 indicates what they accept, and not what they can send.  So google (for example)
+     * has a low EDNS0 and that's perfectly valid because you can still request larger things from
+     * them and there is no promise that they won't deliver.  You actually can't tell what they will
+     * do because that's not negotated; you can only tell what they'll accept.
+     */
+#ifdef EDNS0_SIZE_NO_LONGER_VALID
     if (found_edns0 < 1480) {
         snprintf(buf, buf_len, "Warning: The returned EDNS0 size (%d) is smaller than recommended (1480)", found_edns0);
         *testStatus = CHECK_WARNING;
         return CHECK_WARNING;
     }
+#endif
 
     *testStatus = CHECK_SUCCEEDED;
     snprintf(buf, buf_len, "Success: The returned EDNS0 size (%d) was reasonable.", found_edns0);
