@@ -852,8 +852,10 @@ verify_next_assertion(val_context_t * ctx,
             dnskey.public_key = NULL;
         }
 
-        val_log(ctx, LOG_INFO, "verify_next_assertion(): Could not link this RRSIG to a DNSKEY");
-        SET_STATUS(as->val_ac_status, the_sig, VAL_AC_DNSKEY_NOMATCH);
+        if (the_sig->rr_status == VAL_AC_UNSET) {
+            val_log(ctx, LOG_INFO, "verify_next_assertion(): Could not link this RRSIG to a DNSKEY");
+            SET_STATUS(as->val_ac_status, the_sig, VAL_AC_DNSKEY_NOMATCH);
+        }
     }
         
     /* 
