@@ -8,30 +8,64 @@
 #
 
 use Net::DNS;
+use Net::DNS::RR;
 use Net::DNS::SEC;
 use Data::Dumper;
 use Net::DNS::SEC::Tools::QWPrimitives;
+use strict;
 
 my %opts =
   ( 'a' => 'SHA256,SHA1'
   );
 
 DTGetOptions(\%opts,
-		['GUI:VERSION',"DNSSEC-Tools Version: 2.0"],
+             ['GUI:VERSION',"DNSSEC-Tools Version: 2.0"],
 
-		['a|hash-algorithm=s',
-		 'Comma separated hash algorithm to use (eg, SHA256,SHA1)'],
-		['z|print-zsks',     'Print ZSK DS records as well as KSKs'],
+             ['a|hash-algorithm=s',
+              'Comma separated hash algorithm to use (eg, SHA256,SHA1)'],
+             ['z|print-zsks',       'Print ZSK DS records as well as KSKs'],
+             ['f|read-key-file=s',  'Print a DS record for a DNSKEY in a .key file'],
 
-	        ['p|dont-check-parent', 'Don\'t check for the parent\'s published DS record'],
-	        ['q|quiet',             'Just display minimal results'],
-		['GUI:otherargs_text',"DOMAIN_NAME"],
-	       ) || exit;
+             ['p|dont-check-parent', 'Don\'t check for the parent\'s published DS record'],
+             ['q|quiet',             'Just display minimal results'],
+             ['GUI:otherargs_text',"DOMAIN_NAME"],
+            ) || exit;
 
 # Generate a list of all the algorithms to use:
 my @algorithms = split(/,\s*/, uc($opts{'a'}));
 Exit("no algorithms specified with the -a switch") if ($#algorithms == -1);
 
+######################################################################
+# (optionally) read keys from a file
+my @fileds;
+my %fileds;
+if ($opts{'f'}) {
+	print "--- DS records generated from the '$opts{f}' file:\n"
+	  if (!$opts{'q'});
+
+	# read in the key file
+	open(my $keyh, "<", $opts{'f'}) || die "can't read $opts{'f'}";
+	my $data;
+	while (<$keyh>) {
+		next if (/^\s*;/); # skip comments
+		$data .= $_;
+	}
+	close($keyh);
+
+	# process it into a RR record
+	my $dnskeyrr = new Net::DNS::RR($data);
+
+	foreach my $algorithm (@algorithms) {
+		my $ds = create Net::DNS::RR::DS($dnskeyrr, digtype => $algorithm);
+		push @fileds, $ds;
+		print make_printing_ds($ds);
+		$fileds{make_matching_ds($ds)} = make_printing_ds($ds);
+	}
+}
+
+
+
+######################################################################
 # query the DNSKEY from the net
 my $res  = Net::DNS::Resolver->new;
 Exit("Failed to create a Net::DNS::Resolver") if (!$res);
@@ -63,7 +97,8 @@ foreach my $key (@keys) {
 
 exit if ($opts{'p'} || $opts{'q'});  # exit if we either EITHER Ps or Qs!
 
-# query the DNSKEY from the net
+######################################################################
+# query the DNSKEYs for the child from the net
 $q = $res->query($ARGV[0], "DS");
 
 my @dses;
@@ -71,20 +106,34 @@ if ($q) {
     @dses = $q->answer;
 }
 
+######################################################################
+# Do comparisons
+
 my @errors;
 print "\n--- DS records pulled from the parent of $ARGV[0]:\n";
 foreach my $ds (@dses) {
-    print make_printing_ds($ds);
-    my $parentds = make_matching_ds($ds);
-    if (exists($childds{$parentds})) {
-	delete $childds{$parentds};
-    } else {
-	push @errors, "The following DS record exists in the parent, but no child key matches it:  \n" . make_printing_ds($ds) . "\n";
-    }
+	print make_printing_ds($ds);
+	my $parentds = make_matching_ds($ds);
+	if (exists($childds{$parentds})) {
+		delete $childds{$parentds};
+	} elsif (exists($fileds{$parentds})) {
+		delete $fileds{$parentds};
+	} else {
+		push @errors, "The following DS record exists in the parent, but no child key matches it:  \n" . make_printing_ds($ds) . "\n";
+	}
+
+	# delete the fileds in case it existed in parallel with the childds
+	if (exists($fileds{$parentds})) {
+		delete $fileds{$parentds};
+	}
 }
 
 foreach my $ds (keys(%childds)) {
     push @errors, "The following DS record for a child key is not published by the parent:\n" . "$childds{$ds}\n";
+}
+
+foreach my $ds (keys(%fileds)) {
+    push @errors, "The following DS record from $opts{f} is not published by the parent:\n" . "$fileds{$ds}\n";
 }
 
 if ($#errors == -1) {
@@ -161,6 +210,15 @@ algorithms are desired.  The algorithms to choose from may be either
 SHA256 or SHA1.
 
 The default is SHA256,SHA1
+
+=item B<-f KEYFILE>
+
+=item B<--read-key-file KEYFILE>
+
+This option specifies a file with a DNSKEY stored in it (such as
+created by bind's dnssec-keygen program).  This is helpful for
+comparing a known good key file against something that is actually
+published.
 
 =item B<-z>
 
