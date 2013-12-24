@@ -215,21 +215,13 @@ get_cached_rrset(struct val_query_chain *matched_q,
 
     gettimeofday(&tv, NULL);
 
-    if (type_h == ns_t_ns) {
 #ifndef VAL_NO_THREADS
-        lk = &ns_rwlock;
-        VAL_CACHE_LOCK_INIT(lk, ns_rwlock_init);
-        VAL_CACHE_LOCK_SH(lk);
+    lk = &ans_rwlock;
+    VAL_CACHE_LOCK_INIT(lk, ans_rwlock_init);
+    VAL_CACHE_LOCK_SH(lk);
 #endif /* VAL_NO_THREADS */
-        answer_head = &unchecked_ns_info;
-    } else {
-#ifndef VAL_NO_THREADS
-        lk = &ans_rwlock;
-        VAL_CACHE_LOCK_INIT(lk, ans_rwlock_init);
-        VAL_CACHE_LOCK_SH(lk);
-#endif /* VAL_NO_THREADS */
-        answer_head = &unchecked_answers;
-    }
+
+    answer_head = &unchecked_answers;
 
     prev = NULL;
     new_answer = NULL;
