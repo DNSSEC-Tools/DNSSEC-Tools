@@ -124,14 +124,16 @@
 .\" ========================================================================
 .\"
 .IX Title "dnsval.conf 3"
-.TH dnsval.conf 3 "2013-03-28" "perl v5.12.4" "Programmer's Manual"
+.TH dnsval.conf 3 "2013-12-30" "perl v5.12.4" "Programmer's Manual"
 .\" For nroff, turn off justification.  Always turn off hyphenation; it makes
 .\" way too many mistakes in technical documents.
 .if n .ad l
 .nh
 .SH "NAME"
-dnsval.conf, resolv.conf, root.hints \- Configuration policy for the DNSSEC validator library libval(3).
+dnsval.conf, resolv.conf, root.hints \- Configuration policy for the DNSSEC validator library libval(3)
+.PP
 val_add_valpolicy \- Dynamically add a new policy to the validator context
+.PP
 val_remove_valpolicy \- Remove a dynamically added policy from the validator context
 .SH "SYNOPSIS"
 .IX Header "SYNOPSIS"
@@ -185,6 +187,32 @@ queries must be sent by default.  For example,
 .Sp
 .Vb 1
 \&    nameserver 10.0.0.1
+.Ve
+.Sp
+A number of additional fields can be specified to qualify the name
+server. For example, in the following line:
+.Sp
+.Vb 1
+\&    nameserver [10.0.0.1][example.tsigkey:hmac\-md5.sig\-alg.reg.int:300:0jnu3SdsMvzzlmTDPYRceA==]:8053
+.Ve
+.Sp
+\&\fIexample.tsigkey\fR refers to the \s-1TSIG\s0 key name;
+\&\fIhmac\-md5.sig\-alg.reg.int\fR refers to the \s-1TSIG\s0 algorithm, \fI300\fR is the
+\&\s-1TSIG\s0 fudge factor. and the key is specified as a base64 encoded value.
+The value \fI8053\fR refers to the port number.
+.Sp
+The values for the \s-1TSIG\s0 algorithm and the fudge factor in the above
+example are the defaults. They may be omitted as follows:
+.Sp
+.Vb 1
+\&    nameserver [10.0.0.1][example.tsigkey:::0jnu3SdsMvzzlmTDPYRceA==]:8053
+.Ve
+.Sp
+The \s-1TSIG\s0 portion may also be left out entirely, in which case the
+representation is as follows:
+.Sp
+.Vb 1
+\&    nameserver [10.0.0.1]:8053
 .Ve
 .Sp
 This \fIsearch\fR option is used to specify the search path for issuing queries.
@@ -266,7 +294,7 @@ An example is given below.
 .IP "zone-security-expectation" 4
 .IX Item "zone-security-expectation"
 For the \*(L"zone-security-expectation\*(R" attribute additional-data
-is a sequence of  &lt;domain name,value&gt; tuples representing 
+is a sequence of <domain name,value> tuples representing 
 the security expectation for names in that domain, where value 
 can be one of the following:
 .RS 4
