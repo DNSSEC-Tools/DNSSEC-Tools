@@ -1479,7 +1479,7 @@ static void consume_referral_data(struct delegation_info **qc_referral,
         *qnames = (*qc_referral)->qnames;
     else if ((*qc_referral)->qnames) {
         struct qname_chain *t_q;
-        for (t_q = *qnames; t_q->qnc_next; t_q = t_q->qnc_next);
+        for (t_q = *qnames; t_q->qnc_next; t_q = t_q->qnc_next)
             t_q->qnc_next = (*qc_referral)->qnames;
     }
     (*qc_referral)->qnames = NULL;
@@ -1725,11 +1725,11 @@ digest_response(val_context_t * context,
          */
         qc = *qnames;
         if (qc &&
-              (!namecmp(qc->qnc_name_n, name_n)) || 
+              ((!namecmp(qc->qnc_name_n, name_n)) || 
               ((set_type_h == ns_t_dname) &&
                     namename(qc->qnc_name_n, name_n)) ||
               ((type_h == ns_t_rrsig) &&
-                    name_in_qname_chain(qc, name_n))) {
+                    name_in_qname_chain(qc, name_n)))) {
             isrelv = 1;
         } else {
             isrelv = 0;
