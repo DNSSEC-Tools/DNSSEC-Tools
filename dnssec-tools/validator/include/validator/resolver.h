@@ -117,9 +117,15 @@ struct timeval;
 #ifndef NS_MAXCDNAME
 #define NS_MAXCDNAME    255     /* maximum compressed domain name */
 #endif
+
+#define TSIG_ALG_HMAC_MD5_STR "hmac-md5.sig-alg.reg.int"
+#define TSIG_ALG_HMAC_SHA1_STR "hmac-sha1"
+#define TSIG_ALG_HMAC_SHA256_STR "hmac-sha256"
+#define TSIG_FUDGE_DEFAULT  300
+
 struct name_server {
     unsigned char  ns_name_n[NS_MAXCDNAME];
-    void           *ns_tsig;
+    struct ns_tsig *ns_tsig;
     unsigned int   ns_security_options;
     unsigned int   ns_status;
     unsigned long  ns_options;
@@ -311,6 +317,11 @@ int
 res_async_ea_isset(struct expected_arrival *ea, fd_set *fds);
 
 void res_switch_all_to_tcp_tid(int trans_id);
+
+/*
+ * TSIG interface
+ */
+int res_set_ns_tsig(struct name_server *ns, char *tsig);
 
 /*
  * define timersub macro if not defined. Set top of this header file

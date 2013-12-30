@@ -25,6 +25,7 @@
 
 #include "res_support.h"
 #include "res_io_manager.h"
+#include "res_tsig.h"
 
 extern void     libsres_pquery(const u_char * msg, size_t len, FILE * file);
 
@@ -260,8 +261,6 @@ struct name_server *
 parse_name_server(const char *cp, const char *name_n)
 {
     short port_num = NS_DEFAULTPORT;
-    const char *cpt;
-    char addr[IPADDR_STRING_MAX];
     struct name_server *ns;
 
     struct sockaddr_storage serv_addr;
@@ -275,9 +274,15 @@ parse_name_server(const char *cp, const char *name_n)
 #if defined( WIN32 )
     size_t addrlen4 = sizeof(struct sockaddr_in);
 #endif
+    char  *addr = NULL;
+    char  *tsig = NULL;
+    char *buf = NULL;
+    char *c;
+    char *n;
 
     if (cp ==  NULL)
         return NULL;
+
 
     ns = create_name_server();
     if (ns == NULL)
@@ -293,30 +298,51 @@ parse_name_server(const char *cp, const char *name_n)
 
     /*
      * Look for port number in address string
-     * syntax of '[address]:port'
+     * syntax of '[address][tsig]:port'
      */
-    cpt = cp;
-    if ( (*cpt == '[') && (cpt = strchr(cpt,']')) ) {
-        if ( sizeof(addr) < (cpt - cp) )
+    if ((*cp == '[')) {
+
+        buf = strdup(cp);
+        c = buf;
+        if (buf == NULL) {
             goto err;
-        memset(addr, 0, sizeof(addr));
-        strncpy(addr, (cp + 1), (cpt - cp - 1));
-        cp = addr;
-        if ( (*(++cpt) == ':') && (0 == (port_num = atoi(++cpt))) )
+        }
+
+        /* first save the address */  
+        addr = c + 1;
+        if (!(n = strchr(c,']'))) {
             goto err;
+        }
+        *n = '\0';
+        c = n+1;
+
+        /* look for a tsig */  
+        if (*c == '[') {
+            tsig = c + 1;
+            if (!(n = strchr(c,']'))) {
+                goto err;
+            }
+            *n = '\0';
+            c = n+1;
+        }
+        if ( (*c == ':') && (0 == (port_num = atoi(++c))) )
+            goto err;
+
+    } else {
+        addr = cp;
     }
 
     /*
      * convert address string
      */
     memset(&serv_addr, 0, sizeof(serv_addr));
-    if (INET_PTON(AF_INET, cp, ((struct sockaddr *)sin), &addrlen4) > 0) {
+    if (INET_PTON(AF_INET, addr, ((struct sockaddr *)sin), &addrlen4) > 0) {
         sin->sin_family = AF_INET;     // host byte order
         sin->sin_port = htons(port_num);       // short, network byte order
     }
     else {
 #ifdef VAL_IPV6
-        if (INET_PTON(AF_INET6, cp, ((struct sockaddr *)sin6), &addrlen6) != 1)
+        if (INET_PTON(AF_INET6, addr, ((struct sockaddr *)sin6), &addrlen6) != 1)
             goto err;
 
         sin6->sin6_family = AF_INET6;     // host byte order
@@ -333,9 +359,18 @@ parse_name_server(const char *cp, const char *name_n)
     memcpy(ns->ns_address[0], &serv_addr,
            sizeof(serv_addr));
     ns->ns_number_of_addresses = 1;
+
+    if (tsig != NULL) {
+        res_set_ns_tsig(ns, tsig);
+    }
+
+    if (buf)
+        free(buf);
     return ns;
 
   err:
+    if (buf)
+        free(buf);
     FREE(ns);
     return NULL;
 }
@@ -347,7 +382,7 @@ free_name_server(struct name_server **ns)
 
     if (ns && *ns) {
         if ((*ns)->ns_tsig)
-            FREE((*ns)->ns_tsig);
+            res_free_ns_tsig((*ns)->ns_tsig);
         for (i = 0; i < (*ns)->ns_number_of_addresses; i++) {
             FREE((*ns)->ns_address[i]);
         }
