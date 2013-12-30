@@ -403,7 +403,6 @@ val_create_context_internal( char *label,
                     ns_tail = ns;
                 }
             }
-            *(res_nslist++);
             resptr = rescur;
         }
         if (dyn_nslist == NULL) {
