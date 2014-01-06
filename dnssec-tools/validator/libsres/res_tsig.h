@@ -22,11 +22,32 @@
 #define SR_TS_FAIL              -2
 #define SR_TS_CALL_ERROR        -3
 
+#define TSIG_ALG_HMAC_MD5       1 
+#define TSIG_ALG_HMAC_SHA1      2
+#define TSIG_ALG_HMAC_SHA256    3
+
+struct ns_tsig {
+    unsigned char name_n[NS_MAXCDNAME];
+    unsigned char alg_n[NS_MAXCDNAME];
+    u_char *key;
+    size_t keylen;
+    short alg;
+    u_int16_t fudge;
+    u_int16_t mac_size;
+    u_int16_t rdatalen;
+    int buf_size;
+};
+
+struct ns_tsig*  clone_ns_tsig(struct ns_tsig *tsig);
+
 int             res_tsig_sign(u_char * query,
                               size_t query_length,
                               struct name_server *ns,
                               u_char ** signed_query,
                               size_t *signed_length);
+
+
+int             res_free_ns_tsig(struct ns_tsig *tsig);
 
 int             res_tsig_verifies(struct name_server *respondent,
                                   u_char * answer, size_t answer_length);

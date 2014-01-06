@@ -1202,16 +1202,10 @@ follow_referral_or_alias_link(val_context_t * context,
         struct rrset_rec *rr_set;                                       \
         int ret_val;                                                    \
         u_char *r;                                                      \
-        if (authoritive)                                                \
-            rr_set = find_rr_set (respondent_server, listtype, name_n,  \
+        rr_set = find_rr_set (respondent_server, listtype, name_n,  \
                               type_h, set_type_h, class_h, ttl_h, hptr, \
                               rdata, from_section, authoritive,         \
                               iterative, zonecut_n);                    \
-        else                                                            \
-            rr_set = find_rr_set (respondent_server, listtype, name_n,  \
-                              type_h, set_type_h, class_h, ttl_h, hptr, \
-                              rdata, from_section, authoritive,         \
-                              iterative, NULL);                         \
         if (rr_set==NULL) {                                             \
             ret_val = VAL_OUT_OF_MEMORY;                                \
         }                                                               \
@@ -1479,7 +1473,7 @@ static void consume_referral_data(struct delegation_info **qc_referral,
         *qnames = (*qc_referral)->qnames;
     else if ((*qc_referral)->qnames) {
         struct qname_chain *t_q;
-        for (t_q = *qnames; t_q->qnc_next; t_q = t_q->qnc_next);
+        for (t_q = *qnames; t_q->qnc_next; t_q = t_q->qnc_next)
             t_q->qnc_next = (*qc_referral)->qnames;
     }
     (*qc_referral)->qnames = NULL;
@@ -1725,11 +1719,11 @@ digest_response(val_context_t * context,
          */
         qc = *qnames;
         if (qc &&
-              (!namecmp(qc->qnc_name_n, name_n)) || 
+              ((!namecmp(qc->qnc_name_n, name_n)) || 
               ((set_type_h == ns_t_dname) &&
                     namename(qc->qnc_name_n, name_n)) ||
               ((type_h == ns_t_rrsig) &&
-                    name_in_qname_chain(qc, name_n))) {
+                    name_in_qname_chain(qc, name_n)))) {
             isrelv = 1;
         } else {
             isrelv = 0;
@@ -1820,20 +1814,25 @@ digest_response(val_context_t * context,
         } else if (from_section == VAL_FROM_AUTHORITY) {
             if ((set_type_h == ns_t_nsec)
 #ifdef LIBVAL_NSEC3
-                    || (set_type_h == ns_t_nsec3)
+                || (set_type_h == ns_t_nsec3)
 #endif
-                    || (set_type_h == ns_t_soa)) {
-
+               ) {
                 proof_seen = 1;
-                if (set_type_h == ns_t_soa) {
-                    soa_seen = 1;
-                }
-
                 SAVE_RR_TO_LIST(resp_ns, 
                                 &learned_proofs, name_n, type_h,
                                 set_type_h, class_h, ttl_h, hptr, rdata,
                                 rdata_len_h, from_section, authoritive,
                                 iterative, rrs_zonecut_n);
+
+            } else if (set_type_h == ns_t_soa) {
+
+                proof_seen = 1;
+                soa_seen = 1;
+                SAVE_RR_TO_LIST(resp_ns, 
+                                &learned_proofs, name_n, type_h,
+                                set_type_h, class_h, ttl_h, hptr, rdata,
+                                rdata_len_h, from_section, authoritive,
+                                iterative, name_n);
             } else if (set_type_h == ns_t_ns) {
                 /* 
                  * The zonecut information for name servers is 

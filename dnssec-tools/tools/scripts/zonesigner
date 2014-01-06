@@ -342,6 +342,7 @@ sub main
 
 	#
 	# Make sure our BIND and DNSSEC-Tools commands are available.
+	# And we won't check for commands we don't need.
 	#
 	if($packed)
 	{
@@ -353,6 +354,7 @@ sub main
 		$opts{'zonesign'}  = "dnssec-signzone";
 		$opts{'zonecheck'} = "named-checkzone";
 	}
+	delete($opts{'rndc'});
 	cmdcheck(\%opts);
 
 	#

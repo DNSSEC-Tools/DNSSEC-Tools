@@ -104,6 +104,9 @@ extern          "C" {
 #ifndef SHA_DIGEST_LENGTH
 #define SHA_DIGEST_LENGTH 20
 #endif
+#ifndef MD5_DIGEST_LENGTH
+#define MD5_DIGEST_LENGTH 16 
+#endif
 #ifndef SHA256_DIGEST_LENGTH
 #define SHA256_DIGEST_LENGTH 32 
 #endif

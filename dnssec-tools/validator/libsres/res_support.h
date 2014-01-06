@@ -65,6 +65,22 @@
 	(cp) += NS_INT32SZ; \
 } while (0)
 
+#define RES_PUT48(ll, cp) do { \
+	register u_int64_t t_ll = (u_int64_t)(ll); \
+	register u_char *t_cp = (u_char *)(cp); \
+    u_int16_t t_s = t_ll >> 32;\
+    u_int32_t t_l = t_ll & 0xffffffff ;\
+	*t_cp++ = t_s >> 8; \
+	*t_cp++ = t_s; \
+	*t_cp++ = t_l >> 24; \
+	*t_cp++ = t_l >> 16; \
+	*t_cp++ = t_l >> 8; \
+	*t_cp = t_l; \
+	(cp) += NS_INT32SZ; \
+	(cp) += NS_INT16SZ; \
+} while (0)
+
+
 void            my_free(void *p, char *filename, int lineno);
 void           *my_malloc(size_t t, char *filename, int lineno);
 char           *my_strdup(const char *str, char *filename, int lineno);

@@ -37,7 +37,7 @@ sub print_result {
                     print "\tData RR class: " . $rr->class() . "\n";
                     print "\tData RR type: " . $rr->type() . "\n";
                     print "\tData RR ttl: " . $rr->ttl() . "\n";
-                    print "\tData RR data: " . $rr->rdstring() . "\n";
+                    print "\tData RR data: " . $rr->rdatastr() . "\n";
                 }
             }
             foreach $d (@$acs) {
@@ -48,7 +48,7 @@ sub print_result {
                     print "\tSig RR class: " . $rr->class . "\n";
                     print "\tSig RR type: " . $rr->type . "\n";
                     print "\tSig RR ttl: " . $rr->ttl . "\n";
-                    print "\tSig RR data: " . $rr->rdstring() . "\n";
+                    print "\tSig RR data: " . $rr->rdatastr() . "\n";
                 }
             }
        }

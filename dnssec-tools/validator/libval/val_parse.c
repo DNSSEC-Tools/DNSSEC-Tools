@@ -55,7 +55,7 @@ val_parse_dname(const u_char *buf, size_t buflen, size_t offset,
         return VAL_BAD_ARGUMENT;
 
     newoffset = offset;
-    memset(dname, 0, sizeof(dname));
+    *dname = '\0';
     *dlen = 0;
 
     while ((newoffset < buflen) && (buf[newoffset] != 0)) {

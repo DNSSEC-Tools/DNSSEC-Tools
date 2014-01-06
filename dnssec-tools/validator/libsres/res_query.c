@@ -277,7 +277,7 @@ clone_ns(struct name_server **cloned_ns, struct name_server *ns)
     /*
      * Initialize the rest of the fields 
      */
-    (*cloned_ns)->ns_tsig = NULL;       //XXX Still not doing anything with TSIG
+    (*cloned_ns)->ns_tsig = clone_ns_tsig(ns->ns_tsig);
     (*cloned_ns)->ns_security_options = ns->ns_security_options;
     (*cloned_ns)->ns_status = ns->ns_status;
 

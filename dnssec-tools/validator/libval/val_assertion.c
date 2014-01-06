@@ -422,6 +422,15 @@ add_to_query_chain(val_context_t *context, u_char * name_n,
     gettimeofday(&tv, NULL);
     while (temp) {
 
+#if 0
+        /*
+         * If we have caching disabled then don't re-use this element
+         */
+        if(temp->qc_flags & VAL_QUERY_SKIP_CACHE) {
+            temp->qc_flags |= VAL_QUERY_MARK_FOR_DELETION;
+        }
+#endif
+
         /*
          * Remove this query if it has expired and is not being used
          */

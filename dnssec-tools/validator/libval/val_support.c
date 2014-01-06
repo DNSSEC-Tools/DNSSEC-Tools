@@ -68,11 +68,12 @@ base32hex_encode(u_char * in, size_t inlen, u_char ** out,
     u_char       *out_ch;
     u_char        padbuf[5];
     size_t        i, rem, extra;
+    int           len = inlen;
 
     *out = NULL;
     *outlen = 0;
 
-    if ((in == NULL) || (inlen <= 0))
+    if ((in == NULL) || (inlen == 0))
         return;
 
     /*
@@ -94,17 +95,18 @@ base32hex_encode(u_char * in, size_t inlen, u_char ** out,
     memset(padbuf, 0, 5);
     in_ch = in;
 
-    while (inlen > 0) {
+    len = inlen;
+    while (len > 0) {
 
-        if (inlen - 5 < 0) {
+        if (len - 5 < 0) {
             /*
              * pad with zeros 
              */
             i = 0;
-            while (inlen > 0) {
+            while (len > 0) {
                 padbuf[i++] = *in_ch;
                 in_ch++;
-                inlen--;
+                len--;
             }
             buf = padbuf;
         } else {
@@ -113,7 +115,7 @@ base32hex_encode(u_char * in, size_t inlen, u_char ** out,
              */
             buf = in_ch;
             in_ch += 5;
-            inlen -= 5;
+            len -= 5;
         }
 
         /*

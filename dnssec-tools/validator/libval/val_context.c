@@ -359,7 +359,7 @@ val_create_context_internal( char *label,
         if (retval != VAL_NO_ERROR)
             return VAL_CONF_PARSE_ERROR;
     }
-    if (res_nslist != NULL) {
+    if (res_nslist != NULL && strcmp(res_nslist, "")) {
         strncpy(token, res_nslist, sizeof(token));
         resptr = token;
         resend = resptr+strlen(token)+1;
@@ -403,7 +403,6 @@ val_create_context_internal( char *label,
                     ns_tail = ns;
                 }
             }
-            *(res_nslist++);
             resptr = rescur;
         }
         if (dyn_nslist == NULL) {

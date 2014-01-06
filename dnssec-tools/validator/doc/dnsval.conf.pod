@@ -63,6 +63,27 @@ queries must be sent by default.  For example,
 
     nameserver 10.0.0.1
 
+A number of additional fields can be specified to qualify the name
+server. For example, in the following line:
+
+    nameserver [10.0.0.1][example.tsigkey:hmac-md5.sig-alg.reg.int:300:0jnu3SdsMvzzlmTDPYRceA==]:8053
+
+I<example.tsigkey> refers to the TSIG key name;
+I<hmac-md5.sig-alg.reg.int> refers to the TSIG algorithm, I<300> is the
+TSIG fudge factor. and the key is specified as a base64 encoded value.
+The value I<8053> refers to the port number.
+
+The values for the TSIG algorithm and the fudge factor in the above
+example are the defaults. They may be omitted as follows:
+
+    nameserver [10.0.0.1][example.tsigkey:::0jnu3SdsMvzzlmTDPYRceA==]:8053
+
+The TSIG portion may also be left out entirely, in which case the
+representation is as follows:
+
+    nameserver [10.0.0.1]:8053
+
+
 This I<search> option is used to specify the search path for issuing queries.
 For example,
 

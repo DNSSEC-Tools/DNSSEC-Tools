@@ -149,6 +149,7 @@ function makeLight(creator, type, name, host) {
     var result = creator.createObject(resultGrid)
     result.name = name
     result.test = testManager.makeTest(type, host, name);
+    result.test.statusChanged.connect(assignHostGrade)
     hostInfo[host]['tests'].push(result)
     //hosttests[host].push(result.test)
     return result
