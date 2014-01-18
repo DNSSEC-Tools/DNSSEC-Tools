@@ -458,72 +458,54 @@ ecdsa_sigverify(val_context_t * ctx,
     size_t          buflen = 1024;
     u_char   sha_hash[MAX_DIGEST_LENGTH];
     EC_KEY   *eckey = NULL;
-    EC_GROUP *ecgroup = NULL;
-    EC_POINT *ecdsa_pub_key_pt = NULL;
-    BIGNUM *bn_pub_key = NULL;
+    BIGNUM *bn_x = NULL;
+    BIGNUM *bn_y = NULL;
     ECDSA_SIG ecdsa_sig;
-
     size_t   hashlen = 0;
+
+    ecdsa_sig.r = NULL;
+    ecdsa_sig.s = NULL;
+    memset(sha_hash, 0, sizeof(sha_hash));
 
     val_log(ctx, LOG_DEBUG,
             "ecdsa_sigverify(): parsing the public key...");
 
-    memset(sha_hash, 0, sizeof(sha_hash));
-
-    if ((eckey = EC_KEY_new()) == NULL) {
-        val_log(ctx, LOG_INFO,
-                "ecdsa_sigverify(): could not allocate ecdsa structure.");
-        *key_status = VAL_AC_INVALID_KEY;
-        return;
-    };
-
     if (rrsig->algorithm == ALG_ECDSAP256SHA256) {
         hashlen = SHA256_DIGEST_LENGTH; 
         SHA256(data, data_len, sha_hash);
-        ecgroup = EC_GROUP_new_by_curve_name(NID_secp256k1);
+        eckey = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1); /* P-256 */
     } else if (rrsig->algorithm == ALG_ECDSAP384SHA384) {
         hashlen = SHA384_DIGEST_LENGTH; 
         SHA384(data, data_len, sha_hash);
-        ecgroup = EC_GROUP_new_by_curve_name(NID_secp384r1);
+        eckey = EC_KEY_new_by_curve_name(NID_secp384r1); /* P-384 */
     } 
 
-    
-    if ((ecgroup == NULL) || 
-        (!EC_KEY_set_group(eckey,ecgroup))) {
+    if (eckey == NULL) {
         val_log(ctx, LOG_INFO,
-                "ecdsa_sigverify(): Could not create ECDSA key for given group.");
+                "ecdsa_sigverify(): could not create key for ECDSA group.");
         *key_status = VAL_AC_INVALID_KEY;
-        if (ecgroup) {
-            EC_GROUP_free(ecgroup);
-        }
-        EC_KEY_free(eckey);
-        return;
-    }
+        goto err;
+    };
 
     /* 
      * contruct an EC_POINT from the "Q" field in the 
      * dnskey->public_key, dnskey->public_key_len
      */
-    bn_pub_key = BN_bin2bn(dnskey->public_key, (size_t)dnskey->public_key_len, NULL);
-    if (bn_pub_key == NULL) {
+    if (dnskey->public_key_len != 2*hashlen) {
         val_log(ctx, LOG_INFO,
-                "ecdsa_sigverify(): Error in parsing public key.");
-        EC_GROUP_free(ecgroup);
-        EC_KEY_free(eckey);
+                "ecdsa_sigverify(): dnskey length does not match expected size.");
         *key_status = VAL_AC_INVALID_KEY;
+        goto err;
+    }
+    bn_x = BN_bin2bn(dnskey->public_key, hashlen, NULL);
+    bn_y = BN_bin2bn(&dnskey->public_key[hashlen], hashlen, NULL);
+    if (1 != EC_KEY_set_public_key_affine_coordinates(eckey, bn_x, bn_y)) {
+        val_log(ctx, LOG_INFO,
+                "ecdsa_sigverify(): Error associating ECSA structure with key.");
+        *key_status = VAL_AC_INVALID_KEY;
+        goto err;
     }
 
-    ecdsa_pub_key_pt = EC_POINT_new(ecgroup);
-    EC_POINT_bn2point(ecgroup, bn_pub_key, ecdsa_pub_key_pt, NULL);
-    if (!EC_KEY_set_public_key(eckey, ecdsa_pub_key_pt)) {
-        val_log(ctx, LOG_INFO,
-                "ecdsa_sigverify(): Error in parsing public key.");
-        BN_free(bn_pub_key);
-        EC_GROUP_free(ecgroup);
-        EC_KEY_free(eckey);
-        *key_status = VAL_AC_INVALID_KEY;
-        return;
-    }
 
     val_log(ctx, LOG_DEBUG, "ecdsa_sigverify(): SHA hash = %s",
             get_hex_string(sha_hash, hashlen, buf, buflen));
@@ -534,10 +516,15 @@ ecdsa_sigverify(val_context_t * ctx,
      * contruct ECDSA signature from the "r" and "s" fileds in 
      * rrsig->signature, rrsig->signature_len
      */
-    if (rrsig->signature_len == 2*hashlen) {
-        ecdsa_sig.r = BN_bin2bn(rrsig->signature, hashlen, NULL); 
-        ecdsa_sig.s = BN_bin2bn(&rrsig->signature[hashlen], hashlen, NULL); 
+    if (rrsig->signature_len != 2*hashlen) {
+        val_log(ctx, LOG_INFO,
+                "ecdsa_sigverify(): Signature length does not match expected size.");
+        *sig_status = VAL_AC_RRSIG_VERIFY_FAILED;
+        goto err;
     }
+
+    ecdsa_sig.r = BN_bin2bn(rrsig->signature, hashlen, NULL); 
+    ecdsa_sig.s = BN_bin2bn(&rrsig->signature[hashlen], hashlen, NULL); 
 
     if (ECDSA_do_verify(sha_hash, hashlen, &ecdsa_sig, eckey) == 1) {
         val_log(ctx, LOG_INFO, "ecdsa_sigverify(): returned SUCCESS");
@@ -548,16 +535,20 @@ ecdsa_sigverify(val_context_t * ctx,
     }
 
     /* Free all structures allocated */
+err:
     if (ecdsa_sig.r)
         BN_free(ecdsa_sig.r);
     if (ecdsa_sig.s)
         BN_free(ecdsa_sig.s);
-    BN_free(bn_pub_key);
-    EC_POINT_free(ecdsa_pub_key_pt);
-    EC_GROUP_free(ecgroup);
-    EC_KEY_free(eckey);
+    if (bn_x)
+        BN_free(bn_x);
+    if (bn_y)
+        BN_free(bn_y);
+    if (eckey)
+        EC_KEY_free(eckey);
 
     return;
+
 }
 #endif
 
