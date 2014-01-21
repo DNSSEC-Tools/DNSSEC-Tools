@@ -1474,7 +1474,8 @@ static void consume_referral_data(struct delegation_info **qc_referral,
     else if ((*qc_referral)->qnames) {
         struct qname_chain *t_q;
         for (t_q = *qnames; t_q->qnc_next; t_q = t_q->qnc_next)
-            t_q->qnc_next = (*qc_referral)->qnames;
+            ;
+        t_q->qnc_next = (*qc_referral)->qnames;
     }
     (*qc_referral)->qnames = NULL;
 
