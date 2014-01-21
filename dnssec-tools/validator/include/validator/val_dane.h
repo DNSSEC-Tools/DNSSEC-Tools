@@ -16,6 +16,7 @@
 #include <crypto/sha2.h>
 #endif
 #include <openssl/x509.h>
+#include <openssl/x509v3.h>
 #include <openssl/evp.h>
 #include <openssl/ssl.h>
 
@@ -91,6 +92,7 @@ struct val_danestatus {
 
 struct val_ssl_data {
     val_context_t *context;
+    char *qname;
     struct val_danestatus *danestatus;
 };
 
@@ -121,6 +123,7 @@ int val_dane_match(val_context_t *ctx,
 
 int val_enable_dane_ssl(val_context_t *ctx,
                         SSL_CTX *sslctx,
+                        char *qname,
                         struct val_danestatus *danestatus,
                         struct val_ssl_data **ssl_dane_data);
 
