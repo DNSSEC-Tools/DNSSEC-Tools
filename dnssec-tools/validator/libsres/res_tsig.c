@@ -217,7 +217,7 @@ res_free_ns_tsig(struct ns_tsig *tsig)
 {
     if (tsig != NULL) {
         if (tsig->key)
-            free(tsig->key);
+            FREE(tsig->key);
         FREE(tsig);
     }
 
