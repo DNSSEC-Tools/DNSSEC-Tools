@@ -1417,6 +1417,7 @@ prepare_empty_nonexistence(struct rrset_rec **answers,
     (*answers)->rrs_type_h = query_type_h;
     (*answers)->rrs_class_h = query_class_h;
     (*answers)->rrs_ttl_h = 0;/* don't have any basis to set the TTL value */
+    (*answers)->rrs_ttl_x = 0;
     (*answers)->rrs_cred = SR_CRED_UNSET;
     (*answers)->rrs_section = VAL_FROM_UNSET;
     if ((respondent_server) &&
