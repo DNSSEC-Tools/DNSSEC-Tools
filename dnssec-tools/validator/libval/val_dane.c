@@ -499,27 +499,19 @@ int val_getdaneinfo(val_context_t *context,
 }
 
 static
-int get_pkeybuf(const unsigned char *data, int len, 
-                int *pkeyLen, unsigned char **pkeybuf)
+int get_pkeybuf(X509 *cert, int *pkeyLen, unsigned char **pkeybuf)
 {
-    X509 *cert;
     EVP_PKEY *pkey;
     int rv = 0;
-    const unsigned char *tmp = data;
 
-    if (pkeyLen == NULL || pkeybuf == NULL)
+    if (cert == NULL || pkeyLen == NULL || pkeybuf == NULL)
         return -1;
 
     *pkeyLen = 0;
     *pkeybuf = NULL;
 
-    cert = d2i_X509(NULL, &tmp, len);
-    if (cert == NULL)
-        return -1;
-
     pkey = X509_get_pubkey(cert);
     if (pkey == NULL) {
-        X509_free(cert);
         return -1;
     }
 
@@ -533,22 +525,135 @@ int get_pkeybuf(const unsigned char *data, int len,
         i2d_PUBKEY(pkey, &tmp2);
     }
     EVP_PKEY_free(pkey); 
-    X509_free(cert);
     return rv;
+}
+
+
+/*
+ * check if the qname matches any of the names provided in the given
+ * string array. Wildcards of the form *.name can also match as long as
+ * name is a substring within qname.
+ */
+static int
+do_cert_namechk(val_context_t *context,
+        char *qname, X509 *cert)
+{
+    int num;
+    int i;
+
+    GENERAL_NAMES *saNames = NULL;
+    GENERAL_NAME *cur = NULL;
+    X509_NAME *subj = NULL;
+    int retval = 1;
+    ASN1_STRING *astr;
+    char *cp;
+
+    if (qname == NULL || cert == NULL)
+        return 0;
+
+    /*
+     * XXX This should be replaced with X509_check_host() at some point
+     */
+
+    /* compare against subject alt names */
+    saNames = X509_get_ext_d2i(cert, NID_subject_alt_name, NULL, NULL);
+    if (saNames) {
+        num = sk_GENERAL_NAME_num(saNames); 
+        for (i=0; i<num; i++) {
+            cur = sk_GENERAL_NAME_value(saNames, i);
+            if (cur->type == GEN_DNS) {
+                astr = cur->d.dNSName;
+                cp = (char *)astr->data;
+
+                /* check for exact match or wildcard match */
+                if (cp &&
+                    ((!strcmp(cp, qname)) ||
+                     (*cp == '*' && *(cp+1) == '.' && 
+                                strstr(qname, cp+2)))) {
+                    retval = 1;
+                    goto done;
+                }
+                else {
+                    retval = 0;
+                    /* keep trying */
+                }
+            }
+        }
+    }
+
+    /* compare against subject name */
+    subj = X509_get_subject_name(cert);
+    i = -1;
+    while ((i = X509_NAME_get_index_by_NID(subj, NID_commonName, i)) >=0) {
+        X509_NAME_ENTRY *entry = X509_NAME_get_entry(subj, i);
+        astr = X509_NAME_ENTRY_get_data(entry);
+        cp = (char *)astr->data;
+
+        /* check for exact match or wildcard match */
+        if (cp &&
+            ((!strcmp(cp, qname)) ||
+              (*cp == '*' && *(cp+1) == '.' && 
+                  strstr(qname, cp+2)))) {
+            retval = 1;
+            goto done;
+        } else {
+            retval = 0;
+            /* keep trying */
+        }
+    }
+
+
+done:
+    if (saNames) {
+        //sk_GENERAL_NAME_pop_free(saNames, GENERAL_NAME_free);
+        GENERAL_NAMES_free(saNames);
+    }
+
+    return retval;
+}
+
+/*
+ * Do certificate name checks for DER encoded Cert
+ */
+
+int 
+val_dane_cert_namechk(val_context_t *context,
+                   char *qname,
+                   const unsigned char *data, 
+                   int len) 
+{
+    X509 *cert;
+    const unsigned char *tmp = data;
+    int ret;
+
+    if (data == NULL)
+        return 0;
+
+    cert = d2i_X509(NULL, &tmp, len);
+    if (cert == NULL)
+        return 0;
+
+    ret = do_cert_namechk(context, qname, cert);
+
+    X509_free(cert);
+
+    return ret;
 }
 
 /*
  * Matches a DANE record against the correct part of a key, either in
  * raw or a calculated hash of the part.
  */
-int val_dane_match(val_context_t *context,
-                   struct val_danestatus *dane_cur, 
-                   const unsigned char *data, 
-                   int len)
+static int 
+val_dane_match_internal(val_context_t *context,
+                           struct val_danestatus *dane_cur, 
+                           const unsigned char *data,
+                           int len,
+                           X509 *cert)
 {
     val_context_t *ctx;
 
-    if (dane_cur == NULL || data == NULL)
+    if (cert == NULL || data == NULL || len <= 0 || dane_cur == NULL)
         return VAL_DANE_CHECK_FAILED;
 
     ctx = val_create_or_refresh_context(context);/* does CTX_LOCK_POL_SH */
@@ -599,7 +704,7 @@ int val_dane_match(val_context_t *context,
             int pkeyLen = 0;
             unsigned char *pkeybuf = NULL;
 
-            if (0 != get_pkeybuf(data, len, &pkeyLen, &pkeybuf)) {
+            if (0 != get_pkeybuf(cert, &pkeyLen, &pkeybuf)) {
                 CTX_UNLOCK_POL(ctx);
                 return VAL_DANE_CHECK_FAILED;
             }
@@ -629,7 +734,7 @@ int val_dane_match(val_context_t *context,
         } else {
             int pkeyLen = 0;
             unsigned char *pkeybuf = NULL;
-            if (0 != get_pkeybuf(data, len, &pkeyLen, &pkeybuf)) {
+            if (0 != get_pkeybuf(cert, &pkeyLen, &pkeybuf)) {
                 CTX_UNLOCK_POL(ctx);
                 return VAL_DANE_CHECK_FAILED;
             }
@@ -681,7 +786,7 @@ int val_dane_match(val_context_t *context,
         } else {
             int pkeyLen = 0;
             unsigned char *pkeybuf = NULL;
-            if (0 != get_pkeybuf(data, len, &pkeyLen, &pkeybuf)) {
+            if (0 != get_pkeybuf(cert, &pkeyLen, &pkeybuf)) {
                 CTX_UNLOCK_POL(ctx);
                 return VAL_DANE_CHECK_FAILED;
             }
@@ -720,6 +825,34 @@ int val_dane_match(val_context_t *context,
     return VAL_DANE_CHECK_FAILED;
 }
 
+/*
+ * Match DER encoded certificate 
+ */
+int val_dane_match(val_context_t *context,
+                   struct val_danestatus *dane_cur, 
+                   const unsigned char *data, 
+                   int len) 
+{
+    X509 *cert;
+    const unsigned char *tmp = data;
+    int ret;
+
+    if (data == NULL)
+        return 0;
+
+    cert = d2i_X509(NULL, &tmp, len);
+    if (cert == NULL)
+        return 0;
+
+    ret = val_dane_match_internal(context, dane_cur, 
+                                  data, len, cert);
+
+
+    X509_free(cert);
+
+    return ret;
+}
+
 static int 
 val_X509_peer_cert_verify_cb(X509_STORE_CTX *x509ctx, void *arg)
 {
@@ -734,8 +867,8 @@ val_X509_peer_cert_verify_cb(X509_STORE_CTX *x509ctx, void *arg)
     STACK_OF(X509) *certList = NULL;
     int pkix_succeeded = 0;
     int rv = VAL_DANE_CHECK_FAILED;
-    unsigned char *cert_data = NULL;
     int cert_datalen = 0;
+    unsigned char *cert_data = NULL;
     unsigned char *c = NULL;
 
     ssl_dane_data = (struct val_ssl_data *) arg;
@@ -783,9 +916,13 @@ val_X509_peer_cert_verify_cb(X509_STORE_CTX *x509ctx, void *arg)
                         LOG_INFO, "DANE: cert PKIX verification failed = %s", buf);
                 return 0;
             }
+
+            certList = X509_STORE_CTX_get_chain(x509ctx);
             depth = sk_X509_num(certList);
-            if (!pkix_succeeded && 
-                    depth != X509_STORE_CTX_get_error_depth(x509ctx)) {
+            if (depth <= 0 ||
+                (!pkix_succeeded && 
+                    --depth != X509_STORE_CTX_get_error_depth(x509ctx))) {
+
                 /*
                  * All of the above error conditions should occur at the
                  * end of the PKIX validation chain.  If this assumption
@@ -815,8 +952,6 @@ val_X509_peer_cert_verify_cb(X509_STORE_CTX *x509ctx, void *arg)
                 return 0;
             }
 
-            certList = X509_STORE_CTX_get_chain(x509ctx);
-
             /* we only need to do PKIX checks once */
             break;
         }
@@ -828,7 +963,27 @@ val_X509_peer_cert_verify_cb(X509_STORE_CTX *x509ctx, void *arg)
      * necessary)
      */
 
+    /*
+     * Do certificate name checks
+     */
+    if (!do_cert_namechk(context, ssl_dane_data->qname, cert)) {
+        val_log(context,
+                LOG_WARNING, "DANE: Cert namecheck failed for %s", buf);
+        return 0;
+    }
+
+
     dane_cur = ssl_dane_data->danestatus;
+
+    if (((cert_datalen = i2d_X509(cert, NULL)) <= 0) ||
+         ((cert_data = OPENSSL_malloc(cert_datalen)) == NULL) ||
+         (((c = cert_data)) && (cert_datalen = i2d_X509(cert, &c)) <= 0)) {
+
+        if (cert_data)
+            OPENSSL_free(cert_data);
+        return 0;
+    } 
+
     /*
      * Keep looking for a good TLSA match
      */
@@ -849,25 +1004,12 @@ val_X509_peer_cert_verify_cb(X509_STORE_CTX *x509ctx, void *arg)
                 }
                 /* fall through */
             case DANE_USE_DOMAIN_ISSUED: /*3*/
-                cert_datalen = i2d_X509(cert, NULL);
-                if (cert_datalen > 0) {
-                    cert_data = OPENSSL_malloc(cert_datalen);
-                    if (cert_data) {
-                        c = cert_data;
-                        cert_datalen = i2d_X509(cert, &c);
-                        if(cert_datalen > 0 &&
-                                val_dane_match(context,
-                                    dane_cur,
-                                    (const unsigned char *)cert_data,
-                                    cert_datalen) == 0) {
-                            val_log(context, LOG_INFO, 
-                                    "DANE: passed EE certificate checks = %s", buf);
-                            rv = VAL_DANE_NOERROR;
-                            OPENSSL_free(cert_data);
-                            goto done;
-                        }
-                        OPENSSL_free(cert_data);
-                    }
+                if (val_dane_match_internal(context,
+                        dane_cur, cert_data, cert_datalen, cert) == 0) {
+                    val_log(context, LOG_INFO, 
+                            "DANE: passed EE certificate checks = %s", buf);
+                    rv = VAL_DANE_NOERROR;
+                    goto done;
                 }
                 break;
 
@@ -886,26 +1028,13 @@ val_X509_peer_cert_verify_cb(X509_STORE_CTX *x509ctx, void *arg)
                  */
                 for (i = 0; i <= depth; i++) {
                     cert = sk_X509_value(certList, i);
-                    cert_datalen = i2d_X509(cert, NULL);
-                    if (cert_datalen > 0) {
-                        cert_data = OPENSSL_malloc(cert_datalen);
-                        if (cert_data) {
-                            c = cert_data;
-                            cert_datalen = i2d_X509(cert, &c);
-                            if(cert_datalen > 0 &&
-                                val_dane_match(context,
-                                    dane_cur,
-                                    (const unsigned char *)cert_data,
-                                    cert_datalen) == 0) {
-                                    /* reset err status */
-                                    val_log(context, 
-                                            LOG_INFO, "DANE: skipping TA PKIX validation = %s", buf);
-                                    rv = VAL_DANE_NOERROR;
-                                    OPENSSL_free(cert_data);
-                                    goto done;
-                            }
-                            OPENSSL_free(cert_data);
-                        }
+                    if (val_dane_match_internal(context,
+                            dane_cur, cert_data, cert_datalen, cert) == 0) {
+                        /* reset err status */
+                        val_log(context, 
+                                LOG_INFO, "DANE: skipping TA PKIX validation = %s", buf);
+                        rv = VAL_DANE_NOERROR;
+                        goto done;
                     }
                 }
                 break;
@@ -921,6 +1050,9 @@ val_X509_peer_cert_verify_cb(X509_STORE_CTX *x509ctx, void *arg)
     }
 
 done:
+
+    if (cert_data)
+        OPENSSL_free(cert_data);
 
     if (rv == VAL_DANE_NOERROR) {
         val_log(context, LOG_INFO, "DANE check successful");
@@ -938,6 +1070,7 @@ done:
 int
 val_enable_dane_ssl(val_context_t *ctx,
                     SSL_CTX *sslctx,
+                    char *qname,
                     struct val_danestatus *danestatus,
                     struct val_ssl_data **ssl_dane_data)
 {
@@ -945,7 +1078,8 @@ val_enable_dane_ssl(val_context_t *ctx,
     int ret = VAL_NO_ERROR;
     struct val_danestatus *danestatus_p = NULL;
 
-    if (sslctx == NULL || ssl_dane_data == NULL || danestatus == NULL)
+    if (sslctx == NULL || ssl_dane_data == NULL || 
+            danestatus == NULL || qname == NULL)
         return VAL_BAD_ARGUMENT;
 
     context = val_create_or_refresh_context(ctx);/* does CTX_LOCK_POL_SH */
@@ -958,7 +1092,15 @@ val_enable_dane_ssl(val_context_t *ctx,
         return VAL_OUT_OF_MEMORY;
     }
 
+    (*ssl_dane_data)->qname = STRDUP(qname);
+    if ((*ssl_dane_data)->qname == NULL) {
+        FREE(*ssl_dane_data);
+        CTX_UNLOCK_POL(context);
+        return VAL_OUT_OF_MEMORY;
+    }
+
     if (VAL_NO_ERROR != (ret = clone_danestatus(danestatus, &danestatus_p))) {
+        FREE((*ssl_dane_data)->qname);
         FREE(*ssl_dane_data);
         CTX_UNLOCK_POL(context);
         return ret;
@@ -987,6 +1129,7 @@ val_free_dane_ssl(struct val_ssl_data *ssl_dane_data)
     if (ssl_dane_data == NULL)
         return;
 
+    FREE(ssl_dane_data->qname);
     val_free_dane(ssl_dane_data->danestatus);
     CTX_UNLOCK_POL(ssl_dane_data->context);
     FREE(ssl_dane_data);

@@ -385,7 +385,7 @@ done:
             presetup_okay = 1;
         }
 
-        if (VAL_NO_ERROR != (err = val_enable_dane_ssl(context, sslctx,
+        if (VAL_NO_ERROR != (err = val_enable_dane_ssl(context, sslctx, node,
                                         danestatus, &ssl_dane_data))) {
             fprintf(stderr,
                     "Could not set danestatus for SSL connection %s\n",
@@ -439,7 +439,7 @@ done:
         }
 
     } else if (dane_retval == VAL_DANE_IGNORE_TLSA) {
-        fprintf(stderr, "TLSA is provably non-existent.\n");
+        fprintf(stderr, "TLSA is either provably non-existant or provably insecure. It will be ignored.\n");
     } else {
         fprintf(stderr, "TLSA record could not be validated.\n");
     }

@@ -1417,6 +1417,7 @@ prepare_empty_nonexistence(struct rrset_rec **answers,
     (*answers)->rrs_type_h = query_type_h;
     (*answers)->rrs_class_h = query_class_h;
     (*answers)->rrs_ttl_h = 0;/* don't have any basis to set the TTL value */
+    (*answers)->rrs_ttl_x = 0;
     (*answers)->rrs_cred = SR_CRED_UNSET;
     (*answers)->rrs_section = VAL_FROM_UNSET;
     if ((respondent_server) &&
@@ -1474,7 +1475,8 @@ static void consume_referral_data(struct delegation_info **qc_referral,
     else if ((*qc_referral)->qnames) {
         struct qname_chain *t_q;
         for (t_q = *qnames; t_q->qnc_next; t_q = t_q->qnc_next)
-            t_q->qnc_next = (*qc_referral)->qnames;
+            ;
+        t_q->qnc_next = (*qc_referral)->qnames;
     }
     (*qc_referral)->qnames = NULL;
 
