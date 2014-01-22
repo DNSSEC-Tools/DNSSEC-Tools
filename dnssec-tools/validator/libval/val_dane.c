@@ -977,7 +977,7 @@ val_X509_peer_cert_verify_cb(X509_STORE_CTX *x509ctx, void *arg)
 
     if (((cert_datalen = i2d_X509(cert, NULL)) <= 0) ||
          ((cert_data = OPENSSL_malloc(cert_datalen)) == NULL) ||
-         ((cert_datalen = i2d_X509(cert, &c)) <= 0)) {
+         (((c = cert_data)) && (cert_datalen = i2d_X509(cert, &c)) <= 0)) {
 
         if (cert_data)
             OPENSSL_free(cert_data);
