@@ -1341,7 +1341,7 @@ sub parse_nsec3
          $nsec3->{ 'hnxtname' } = $nxthash;
          $nsec3->{ 'hnxtnamebin' } = $binhash;
          $nsec3->{ 'hashlength' } = length( $binhash );
-         if ( $2 eq ')' ) {			# Was RR terminated ?
+         if ( defined($2) && $2 eq ')' ) {	# Was RR terminated ?
 	    push @zone, $nsec3; 
 	    # we're done
 	    $parse = \&parse_line;
