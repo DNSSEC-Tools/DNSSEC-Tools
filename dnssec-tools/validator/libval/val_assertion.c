@@ -422,15 +422,6 @@ add_to_query_chain(val_context_t *context, u_char * name_n,
     gettimeofday(&tv, NULL);
     while (temp) {
 
-#if 0
-        /*
-         * If we have caching disabled then don't re-use this element
-         */
-        if(temp->qc_flags & VAL_QUERY_SKIP_CACHE) {
-            temp->qc_flags |= VAL_QUERY_MARK_FOR_DELETION;
-        }
-#endif
-
         /*
          * Remove this query if it has expired and is not being used
          */
@@ -518,6 +509,15 @@ add_to_query_chain(val_context_t *context, u_char * name_n,
     temp->qc_type_h = type_h;
     temp->qc_class_h = class_h;
     temp->qc_flags = flags;
+#if 0
+        /*
+         * If we have caching disabled then don't re-use this element
+         */
+        if(temp->qc_flags & VAL_QUERY_SKIP_CACHE) {
+            temp->qc_flags |= VAL_QUERY_MARK_FOR_DELETION;
+        }
+#endif
+
 
     init_query_chain_node(temp);
     
@@ -4843,8 +4843,6 @@ verify_and_validate(val_context_t * context,
     u_int32_t flags;
     int    retval = VAL_NO_ERROR;
     char   name_p[NS_MAXDNAME];
-    int switched = 0;
-    struct timeval tv;
 
     if ((top_qfq == NULL) || (NULL == queries) || (NULL == results)
         || (NULL == done))
@@ -4857,38 +4855,6 @@ verify_and_validate(val_context_t * context,
 restart_query:
     *done = 1;
     
-    if (top_q->qc_state > Q_ERROR_BASE) {
-        /*
-         * For error conditions Try getting this answer iteratively from 
-         * root if we aren't doing so already
-         */
-        if (-1 == ns_name_ntop(top_q->qc_name_n, 
-                               name_p, sizeof(name_p))) {
-            snprintf(name_p, sizeof(name_p), "unknown/error");
-        }
-        if (VAL_NO_ERROR != (retval = switch_to_root(context, top_qfq, &switched))) {
-            return retval;
-        }
-        if (switched) {
-            goto query_reset;
-        }
-        /* create a dummy result */
-        *results = (struct val_internal_result *)
-                MALLOC(sizeof(struct val_internal_result));
-        if ((*results) == NULL) {
-            return VAL_OUT_OF_MEMORY;
-        }
-        (*results)->val_rc_rrset = NULL;
-        (*results)->val_rc_is_proof = 0;
-        (*results)->val_rc_consumed = 0;
-        (*results)->val_rc_flags = top_qfq->qfq_flags;
-        (*results)->val_rc_status = VAL_DNS_ERROR;
-        (*results)->val_rc_next = NULL;
-        gettimeofday(&tv, NULL);
-        top_q->qc_ttl_x = QUERY_BAD_CACHE_TTL + tv.tv_sec; 
-        return VAL_NO_ERROR;
-    }
-
     if (is_proof) {
         top_as = top_q->qc_proof;
     } else {
@@ -5341,13 +5307,6 @@ restart_query:
         }
     }
 
-    return VAL_NO_ERROR;
-
-query_reset:
-    /* free up all results */
-    _free_w_results(*results);
-    *results = NULL;
-    *done = 0;
     return VAL_NO_ERROR;
 }
 
@@ -6265,8 +6224,10 @@ construct_authentication_chain(val_context_t * context,
     int             proof_done = 0;
     int             retval;
     struct val_query_chain *top_q;
-    struct val_result_chain *res;
     int switched = 0;
+    char   name_p[NS_MAXDNAME];
+    struct val_result_chain *res;
+    struct val_result_chain *prev = NULL;
     
     if (context == NULL || top_qfq == NULL || 
         queries == NULL || results == NULL || done == NULL)
@@ -6276,7 +6237,27 @@ construct_authentication_chain(val_context_t * context,
     *done = 0;
     *results = NULL;
     
-    if (top_q->qc_state > Q_SENT) {
+    if (top_q->qc_state > Q_ERROR_BASE) {
+        /*
+         * For error conditions Try getting this answer iteratively from 
+         * root if we aren't doing so already
+         */
+        if (-1 == ns_name_ntop(top_q->qc_name_n, 
+                               name_p, sizeof(name_p))) {
+            snprintf(name_p, sizeof(name_p), "unknown/error");
+        }
+        if (VAL_NO_ERROR != (retval = switch_to_root(context, top_qfq, &switched))) {
+            return retval;
+        }
+        if (switched) {
+            goto query_reset;
+        }
+        /* create a dummy result */
+        CREATE_RESULT_BLOCK(res, prev, *results);
+        (*results)->val_rc_status = VAL_DNS_ERROR;
+        return VAL_NO_ERROR;
+
+    } else if (top_q->qc_state > Q_SENT) {
 
         /*
          * validate what ever is possible. 
@@ -6331,11 +6312,7 @@ construct_authentication_chain(val_context_t * context,
             }
 
             if (switched) {
-                _free_w_results(*w_results);
-                val_free_result_chain(*results);
-                *w_results = NULL;
-                *results = NULL;
-                *done = 0;
+                goto query_reset;
             }
 
             return VAL_NO_ERROR;
@@ -6343,6 +6320,15 @@ construct_authentication_chain(val_context_t * context,
     }
 
     return VAL_NO_ERROR;
+
+query_reset:
+    _free_w_results(*w_results);
+    val_free_result_chain(*results);
+    *w_results = NULL;
+    *results = NULL;
+    *done = 0;
+    return VAL_NO_ERROR;
+
 }
 
 int try_chase_query(val_context_t * context,
