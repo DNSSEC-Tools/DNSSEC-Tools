@@ -468,7 +468,7 @@ sub async_gather_check_wait {
 
 sub DESTROY {
     my $self = shift;
-
+    vc_DESTROY($self->{_ctx_ptr}) if $self->{_ctx_ptr};
 }
 
 1;
