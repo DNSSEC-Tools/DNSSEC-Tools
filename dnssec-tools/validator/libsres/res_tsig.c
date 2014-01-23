@@ -35,7 +35,7 @@ decode_tsig_key(char *keystr, u_char *key, size_t keysize)
     BIO            *b64;
     BIO            *mem;
     BIO            *bio;
-    int             len;
+    unsigned int   len;
 
     b64 = BIO_new(BIO_f_base64());
     BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
@@ -240,7 +240,7 @@ res_tsig_sign(u_char * query,
     HMAC_CTX ctx;
     const EVP_MD *md;
     u_char hash[MAX_DIGEST_LENGTH];
-    int len;
+    unsigned int len;
     u_int16_t arcount;
 
     if (!signed_query || !signed_length)
