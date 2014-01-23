@@ -6389,13 +6389,10 @@ int try_chase_query(val_context_t * context,
     if (top_q && top_q->qfq_query)
         top_q->qfq_query->qc_refcount--;
 
-    if (VAL_NO_ERROR != retval)
-        return retval;
-
     _free_w_results(w_results);
     w_results = NULL;
 
-    return VAL_NO_ERROR;
+    return retval;
 }
 
 /*
