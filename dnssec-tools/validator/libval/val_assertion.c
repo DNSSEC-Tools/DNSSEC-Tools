@@ -6255,6 +6255,7 @@ construct_authentication_chain(val_context_t * context,
         /* create a dummy result */
         CREATE_RESULT_BLOCK(res, prev, *results);
         (*results)->val_rc_status = VAL_DNS_ERROR;
+        *done = 1;
         return VAL_NO_ERROR;
 
     } else if (top_q->qc_state > Q_SENT) {
