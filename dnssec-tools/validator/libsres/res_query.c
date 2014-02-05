@@ -43,16 +43,20 @@ wire_name_length(const u_char * field)
     if (field == NULL)
         return 0;
 
-    for (j = 0; field[j] && !(0xc0 & field[j]) && j < NS_MAXCDNAME;
+    /* 
+     * Check that the total length is less than max allowable, and that
+     * label length does not exceed 63
+     */
+    for (j = 0; j < NS_MAXCDNAME && field[j] && !(0xc0 & field[j]);
          j += field[j] + 1);
-    if (field[j])
-        j++;
-    j++;
 
-    if (j > NS_MAXCDNAME)
+    /* 
+     * return 0 if we exceed max allowable label length or total length
+     */
+    if (j >= NS_MAXCDNAME || field[j])
         return 0;
     else
-        return j;
+        return j+1;
 }
 
 
