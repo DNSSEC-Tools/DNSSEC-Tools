@@ -198,7 +198,7 @@ theres_something_wrong_with_header(u_char * response,
             u_int16_t       type_h;
             u_int16_t       rdata_len_n;
 
-            for (i = 0; i < ntohs(header->ancount); i++) {
+            for (i = 0; i <= ntohs(header->ancount); i++) {
                 auth_index +=
                     wire_name_length(&response[auth_index]) + ENVELOPE;
                 memcpy(&rdata_len_n, &response[auth_index - 2],
@@ -206,7 +206,7 @@ theres_something_wrong_with_header(u_char * response,
                 auth_index += ntohs(rdata_len_n);
             }
 
-            for (i = 0; i < ntohs(header->nscount); i++) {
+            for (i = 0; i <= ntohs(header->nscount); i++) {
                 type_h = retrieve_type(&response[auth_index]);
 
                 if (type_h == ns_t_soa || 
