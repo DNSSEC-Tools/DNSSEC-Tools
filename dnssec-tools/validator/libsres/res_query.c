@@ -59,13 +59,6 @@ wire_name_length(const u_char * field)
         return j+1;
 }
 
-
-static size_t
-skip_questions(const u_char * buf)
-{
-    return 12 + wire_name_length(&buf[12]) + 4;
-}
-
 void
 dump_response(const u_char * ans, size_t resplen)
 {
@@ -100,17 +93,6 @@ dump_response(const u_char * ans, size_t resplen)
         } while (k < resplen);
 }
 
-
-u_int16_t
-retrieve_type(const u_char * rr)
-{
-    u_int16_t       type_n;
-    size_t          name_length = wire_name_length(rr);
-
-    memcpy(&type_n, &rr[name_length], sizeof(u_int16_t));
-    return ntohs(type_n);
-}
-
 int
 res_quecmp(u_char * query, u_char * response)
 {
@@ -120,36 +102,6 @@ res_quecmp(u_char * query, u_char * response)
         return 1;
 
     return namecmp(&query[12], &response[12]);
-}
-
-int
-right_sized(u_char * response, size_t response_length)
-{
-    HEADER         *header = (HEADER *) response;
-    size_t         index = skip_questions(response);
-    size_t         records =
-        ntohs(header->ancount) + ntohs(header->nscount)
-        + ntohs(header->arcount);
-    size_t  i;
-    u_int16_t  rdata_len_n;
-
-    if (index > response_length)
-        return TRUE;
-
-    for (i = 0; i < records; i++) {
-        index += wire_name_length(&response[index]) + ENVELOPE;
-
-        if (index > response_length)
-            return TRUE;
-
-        memcpy(&rdata_len_n, &response[index - 2], sizeof(u_int16_t));
-        index += ntohs(rdata_len_n);
-
-        if (index > response_length)
-            return TRUE;
-    }
-
-    return index == response_length;
 }
 
 int
@@ -167,14 +119,6 @@ theres_something_wrong_with_header(u_char * response,
     }
 
     /*
-     * Check the length and count of the records 
-     */
-    if (right_sized(response, response_length) == FALSE) {
-        res_log(NULL, LOG_DEBUG, "libsres: ""header: not right sized!");
-        return SR_HEADER_ERROR;
-    }
-
-    /*
      * Check the RCODE value.
      * RCODE of no error is always welcome 
      */
@@ -184,45 +128,12 @@ theres_something_wrong_with_header(u_char * response,
     /*
      * RCODE of NXDOMAIN (no such domain) is welcome in some circumtances:
      * With no other records present
-     * With an SOA or NXT in the authority (ns) section
+     * With records in the authority (ns) section
      */
     if (header->rcode == ns_r_nxdomain) {
-        if (header->ancount == 0 && header->nscount == 0
-            && header->arcount == 0)
+        if ((header->ancount == 0 && header->nscount == 0
+            && header->arcount == 0) || ntohs(header->nscount) > 0)
             return SR_UNSET;
-
-        /** if (ntohs(header->nscount) > 1) */
-        {
-            size_t          i;
-            size_t          auth_index = skip_questions(response);
-            u_int16_t       type_h;
-            u_int16_t       rdata_len_n;
-
-            for (i = 0; i < ntohs(header->ancount); i++) {
-                auth_index +=
-                    wire_name_length(&response[auth_index]) + ENVELOPE;
-                memcpy(&rdata_len_n, &response[auth_index - 2],
-                       sizeof(u_int16_t));
-                auth_index += ntohs(rdata_len_n);
-            }
-
-            for (i = 0; i < ntohs(header->nscount); i++) {
-                type_h = retrieve_type(&response[auth_index]);
-
-                if (type_h == ns_t_soa || 
-#ifdef LIBVAL_NSEC3
-                    type_h == ns_t_nsec3 || 
-#endif
-                    type_h == ns_t_nsec)
-                    return SR_UNSET;
-
-                auth_index +=
-                    wire_name_length(&response[auth_index]) + ENVELOPE;
-                memcpy(&rdata_len_n, &response[auth_index - 2],
-                       sizeof(u_int16_t));
-                auth_index += ntohs(rdata_len_n);
-            }
-        }
 
         res_log(NULL, LOG_DEBUG, "libsres: ""header: nxdomain!");
         return SR_NXDOMAIN;
