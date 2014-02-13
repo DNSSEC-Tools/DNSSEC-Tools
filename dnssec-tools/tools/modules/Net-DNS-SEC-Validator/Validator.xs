@@ -229,6 +229,7 @@ SV *rrset_c2sv(struct val_rrset_rec *rrs_ptr)
   HV *rr_hv;
   SV *rr_hv_ref;
   struct val_rr_rec *rr;
+  char name_buf[INET6_ADDRSTRLEN + 1];
 
   if (rrs_ptr) {
 
@@ -271,6 +272,12 @@ SV *rrset_c2sv(struct val_rrset_rec *rrs_ptr)
     }
 
     (void)hv_store(rrset_hv, "sigs", strlen("sigs"), rrs_avs_ref, 0);
+
+    val_get_ns_string(rrs_ptr->val_rrset_server, 
+            name_buf, sizeof(name_buf));
+
+    (void)hv_store(rrset_hv, "respserv", strlen("respserv"), 
+	               newSVpv(name_buf, strlen(name_buf)), 0);
   }
 
   return rrset_hv_ref;

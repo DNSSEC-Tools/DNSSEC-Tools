@@ -1,3 +1,5 @@
+#!/usr/bin/perl
+
 use Net::DNS::SEC::Validator;
 use Net::DNS::Packet;
 
@@ -20,15 +22,18 @@ sub print_result {
 #print "\Result: " .  Data::Dumper::Dumper($a) . "\n";
 
     foreach $h (@$a) {
+        my $ans = ${$h}{answer}; 
+
         print "Status: " .  ${$h}{status} . "\n"; 
-        $acs = ${$h}{answer}; 
-        foreach $ac (@$acs) {
+        foreach $ac (@$ans) {
+
+            my $acr = ${$ac}{rrset};
+            my $acd = ${$acr}{data};
+            my $acs = ${$acr}{sigs};
+            my $serv = ${$acr}{respserv};
 
             print "Answer AC status: " . ${$ac}{status} . "\n";
-            $acr = ${$ac}{rrset};
-            $acd = ${$acr}{data};
-            $acs = ${$acr}{sigs};
-
+            print "Response received from: " . $serv . "\n";
             foreach $d (@$acd) {
                 print "\tData RR status: " . ${$d}{rrstatus} . "\n";
                 my $rr = ${$d}{rrdata};
@@ -96,7 +101,7 @@ print_result("Test case sync 2", 0, $a);
 
 my $val3 = new Net::DNS::SEC::Validator(
     nslist => "8.8.8.8",
-    log_target => "7:stderr",
+#    log_target => "7:stderr",
     rec_fallback => 0,
     policy => ":",
 );
