@@ -91,7 +91,6 @@ void            print_hex_field(u_char field[], size_t length, size_t width,
                                 char *pref);
 void            print_hex(u_char field[], size_t length);
 void            dump_response(const u_char * ans, size_t resplen);
-u_int16_t       retrieve_type(const u_char * rr);
 u_int16_t       libsres_random(void);
 int             libsres_msg_getflag(ns_msg han, int flag);
 
