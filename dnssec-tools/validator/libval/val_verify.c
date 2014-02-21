@@ -801,8 +801,9 @@ verify_next_assertion(val_context_t * ctx,
                         the_trust->val_ac_rrset.ac_data->rrs_data;
                     while (dsrec) {
                         val_ds_rdata_t  ds;
+                        int retval;
                         ds.d_hash = NULL;
-                        int retval = val_parse_ds_rdata(dsrec->rr_rdata,
+                        retval = val_parse_ds_rdata(dsrec->rr_rdata,
                                        dsrec->rr_rdata_length, &ds);
                         if(retval == VAL_NOT_IMPLEMENTED) {
                             val_log(ctx, LOG_INFO, "verify_next_assertion(): DS hash not supported");
