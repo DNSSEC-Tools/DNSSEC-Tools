@@ -233,6 +233,19 @@ SV *rrset_c2sv(struct val_rrset_rec *rrs_ptr)
 
   if (rrs_ptr) {
 
+    (void)hv_store(rrset_hv, "name", strlen("name"), 
+	          newSVpv(rrs_ptr->val_rrset_name, 
+                   strlen(rrs_ptr->val_rrset_name)), 0);
+
+    (void)hv_store(rrset_hv, "class", strlen("class"),
+              newSVpv(p_class(rrs_ptr->val_rrset_class), 0), 0);
+
+    (void)hv_store(rrset_hv, "type", strlen("type"),
+              newSVpv(p_sres_type(rrs_ptr->val_rrset_type), 0), 0);
+
+    (void)hv_store(rrset_hv, "ttl", strlen("ttl"),
+              newSVnv(rrs_ptr->val_rrset_ttl),0);
+
     for (rr = rrs_ptr->val_rrset_data; rr; rr = rr->rr_next) {
       rr_hv = newHV();
       rr_hv_ref = newRV_noinc((SV*)rr_hv);
