@@ -122,8 +122,10 @@ Donuts Analysis: newkeys-ns.test.dnssec-tools.org
       # db.newkeys-ns.test.dnssec-tools.org.zs.signed.modified
       Error: pastdate-aaaa.newkeys-ns.test.dnssec-tools.org
 	Rule Type:   Error
-	Message:     Can not find a matching DNSKEY for RRSIG #2 for
-		     pastdate-aaaa.newkeys-ns.test.dnssec-tools.org
+	Message:     RRSIG on name:
+		     pastdate-aaaa.newkeys-ns.test.dnssec-tools.org type:
+		     AAAA failed to verify: Signature has expired since:
+		     20140325080324
 	Details:     RRSIGs must cryptographically verify the records they
 		     are signing.
 
@@ -171,14 +173,6 @@ Donuts Analysis: newkeys-ns.test.dnssec-tools.org
 		     record, which is require for dnssec to prove
 		     non-existence.
 
-      Error: addedlater-withsig-aaaa.newkeys-ns.test.dnssec-tools.org
-	Rule Type:   Error
-	Message:     Can not find a matching DNSKEY for RRSIG #1 for
-		     addedlater-withsig-aaaa.newkeys-ns.test.dnssec-tools.o
-		     rg
-	Details:     RRSIGs must cryptographically verify the records they
-		     are signing.
-
       Error: baddata-aaaa.newkeys-ns.test.dnssec-tools.org
 	Rule Type:   Error
 	Message:     RRSIG on name:
@@ -189,8 +183,10 @@ Donuts Analysis: newkeys-ns.test.dnssec-tools.org
 
       Error: futuredate-aaaa.newkeys-ns.test.dnssec-tools.org
 	Rule Type:   Error
-	Message:     Can not find a matching DNSKEY for RRSIG #2 for
-		     futuredate-aaaa.newkeys-ns.test.dnssec-tools.org
+	Message:     RRSIG on name:
+		     futuredate-aaaa.newkeys-ns.test.dnssec-tools.org type:
+		     AAAA failed to verify: Signature may only be used in
+		     the future; after 20140524080824
 	Details:     RRSIGs must cryptographically verify the records they
 		     are signing.
 
@@ -220,8 +216,10 @@ Donuts Analysis: newkeys-ns.test.dnssec-tools.org
 
       Error: futuredate-a.newkeys-ns.test.dnssec-tools.org
 	Rule Type:   Error
-	Message:     Can not find a matching DNSKEY for RRSIG #2 for
-		     futuredate-a.newkeys-ns.test.dnssec-tools.org
+	Message:     RRSIG on name:
+		     futuredate-a.newkeys-ns.test.dnssec-tools.org type: A
+		     failed to verify: Signature may only be used in the
+		     future; after 20140524080824
 	Details:     RRSIGs must cryptographically verify the records they
 		     are signing.
 
@@ -234,13 +232,6 @@ Donuts Analysis: newkeys-ns.test.dnssec-tools.org
 	Details:     checks to see if a given name is missing an NSEC
 		     record, which is require for dnssec to prove
 		     non-existence.
-
-      Error: addedlater-withsig-a.newkeys-ns.test.dnssec-tools.org
-	Rule Type:   Error
-	Message:     Can not find a matching DNSKEY for RRSIG #1 for
-		     addedlater-withsig-a.newkeys-ns.test.dnssec-tools.org
-	Details:     RRSIGs must cryptographically verify the records they
-		     are signing.
 
       Error: addedlater-nosig-a.newkeys-ns.test.dnssec-tools.org
 	Rule Type:   Error
@@ -270,8 +261,10 @@ Donuts Analysis: newkeys-ns.test.dnssec-tools.org
 
       Error: pastdate-a.newkeys-ns.test.dnssec-tools.org
 	Rule Type:   Error
-	Message:     Can not find a matching DNSKEY for RRSIG #2 for
-		     pastdate-a.newkeys-ns.test.dnssec-tools.org
+	Message:     RRSIG on name:
+		     pastdate-a.newkeys-ns.test.dnssec-tools.org type: A
+		     failed to verify: Signature has expired since:
+		     20140325080324
 	Details:     RRSIGs must cryptographically verify the records they
 		     are signing.
 
@@ -280,4 +273,4 @@ Donuts Analysis: newkeys-ns.test.dnssec-tools.org
     Rules Tested: 21
     Records Analyzed: 108
     Names Analyzed: 27
-    Errors Found: 23
+    Errors Found: 21
