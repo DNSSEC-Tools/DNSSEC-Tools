@@ -431,7 +431,7 @@ sub domain {
 
 sub load_zone {
     my ($self, $file, $domain) = @_;
-    
+
     $self->{'domain'} = $domain;
     $self->{'zonesource'} = $file;
     $self->clear_zone_records();
@@ -450,8 +450,24 @@ sub load_zone {
 				   #on_error =>\&print_parse_error # XXX
 	    );
     }
+
+    @$rrset = sort rrset_sorter @$rrset if ($self->{'config'}{'sorted'});
+
     $self->set_zone_records($rrset);
     return $parseerror;
+}
+
+# a sorting routine to provide consistent output; by sorting them
+# always in the same order even if the zone is shuffled while read in,
+# the resulting output will be consistently the same.
+sub rrset_sorter {
+	foreach my $field (qw(name type rdata)) {
+		if ($a->{$field} ne $b->{$field}) {
+			return $a->{$field} cmp $b->{$field};
+		}
+	}
+
+	return 0;
 }
 
 #

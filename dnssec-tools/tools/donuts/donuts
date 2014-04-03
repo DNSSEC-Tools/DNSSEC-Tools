@@ -131,6 +131,7 @@ DTGetOptions(\%opts,
 		 nocgi => 1,
 		 question => { type => 'menu', default => 'stdout', indent => 1,
 		 values => [qw(stdout stderr)]}],
+                ["s|sorted", "Sort the loaded records so the output is consistent"],
 		["v|verbose+",
 		 "Verbose output (show extra processing information).  Use multiple times for increasing amounts of output.",
 		 question => { type => 'checkbox', default => 1, indent => 1 }],
@@ -227,6 +228,7 @@ if (!$opts{'R'} && !$opts{'F'} && !$opts{'H'} &&
 #
 my $donuts = new Net::DNS::SEC::Tools::Donuts();
 $donuts->set_config('verbose', $opts{'v'});
+$donuts->set_config('sorted', $opts{'s'});
 $donuts->set_output_format($opts{'O'});
 $donuts->set_output_location($opts{'L'});
 
@@ -860,6 +862,17 @@ at the same time.
 
 Turns on more verbose output.  Multiple I<-v>'s will turn on increasing
 amounts of output.  The number of -v's will dictate output:
+
+=item -s
+
+Sorts the resource records so that the order they're processed in is
+always consistent.  If the incoming zone is not always consistently
+ordered, the output can vary unless the resource records are always in
+the same order.  When sorted, however, they're always evaluated in the
+same order even if the zone file (or similar) order changes, and thus
+the output is consistent, making it easier for tools like I<diff> to
+detect where changes occur in the output.  This comes at a higher CPU
+cost, as it takes more time to sort the entries.
 
 =over
 

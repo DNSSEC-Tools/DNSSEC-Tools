@@ -252,6 +252,7 @@ sub switch_policy {
 	if (not defined $ctx_ptr) {
 	    return $self->policy($label);
 	} else {
+        vc_DESTROY($self->{_ctx_ptr}) if $self->{_ctx_ptr};
 	    $self->{_ctx_ptr} = 
 		Net::DNS::SEC::Validator::_create_context_with_conf(
 	           $self->{policy},
@@ -270,6 +271,7 @@ sub policy {
 
     if (defined $label and $label ne $self->{policy}) {
 	# will discard old context and create new one with given label
+    vc_DESTROY($self->{_ctx_ptr}) if $self->{_ctx_ptr};
 	$self->{_ctx_ptr} = 
 	    Net::DNS::SEC::Validator::_create_context_with_conf(
                $self->{policy},
@@ -466,7 +468,7 @@ sub async_gather_check_wait {
 
 sub DESTROY {
     my $self = shift;
-
+    vc_DESTROY($self->{_ctx_ptr}) if $self->{_ctx_ptr};
 }
 
 1;

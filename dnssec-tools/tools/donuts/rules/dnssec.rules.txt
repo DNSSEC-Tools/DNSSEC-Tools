@@ -342,7 +342,7 @@ ruletype: name
     # find the right matching key
     my $dhkey;
     if ($sig->keytag eq '') {
-      donuts_error("keytag not found on RRSIG #$count for $recordname");
+      donuts_error("keytag not found on a RRSIG for $recordname");
       next;
     }
     foreach my $key (@{donuts_records_by_name_and_type($current_domain, 'DNSKEY')}) {
@@ -352,7 +352,7 @@ ruletype: name
        }
     }
     if (!$dhkey) {
-      donuts_error("Can not find a matching DNSKEY for RRSIG #$count for $recordname");
+      donuts_error("Can not find a matching DNSKEY for a RRSIG for $recordname");
       next;
     }
     if (! $sig->verify($records->{$sig->typecovered}, $dhkey)) {

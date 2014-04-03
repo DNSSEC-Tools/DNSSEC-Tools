@@ -740,7 +740,7 @@ val_free_context(val_context_t * context)
 
     if (context->root_ns)
         free_name_servers(&context->root_ns);
-    
+
     if (context->dyn_valpolopt)
         FREE(context->dyn_valpolopt);
 
@@ -759,6 +759,9 @@ val_free_context(val_context_t * context)
         free_query_chain_structure(q);
         q = NULL;
     }
+    if (context->base_dnsval_conf)
+        FREE(context->base_dnsval_conf);
+    
 
     FREE(context);
 }
