@@ -2,8 +2,9 @@
 
 use Net::DNS::SEC::Validator;
 use Net::DNS::Packet;
+use Data::Dumper;
 
-my $flags = VAL_QUERY_AC_DETAIL;
+my $flags = VAL_QUERY_AC_DETAIL|VAL_QUERY_CHECK_ALL_RRSIGS;
 
 sub print_result {
 
@@ -11,8 +12,8 @@ sub print_result {
     my $ret = shift;
     my $a = shift;
 
-    print "Completed = $tc\n";
-    print "Retval = $ret\n";
+    print "*******************************\n";
+    print "Completed = $tc Retval = $ret\n";
     
     if (!$a) {
         print "Result = NULL\n";
@@ -35,7 +36,8 @@ sub print_result {
             print "Answer AC status: " . ${$ac}{status} . "\n";
             print "Response received from: " . $serv . "\n";
             foreach $d (@$acd) {
-                print "\tData RR status: " . ${$d}{rrstatus} . "\n";
+                print "\tData RR status: " .
+                    Net::DNS::SEC::Validator::_ac_status(${$d}{rrstatus}) . "\n";
                 my $rr = ${$d}{rrdata};
                 if ($rr) {
                     print "\tData RR name: " . $rr->name() . "\n";
@@ -46,7 +48,8 @@ sub print_result {
                 }
             }
             foreach $d (@$acs) {
-                print "\tSig RR status: " . ${$d}{rrstatus} . "\n";
+                print "\tSig RR status: " .
+                    Net::DNS::SEC::Validator::_ac_status(${$d}{rrstatus}) . "\n";
                 my $rr = ${$d}{rrdata};
                 if ($rr) {
                     print "\tSig RR name: " . $rr->name . "\n";
@@ -57,10 +60,11 @@ sub print_result {
                 }
             }
        }
-        foreach $ac (${$h}{proofs}) {
-            print "Proof = " . Data::Dumper::Dumper($ac) . "\n";
-        }
+#        foreach $ac (${$h}{proofs}) {
+#            print "Proof = " . Data::Dumper::Dumper($ac) . "\n";
+#        }
     } 
+    print "\n";
 }
 
 ##################################################

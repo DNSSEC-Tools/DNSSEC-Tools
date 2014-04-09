@@ -1858,7 +1858,7 @@ constant_26 (pTHX_ const char *name, IV *iv_return) {
   /* When generated this function returned values for the list of names given
      here.  However, subsequent manual editing may have added or removed some.
      VAL_AC_RRSIG_VERIFIED_SKEW VAL_AC_RRSIG_VERIFY_FAILED
-     VAL_AC_WCARD_VERIFIED_SKEW */
+     VAL_AC_WCARD_VERIFIED_SKEW VAL_QUERY_CHECK_ALL_RRSIGS*/
   /* Offset 8 gives the best switch position.  */
   switch (name[8]) {
   case 'C':
@@ -1886,6 +1886,17 @@ constant_26 (pTHX_ const char *name, IV *iv_return) {
     /*                       ^                        */
 #ifdef VAL_AC_RRSIG_VERIFY_FAILED
       *iv_return = VAL_AC_RRSIG_VERIFY_FAILED;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
+  case 'Y':
+    if (memEQ(name, "VAL_QUERY_CHECK_ALL_RRSIGS", 26)) {
+    /*                       ^                        */
+#ifdef VAL_QUERY_CHECK_ALL_RRSIGS
+      *iv_return = VAL_QUERY_CHECK_ALL_RRSIGS;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
@@ -2004,7 +2015,7 @@ my @names = (qw(LIBSRES_NS_STAGGER LOG_ALERT LOG_CRIT LOG_DEBUG LOG_EMERG
 	       VAL_POL_GOPT_OVERRIDE VAL_QFLAGS_ANY VAL_QFLAGS_CACHE_MASK
 	       VAL_QFLAGS_NOCACHE_MASK VAL_QFLAGS_USERMASK VAL_QUERY_AC_DETAIL
 	       VAL_QUERY_ASYNC VAL_QUERY_DONT_VALIDATE VAL_QUERY_EDNS0_FALLBACK
-	       VAL_QUERY_GLUE_REQUEST VAL_QUERY_NO_DLV 
+	       VAL_QUERY_GLUE_REQUEST VAL_QUERY_NO_DLV VAL_QUERY_CHECK_ALL_RRSIGS
 	       VAL_QUERY_NO_EDNS0_FALLBACK VAL_QUERY_RECURSE VAL_QUERY_ITERATE
 	       VAL_QUERY_USING_DLV
 	       VAL_RESOURCE_UNAVAILABLE VAL_SUCCESS VAL_TRUSTED_ANSWER
