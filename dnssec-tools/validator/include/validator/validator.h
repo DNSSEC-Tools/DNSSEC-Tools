@@ -80,6 +80,7 @@ struct timeval;
 #define VAL_QFLAGS_NOCACHE_MASK     0xff000000
 #define VAL_QUERY_EDNS0_FALLBACK    0x01000000 //obsolete
 #define VAL_QUERY_GLUE_REQUEST      0x02000000
+#define VAL_QUERY_CHECK_ALL_RRSIGS  0x04000000
 
 
 #define VAL_QFLAGS_USERMASK (VAL_QUERY_AC_DETAIL |\
@@ -90,7 +91,8 @@ struct timeval;
                              VAL_QUERY_SKIP_RESOLVER |\
                              VAL_QUERY_RECURSE |\
                              VAL_QUERY_SKIP_CACHE|\
-                             VAL_QUERY_IGNORE_SKEW)
+                             VAL_QUERY_IGNORE_SKEW|\
+                             VAL_QUERY_CHECK_ALL_RRSIGS)
 
 #ifndef LOG_EMERG
 #define LOG_EMERG 0
@@ -615,9 +617,9 @@ typedef struct val_context_opt {
                    int class_h,
                    long ttl,
                    size_t rdatalen,
-                   u_char *rdata,
+                   unsigned char *rdata,
                    size_t *buflen,
-                   u_char **buf);
+                   unsigned char **buf);
 
     /*
      * utility functions. mostly used internal to libval.
