@@ -1887,7 +1887,7 @@ copy_rr_rec_list(struct rrset_rr *o_rr)
 {
     struct rrset_rr *c_rr;
     struct val_rr_rec *n_rr, *head_rr;
-    size_t siz = 0;;
+    size_t siz = 0;
     u_char *buf;
 
     if (NULL == o_rr)
@@ -3868,6 +3868,18 @@ verify_provably_insecure(val_context_t * context,
     if (-1 == ns_name_ntop(q_name_n, name_p, sizeof(name_p)))
         snprintf(name_p, sizeof(name_p), "unknown/error");
 
+    /*
+     * If we've already tried checking for PI status for this node,
+     * don't repeat the checks. It not only saves us cycles, but it also
+     * prevents a loop when the validation of the DS
+     * existance/non-existence leads to an error that triggers another
+     * PI check
+     */
+    if (flags & VAL_QUERY_SEC_LEAF) {
+        val_log(context, LOG_INFO, "verify_provably_insecure(): No PI zone above %s", name_p);
+        goto err;
+    }
+
     val_log(context, LOG_INFO, "verify_provably_insecure(): Checking PI status for %s", name_p);
 
     /* find the zonecut for the query */
@@ -4098,7 +4110,9 @@ verify_provably_insecure(val_context_t * context,
         /* try validating the DS */
         if (VAL_NO_ERROR != (retval = 
                     try_chase_query(context, zonecut_n, ns_c_in, 
-                                    ns_t_ds, flags|VAL_QUERY_AC_DETAIL, queries, &results, done))) {
+                                    ns_t_ds, 
+                                    flags|VAL_QUERY_SEC_LEAF|VAL_QUERY_AC_DETAIL, 
+                                    queries, &results, done))) {
             val_log(context, LOG_INFO, 
                     "verify_provably_insecure(): Cannot chase DS record for %s", tempname_p);
             goto err;
@@ -6356,6 +6370,7 @@ int try_chase_query(val_context_t * context,
                           q_class, flags, &top_q))) {
         return retval;
     }
+
 
     /* 
      * Never release a query when we're chasing it in the
