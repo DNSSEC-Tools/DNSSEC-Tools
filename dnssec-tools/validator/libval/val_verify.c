@@ -661,6 +661,7 @@ verify_next_assertion(val_context_t * ctx,
     struct rrset_rr  *keyrr;
     u_int16_t       tag_h;
     char            name_p[NS_MAXDNAME];
+    int success = 0;
 
     if ((as == NULL) || (as->val_ac_rrset.ac_data == NULL) || (the_trust == NULL)) {
         val_log(ctx, LOG_INFO, "verify_next_assertion(): Cannot verify assertion - no data");
@@ -780,12 +781,11 @@ verify_next_assertion(val_context_t * ctx,
                         FREE(dnskey.public_key);
                         dnskey.public_key = NULL;
                     }
-                    return;
-                }
-            
-                /* Check if we're trying to verify some key in the authentication chain */
-                if ( the_set->rrs_type_h == ns_t_dnskey && 
-                    as != the_trust) {
+                    success = 1;
+                    break;
+
+                } else if ( the_set->rrs_type_h == ns_t_dnskey && as != the_trust) {
+                    /* Check if we're trying to verify some key in the authentication chain */
                     /* Check if we have reached our trust key */
                     /*
                      * If this record contains a DNSKEY, check if the DS record contains this key 
@@ -822,6 +822,7 @@ verify_next_assertion(val_context_t * ctx,
                              * the first match is enough 
                              */
                             nextrr->rr_status = VAL_AC_VERIFIED_LINK;
+                            dsrec->rr_status = VAL_AC_VERIFIED_LINK;
                             FREE(ds.d_hash);
                             ds.d_hash = NULL;
                             if (dnskey.public_key) {
@@ -829,7 +830,8 @@ verify_next_assertion(val_context_t * ctx,
                                 dnskey.public_key = NULL;
                             }
                             val_log(ctx, LOG_INFO, "verify_next_assertion(): Key links upward");
-                            return;
+                            success = 1;
+                            break;
                         } else {
                             /*
                              * Didn't find a valid entry in the DS record set 
@@ -839,9 +841,10 @@ verify_next_assertion(val_context_t * ctx,
                             nextrr->rr_status = VAL_AC_DS_NOMATCH;
                         } 
 
-                        if (ds.d_hash != NULL)
+                        if (ds.d_hash != NULL) {
                             FREE(ds.d_hash);
-
+                            ds.d_hash = NULL;
+                        }
                         dsrec = dsrec->rr_next;
                     }
                 }
@@ -857,13 +860,18 @@ verify_next_assertion(val_context_t * ctx,
             val_log(ctx, LOG_INFO, "verify_next_assertion(): Could not link this RRSIG to a DNSKEY");
             SET_STATUS(as->val_ac_status, the_sig, VAL_AC_DNSKEY_NOMATCH);
         }
+
+        /* Continue checking only if we want to verify all signatures */
+        if (success && !(flags & VAL_QUERY_CHECK_ALL_RRSIGS)) {
+            break;
+        }
     }
         
     /* 
      * If we reach here and we're a keyset, we either didn't verify the keyset or
      * didn't verify the link from the key to the DS 
      */ 
-    if (the_set->rrs_type_h == ns_t_dnskey){
+    if (!success && the_set->rrs_type_h == ns_t_dnskey){
         as->val_ac_status = VAL_AC_NO_LINK;
     }
 }
