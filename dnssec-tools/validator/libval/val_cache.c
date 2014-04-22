@@ -40,7 +40,7 @@ struct zone_ns_map_t {
  * we have caches for DNSKEY, DS, NS/glue, answers, and proofs
  * XXX negative cache functionality is currently unimplemented
  */
-static struct rrset_rec *unchecked_ns_info = NULL;
+static struct rrset_rec *unchecked_hints = NULL;
 static struct rrset_rec *unchecked_answers = NULL;
 
 /*
@@ -85,10 +85,20 @@ static int map_rwlock_init = -1;
 } while(0)
 
 #else
+
+/* Define dummy values */
+static int ns_rwlock = -1;
+static int ns_rwlock_init = -1;
+static int ans_rwlock = -1;
+static int ans_rwlock_init = -1;
+static int map_rwlock -1;
+static int map_rwlock_init = -1;
+
 #define VAL_CACHE_LOCK_INIT(lk, initvar)
 #define VAL_CACHE_LOCK_SH(lk)
 #define VAL_CACHE_LOCK_EX(lk)
 #define VAL_CACHE_UNLOCK(lk)
+
 #endif
 
 #define IN_BAILIWICK(name, q) \
@@ -176,6 +186,16 @@ stow_info(struct rrset_rec **unchecked_info, struct rrset_rec **new_info, struct
             res_sq_free_rrset_recs(&new_rr);
         } else {
             /* add new data to the end of our cache */
+            char name_p[NS_MAXDNAME];
+            const char *cachename = 
+                (*unchecked_info == unchecked_hints)?  "Hints" : "Answer";
+
+            if (-1 == ns_name_ntop(new_rr->rrs_name_n,
+                                   name_p, sizeof(name_p)))
+                snprintf(name_p, sizeof(name_p), "unknown/error");
+            val_log(NULL, LOG_INFO, "stow_info(): Storing {%s, %d, %d} in %s cache",
+                   name_p, new_rr->rrs_class_h, new_rr->rrs_type_h,
+                   cachename);
             if (prev) {
                 prev->rrs_next = new_rr;
             } else {
@@ -187,49 +207,26 @@ stow_info(struct rrset_rec **unchecked_info, struct rrset_rec **new_info, struct
 }
 
 /*
- * retrieve data, if present, from cache
+ * Common routine to read data from a specific cache
+ * NOTE: This assumes a read lock is alread held by the caller.
  */
-int
-get_cached_rrset(struct val_query_chain *matched_q, 
-                 struct domain_info **response)
+static int
+lookup_store(u_char *name_n, u_int16_t class_h, u_int16_t type_h,
+             struct rrset_rec *answer_head, 
+             struct rrset_rec **new_answer)
 {
-    struct rrset_rec **answer_head, *next_answer, *prev;
-    struct rrset_rec *new_answer;
+
+    struct rrset_rec *next_answer;
     struct timeval  tv;
-#ifndef VAL_NO_THREADS
-    pthread_rwlock_t *lk;
-#endif
 
-    u_int16_t type_h;
-    u_int16_t class_h;
-    u_char *name_n;
-
-    if (!matched_q || !response)
+    if (NULL == new_answer)
         return VAL_BAD_ARGUMENT;
 
-    answer_head = NULL;
-    *response = NULL;
-    name_n = matched_q->qc_name_n;
-    type_h = matched_q->qc_type_h;
-    class_h = matched_q->qc_class_h;
+    *new_answer = NULL;
 
     gettimeofday(&tv, NULL);
 
-#ifndef VAL_NO_THREADS
-    lk = &ans_rwlock;
-    VAL_CACHE_LOCK_INIT(lk, ans_rwlock_init);
-    VAL_CACHE_LOCK_SH(lk);
-#endif /* VAL_NO_THREADS */
-
-    answer_head = &unchecked_answers;
-
-    prev = NULL;
-    new_answer = NULL;
-    if (answer_head) 
-        next_answer = *answer_head;
-    else
-        next_answer = NULL;
-    
+    next_answer = answer_head;
     while (next_answer) {
 
         if (tv.tv_sec < next_answer->rrs_ttl_x &&
@@ -250,21 +247,76 @@ get_cached_rrset(struct val_query_chain *matched_q,
                                     next_answer->rrs_name_n)))) {
 
                 if (next_answer->rrs_data != NULL) {
-                    new_answer = copy_rrset_rec(next_answer);
-                    if (new_answer) {
+                    *new_answer = copy_rrset_rec(next_answer);
+                    if (*new_answer) {
                         /* Adjust the TTL */
-                        new_answer->rrs_ttl_h = next_answer->rrs_ttl_x - tv.tv_sec; 
+                        (*new_answer)->rrs_ttl_h = next_answer->rrs_ttl_x - tv.tv_sec; 
                     }
                     break;
                 }
             } 
         }
 
-        prev = next_answer;
         next_answer = next_answer->rrs_next;
     }
 
-    VAL_CACHE_UNLOCK(lk);
+    return VAL_NO_ERROR;
+}
+
+/*
+ * retrieve data, if present, from the answer cache
+ */
+int
+get_cached_rrset(struct val_query_chain *matched_q, 
+                 struct domain_info **response)
+{
+    struct rrset_rec *new_answer;
+
+    u_char *name_n;
+    u_int16_t class_h;
+    u_int16_t type_h;
+
+    int retval;
+
+    if (!matched_q || !response)
+        return VAL_BAD_ARGUMENT;
+
+    name_n = matched_q->qc_name_n;
+    class_h = matched_q->qc_class_h;
+    type_h = matched_q->qc_type_h;
+
+    new_answer = NULL;
+    *response = NULL;
+
+    VAL_CACHE_LOCK_INIT(&ans_rwlock, ans_rwlock_init);
+    VAL_CACHE_LOCK_SH(&ans_rwlock);
+
+    if (VAL_NO_ERROR != (retval = lookup_store(name_n, class_h, type_h,
+                            unchecked_answers, &new_answer))) {
+        VAL_CACHE_UNLOCK(&ans_rwlock);
+        return retval;
+    }
+
+    VAL_CACHE_UNLOCK(&ans_rwlock);
+   
+    /* 
+     * If we're looking for the NS and we don't care about validation
+     * look at the hints cache too
+     */
+    if (!new_answer && type_h == ns_t_ns && 
+        (matched_q->qc_flags & VAL_QUERY_DONT_VALIDATE)) {
+
+        VAL_CACHE_LOCK_INIT(&ns_rwlock, ns_rwlock_init);
+        VAL_CACHE_LOCK_SH(&ns_rwlock);
+
+        if (VAL_NO_ERROR != (retval = lookup_store(name_n, class_h, type_h,
+                            unchecked_hints, &new_answer))) {
+            VAL_CACHE_UNLOCK(&ns_rwlock);
+            return retval;
+        }
+
+        VAL_CACHE_UNLOCK(&ns_rwlock);
+    }
 
     /* Construct the response */
     if (new_answer) {
@@ -304,8 +356,8 @@ get_cached_rrset(struct val_query_chain *matched_q,
             return VAL_NO_ERROR;
         }
 
-        (*response)->di_requested_type_h = matched_q->qc_type_h;
-        (*response)->di_requested_class_h = matched_q->qc_class_h;
+        (*response)->di_requested_type_h = type_h;
+        (*response)->di_requested_class_h = class_h;
         (*response)->di_res_error = SR_UNSET;
 
         matched_q->qc_state = Q_ANSWERED;
@@ -316,13 +368,14 @@ get_cached_rrset(struct val_query_chain *matched_q,
                         new_answer->rrs_data->rr_rdata, 
                         matched_q, &(*response)->di_qnames, 
                         NULL);
-
-
     }
 
     return VAL_NO_ERROR;
 }
 
+/*
+ * Store referral information into the hints cache
+ */
 int
 stow_zone_info(struct rrset_rec **new_info, struct val_query_chain *matched_q)
 {
@@ -353,12 +406,15 @@ stow_zone_info(struct rrset_rec **new_info, struct val_query_chain *matched_q)
     
     VAL_CACHE_LOCK_INIT(&ns_rwlock, ns_rwlock_init);
     VAL_CACHE_LOCK_EX(&ns_rwlock);
-    rc = stow_info(&unchecked_ns_info, new_info, matched_q);
+    rc = stow_info(&unchecked_hints, new_info, matched_q);
     VAL_CACHE_UNLOCK(&ns_rwlock);
 
     return rc;
 }
 
+/*
+ * Store information into the answer cache
+ */
 int
 stow_answers(struct rrset_rec **new_info, struct val_query_chain *matched_q)
 {
@@ -443,6 +499,10 @@ free_zone_nslist(void)
     return VAL_NO_ERROR;
 }
 
+/*
+ * Get zone information: this could either be from 
+ * the zone name to ns mapping cache or the hints cache
+ */
 int
 get_nslist_from_cache(val_context_t *ctx,
                       struct queries_for_query *matched_qfq,
@@ -513,12 +573,16 @@ get_nslist_from_cache(val_context_t *ctx,
 
     VAL_CACHE_UNLOCK(&map_rwlock);
 
+    tmp_zonecut_n = NULL;
+    prev = NULL;
+
+
+    /* Check in the NS store */
+
     VAL_CACHE_LOCK_INIT(&ns_rwlock, ns_rwlock_init);
     VAL_CACHE_LOCK_SH(&ns_rwlock);
 
-    tmp_zonecut_n = NULL;
-    prev = NULL;
-    nsrrset = unchecked_ns_info;
+    nsrrset = unchecked_hints;
     while (nsrrset) {
 
         if (tv.tv_sec < nsrrset->rrs_ttl_x &&
@@ -555,9 +619,9 @@ get_nslist_from_cache(val_context_t *ctx,
         nsrrset = nsrrset->rrs_next;
     }
 
+
     if (name_n) {
-        /* only ask for complete name server lists - don't want to fetch glue here */
-        bootstrap_referral(ctx, name_n, unchecked_ns_info, matched_qfq, queries,
+        bootstrap_referral(ctx, name_n, unchecked_hints, matched_qfq, queries,
                            ref_ns_list);
     }
 
@@ -581,8 +645,8 @@ free_validator_cache(void)
 {
     VAL_CACHE_LOCK_INIT(&ns_rwlock, ns_rwlock_init);
     VAL_CACHE_LOCK_EX(&ns_rwlock);
-    res_sq_free_rrset_recs(&unchecked_ns_info);
-    unchecked_ns_info = NULL;
+    res_sq_free_rrset_recs(&unchecked_hints);
+    unchecked_hints = NULL;
     VAL_CACHE_UNLOCK(&ns_rwlock);
     
     VAL_CACHE_LOCK_INIT(&ans_rwlock, ans_rwlock_init);
