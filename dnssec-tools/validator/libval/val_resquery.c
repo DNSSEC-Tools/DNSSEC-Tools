@@ -888,20 +888,38 @@ bootstrap_referral(val_context_t *context,
                     len);
         }
 
+
         if (*ref_ns_list != NULL) {
+
+            /* save the pending list for some future occasion */
             matched_q->qc_referral->pending_glue_ns = pending_glue;
             matched_q->qc_state = Q_INIT;
+
+        } else if (!namecmp(pending_glue->ns_name_n, matched_q->qc_name_n)) {
+
+            /* 
+             * Break out of a cyclic dependency
+             * Ideally we want the next NS higher up, but its not worth
+             * the trouble. Simply start from root in such circumstances
+             */
+            free_name_servers(&pending_glue);
+            if (context->root_ns != NULL) {
+                clone_ns_list(ref_ns_list, context->root_ns);
+                matched_q->qc_flags |= VAL_QUERY_ITERATE;
+                matched_q->qc_state = Q_INIT;
+            }
+
         } else {
+
             matched_q->qc_referral->cur_pending_glue_ns = pending_glue;
             matched_q->qc_referral->pending_glue_ns = pending_glue->ns_next;
             pending_glue->ns_next = NULL;
 
             /*
              * Create a query for glue for pending_ns 
-            */
-            flags = matched_q->qc_flags | 
+             */
+            flags = matched_q->qc_flags | VAL_QUERY_ITERATE | 
                         (VAL_QUERY_GLUE_REQUEST | VAL_QUERY_DONT_VALIDATE);
-
             matched_q->qc_state = Q_INIT;
 
             if (val_context_ip4(context)) {
@@ -920,7 +938,6 @@ bootstrap_referral(val_context_t *context,
                     return ret_val;
             }
 #endif
-
         }
     } else if (*ref_ns_list != NULL) {
         matched_q->qc_state = Q_INIT;

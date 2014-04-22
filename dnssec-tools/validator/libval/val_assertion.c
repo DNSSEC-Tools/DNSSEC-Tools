@@ -2584,7 +2584,6 @@ nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
         *status = VAL_NONEXISTENT_NAME;
     }
 
-#if 0
     if (soa_set && !soa_set->val_rc_consumed) { 
         if (VAL_NO_ERROR !=
                 (retval = transform_single_result(ctx, soa_set, queries, results,
@@ -2593,7 +2592,6 @@ nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
         }
         *proof_res = new_res;
     }
-#endif
 
     if (span && !span->res->val_rc_consumed) { 
         if (VAL_NO_ERROR !=
@@ -3112,7 +3110,6 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
         *proof_res = new_res;
     }
 
-#if 0
     if (soa_set && !soa_set->val_rc_consumed) {
         if (VAL_NO_ERROR !=
                 (retval = transform_single_result(ctx, soa_set, queries, results,
@@ -3121,7 +3118,6 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
         }
         *proof_res = new_res;
     }
-#endif
 
     retval = VAL_NO_ERROR;
     goto done;
@@ -3491,7 +3487,8 @@ prove_nonexistence(val_context_t * ctx,
  */
 static int
 find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
-              u_char * qname_n, int *done, u_char ** name_n)
+                  u_char * qname_n, u_int16_t q_type_h, u_int32_t flags, 
+                  int *done, u_char ** name_n)
 {
     int             retval;
     struct val_result_chain *results = NULL;
@@ -3506,8 +3503,9 @@ find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
     *name_n = NULL;
     *done = 1;
 
-    if (qname_n == NULL)
+    if (qname_n == NULL) {
         return VAL_NO_ERROR;
+    }
 
     /* 
      * if we already have a matching query structure with the zonecut 
@@ -3521,21 +3519,29 @@ find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
             && (q->qc_zonecut_n != NULL)
             && (q->qc_class_h == ns_c_in)
             && (namecmp(q->qc_name_n, qname_n) == 0)) {
+
+            zonecut_name_n = q->qc_zonecut_n;
             break;
         }
         temp_qfq = temp_qfq->qfq_next;
     }
 
-    if (NULL != temp_qfq) { 
-        zonecut_name_n = temp_qfq->qfq_query->qc_zonecut_n;
-        *done = 1;
-        
-    } else {
+    if (NULL == zonecut_name_n) { 
 
+        /*
+         * It is important that we don't enable validation when we look
+         * for the zonecut. If validation is enabled we can run into an
+         * infinite loop. Example:
+         * in order to validate the non-existence of an NS against a
+         * given name for a PI zone we will have to prove that the DS
+         * for that name does not exist. 
+         * In order to determine the DS record, we need  to find the zonecut
+         * ie issue an NS request. This may result in an infinite loop
+         */
         u_char *cur_q = qname_n;  
         if (VAL_NO_ERROR !=
             (retval = try_chase_query(context, cur_q, ns_c_in,
-                                      ns_t_soa, 
+                                      ns_t_ns, 
                                       (*queries)->qfq_flags|\
                                         VAL_QUERY_DONT_VALIDATE|\
                                         VAL_QUERY_AC_DETAIL,
@@ -3547,21 +3553,11 @@ find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
 
         for (res = results; res; res = res->val_rc_next) {
             int             i;
-            struct val_rrset_rec *soa_rrset = NULL;
-
-            /* 
-             * if we just proved that the type does not exist,
-             * it means that the query name itself is the zonecut
-             */
-            if ((res->val_rc_status == VAL_NONEXISTENT_TYPE) ||
-                (res->val_rc_status == VAL_NONEXISTENT_TYPE_NOCHAIN)) {
-
-                zonecut_name_n = cur_q;
-                break;
-            }
+            struct val_rrset_rec *zc_rrset = NULL;
 
             if ((res->val_rc_answer == NULL)
                 || (res->val_rc_answer->val_ac_rrset == NULL)) {
+                /* If we have a NACK, look for the SOA */
                 if (res->val_rc_proof_count == 0)
                     continue;
                 for (i = 0; i < res->val_rc_proof_count; i++) {
@@ -3570,19 +3566,20 @@ find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
                         /* ensure that this is a real soa and not a hand-crafted one */
                         (res->val_rc_proofs[i]->val_ac_rrset->
                          val_rrset_data != NULL)) {
+
+                        zc_rrset = res->val_rc_proofs[i]->val_ac_rrset;
                         break;
                     }
                 }
-                if (i == res->val_rc_proof_count)
-                    continue;
-                soa_rrset = res->val_rc_proofs[i]->val_ac_rrset;
             } else if (res->val_rc_answer->val_ac_rrset->
-                       val_rrset_type == ns_t_soa) {
-                soa_rrset = res->val_rc_answer->val_ac_rrset;
+                       val_rrset_type == ns_t_ns) {
+                /* If we have an answer, look for the NS */
+                zc_rrset = res->val_rc_answer->val_ac_rrset;
             }
-            if (soa_rrset) {
+
+            if (zc_rrset) {
                 /* store resultant name into *tname_n */
-                if (ns_name_pton(soa_rrset->val_rrset_name, 
+                if (ns_name_pton(zc_rrset->val_rrset_name, 
                             tname_n, sizeof(tname_n)) == -1) {
 
                     /* Cannot find the zonecut */
@@ -3882,39 +3879,17 @@ verify_provably_insecure(val_context_t * context,
 
     val_log(context, LOG_INFO, "verify_provably_insecure(): Checking PI status for %s", name_p);
 
-    /* find the zonecut for the query */
     if (known_zonecut_n == NULL) {
-        /* 
-         * in order to fetch an SOA with validation enabled, when the zone is not signed
-         * we might have to prove that the DS for that name does not exist. 
-         * In order to determine the DS record to query, we need  to find the zonecut
-         * ie issue an SOA request. This may result in an infinite loop, so don't find
-         * the zonecut in such cases.
-         */
-        if ((q_type_h != ns_t_soa) || (flags & VAL_QUERY_DONT_VALIDATE)) {
-            if (VAL_NO_ERROR != find_next_zonecut(context, queries, q_name_n, done, &q_zonecut_n)) {
-                val_log(context, LOG_INFO, "verify_provably_insecure(): Cannot find zone cut for %s", name_p);
-                goto err;
-
-            } else if (*done == 0) {
-                /* Need more data */
-                val_log(context, LOG_INFO, "verify_provably_insecure(): Finding zonecut data for %s", name_p);
-                goto donefornow;
-            }
-        }
-       
         /* 
          * In cases where the zonecut does not exist simply start with the qname 
          */
+        size_t len = wire_name_length(q_name_n);
+        q_zonecut_n = (u_char *) MALLOC (len * sizeof (u_char));
         if (q_zonecut_n == NULL) {
-            size_t len = wire_name_length(q_name_n);
-            q_zonecut_n = (u_char *) MALLOC (len * sizeof (u_char));
-            if (q_zonecut_n == NULL) {
-                retval = VAL_OUT_OF_MEMORY;
-                goto err;
-            }
-            memcpy(q_zonecut_n, q_name_n, len);
+            retval = VAL_OUT_OF_MEMORY;
+            goto err;
         }
+        memcpy(q_zonecut_n, q_name_n, len);
         
     } else {
         /* copy the known zonecut into our zonecut variable */
@@ -4042,19 +4017,11 @@ verify_provably_insecure(val_context_t * context,
             snprintf(tempname_p, sizeof(tempname_p), "unknown/error");
         } 
     
-        /* 
-         * in order to fetch an SOA with validation enabled, when the zone is not signed
-         * we might have to prove that the DS for that name does not exist. 
-         * In order to determine the DS record to query, we need  to find the zonecut
-         * ie issue an SOA request. This may result in an infinite loop so don't look
-         * for the SOA record.
-         */
-        if ( q_type_h != ns_t_soa || 
-            (flags & VAL_QUERY_DONT_VALIDATE) ||
-            namecmp(q_name_n, nxt_qname)) {
+        if (namecmp(q_name_n, nxt_qname)) {
 
             /* find next zone cut going down from the trust anchor */
-            if (VAL_NO_ERROR != find_next_zonecut(context, queries, nxt_qname, done, &zonecut_n)) {
+            if (VAL_NO_ERROR != find_next_zonecut(context, queries,
+                        nxt_qname, q_type_h, flags, done, &zonecut_n)) {
                 val_log(context, LOG_INFO, "verify_provably_insecure(): Cannot find zone cut for %s", tempname_p);
                 goto err;
             } else if (*done == 0) {
@@ -4102,7 +4069,7 @@ verify_provably_insecure(val_context_t * context,
         /* if older zonecut is more specific than the new one bail out */
         if (namename(curzone_n, zonecut_n) != NULL) {
             val_log(context, LOG_INFO, 
-                    "verify_provably_insecure(): Older zonecut is more current than the current one: %s",
+                    "verify_provably_insecure(): Older zonecut is more specific than the current one: %s",
                     tempname_p);
             goto err;
         }
