@@ -115,6 +115,8 @@ stow_info(struct rrset_rec **unchecked_info, struct rrset_rec **new_info, struct
 {
     struct rrset_rec *new_rr;
     struct rrset_rec *old, *prev, *trail_new;
+    char name_p[NS_MAXDNAME];
+    const char *cachename;
     int delete_newrr = 0;
 
     if (new_info == NULL || unchecked_info == NULL)
@@ -182,20 +184,18 @@ stow_info(struct rrset_rec **unchecked_info, struct rrset_rec **new_info, struct
         *new_info = new_rr->rrs_next;
         new_rr->rrs_next = NULL;
 
+        if (-1 == ns_name_ntop(new_rr->rrs_name_n, name_p, sizeof(name_p)))
+            snprintf(name_p, sizeof(name_p), "unknown/error");
+        cachename = (*unchecked_info == unchecked_hints)?  "Hints" : "Answer";
+
         if (delete_newrr) {
+            val_log(NULL, LOG_INFO, "stow_info(): Refreshing {%s, %d, %d} in %s cache",
+                   name_p, new_rr->rrs_class_h, new_rr->rrs_type_h, cachename);
             res_sq_free_rrset_recs(&new_rr);
         } else {
             /* add new data to the end of our cache */
-            char name_p[NS_MAXDNAME];
-            const char *cachename = 
-                (*unchecked_info == unchecked_hints)?  "Hints" : "Answer";
-
-            if (-1 == ns_name_ntop(new_rr->rrs_name_n,
-                                   name_p, sizeof(name_p)))
-                snprintf(name_p, sizeof(name_p), "unknown/error");
-            val_log(NULL, LOG_INFO, "stow_info(): Storing {%s, %d, %d} in %s cache",
-                   name_p, new_rr->rrs_class_h, new_rr->rrs_type_h,
-                   cachename);
+            val_log(NULL, LOG_INFO, "stow_info(): Storing new {%s, %d, %d} in %s cache",
+                   name_p, new_rr->rrs_class_h, new_rr->rrs_type_h, cachename);
             if (prev) {
                 prev->rrs_next = new_rr;
             } else {
