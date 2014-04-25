@@ -247,6 +247,7 @@ extern          "C" {
         struct name_server *qc_respondent_server;
         unsigned long qc_respondent_server_options;
         int    qc_trans_id;             //  synchronous queries only
+        long   qc_last_sent;            //  last time the query was sent
         struct expected_arrival *qc_ea; // asynchronous queries only
 
         struct val_digested_auth_chain *qc_ans;

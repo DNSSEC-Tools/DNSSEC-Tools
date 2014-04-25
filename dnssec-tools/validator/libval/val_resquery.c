@@ -2179,6 +2179,7 @@ val_resquery_send(val_context_t * context,
     struct name_server *tempns;
     struct val_query_chain *matched_q;
     struct name_server *nslist;
+    struct timeval now;
 
     val_log(NULL, LOG_DEBUG, __FUNCTION__);
     /*
@@ -2189,7 +2190,7 @@ val_resquery_send(val_context_t * context,
     if ((matched_qfq == NULL) || 
         (matched_qfq->qfq_query->qc_ns_list == NULL)
 #ifndef VAL_NO_ASYNC
-        || (matched_qfq->qfq_flags & VAL_QUERY_ASYNC)
+        || (matched_qfq->qfq_query->qc_flags & VAL_QUERY_ASYNC)
 #endif
         ) {
         return VAL_BAD_ARGUMENT;
@@ -2217,6 +2218,12 @@ val_resquery_send(val_context_t * context,
                                   name_buf, sizeof(name_buf)));
         }
     }
+
+    /*
+     * Update the qc_last_sent timestamp
+     */
+    gettimeofday(&now, NULL);
+    matched_q->qc_last_sent = now.tv_sec;
 
     if ((ret_val =
          query_send(name_p, matched_q->qc_type_h, matched_q->qc_class_h,
@@ -2254,7 +2261,7 @@ val_resquery_rcv(val_context_t * context,
     if ((matched_qfq == NULL) || (response == NULL) || (queries == NULL) ||
         (pending_desc == NULL)
 #ifndef VAL_NO_ASYNC
-        || (matched_qfq->qfq_flags & VAL_QUERY_ASYNC)
+        || (matched_qfq->qfq_query->qc_flags & VAL_QUERY_ASYNC)
 #endif
         )
         return VAL_BAD_ARGUMENT;
@@ -2614,7 +2621,7 @@ val_async_select_info(val_context_t *ctx, fd_set *activefds,
             char         name_p[NS_MAXDNAME];
             if (-1 == ns_name_ntop(qfq->qfq_query->qc_name_n, name_p, sizeof(name_p)))
                 snprintf(name_p, sizeof(name_p), "unknown/error");
-            if (!qfq->qfq_query->qc_ea || (qfq->qfq_flags & VAL_QUERY_SKIP_RESOLVER)) {
+            if (!qfq->qfq_query->qc_ea || (qfq->qfq_query->qc_flags & VAL_QUERY_SKIP_RESOLVER)) {
                 val_log(NULL, LOG_DEBUG+1, " as %p query %p {%s %s(%d) %s(%d)} ea %p", as, qfq,
                         name_p, p_class(qfq->qfq_query->qc_class_h),
                         qfq->qfq_query->qc_class_h,

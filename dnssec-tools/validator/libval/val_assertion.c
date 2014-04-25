@@ -79,11 +79,7 @@ extern const char *p_query_status(int err);
 }while (0)
 
 /* 
- * The flags in VAL_QFLAGS_CACHE_PREF_MASK: 
- * (VAL_QUERY_ITERATE, VAL_QUERY_SKIP_CACHE) are special 
- * If we are not looking for these flags, then return what ever we find 
- * If we are looking for this flag, only return a node that has this 
- * flag set
+ * See validator.h for matching semantics
  */
 #define QUERY_FLAGS_MATCHING(cacheflag, queryflag) \
     ((queryflag == VAL_QFLAGS_ANY) ||\
@@ -282,6 +278,7 @@ val_free_result_chain(struct val_result_chain *results)
  *  qc_flags
  *  qc_type
  *  qc_class
+ *  qc_last_sent
  */
 static void 
 init_query_chain_node(struct val_query_chain *q) 
@@ -472,18 +469,30 @@ add_to_query_chain(val_context_t *context, u_char * name_n,
                 } 
             }
 
-
             if (-1 == ns_name_ntop(temp->qc_original_name, name_p, sizeof(name_p)))
                 snprintf(name_p, sizeof(name_p), "unknown/error");
-            if (temp->qc_state >= Q_ANSWERED && tv.tv_sec >= temp->qc_ttl_x) { 
+
+            if (temp->qc_state >= Q_ANSWERED && 
+                /* either record has actually timed out */
+                (tv.tv_sec >= temp->qc_ttl_x ||
+                 /* 
+                  * or we want  want it to time out, modulo our
+                  * max_refresh threshold
+                  */
+                  ((temp->qc_flags & VAL_QUERY_SKIP_CACHE) &&
+                    temp->qc_last_sent != -1 &&
+                    context->g_opt && context->g_opt->max_refresh >= 0 &&
+                    context->g_opt->max_refresh < (tv.tv_sec - temp->qc_last_sent)))) { 
+
                 /* Remove this data at the next safe opportunity */ 
-                val_log(context, LOG_INFO, "add_to_qfq_chain(): Data in cache timed out: {%s %s(%d) %s(%d)}", 
+                val_log(context, LOG_DEBUG,
+                        "ask_cache(): Forcing expiry of {%s %s(%d) %s(%d)}, flags=%x",
                         name_p, p_class(temp->qc_class_h),
                         temp->qc_class_h, p_type(temp->qc_type_h),
-                        temp->qc_type_h);
+                        temp->qc_type_h, temp->qc_flags);
+
                 temp->qc_flags |= VAL_QUERY_MARK_FOR_DELETION;
-                /* There should be no other matching query in the list, so bail out */ 
-                break;
+
             } else {
                 val_log(context, LOG_DEBUG, 
                         "add_to_qfq_chain(): Found data in cache: {%s %s(%d) %s(%d)}, exp in: %ld", 
@@ -509,15 +518,7 @@ add_to_query_chain(val_context_t *context, u_char * name_n,
     temp->qc_type_h = type_h;
     temp->qc_class_h = class_h;
     temp->qc_flags = flags;
-#if 0
-        /*
-         * If we have caching disabled then don't re-use this element
-         */
-        if(temp->qc_flags & VAL_QUERY_SKIP_CACHE) {
-            temp->qc_flags |= VAL_QUERY_MARK_FOR_DELETION;
-        }
-#endif
-
+    temp->qc_last_sent = -1;
 
     init_query_chain_node(temp);
     
@@ -598,7 +599,7 @@ check_in_qfq_chain(val_context_t *context, struct queries_for_query **queries,
     while (temp) {
         if ((temp->qfq_query->qc_type_h == type_h)
             && (temp->qfq_query->qc_class_h == class_h)
-            && (QUERY_FLAGS_MATCHING(temp->qfq_query->qc_flags, flags))
+            && (QUERY_FLAGS_MATCHING(temp->qfq_flags, flags))
             && (namecmp(temp->qfq_query->qc_original_name, name_n) == 0)) {
 #ifdef LIBVAL_DLV
             if (type_h == ns_t_dlv) {
@@ -3540,12 +3541,9 @@ find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
          */
         u_char *cur_q = qname_n;  
         if (VAL_NO_ERROR !=
-            (retval = try_chase_query(context, cur_q, ns_c_in,
-                                      ns_t_ns, 
-                                      (*queries)->qfq_flags|\
-                                        VAL_QUERY_DONT_VALIDATE|\
-                                        VAL_QUERY_AC_DETAIL,
-                                      queries, &results, done))) {
+            (retval = try_chase_query(context, cur_q, ns_c_in, ns_t_ns, 
+                          flags|VAL_QUERY_DONT_VALIDATE|VAL_QUERY_AC_DETAIL,
+                          queries, &results, done))) {
             return retval;
         } else if (!(*done)) {
             goto end; 
@@ -4154,6 +4152,12 @@ verify_provably_insecure(val_context_t * context,
                     if (ds.d_hash != NULL)
                         FREE(ds.d_hash);
                     rr = rr->rr_next;
+                }
+                if (*is_pinsecure) {
+                    val_log(context, LOG_INFO,
+                            "verify_provably_insecure(): Unknown DS alg for %s", name_p);
+                    val_log(context, LOG_INFO, 
+                            "verify_provably_insecure(): %s is provably insecure", name_p);
                 }
             }
         }
@@ -4785,12 +4789,12 @@ int switch_to_root(val_context_t * context,
 
     /* reset the flags that are not in the user mask */
     matched_q->qc_flags &= VAL_QFLAGS_USERMASK;
-    matched_q->qc_flags |= (VAL_QUERY_ITERATE|VAL_QUERY_SKIP_CACHE);
+    matched_q->qc_flags |= VAL_QUERY_ITERATE;
     /*
      * Iteratively lookup from root for all additional queries sent in
      * in relation to this query; e.g. queries for DNSKEYs, DS etc 
      */
-    matched_qfq->qfq_flags |= (VAL_QUERY_ITERATE|VAL_QUERY_SKIP_CACHE);
+    matched_qfq->qfq_flags |= VAL_QUERY_ITERATE;
     val_log(context, LOG_INFO,
             "switch_to_root(): Re-initiating query from root for {%s %s %s}",
             name_p,
@@ -5270,6 +5274,7 @@ restart_query:
                                                   &added_q, 
                                                   res->val_rc_flags)))
                     return retval;
+                /* XXX SK Need to think about this */
                 res->val_rc_status = VAL_DONT_KNOW;
                 goto restart_query;
             }
@@ -5400,17 +5405,19 @@ _ask_cache_one(val_context_t * context, struct queries_for_query **queries,
     if (-1 == ns_name_ntop(next_q->qfq_query->qc_name_n, name_p, sizeof(name_p)))
         snprintf(name_p, sizeof(name_p), "unknown/error");
 
-    if (next_q->qfq_query->qc_flags & VAL_QUERY_SKIP_CACHE) {
+    if ((next_q->qfq_query->qc_flags & VAL_QUERY_ITERATE)||
+        (next_q->qfq_query->qc_flags & VAL_QUERY_SKIP_CACHE)) {
+
         /* don't look at the cache for this query */
         val_log(context, LOG_DEBUG,
-                "ask_cache(): skipping cache for {%s %s(%d) %s(%d)}, flags=%x",
+                "ask_cache(): skipping cache for iterative mode {%s %s(%d) %s(%d)}, flags=%x",
                 name_p, p_class(next_q->qfq_query->qc_class_h),
                 next_q->qfq_query->qc_class_h,
                 p_type(next_q->qfq_query->qc_type_h),
                 next_q->qfq_query->qc_type_h, next_q->qfq_query->qc_flags);
         return VAL_NO_ERROR;
     }
- 
+
     val_log(context, LOG_DEBUG,
             "ask_cache(): looking for {%s %s(%d) %s(%d)}, flags=%x", name_p,
             p_class(next_q->qfq_query->qc_class_h),
@@ -6749,6 +6756,7 @@ _call_callbacks(int event, val_async_status *as)
         val_cb_params_t cbp;
         memset(&cbp, 0, sizeof(cbp));
 
+        // XXX SK Do we need to set val_status to val_as_retval?
         cbp.val_status = as->val_as_retval;
         cbp.name = as->val_as_name;
         cbp.class_h = as->val_as_class;
