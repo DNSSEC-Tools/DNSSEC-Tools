@@ -90,8 +90,8 @@ struct timeval;
                              VAL_QUERY_ASYNC |\
                              VAL_QUERY_NO_EDNS0_FALLBACK |\
                              VAL_QUERY_SKIP_RESOLVER |\
-                             VAL_QUERY_RECURSE |\
-                             VAL_QUERY_SKIP_CACHE|\
+                             VAL_QUERY_ITERATE |\
+                             VAL_QUERY_SKIP_CACHE |\
                              VAL_QUERY_IGNORE_SKEW|\
                              VAL_QUERY_CHECK_ALL_RRSIGS)
 
@@ -129,6 +129,7 @@ typedef struct val_global_opt {
     char *log_target;
     int closest_ta_only;
     int rec_fallback;
+    long max_refresh;
 } val_global_opt_t;
 
 /*
@@ -173,11 +174,13 @@ typedef struct val_context_opt {
 #define GOPT_LOGTARGET_STR "log"
 #define GOPT_CLOSEST_TA_ONLY_STR "closest-ta-only"
 #define GOPT_REC_FALLBACK "rec-fallback"
+#define GOPT_MAX_REFRESH_STR "max-refresh"
 
 #define VAL_POL_GOPT_DISABLE 0 
 #define VAL_POL_GOPT_ENABLE 1
 #define VAL_POL_GOPT_OVERRIDE 2
 
+#define VAL_POL_GOPT_MAXREFRESH 60
 
 #define ZONE_PU_TRUSTED_MSG "trusted"
 #define ZONE_PU_UNTRUSTED_MSG "untrusted"
@@ -194,6 +197,7 @@ typedef struct val_context_opt {
 #ifndef NS_MAXDNAME
 #define NS_MAXDNAME 1025
 #endif
+
 
     /*
      * Response structures  

@@ -242,6 +242,7 @@ set_global_opt_defaults(val_global_opt_t *gopt)
     gopt->log_target = NULL;
     gopt->closest_ta_only = 0;
     gopt->rec_fallback = 1;
+    gopt->max_refresh = VAL_POL_GOPT_MAXREFRESH;
 }
 
 int 
@@ -272,6 +273,8 @@ update_dynamic_gopt(val_global_opt_t **g_new, val_global_opt_t *g)
         (*g_new)->closest_ta_only = g->closest_ta_only;        
     if (g->rec_fallback != -1)
         (*g_new)->rec_fallback = g->rec_fallback;        
+    if (g->max_refresh != -1)
+        (*g_new)->max_refresh = g->max_refresh;        
 
     return VAL_NO_ERROR;
 }
@@ -1037,6 +1040,32 @@ parse_rec_fallback(char **buf_ptr, char *end_ptr, int *line_number,
     return VAL_NO_ERROR;
 }
 
+static int
+parse_max_refresh_gopt(char **buf_ptr, char *end_ptr, int *line_number, 
+                      int *endst, val_global_opt_t *g_opt) 
+{
+    char            token[TOKEN_MAX];
+    int retval;
+
+    if ((buf_ptr == NULL) || (*buf_ptr == NULL) || (end_ptr == NULL) || 
+        (g_opt == NULL) || (endst == NULL) || (line_number == NULL))
+        return VAL_BAD_ARGUMENT;
+
+    if (VAL_NO_ERROR != (retval = 
+        val_get_token(buf_ptr, end_ptr, line_number, 
+                      token, sizeof(token), endst,
+                      CONF_COMMENT, CONF_END_STMT, 0))) {
+        return retval;
+    }
+    if ((endst && (strlen(token) == 0)) ||
+        (*buf_ptr >= end_ptr)) { 
+        return VAL_CONF_PARSE_ERROR;
+    }
+
+    g_opt->max_refresh = strtol(token, (char **)NULL, 10);
+    
+    return VAL_NO_ERROR;
+}
 
 static int
 get_global_options(char **buf_ptr, char *end_ptr, 
@@ -1115,6 +1144,13 @@ get_global_options(char **buf_ptr, char *end_ptr,
             if (VAL_NO_ERROR != 
                     (retval = parse_rec_fallback(buf_ptr, end_ptr, 
                                                  line_number, &endst, *g_opt))) {
+                goto err;
+            }
+
+        } else if (!strcmp(token, GOPT_MAX_REFRESH_STR)) {
+            if (VAL_NO_ERROR != 
+                    (retval = parse_max_refresh_gopt(buf_ptr, end_ptr,
+                                                    line_number, &endst, *g_opt))) {
                 goto err;
             }
 
