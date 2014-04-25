@@ -215,7 +215,7 @@ val_sigverify(val_context_t * ctx,
                           dnskey_status, sig_status);
         break;
 
-#if defined(HAVE_SHA_2) && defined(HAVE_OPENSSL_ECDSA_H)
+#if defined(HAVE_ECDSA) && defined(HAVE_OPENSSL_ECDSA_H)
     case ALG_ECDSAP256SHA256:
     case ALG_ECDSAP384SHA384:
         ecdsa_sigverify(ctx, data, data_len, dnskey, rrsig,

@@ -445,7 +445,7 @@ rsasha_sigverify(val_context_t * ctx,
     return;
 }
 
-#if defined(HAVE_SHA_2) && defined(HAVE_OPENSSL_ECDSA_H)
+#if defined(HAVE_ECDSA) && defined(HAVE_OPENSSL_ECDSA_H)
 void
 ecdsa_sigverify(val_context_t * ctx,
                 const u_char *data,

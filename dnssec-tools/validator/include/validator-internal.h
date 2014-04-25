@@ -134,9 +134,7 @@ extern          "C" {
 /*
  * Algorithm definitions for NSEC3 digest 
  */
-#ifdef LIBVAL_NSEC3
 #define ALG_NSEC3_HASH_SHA1 1
-#endif
 #define NSEC3_FLAG_OPTOUT 0x01
 
 /*
@@ -146,26 +144,51 @@ extern          "C" {
 #define ALG_DH      2
 #define ALG_DSASHA1 3
 #define ALG_RSASHA1 5
-#ifdef LIBVAL_NSEC3
 #define ALG_NSEC3_DSASHA1 6 
 #define ALG_NSEC3_RSASHA1 7 
-#endif
 #define ALG_RSASHA256 8
 #define ALG_RSASHA512 10 
 #define ALG_ECDSAP256SHA256 13
 #define ALG_ECDSAP384SHA384 14
 
-#define IS_KNOWN_DNSSEC_ALG(x) \
+#define IS_KNOWN_DNSSEC_ALG_BASIC(x) \
     (x == ALG_RSAMD5 || \
      x == ALG_DH ||\
      x == ALG_DSASHA1 ||\
-     x == ALG_RSASHA1 ||\
-     x == ALG_NSEC3_DSASHA1 ||\
-     x == ALG_NSEC3_RSASHA1 ||\
-     x == ALG_RSASHA256 ||\
-     x == ALG_RSASHA512 ||\
-     x == ALG_ECDSAP256SHA256 ||\
+     x == ALG_RSASHA1)
+
+#ifdef LIBVAL_NSEC3
+#define IS_KNOWN_DNSSEC_ALG_NSEC3(x) \
+     (x == ALG_NSEC3_DSASHA1 ||\
+     x == ALG_NSEC3_RSASHA1)
+#else
+#define IS_KNOWN_DNSSEC_ALG_NSEC3(x)\
+    (0) /* false */
+#endif
+
+#ifdef HAVE_SHA2
+#define IS_KNOWN_DNSSEC_ALG_SHA2(x) \
+     (x == ALG_RSASHA256 ||\
+     x == ALG_RSASHA512)
+#else
+#define IS_KNOWN_DNSSEC_ALG_SHA2(x)\
+    (0) /* false */
+#endif
+
+#ifdef HAVE_ECDSA
+#define IS_KNOWN_DNSSEC_ALG_ECDSA(x) \
+     (x == ALG_ECDSAP256SHA256 ||\
      x == ALG_ECDSAP384SHA384)
+#else
+#define IS_KNOWN_DNSSEC_ALG_ECDSA(x)\
+    (0) /* false */
+#endif
+     
+#define IS_KNOWN_DNSSEC_ALG(x) \
+    (IS_KNOWN_DNSSEC_ALG_BASIC(x) ||\
+     IS_KNOWN_DNSSEC_ALG_NSEC3(x) ||\
+     IS_KNOWN_DNSSEC_ALG_SHA2(x) ||\
+     IS_KNOWN_DNSSEC_ALG_ECDSA(x))
 
 /* query types for which edns0 is required */
 #ifdef LIBVAL_DLV
