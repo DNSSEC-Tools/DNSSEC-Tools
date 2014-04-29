@@ -6961,13 +6961,22 @@ val_async_submit(val_context_t * ctx,  const char * domain_name, int class_h,
      * Send un-sent queries
      */
     if ((VAL_NO_ERROR == retval) &&
-        (added_q->qfq_query->qc_state == Q_INIT) &&
-        (! (flags & VAL_QUERY_SKIP_RESOLVER))) {
+        (added_q->qfq_query->qc_state == Q_INIT)) {
 
         retval = _resolver_submit_one(context, &as->val_as_queries,
                                       added_q);
-        if (NULL == added_q->qfq_query->qc_ea)
-            retval = VAL_INTERNAL_ERROR;
+        /*
+         * SK: 
+         * Commented this block out to fix an issue that I was
+         * seeing in dt-validate async checks
+         * There are legitimate reasons for qc_ea to be NULL, so we
+         * shouldn't treat this as an error as we are doing below
+         * All errors should be theoretically caught by retval above, so
+         * commenting this out should be okay.
+         *
+         * if (NULL == added_q->qfq_query->qc_ea)
+         *   retval = VAL_INTERNAL_ERROR;
+         */
     }
 
     if ((VAL_NO_ERROR != retval) && (NULL != added_q))
