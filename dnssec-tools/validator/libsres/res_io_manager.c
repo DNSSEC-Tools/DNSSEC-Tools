@@ -346,6 +346,7 @@ res_io_send(struct expected_arrival *shipit)
     size_t          socket_size;
     size_t          bytes_sent;
     long            delay;
+    struct timeval  timeout;
 
     if (shipit == NULL)
         return SR_IO_INTERNAL_ERROR;
@@ -374,6 +375,19 @@ res_io_send(struct expected_arrival *shipit)
 
         /* Set the source port */
         if (0 != bind_to_random_source(af, shipit->ea_socket)) {
+            /* error */
+            res_io_retry_source(shipit);
+            return SR_IO_SOCKET_ERROR;
+        }
+
+        /*
+         * Set the timeout interval
+         */
+        timeout.tv_sec = shipit->ea_ns->ns_retrans;
+        timeout.tv_usec = 0;
+
+        if (setsockopt (shipit->ea_socket, SOL_SOCKET, SO_SNDTIMEO, 
+                    (char *)&timeout, sizeof(timeout)) < 0) {
             /* error */
             res_io_retry_source(shipit);
             return SR_IO_SOCKET_ERROR;
@@ -1861,6 +1875,8 @@ res_async_query_send(const char *name, const u_int16_t type_h,
 
     if (NULL != head)
         ret_val = res_io_check_ea_list(head,NULL,NULL,NULL,NULL);
+    else
+        res_log(NULL,LOG_DEBUG, "libsres: "" *** res_async_query_create returned NULL");
 
     return head;
 }
