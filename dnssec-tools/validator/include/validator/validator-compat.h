@@ -90,6 +90,9 @@ extern          "C" {
 #ifndef HAVE_SYS_TYPES_H
 #define HAVE_SYS_TYPES_H 1
 #endif
+#ifndef HAVE_FREEADDRINFO
+#define HAVE_FREEADDRINFO 1
+#endif
 #ifndef LIBVAL_DLV
 #define LIBVAL_DLV 1
 #endif
@@ -189,6 +192,9 @@ extern          "C" {
 #ifdef HAVE_SYS_FILIO_H
 #include <sys/filio.h>
 #endif
+#ifdef HAVE_SYS_SELECT_H
+#include <sys/select.h>
+#endif
 
 #ifdef HAVE_ARPA_NAMESER_H
 #include <arpa/nameser.h>
@@ -208,6 +214,22 @@ extern          "C" {
 #endif 
 #endif
 
+/* define u_int64_t if not available */
+#ifndef HAVE_U_INT64_T
+#ifdef WIN32
+typedef __int64 u_int64_t;
+#else
+#ifdef HAVE_UINT64_T
+typedef uint64_t        u_int64_t;
+#else
+#ifdef INT64_T
+typedef unsigned INT64_T u_int64_t;
+#else
+typedef unsigned long long  u_int64_t;
+#endif
+#endif
+#endif
+#endif /* !HAVE_U_INT64_T */
 
 /* define u_int32_t if not available */
 #ifndef HAVE_U_INT32_T

@@ -57,8 +57,12 @@
 #ifndef RESOLVER_H
 #define RESOLVER_H
 
-#include <sys/types.h>
+#ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
+#endif
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
 #ifdef __MINGW32__
 #include <winsock2.h>
 #endif
@@ -287,9 +291,6 @@ res_io_check_ea_list(struct expected_arrival *ea, struct timeval *next_evt,
 int
 res_io_get_a_response(struct expected_arrival *ea_list, unsigned char **answer,
                       size_t *answer_length, struct name_server **respondent);
-
-void
-res_io_cancel_remaining_attempts(struct expected_arrival *ea);
 
 void
 res_io_cancel_all_remaining_attempts(struct expected_arrival *ea);
