@@ -57,7 +57,11 @@ static int      addstr(const char *src, size_t len,
                        char **buf, size_t * buflen);
 static int      addtab(size_t len, size_t target, int spaced,
                        char **buf, size_t * buflen);
-
+int             ns_sprintrrf_data(const u_char * msg, size_t msglen,
+                  const char *name, ns_class class_h, ns_type type_h,
+                  u_long ttl, const u_char * rdata, size_t rdlen,
+                  const char *origin,
+                  char *buf, size_t buflen);
 /*
  * Macros. 
  */

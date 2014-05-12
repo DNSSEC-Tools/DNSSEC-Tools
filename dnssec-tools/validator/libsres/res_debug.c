@@ -989,7 +989,7 @@ loc_ntoa(const u_char *binary, char *ascii)
 
     const u_int32_t referencealt = 100000 * 100;
 
-    u_int32_t       latval, longval, altval;
+    int             latval, longval, altval;
     u_int32_t       templ;
     u_char          sizeval, hpval, vpval, versionval;
 
