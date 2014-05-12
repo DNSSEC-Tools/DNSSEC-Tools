@@ -760,6 +760,7 @@ enable_openssl
 with_ssl
 enable_ssl
 enable_sha2_check
+enable_ecdsa_check
 with_threads
 with_inline_dnsval_conf
 with_inline_root_hints
@@ -1397,6 +1398,8 @@ Optional Features:
   --disable-libtool-lock  avoid locking (might break parallel builds)
 
   --disable-sha2-check    Make missing SHA-2 support a warning instead of an
+                          error.
+  --disable-ecdsa-check   Make missing ECDSA support a warning instead of an
                           error.
 
 Optional Packages:
@@ -11590,66 +11593,6 @@ if test "${enable_ssl+set}" = set; then :
 fi
 
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing SSL_get_SSL_CTX" >&5
-$as_echo_n "checking for library containing SSL_get_SSL_CTX... " >&6; }
-if ${ac_cv_search_SSL_get_SSL_CTX+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_func_search_save_LIBS=$LIBS
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char SSL_get_SSL_CTX ();
-int
-main ()
-{
-return SSL_get_SSL_CTX ();
-  ;
-  return 0;
-}
-_ACEOF
-for ac_lib in '' ssl; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib -lcrypto $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_search_SSL_get_SSL_CTX=$ac_res
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if ${ac_cv_search_SSL_get_SSL_CTX+:} false; then :
-  break
-fi
-done
-if ${ac_cv_search_SSL_get_SSL_CTX+:} false; then :
-
-else
-  ac_cv_search_SSL_get_SSL_CTX=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_SSL_get_SSL_CTX" >&5
-$as_echo "$ac_cv_search_SSL_get_SSL_CTX" >&6; }
-ac_res=$ac_cv_search_SSL_get_SSL_CTX
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-
-else
-  as_fn_error $? "\"OpenSSL ssl library not found. get it from http://www.openssl.org.\"" "$LINENO" 5
-fi
-
-
-
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing EVP_md5" >&5
 $as_echo_n "checking for library containing EVP_md5... " >&6; }
 if ${ac_cv_search_EVP_md5+:} false; then :
@@ -11709,9 +11652,15 @@ else
 fi
 
 
+
 # Check whether --enable-sha2-check was given.
 if test "${enable_sha2_check+set}" = set; then :
   enableval=$enable_sha2_check;
+fi
+
+# Check whether --enable-ecdsa-check was given.
+if test "${enable_ecdsa_check+set}" = set; then :
+  enableval=$enable_ecdsa_check;
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing SHA384_Init" >&5
@@ -11776,6 +11725,192 @@ else
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Need openssl version > 0.9.8 for SHA-2 support." >&5
 $as_echo "$as_me: WARNING: Need openssl version > 0.9.8 for SHA-2 support." >&2;}
 fi
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing EC_KEY_set_public_key_affine_coordinates" >&5
+$as_echo_n "checking for library containing EC_KEY_set_public_key_affine_coordinates... " >&6; }
+if ${ac_cv_search_EC_KEY_set_public_key_affine_coordinates+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char EC_KEY_set_public_key_affine_coordinates ();
+int
+main ()
+{
+return EC_KEY_set_public_key_affine_coordinates ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' crypto eay32 libeay32 crypt32; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_search_EC_KEY_set_public_key_affine_coordinates=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if ${ac_cv_search_EC_KEY_set_public_key_affine_coordinates+:} false; then :
+  break
+fi
+done
+if ${ac_cv_search_EC_KEY_set_public_key_affine_coordinates+:} false; then :
+
+else
+  ac_cv_search_EC_KEY_set_public_key_affine_coordinates=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_EC_KEY_set_public_key_affine_coordinates" >&5
+$as_echo "$ac_cv_search_EC_KEY_set_public_key_affine_coordinates" >&6; }
+ac_res=$ac_cv_search_EC_KEY_set_public_key_affine_coordinates
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+  $as_echo "#define HAVE_ECDSA 1" >>confdefs.h
+
+else
+  if test "x$enable_ecdsa_check" != "xno"; then :
+  as_fn_error $? "Need recent openssl version for ECDSA support. Use --disable-ecdsa-check to bypass this error." "$LINENO" 5
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Need recent openssl version for ECDSA support." >&5
+$as_echo "$as_me: WARNING: Need recent openssl version for ECDSA support." >&2;}
+fi
+fi
+
+
+
+if test ! -z "$_WIN32_MSVC"; then
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing SSL_get_SSL_CTX" >&5
+$as_echo_n "checking for library containing SSL_get_SSL_CTX... " >&6; }
+if ${ac_cv_search_SSL_get_SSL_CTX+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char SSL_get_SSL_CTX ();
+int
+main ()
+{
+return SSL_get_SSL_CTX ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' ssl; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib -lcrypto -lws2_32 $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_search_SSL_get_SSL_CTX=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if ${ac_cv_search_SSL_get_SSL_CTX+:} false; then :
+  break
+fi
+done
+if ${ac_cv_search_SSL_get_SSL_CTX+:} false; then :
+
+else
+  ac_cv_search_SSL_get_SSL_CTX=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_SSL_get_SSL_CTX" >&5
+$as_echo "$ac_cv_search_SSL_get_SSL_CTX" >&6; }
+ac_res=$ac_cv_search_SSL_get_SSL_CTX
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+else
+  as_fn_error $? "\"OpenSSL ssl library not found. get it from http://www.openssl.org.\"" "$LINENO" 5
+fi
+
+else
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing SSL_get_SSL_CTX" >&5
+$as_echo_n "checking for library containing SSL_get_SSL_CTX... " >&6; }
+if ${ac_cv_search_SSL_get_SSL_CTX+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char SSL_get_SSL_CTX ();
+int
+main ()
+{
+return SSL_get_SSL_CTX ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' ssl; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib -lcrypto $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_search_SSL_get_SSL_CTX=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if ${ac_cv_search_SSL_get_SSL_CTX+:} false; then :
+  break
+fi
+done
+if ${ac_cv_search_SSL_get_SSL_CTX+:} false; then :
+
+else
+  ac_cv_search_SSL_get_SSL_CTX=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_SSL_get_SSL_CTX" >&5
+$as_echo "$ac_cv_search_SSL_get_SSL_CTX" >&6; }
+ac_res=$ac_cv_search_SSL_get_SSL_CTX
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+else
+  as_fn_error $? "\"OpenSSL ssl library not found. get it from http://www.openssl.org.\"" "$LINENO" 5
+fi
+
 fi
 
 
@@ -11877,7 +12012,7 @@ LIBS="$LIBS -lgdi32 -lws2_32"
 fi
 
 
-for ac_header in sys/param.h sys/types.h sys/ioctl.h sys/socket.h sys/filio.h sys/file.h sys/fcntl.h netinet/in.h sys/time.h ctype.h getopt.h libgen.h limits.h pthread.h syslog.h
+for ac_header in sys/param.h sys/types.h sys/stat.h sys/ioctl.h sys/socket.h sys/filio.h sys/file.h sys/fcntl.h sys/select.h netinet/in.h sys/time.h ctype.h getopt.h libgen.h limits.h pthread.h syslog.h
 do :
   as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
 ac_fn_c_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"
@@ -12933,6 +13068,17 @@ _ACEOF
 fi
 done
 
+for ac_func in getifaddrs
+do :
+  ac_fn_c_check_func "$LINENO" "getifaddrs" "ac_cv_func_getifaddrs"
+if test "x$ac_cv_func_getifaddrs" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_GETIFADDRS 1
+_ACEOF
+
+fi
+done
+
 
 
 case "$host" in
@@ -13308,6 +13454,34 @@ if test "x$ac_cv_type_u_int32_t" = xyes; then :
 
 cat >>confdefs.h <<_ACEOF
 #define HAVE_U_INT32_T 1
+_ACEOF
+
+
+fi
+
+ac_fn_c_check_type "$LINENO" "int64_t" "ac_cv_type_int64_t" "$ac_includes_default"
+if test "x$ac_cv_type_int64_t" = xyes; then :
+
+cat >>confdefs.h <<_ACEOF
+#define HAVE_INT64_T 1
+_ACEOF
+
+
+fi
+ac_fn_c_check_type "$LINENO" "uint64_t" "ac_cv_type_uint64_t" "$ac_includes_default"
+if test "x$ac_cv_type_uint64_t" = xyes; then :
+
+cat >>confdefs.h <<_ACEOF
+#define HAVE_UINT64_T 1
+_ACEOF
+
+
+fi
+ac_fn_c_check_type "$LINENO" "u_int64_t" "ac_cv_type_u_int64_t" "$ac_includes_default"
+if test "x$ac_cv_type_u_int64_t" = xyes; then :
+
+cat >>confdefs.h <<_ACEOF
+#define HAVE_U_INT64_T 1
 _ACEOF
 
 
