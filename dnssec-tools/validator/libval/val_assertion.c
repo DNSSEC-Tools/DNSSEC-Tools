@@ -495,10 +495,11 @@ add_to_query_chain(val_context_t *context, u_char * name_n,
 
             } else {
                 val_log(context, LOG_DEBUG, 
-                        "add_to_qfq_chain(): Found data in cache: {%s %s(%d) %s(%d)}, exp in: %ld", 
+                        "add_to_qfq_chain(): Found query in cache: {%s %s(%d) %s(%d)}, state: %d, exp in: %ld", 
                         name_p, p_class(temp->qc_class_h),
                         temp->qc_class_h, p_type(temp->qc_type_h),
-                        temp->qc_type_h, temp->qc_ttl_x - tv.tv_sec);
+                        temp->qc_type_h, temp->qc_state,
+                        temp->qc_ttl_x - tv.tv_sec);
                 /* return this cached record */
                 *added_q = temp;
                 return VAL_NO_ERROR;
@@ -3341,13 +3342,6 @@ prove_nonexistence(val_context_t * ctx,
             continue;
 
         /*
-         * skip any proof that doesn't seem to be relevant
-         */
-        if (NULL == namename(qname_n, the_set->rrs_zonecut_n)) {
-            continue;
-        }
-
-        /*
          * check if can skip validation 
          */
         if (val_istrusted(res->val_rc_status) &&
@@ -3371,6 +3365,13 @@ prove_nonexistence(val_context_t * ctx,
             goto err;
         }
         skip_validation = -1;
+
+        /*
+         * skip any proof that doesn't seem to be relevant
+         */
+        if (NULL == namename(qname_n, the_set->rrs_zonecut_n)) {
+            continue;
+        }
 
         if (the_set->rrs_type_h == ns_t_soa) {
             /* Use the SOA minimum time */
