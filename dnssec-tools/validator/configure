@@ -641,6 +641,7 @@ VAL_RESOLV_CONF
 LIBVAL_SUFFIX
 VALIDATOR_TESTCASES
 VAL_CONFIGURATION_FILE
+ETC_HOSTS
 DEVFLAGS
 CONFIGURE_OPTIONS
 target_os
@@ -11395,6 +11396,12 @@ fi
   cat >> configure-summary << EOF
   system configuration directory : $val_sysconfdir
 EOF
+
+
+cat >>confdefs.h <<_ACEOF
+#define ETC_HOSTS "$val_sysconfdir/hosts"
+_ACEOF
+
 
 
 
