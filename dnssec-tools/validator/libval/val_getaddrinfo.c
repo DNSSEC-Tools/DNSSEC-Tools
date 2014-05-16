@@ -371,7 +371,8 @@ get_addrinfo_from_etc_hosts(val_context_t * ctx,
     if (res == NULL) 
         return 0;
 
-    val_log(ctx, LOG_DEBUG, "get_addrinfo_from_etc_hosts(): Parsing /etc/hosts");
+    val_log(ctx, LOG_DEBUG, "get_addrinfo_from_etc_hosts(): Parsing "
+            ETC_HOSTS);
 
     /*
      * Parse the /etc/hosts/ file 
@@ -492,7 +493,8 @@ get_addrinfo_from_etc_hosts(val_context_t * ctx,
         FREE_HOSTS(h_prev);
     }
 
-    val_log(ctx, LOG_DEBUG, "get_addrinfo_from_etc_hosts(): Parsing /etc/hosts OK");
+    val_log(ctx, LOG_DEBUG, "get_addrinfo_from_etc_hosts(): Parsing "
+            ETC_HOSTS " OK");
 
     *res = retval;
     if (retval) {
