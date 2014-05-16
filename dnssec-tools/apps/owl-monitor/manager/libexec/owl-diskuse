@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Copyright 2013 SPARTA, Inc.  All rights reserved.
+# Copyright 2013-2014 SPARTA, Inc.  All rights reserved.
 # See the COPYING file distributed with this software for details.
 #
 # owl-diskuse
@@ -9,9 +9,11 @@
 #
 #
 # Revision History
-#	1.0	Initial version.				130603
+#	1.0	Initial version.					130603
 #
-#	2.0	Released as part of DNSSEC-Tools 2.0.		130301
+#	2.0	Released as part of DNSSEC-Tools 2.0.			130301
+#	2.0.1	Better handling for unknown sensors.			140512
+#	2.0.2	Even better handling for unknown sensors.		140512
 #
 
 use strict;
@@ -24,7 +26,7 @@ use File::Spec;
 # Version information.
 #
 my $NAME   = "owl-diskuse";
-my $VERS   = "$NAME version: 2.0.0";
+my $VERS   = "$NAME version: 2.0.2";
 my $DTVERS = "DNSSEC-Tools version: 2.0";
 
 #######################################################################
@@ -92,9 +94,11 @@ exit($rc);
 #
 sub main
 {
-	my $du = 0;					# Disk usage.
-	my $dutotal = 0;				# Total disk usage.
-	my $retcode = $RC_NORMAL;			# Our return code.
+	my $du = 0;				# Disk usage.
+	my $dutotal = 0;			# Total disk usage.
+	my @badsensors = ();			# Unknown sensors.
+	my $errs = 0;				# Count of unknown sensors.
+	my $retcode = $RC_NORMAL;		# Our return code.
 
 	#
 	# Check our options.
@@ -106,7 +110,7 @@ sub main
 	#
 	if($runtotal)
 	{
-		my @sensors;				# Sensors in data dir.
+		my @sensors;			# Sensors in data dir.
 
 		#
 		# Get a list of sensors.
@@ -133,6 +137,14 @@ sub main
 			$du = sensoruse($sensor);
 			$dutotal += $du;
 
+			#
+			# Keep track of any unknown sensors.
+			#
+			if($du == -1)
+			{
+				push @badsensors, $node;
+				$errs++;
+			}
 		}
 
 		#
@@ -154,11 +166,29 @@ sub main
 			$du = sensoruse($sensor);
 
 			#
+			# Keep track of any unknown sensors.
+			#
+			if($du == -1)
+			{
+				push @badsensors, $sensor;
+				$errs++;
+			}
+
+			#
 			# Save this usage stat as our result.
 			#
 			$outstr = $du;
 		}
 
+	}
+
+	#
+	# Report an error if we found any unknown sensors.
+	#
+	if($errs)
+	{
+		nagierr(@badsensors);
+		return($RC_UNKNOWN);
 	}
 
 	#
@@ -218,7 +248,10 @@ sub sensoruse
 	#
 	# Get the usage for this sensor's data and archive directories.
 	#
-	$total = getdirs($sensor);
+	if(($total = getdirs($sensor)) == -1)
+	{
+		return(-1);
+	}
 
 	#
 	# Get the usage of this sensor's RRD databases.
@@ -353,6 +386,22 @@ sub nagiout
 			$megs, time(), $megs);
 }
 
+#-----------------------------------------------------------------------------
+# Routine:	nagierr()
+#
+# Purpose:	Generate an error message for Nagios.
+#
+sub nagierr
+{
+	my @badsensors = @_;			# Names of unknown sensors.
+	my $sensors;				# String of sensors.
+
+	return if($verbose);
+
+	$sensors = join(', ', @badsensors);
+	print "Unknown sensors ($sensors), indeterminate disk usage|owl-diskuse=0:0\n";
+}
+
 #----------------------------------------------------------------------
 # Routine:	version()
 #
@@ -370,7 +419,7 @@ sub usage
 {
 	print STDERR "$VERS
 $DTVERS
-Copyright 2013 SPARTA, Inc.  All rights reserved.
+Copyright 2013-2014 SPARTA, Inc.  All rights reserved.
 
 This script determines how much disk space is being used for data
 from an Owl sensor. 
@@ -474,7 +523,7 @@ Nagios
 
 =head1 COPYRIGHT
 
-Copyright 2013 SPARTA, Inc.  All rights reserved.
+Copyright 2013-2014 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
