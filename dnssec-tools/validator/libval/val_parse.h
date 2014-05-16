@@ -58,7 +58,6 @@ val_nsec3_rdata_t *val_parse_nsec3_rdata(u_char * rr_rdata,
 /*
  * Parse the ETC_HOSTS file 
  */
-#define ETC_HOSTS      "/etc/hosts"
 #define MAXLINE 4096
 #define MAX_ALIAS_COUNT 2048
 struct hosts {

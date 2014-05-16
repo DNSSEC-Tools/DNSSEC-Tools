@@ -17,8 +17,6 @@
 #include "val_parse.h"
 #include "val_context.h"
 
-#define ETC_HOSTS_CONF "/etc/host.conf"
-#define ETC_HOSTS      "/etc/hosts"
 #define MAXLINE 4096
 #define MAX_ALIAS_COUNT 2048
 #define AUX_BUFLEN 16384

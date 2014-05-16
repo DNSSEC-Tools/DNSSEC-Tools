@@ -94,6 +94,8 @@ if test "x$val_sysconfdir" = "xNONE/etc" ; then
    val_sysconfdir="${ac_default_prefix}/etc"
 fi
 AC_MSG_CACHE_ADD(system configuration directory : $val_sysconfdir)
+AC_DEFINE_UNQUOTED(ETC_HOSTS,"$val_sysconfdir/hosts", [validator hosts file])
+AC_SUBST(ETC_HOSTS)
 
 AH_TEMPLATE([VAL_RESOLV_CONF], [Path to resolver configuration])
 AC_ARG_WITH(resolv-conf,
