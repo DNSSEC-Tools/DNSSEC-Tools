@@ -492,7 +492,7 @@ val_create_context_internal( const char *label,
 #endif
 
     if (snprintf
-        ((*newcontext)->id, VAL_CTX_IDLEN - 1, "%u", (u_int)(*newcontext)) < 0)
+        ((*newcontext)->id, VAL_CTX_IDLEN - 1, "%lu", (u_long)(*newcontext)) < 0)
         strcpy((*newcontext)->id, "libval");
 
     /* check if we have ipv4 and ipv6 addresses */
