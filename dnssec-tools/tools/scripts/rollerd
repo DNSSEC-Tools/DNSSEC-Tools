@@ -5353,6 +5353,7 @@ sub cmd_rollzone
 
 	if(rollnow($zone,'restart',1) == 1)
 	{
+		display("startroll \"$zone\" 0");
 		rollmgr_sendresp(ROLLCMD_RC_OKAY,"$zone rollover started");
 	}
 	else
@@ -6490,9 +6491,15 @@ sub rollnow
 		my $rrr;				# Reference to rollrec.
 		my %rr;					# Rollrec hash.
 
+		my $rndir;				# Directory on entry.
 		my $dir;				# Zone's directory.
 		my $krf;				# Zone's keyrec.
 		my $znf;				# Zone's zonefile.
+
+		#
+		# Get the rollrec for the zone.
+		#
+		$rndir = getcwd();
 
 		#
 		# Get the rollrec for the zone.
@@ -6551,6 +6558,11 @@ sub rollnow
 		}
 
 		#
+		# Go into zone's directory if we aren't there already.
+		#
+		chdir($dir) if($dir ne $rndir);
+
+		#
 		# A skip record is changed to a regular rollrec.
 		#
 		if($rr{'rollrec_type'} eq 'skip')
@@ -6589,6 +6601,11 @@ sub rollnow
 		# Write the rollrec file.
 		#
 		rollrec_write();
+
+		#
+		# Return to entry directory if we're in zone's directory.
+		#
+		chdir($rndir) if($dir ne $rndir);
 	}
 
 	#
