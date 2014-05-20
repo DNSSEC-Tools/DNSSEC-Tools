@@ -1046,7 +1046,8 @@ follow_referral_or_alias_link(val_context_t * context,
         matched_q->qc_referral->qnames = *qnames;
     else if (*qnames) {
         struct qname_chain *t_q;
-        for (t_q = *qnames; t_q->qnc_next; t_q = t_q->qnc_next);
+        for (t_q = *qnames; t_q->qnc_next; t_q = t_q->qnc_next)
+            ; /* no body. ';' on new line to suppress warning. */
         t_q->qnc_next = matched_q->qc_referral->qnames;
         matched_q->qc_referral->qnames = *qnames;
     }
