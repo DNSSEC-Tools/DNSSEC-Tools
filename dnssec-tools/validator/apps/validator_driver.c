@@ -193,8 +193,8 @@ check_results(val_context_t * context, const char *desc, char * name,
 
     }
 
-    fprintf(stderr, "%s: ****END**** %ld.%ld sec\n", desc, duration.tv_sec,
-            duration.tv_usec);
+    fprintf(stderr, "%s: ****END**** %ld.%ld sec\n", desc,
+            (long) duration.tv_sec, (long) duration.tv_usec);
 
     return err;
 }
