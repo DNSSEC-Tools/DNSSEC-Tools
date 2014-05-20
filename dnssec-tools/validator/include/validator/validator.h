@@ -460,15 +460,15 @@ typedef struct val_context_opt {
     /*
      * from val_context.h 
      */
-    int             val_create_context_with_conf(char *label,
+    int             val_create_context_with_conf(const char *label,
                                                  char *dnsval_conf,
                                                  char *resolv_conf,
                                                  char *root_conf,
                                                  val_context_t ** newcontext);
-    int             val_create_context_ex(char *label,
+    int             val_create_context_ex(const char *label,
                                           val_context_opt_t *opt,
                                           val_context_t ** newcontext);
-    int             val_create_context(char *label,
+    int             val_create_context(const char *label,
                                        val_context_t ** newcontext);
     void            val_free_context(val_context_t * context);
     int             val_free_validator_state(void);

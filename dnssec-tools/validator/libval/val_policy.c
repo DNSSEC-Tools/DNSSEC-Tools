@@ -800,9 +800,9 @@ done:
  * obtained.
  */
 int
-check_relevance(char *label, char *scope, int *label_count, int *relevant)
+check_relevance(const char *label, const char *scope, int *label_count, int *relevant)
 {
-    char           *c, *p, *e;
+    const char           *c, *p, *e;
 
     /*
      * sanity check; NULL scope is OK 
@@ -1173,7 +1173,7 @@ err:
  * from the configuration file file
  */
 int
-get_next_policy_fragment(char **buf_ptr, char *end_ptr, char *scope,
+get_next_policy_fragment(char **buf_ptr, char *end_ptr, const char *scope,
                          struct policy_fragment **pol_frag,
                          int *line_number, int *g_opt_seen, int *include_seen)
 {
@@ -1517,7 +1517,7 @@ destroy_valpol(val_context_t * ctx)
 
 static int
 read_next_val_config_file(val_context_t *ctx, 
-                          char **label, 
+                          const char **label, 
                           struct dnsval_list *dnsval_c, 
                           struct dnsval_list *dlist, 
                           struct dnsval_list **added_files,
@@ -1541,7 +1541,7 @@ read_next_val_config_file(val_context_t *ctx,
     char *dnsval_filename = NULL;
     struct dnsval_list *dnsval_l;
     int retval = VAL_NO_ERROR;
-    char *next_label;
+    const char *next_label;
     int done;
     char *env = NULL;
 
@@ -1708,7 +1708,7 @@ read_next_val_config_file(val_context_t *ctx,
                                     "read_next_val_config_file(): Using policy label from app name: %s",
                                     c_next_label);
                             done = 0;
-                            next_label = (char *)c_next_label;
+                            next_label = (const char *)c_next_label;
                             break;
                         }
                         /* policy does not exist, dont create the impression that we have one */
@@ -1886,12 +1886,12 @@ err:
  * Precedence is environment, app and user
  */
 int
-read_val_config_file(val_context_t * ctx, char *scope)
+read_val_config_file(val_context_t * ctx, const char *scope)
 {
     struct policy_overrides *t;
     struct dnsval_list *dnsval_c;
     int             retval;
-    char *label;
+    const char *label;
     char *newctxlab;
     struct val_query_chain *q;
     char *logtarget = NULL;

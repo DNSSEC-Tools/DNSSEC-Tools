@@ -356,7 +356,7 @@ done:
         SSL_library_init();
         SSL_load_error_strings();
 
-        SSL_METHOD *meth = SSLv23_client_method();
+        const SSL_METHOD *meth = SSLv23_client_method();
         SSL_CTX *sslctx = SSL_CTX_new(meth);
 
         struct addrinfo *ai = NULL;
