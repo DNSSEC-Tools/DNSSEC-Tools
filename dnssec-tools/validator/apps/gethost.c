@@ -78,7 +78,6 @@ main(int argc, char *argv[])
     int             af = AF_INET;
     char            buf[INET6_ADDRSTRLEN];
     size_t          buflen = INET6_ADDRSTRLEN;
-    int             retval = 0;
     val_log_t  *logp;
 
     memset(&hentry, 0, sizeof(struct hostent));
@@ -153,13 +152,13 @@ main(int argc, char *argv[])
     if (usereentrant) {
 #ifdef HAVE_GETHOSTBYNAME2
             if (familyspecified)
-                retval =
+                (void)
                     val_gethostbyname2_r(NULL, name, af, &hentry, auxbuf,
                                          AUX_BUFLEN, &result, &herrno,
                                          &val_status);
             else
 #endif
-                retval =
+                (void)
                     val_gethostbyname_r(NULL, name, &hentry, auxbuf,
                                         AUX_BUFLEN, &result, &herrno,
                                         &val_status);

@@ -140,7 +140,6 @@ ns_sprintrrf(const u_char * msg, size_t msglen,
     const char     *obuf = buf;
     int             spaced = 0;
 
-    const char     *comment;
     char            tmp[100];
     int             len, x;
 
@@ -521,12 +520,11 @@ ns_sprintrrf_data(const u_char * msg, size_t msglen,
         }
 
     case ns_t_ds:{
-            u_int           key_id;
             u_int           algo;
             u_int           digest_type;
             u_int           hashlen = 0;
 
-            RES_GET16(key_id, rdata);
+            rdata += NS_INT16SZ; /* skip key_id */
             algo = *rdata++ & 0xF;
             digest_type = *rdata++ & 0xF;
 

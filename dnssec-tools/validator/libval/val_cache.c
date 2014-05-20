@@ -114,7 +114,7 @@ static int
 stow_info(struct rrset_rec **unchecked_info, struct rrset_rec **new_info, struct val_query_chain *matched_q)
 {
     struct rrset_rec *new_rr;
-    struct rrset_rec *old, *prev, *trail_new;
+    struct rrset_rec *old, *prev;
     char name_p[NS_MAXDNAME];
     const char *cachename;
     int delete_newrr = 0;
@@ -122,7 +122,6 @@ stow_info(struct rrset_rec **unchecked_info, struct rrset_rec **new_info, struct
     if (new_info == NULL || unchecked_info == NULL)
         return VAL_NO_ERROR;
 
-    trail_new = NULL;
     prev = NULL;
     while (*new_info) {
         new_rr = *new_info;
@@ -514,7 +513,7 @@ get_nslist_from_cache(val_context_t *ctx,
     /*
      * find closest matching name zone_n 
      */
-    struct rrset_rec *nsrrset, *prev;
+    struct rrset_rec *nsrrset;
     u_char       *name_n = NULL;
     u_char       *tname_n = NULL;
     u_char       *p;
@@ -574,7 +573,6 @@ get_nslist_from_cache(val_context_t *ctx,
     VAL_CACHE_UNLOCK(&map_rwlock);
 
     tmp_zonecut_n = NULL;
-    prev = NULL;
 
 
     /* Check in the NS store */
@@ -615,7 +613,6 @@ get_nslist_from_cache(val_context_t *ctx,
                 }
             }
         }
-        prev = nsrrset;
         nsrrset = nsrrset->rrs_next;
     }
 

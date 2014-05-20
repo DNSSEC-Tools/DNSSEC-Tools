@@ -353,9 +353,11 @@ res_io_send(struct expected_arrival *shipit)
 
     socket_type = (shipit->ea_using_stream == 1) ? SOCK_STREAM : SOCK_DGRAM;
     socket_proto = (socket_type == SOCK_STREAM) ? IPPROTO_TCP : IPPROTO_UDP;
-    res_log(NULL, LOG_DEBUG, "libsres: ""ea %p SENDING type %d %s", shipit,
+    res_log(NULL, LOG_DEBUG, "libsres: ""ea %p SENDING type %d %s over %s",
+            shipit,
             shipit->ea_ns->ns_address[shipit->ea_which_address]->ss_family,
-            shipit->ea_using_stream ? "stream" : "dgram");
+            shipit->ea_using_stream ? "stream" : "dgram",
+            (socket_proto == IPPROTO_TCP) ? "tcp" : "udp");
 
     /*
      * If no socket exists for the transfer, create and connect it (TCP
@@ -890,6 +892,7 @@ res_io_deliver(int *transaction_id, u_char * signed_query,
     int             rc;
 
     rc = res_io_queue(transaction_id, signed_query, signed_length, ns, delay);
+    res_log(NULL, LOG_DEBUG, "libsres: "" res_io_queue rc %d", rc);
 
     /*
      * Call the res_io_check routine 
@@ -1155,6 +1158,7 @@ wait_for_res_data(fd_set * pending_desc, struct timeval *closest_event)
             closest_event->tv_sec, closest_event->tv_usec);
     res_io_set_timeout(&timeout, closest_event);
     ready = res_io_select_sockets(pending_desc, &timeout); 
+    res_log(NULL, LOG_DEBUG, "libsres: ""   %d ready", ready);
 	
     // ignore return value from previous function, 
     // will catch this condition when we actually read data
@@ -1873,9 +1877,11 @@ res_async_query_send(const char *name, const u_int16_t type_h,
     struct expected_arrival *head = 
         res_async_query_create(name, type_h, class_h, pref_ns, 0);
 
-    if (NULL != head)
+    if (NULL != head) {
         ret_val = res_io_check_ea_list(head,NULL,NULL,NULL,NULL);
-    else
+        res_log(NULL,LOG_DEBUG, "libsres: "" res_io_check_ea_list returned %d",
+                ret_val);
+    } else
         res_log(NULL,LOG_DEBUG, "libsres: "" *** res_async_query_create returned NULL");
 
     return head;

@@ -171,7 +171,6 @@ do_section(ns_msg * handle, ns_sect section, int pflag, FILE * file)
     int             n, rrnum;
     const static int buflen = 2048;
     char           *buf;
-    ns_opcode       opcode;
     ns_rr           rr;
 #ifdef HAVE_STRERROR_R
     char            err_buf[ERRBUFLEN + 1];
@@ -183,7 +182,7 @@ do_section(ns_msg * handle, ns_sect section, int pflag, FILE * file)
         return;
     }
 
-    opcode = (ns_opcode) libsres_msg_getflag(*handle, ns_f_opcode);
+    (void) libsres_msg_getflag(*handle, ns_f_opcode);
     rrnum = 0;
     for (;;) {
         if (ns_parserr(handle, section, rrnum, &rr)) {
