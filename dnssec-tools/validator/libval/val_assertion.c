@@ -593,9 +593,8 @@ check_in_qfq_chain(val_context_t *context, struct queries_for_query **queries,
      * sanity checks performed in calling function
      */
 
-    struct queries_for_query *temp, *prev;
+    struct queries_for_query *temp;
     temp = *queries;
-    prev = temp;
 
     while (temp) {
         if ((temp->qfq_query->qc_type_h == type_h)
@@ -623,7 +622,6 @@ check_in_qfq_chain(val_context_t *context, struct queries_for_query **queries,
 #endif
             break;
         }
-        prev = temp;
         temp = temp->qfq_next;
     }
     return temp;
@@ -5778,7 +5776,7 @@ check_wildcard_sanity(val_context_t * context,
     struct val_result_chain *target_res;
     struct val_result_chain *new_res;
     struct val_query_chain *top_q;
-    u_char       *zonecut_n;
+    /*u_char       *zonecut_n;*/
     val_status_t    status;
     int             retval;
     u_int32_t       soa_ttl_x = 0;
@@ -5788,7 +5786,7 @@ check_wildcard_sanity(val_context_t * context,
     
     top_q = top_qfq->qfq_query;
     
-    zonecut_n = NULL;
+    /*zonecut_n = NULL;*/
     target_res = NULL;
 
     for (res = w_results; res; res = res->val_rc_next) {

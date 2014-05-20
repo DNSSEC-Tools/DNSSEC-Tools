@@ -289,7 +289,6 @@ val_create_context_internal( const char *label,
                              val_context_t ** newcontext)
 {
     int             retval;
-    char *base_dnsval_conf = NULL;
     struct policy_overrides *dyn_valpol;
     val_global_opt_t *dyn_valpolopt;
     struct name_server *dyn_nslist;

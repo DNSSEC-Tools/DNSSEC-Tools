@@ -96,8 +96,6 @@ dump_response(const u_char * ans, size_t resplen)
 int
 res_quecmp(u_char * query, u_char * response)
 {
-    size_t length;
-
     if (query == NULL || response == NULL)
         return 1;
 

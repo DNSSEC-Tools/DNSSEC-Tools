@@ -192,7 +192,6 @@ main(int argc, char *argv[])
     struct addrinfo *val_ainfo = NULL;
     int             retval;
     int             getcanonname = 0;
-    int             portspecified = 0;
     int             async = 0;
     int             nodnssec_flag = 0;
     val_log_t      *logp;
@@ -230,7 +229,6 @@ main(int argc, char *argv[])
             break;
 
         case 's':
-            portspecified = 1;
             service = optarg;
             break;
         case 'c':

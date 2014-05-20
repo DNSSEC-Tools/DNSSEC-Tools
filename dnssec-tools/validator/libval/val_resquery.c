@@ -503,7 +503,6 @@ res_zi_unverified_ns_list(val_context_t *context,
     struct name_server *temp_ns;
     struct name_server *ns;
     struct name_server *pending_glue_last;
-    struct name_server *trail_ns;
     struct name_server *outer_trailer;
     struct name_server *tail_ns;
     size_t          name_len;
@@ -601,7 +600,6 @@ res_zi_unverified_ns_list(val_context_t *context,
             /*
              * If the owner name matches the name in an *ns_list entry...
              */
-            trail_ns = NULL;
             ns = *ns_list;
             while (ns) {
                 int matching_cred = 1;
@@ -624,7 +622,6 @@ res_zi_unverified_ns_list(val_context_t *context,
                         return retval;
                     break;
                 } else {
-                    trail_ns = ns;
                     ns = ns->ns_next;
                 }
             }
@@ -1525,7 +1522,7 @@ digest_response(val_context_t * context,
                 size_t response_length, 
                 struct domain_info *di_response)
 {
-    u_int16_t       question, answer, authority, additional;
+    u_int16_t       answer, authority, additional;
     u_int16_t       rrs_to_go;
     int             i;
     size_t          response_index;
@@ -1588,7 +1585,6 @@ digest_response(val_context_t * context,
     hptr = NULL;
     rdata = NULL;
 
-    question = ntohs(header->qdcount);
     answer = ntohs(header->ancount);
     authority = ntohs(header->nscount);
     additional = ntohs(header->arcount);
