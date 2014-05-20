@@ -613,7 +613,7 @@ run_suite_async(val_context_t *context, testsuite *suite, testcase *start_test,
         return 0;
     }
 
-    memset(sstats, 0x00, sizeof(sstats));
+    memset(sstats, 0x00, sizeof(*sstats));
     i = tcs;
     sstats->remaining = tce - tcs + 1;
     sstats->in_flight = 0;
