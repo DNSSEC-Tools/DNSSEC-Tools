@@ -274,7 +274,7 @@ parse_name_server(const char *cp, const char *name_n)
 #if defined( WIN32 )
     size_t addrlen4 = sizeof(struct sockaddr_in);
 #endif
-    char  *addr = NULL;
+    const char  *addr = NULL;
     char  *tsig = NULL;
     char *buf = NULL;
     char *c;

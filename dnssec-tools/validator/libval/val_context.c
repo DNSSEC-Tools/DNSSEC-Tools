@@ -277,7 +277,7 @@ err:
  * default_context.
  */
 static int
-val_create_context_internal( char *label, 
+val_create_context_internal( const char *label, 
                              unsigned int flags,
                              unsigned int polflags,
                              char *valpol,
@@ -590,7 +590,7 @@ err:
  * Create a context with given configuration files
  */
 int
-val_create_context_with_conf(char *label, 
+val_create_context_with_conf(const char *label, 
                              char *dnsval_conf, 
                              char *resolv_conf, 
                              char *root_conf, 
@@ -605,7 +605,7 @@ val_create_context_with_conf(char *label,
  * and with the given default query flags
  */
 int
-val_create_context_ex(char *label, 
+val_create_context_ex(const char *label,
                       val_context_opt_t *opt,
                       val_context_t ** newcontext)
 {
@@ -630,7 +630,7 @@ val_create_context_ex(char *label,
  * Create a context with default configuration files
  */
 int
-val_create_context(char *label, 
+val_create_context(const char *label, 
                    val_context_t ** newcontext)
 {
     return val_create_context_internal(label, 0, 0, NULL, 
