@@ -4,7 +4,7 @@
 ;
 $TTL 1D
 insecure-ns.test.dnssec-tools.org.	600	IN SOA dns.insecure-ns.test.dnssec-tools.org. hardaker.insecure-ns.test.dnssec-tools.org. (
-					1400593983
+					1400594180
 					2H       ; refresh (2 hours)
 					1H       ; retry (1 hour)
 					1W       ; expire (1 week)
@@ -15,7 +15,7 @@ insecure-ns.test.dnssec-tools.org.	600	IN SOA dns.insecure-ns.test.dnssec-tools.
                                NS            dns2.insecure-ns.test.dnssec-tools.org.
 dns1                           1D IN  A      168.150.236.43
 dns2                           1D IN  A      75.101.48.145
-other-a                        1D IN  A      75.119.216.33
+other-a                        1D IN  A      69.163.146.191
 other-aaaa                     1D IN  AAAA   2001:470:1F00:FFFF::1
 ;
 ; Main records
@@ -23,13 +23,13 @@ other-aaaa                     1D IN  AAAA   2001:470:1F00:FFFF::1
 ;
 ; A records
 ;
-good-a                         1D IN  A      75.119.216.33
-badsign-a                      1D IN  A      75.119.216.33
-nosig-a                        1D IN  A      75.119.216.33
-baddata-a                      1D IN  A      75.119.216.33
-futuredate-a                   1D IN  A      75.119.216.33
-pastdate-a                     1D IN  A      75.119.216.33
-reverseddates-a                1D IN  A      75.119.216.33
+good-a                         1D IN  A      69.163.146.191
+badsign-a                      1D IN  A      69.163.146.191
+nosig-a                        1D IN  A      69.163.146.191
+baddata-a                      1D IN  A      69.163.146.191
+futuredate-a                   1D IN  A      69.163.146.191
+pastdate-a                     1D IN  A      69.163.146.191
+reverseddates-a                1D IN  A      69.163.146.191
 ;
 ; AAAA records
 ;
