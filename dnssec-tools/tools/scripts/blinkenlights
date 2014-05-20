@@ -1529,7 +1529,7 @@ sub zskcmds
 					      -buttons => ["Okay"]);
 
 				$dbox->Label(-text => " ")->pack();
-				$dbox->Label(-text => "$zone $&")->pack();
+				$dbox->Label(-text => "$zone $&.\n\nDid you really mean to restart its rollover?")->pack();
 				$dbox->Label(-text => " ")->pack();
 
 				$dbox->Show();
@@ -1633,7 +1633,7 @@ sub kskcmds
 					      -buttons => ["Okay"]);
 
 				$dbox->Label(-text => " ")->pack();
-				$dbox->Label(-text => "$zone $&")->pack();
+				$dbox->Label(-text => "$zone $&.\n\nDid you really mean to restart its rollover?")->pack();
 				$dbox->Label(-text => " ")->pack();
 
 				$dbox->Show();
@@ -2908,6 +2908,8 @@ sub rollerdcmd
 	{
 
 		$rczc = 0;
+		$paintcount = $paintmax + 1;
+		painter();
 		return;
 
 		#
