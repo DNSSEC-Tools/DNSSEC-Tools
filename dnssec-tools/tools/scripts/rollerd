@@ -2772,8 +2772,8 @@ sub ksk_phase7
 	$keyarch_cmd = "$keyarch -dtconf $dtcf -zone $zname $krf -verbose";
 
 	rolllog_log(LOG_TMI,$rname,"keyarch:  running <$keyarch_cmd>");
-	$ret = runner($rname,"$keyarch_cmd",$krf,1,1);
-	if($ret < 0)
+	$ret = runner($rname,"$keyarch_cmd",$krf,1);
+	if($ret != 0)
 	{
 		rolllog_log(LOG_ERR,$rname,"KSK phase 7:  unable to archive KSK keys, rc - $ret");
 
@@ -3657,11 +3657,13 @@ sub signer
 	#
 	# Have zonesigner sign the zone for us.
 	#
-	$ret = runner($rname,$cmdstr,$rrr->{'keyrec'},1,0);
-	$ret >>= 8;
-
+	$ret = runner($rname,$cmdstr,$rrr->{'keyrec'},0);
 	if($ret != 0)
 	{
+		#
+		# Error logging is done in runner(), rather than here
+		# or in zoneerr().
+		#
 		skipnow($rname);
 		zoneerr($rname,$rrr);
 	}
@@ -3678,13 +3680,13 @@ sub signer
 # Routine:	runner()
 #
 # Purpose:	This routine executes another command.
+#		This other command is almost certainly going to be zonesigner.
 #
 sub runner
 {
 	my $rname = shift;			# Name of rollrec rec.
 	my $cmd = shift;			# Command to execute.
 	my $krf = shift;			# Zone's keyrec file.
-	my $errflag = shift;			# On-error flag.
 	my $negerrflag = shift;			# Only-negative-error flag.
 
 	my $ret;				# Command's return code.
@@ -3702,7 +3704,7 @@ sub runner
 
 	#
 	# Execute the given command.  We'll save the stdout and stderr
-	# output in case it's needed later.
+	# output in case of error.
 	#
 	$runerr = 0;
 	open(ZS,"$cmd 2>&1 |") || runerr();
@@ -3718,24 +3720,21 @@ sub runner
 	# If the error flag is set and the command exited with an error,
 	# we'll log the output.
 	#
-	if($errflag)
+	if((! $negerrflag && ($runerr != 0)) ||
+	   (  $negerrflag && ($runerr <  0)))
 	{
-		if((! $negerrflag && ($runerr != 0)) ||
-		   (  $negerrflag && ($runerr <  0)))
-		{
-			$out =~ s/^	if zonesigner appears hung, .*\n$//ms;
-			$out =~ s/^	\(see the \"Entropy\" section .*\n$//ms;
+		$out =~ s/^	if zonesigner appears hung, .*\n$//ms;
+		$out =~ s/^	\(see the \"Entropy\" section .*\n$//ms;
 
-			rolllog_log(LOG_ERR,$rname,"execution error for command \"$cmd\"");
-			rolllog_log(LOG_ERR,$rname,"error output - \"$out\"");
-		}
+		rolllog_log(LOG_ERR,$rname,"execution error for command \"$cmd\"");
+		rolllog_log(LOG_ERR,$rname,"error return - $ret");
+		rolllog_log(LOG_ERR,$rname,"error output - \"$out\"");
 	}
 
 	#
-	# Re-read current keyrec file.
+	# Re-read current keyrec file and return a success/fail indicator.
 	#
 	keyrec_read($krf);
-
 	return($runerr);
 }
 
@@ -4480,6 +4479,12 @@ sub clearzoneerr
 # Purpose:	Increment a zone's error count.  If the count of maximum
 #		consecutive errors is exceeded, the zone is changed to
 #		be a roll zone.
+#
+#		zoneerr() DOES NOT log the error!  This must be done by
+#		its caller.  It was decided to do it this way since the
+#		caller is likely to have more information about the problem
+#		and can provide a more cogent explanation without passing a
+#		big pile of extra parameters.
 #
 sub zoneerr
 {
