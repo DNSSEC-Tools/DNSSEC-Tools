@@ -28,7 +28,7 @@ my $DTVERS = "DNSSEC-Tools Version: 2.0";
 #
 # Constants
 #
-our $DEF_TOOLSCONF = "/usr/local/etc/dnssec/dnssec-tools.conf";
+our $DEF_TOOLSCONF = $Net::DNS::SEC::Tools::conf::CONFFILE;
 
 #
 # A hash mapping algorithm numbers to algorithm names.
