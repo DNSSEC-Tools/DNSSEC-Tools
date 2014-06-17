@@ -186,7 +186,7 @@ Example of a command to generate a new SSH key:
 If the Owl sensor will be pushing data to the manager, then the newly
 generated public key must be transferred to the Owl manager host.  This key
 must be added to the list of authorized keys for the Owl manager's account.
-For OpenSSH, the public key will be in a file called <b>id_rsa.pub</b> and it
+For OpenSSH, the public key will be in a file called <b>id_dsa.pub</b> and it
 will be added to the <b>authorized_keys</b> file on the manager host.  Once
 the sensor's public key has been added to the Owl manager, you must ensure
 that the Owl sensor user may successfully transfer files to the manager
@@ -208,7 +208,7 @@ sensor account.
 The <b>authorized_keys</b> entry should look something like this:
 
 <pre>
-    command="/usr/local/bin/rrsync /owl/data" ssh-rsa AAAAB3Nza...A3Q== owl-manager@owl.example.com
+    command="/usr/local/bin/rrsync /owl/data/sensor42" ssh-rsa AAAAB3Nza...A3Q== owl-manager@owl.example.com
 </pre>
 
 <p>
