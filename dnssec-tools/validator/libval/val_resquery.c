@@ -2350,9 +2350,8 @@ val_res_nsfallback(val_context_t *context, struct val_query_chain *matched_q,
                 "val_res_nsfallback(): Doing EDNS0 fallback"); 
     }
     else {
-        matched_q->qc_state = Q_RESPONSE_ERROR;
         val_log(context, LOG_DEBUG,
-                "val_res_nsfallback(): EDNS0 fallback failed"); 
+                "val_res_nsfallback(): Moving to next address"); 
     }
 }
 
