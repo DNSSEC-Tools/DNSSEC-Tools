@@ -281,10 +281,6 @@ void
 res_async_query_free(struct expected_arrival *ea);
 
 int
-res_io_check_one(struct expected_arrival *ea, struct timeval *next_evt,
-                 struct timeval *now);
-
-int
 res_io_check_ea_list(struct expected_arrival *ea, struct timeval *next_evt,
                      struct timeval *now, int *net_change, int *active);
 
