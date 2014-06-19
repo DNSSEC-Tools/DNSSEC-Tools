@@ -2447,7 +2447,7 @@ read_root_hints_file(val_context_t * ctx)
     u_int16_t       type_h, class_h;
     int             success;
     u_long          ttl_h;
-    int             retval;
+    int             retval = VAL_NO_ERROR;
     u_int16_t       rdata_len_h;
     struct rrset_rec *rr_set;
     struct name_server *ns_list = NULL;
