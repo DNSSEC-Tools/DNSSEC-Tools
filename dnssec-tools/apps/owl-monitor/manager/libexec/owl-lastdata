@@ -220,21 +220,27 @@ sub getdatadir
 #
 # Purpose:	Get the data files for this sensor/query pair.
 #		Give an unknown error if there aren't any.
+#		Look for data in the old data location ($datadir) and in
+#		the new data location ($datadir/$querytype).
 #
 sub getfiles
 {
 	@datafiles = sort(glob("$datadir/$query"));
 	if(@datafiles == 0)
 	{
-		if($query eq '*')
+		@datafiles = sort(glob("$datadir/$querytype/$query"));
+		if(@datafiles == 0)
 		{
-			print "no query results available for $sensor\n";
+			if($query eq '*')
+			{
+				print "no query results available for $sensor\n";
+			}
+			else
+			{
+				print "no $querytype query results available for $sensor\n";
+			}
+			exit($RC_UNKNOWN);
 		}
-		else
-		{
-			print "no $querytype query results available for $sensor\n";
-		}
-		exit($RC_UNKNOWN);
 	}
 }
 
