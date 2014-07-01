@@ -308,7 +308,7 @@ fi
 
 dnl ----------------------------------------------------------------------
 
-AC_CHECK_HEADERS(sys/param.h sys/types.h sys/stat.h sys/ioctl.h sys/socket.h sys/filio.h sys/file.h sys/fcntl.h sys/select.h netinet/in.h sys/time.h ctype.h getopt.h libgen.h limits.h pthread.h syslog.h)
+AC_CHECK_HEADERS(sys/param.h sys/types.h sys/stat.h sys/ioctl.h sys/socket.h sys/filio.h sys/file.h sys/fcntl.h sys/select.h netinet/in.h sys/time.h ctype.h getopt.h libgen.h limits.h pthread.h syslog.h sys/resource.h)
 AC_CHECK_HEADERS(net/if.h ifaddrs.h,,, [
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -604,6 +604,8 @@ AC_CHECK_FUNCS(gethostbyname2)
 AC_CHECK_FUNCS(hstrerror)
 AC_CHECK_FUNCS(freeaddrinfo)
 AC_CHECK_FUNCS(getifaddrs)
+AC_CHECK_FUNCS(getrlimit)
+AC_CHECK_FUNCS(setrlimit)
 
 
 dnl ----------------------------------------------------------------------
