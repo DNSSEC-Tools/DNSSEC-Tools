@@ -66,6 +66,9 @@
 #ifdef __MINGW32__
 #include <winsock2.h>
 #endif
+#ifdef HAVE_SYS_RESOURCE_H
+#include <sys/resource.h>
+#endif
 
 #ifdef __cplusplus
 extern          "C" {

@@ -48,6 +48,9 @@
     } while(0)
 
 
+static long     _max_fd = 0;
+static long     _open_sockets = 0;
+
 #define MAX_TRANSACTIONS    128
 static struct expected_arrival *transactions[MAX_TRANSACTIONS] = {
     NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
@@ -137,6 +140,49 @@ bind_to_random_source(int af, SOCKET s)
     return 1; /* failure */
 }
 
+/*
+ * find the max number of file descriptors for this process
+ */
+static int _init_max_fd(void) {
+    struct rlimit info;
+    int rc;
+    int lim;
+
+#ifndef HAVE_GETRLIMIT
+    /** hmm, cannot get current value. let's just guess. */
+    info.rlim_cur = info.rlim_max = SR_IO_NOFILE_UNKNOWN_SIZE;
+#else
+    rc = getrlimit( RLIMIT_NOFILE, &info);
+    if (rc) {
+        /** hmm, cannot get current value. let's just guess. */
+        info.rlim_cur = info.rlim_max = SR_IO_NOFILE_UNKNOWN_SIZE;
+    }
+#ifdef HAVE_SETRLIMIT
+    else if (info.rlim_cur < info.rlim_max) {
+        int prev = info.rlim_cur;
+        info.rlim_cur = info.rlim_max;
+        rc = setrlimit( RLIMIT_NOFILE, &info);
+        if (rc) /* oh well, we tried. revert to previous limit */
+            info.rlim_cur = prev;
+    }
+#endif /* HAVE_GETRLIMIT */
+#endif /* HAVE_GETRLIMIT */
+    lim = info.rlim_cur - SR_IO_NOFILE_RESERVED;
+    if (lim <= 0)
+        lim = 1;
+    return lim;
+}
+
+long
+res_io_get_max_fd(void) {
+    return _max_fd;
+}
+
+long
+res_io_get_open_sockets(void) {
+    return _open_sockets;
+}
+
 long
 res_get_timeout(struct name_server *ns)
 {
@@ -170,8 +216,10 @@ res_sq_free_expected_arrival(struct expected_arrival **ea)
     if ((*ea)->name != NULL)
         free((*ea)->name);
 #endif
-    if ((*ea)->ea_socket != INVALID_SOCKET)
+    if ((*ea)->ea_socket != INVALID_SOCKET) {
         CLOSESOCK((*ea)->ea_socket);
+        --_open_sockets;
+    }
     if ((*ea)->ea_signed)
         FREE((*ea)->ea_signed);
     if ((*ea)->ea_response)
@@ -262,6 +310,7 @@ res_io_retry_source(struct expected_arrival *ea)
     /* close socket */
     if (ea->ea_socket != INVALID_SOCKET) {
         CLOSESOCK(ea->ea_socket);
+        --_open_sockets;
         ea->ea_socket = INVALID_SOCKET;
     }
 
@@ -282,6 +331,7 @@ res_io_reset_source(struct expected_arrival *ea)
     /* close socket */
     if (ea->ea_socket != INVALID_SOCKET) {
         CLOSESOCK(ea->ea_socket);
+        --_open_sockets;
         ea->ea_socket = INVALID_SOCKET;
     }
 
@@ -302,6 +352,7 @@ res_io_cancel_source(struct expected_arrival *ea)
     /* close socket */
     if (ea->ea_socket != INVALID_SOCKET) {
         CLOSESOCK(ea->ea_socket);
+        --_open_sockets;
         ea->ea_socket = INVALID_SOCKET;
     }
 
@@ -351,6 +402,12 @@ res_io_send(struct expected_arrival *shipit)
     if (shipit == NULL)
         return SR_IO_INTERNAL_ERROR;
 
+    /** init _max_fd as needed */
+    if (0 == _max_fd) {
+        _max_fd =  _init_max_fd();
+        res_log(NULL, LOG_INFO, "libsres: ""max fd  initialized to %d", _max_fd);
+    }
+
     socket_type = (shipit->ea_using_stream == 1) ? SOCK_STREAM : SOCK_DGRAM;
     socket_proto = (socket_type == SOCK_STREAM) ? IPPROTO_TCP : IPPROTO_UDP;
     res_log(NULL, LOG_DEBUG, "libsres: ""ea %p SENDING type %d %s over %s",
@@ -358,6 +415,13 @@ res_io_send(struct expected_arrival *shipit)
             shipit->ea_ns->ns_address[shipit->ea_which_address]->ss_family,
             shipit->ea_using_stream ? "stream" : "dgram",
             (socket_proto == IPPROTO_TCP) ? "tcp" : "udp");
+
+    /* don't send too many packets at once. */
+    if (shipit->ea_socket == INVALID_SOCKET && _open_sockets >= _max_fd) {
+        res_log(NULL, LOG_DEBUG, "libsres: ""ea %p too many packets in flight",
+                shipit);
+        return SR_IO_TOO_MANY_TRANS;
+    }
 
     /*
      * If no socket exists for the transfer, create and connect it (TCP
@@ -374,6 +438,7 @@ res_io_send(struct expected_arrival *shipit)
                     errno, strerror(errno));
             return SR_IO_SOCKET_ERROR;
         }
+        ++_open_sockets;
 
         /* Set the source port */
         if (0 != bind_to_random_source(af, shipit->ea_socket)) {
@@ -626,8 +691,10 @@ res_nsfallback_ea(struct expected_arrival *ea, struct timeval *closest_event,
     }
 
     /** close socket so retry uses different port */
-    if (temp->ea_socket != INVALID_SOCKET)
+    if (temp->ea_socket != INVALID_SOCKET) {
         CLOSESOCK(temp->ea_socket);
+        --_open_sockets;
+    }
     temp->ea_socket = INVALID_SOCKET;
 
     res_log(NULL, LOG_INFO, "libsres: "
@@ -651,6 +718,7 @@ res_io_next_address(struct expected_arrival *ea,
          */
         if (ea->ea_socket != INVALID_SOCKET) {
             CLOSESOCK (ea->ea_socket);
+            --_open_sockets;
             ea->ea_socket = INVALID_SOCKET;
         }
         ea->ea_which_address++;
@@ -677,7 +745,7 @@ res_io_next_address(struct expected_arrival *ea,
     res_print_ea(ea);
 }
 /*
- * net_change : optional pointer for returning the next change in the
+ * net_change : optional pointer for returning the net change in the
  *              number of open/active sockets.
  *
  * active : optional pointer for returning number of active queries.
@@ -744,7 +812,7 @@ res_io_check_ea_list(struct expected_arrival *ea, struct timeval *next_evt,
                 }
                 else {
                     if (needed_new_socket) {
-                        if (net_change)
+                        if (net_change && ea->ea_socket != INVALID_SOCKET)
                             ++(*net_change);
                     }
                     break; /* from while remaining attempts */
@@ -1226,6 +1294,7 @@ res_io_get_a_response(struct expected_arrival *ea_list, u_char ** answer,
             /** close socket so retry uses different port */
             if (ea_list->ea_socket != INVALID_SOCKET) {
                 CLOSESOCK (ea_list->ea_socket);
+                --_open_sockets;
                 ea_list->ea_socket = INVALID_SOCKET;
             }
             res_print_ea(ea_list);
@@ -1464,6 +1533,7 @@ res_switch_to_tcp(struct expected_arrival *ea)
     ea->ea_using_stream = TRUE;
     if (ea->ea_socket != INVALID_SOCKET) {
         CLOSESOCK(ea->ea_socket);
+        --_open_sockets;
         ea->ea_socket = INVALID_SOCKET;
     }
     ea->ea_remaining_attempts = ea->ea_ns->ns_retry+1;
@@ -1493,6 +1563,7 @@ res_switch_all_to_tcp(struct expected_arrival *ea)
         ea->ea_using_stream = TRUE;
         if (ea->ea_socket != INVALID_SOCKET) {
             CLOSESOCK(ea->ea_socket);
+            --_open_sockets;
             ea->ea_socket = INVALID_SOCKET;
         }
     }

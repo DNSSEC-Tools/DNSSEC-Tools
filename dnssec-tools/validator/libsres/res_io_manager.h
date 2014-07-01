@@ -27,6 +27,14 @@
 #define SR_IO_INTERNAL_ERROR    -10
 
 /*
+ * we limit the number of open sockets, using getrlimit to find the
+ * system max and subtracting a few to allow for other occasional uses.
+ * If getrlimit fails, we need some reasonable default.
+ */
+#define SR_IO_NOFILE_RESERVED       10
+#define SR_IO_NOFILE_UNKNOWN_SIZE  256
+
+/*
  * res_io_deliver
  * 
  * Enters a query for submission.  After entering the query,
@@ -330,5 +338,17 @@ res_io_select_info(struct expected_arrival *ea_list, int *nfds,
  */
 int
 res_io_count_ready(fd_set *read_desc, int max_fd);
+
+/**
+ * return the maximum number of sockets io manager will open
+ */
+long
+res_io_get_max_fd(void);
+
+/**
+ * return the current number of sockets io manager has open
+ */
+long
+res_io_get_open_sockets(void);
 
 #endif
