@@ -8,6 +8,18 @@ details.
                       records to analyze.  EG:
                       donuts live:good-a,badsign-a test.dnssec-tools.org
                     - Added a -V switch to dump records analyzed
+    - libval:       - Add support for conditionally checking all RRSIGs
+                      on an assertion even if one that validates is
+                      already found.
+                    - Look for zonecuts based on NS records, not SOA
+                    - Added initial support for TSIG in order to enable
+                      libval to query recursive name servers that
+                      authorized recursive lookup for only those hosts
+                      that used a particular TSIG key.
+                    - Number of bug fixes
+    - Validator.pm  - Store respondent name server information in result
+                      structure.
+
 
 2.0
  - New Features
