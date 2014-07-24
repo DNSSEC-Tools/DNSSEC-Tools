@@ -342,7 +342,7 @@ ruletype: name
 <test>
   my $count = 0;
   foreach my $sig (@{$records->{'RRSIG'}}) {
-    if ($current_domain eq $recordname && $sig->typecovered eq 'DS')) {
+    if ($current_domain eq $recordname && $sig->typecovered eq 'DS') {
     	# in case they passed in parent zone data, skip this signature as its outside the zone
 	# XXX: we should see if we have parent keys and test it
     	next;
