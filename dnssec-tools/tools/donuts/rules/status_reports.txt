@@ -6,8 +6,15 @@ desc:  	  Outputs details found in the status report
 <test>
   if ($recordname eq $current_domain && $#{$records->{'SOA'}} == 0) {
      domain_status("Zone Serial Number", $records->{'SOA'}[0]->serial); 
-     domain_status("SOA Contact Address", $records->{'SOA'}[0]->rname); 
+
+     my $rname = $records->{'SOA'}[0]->rname;
+     if ($rname !~ /\@/) {
+         $rname =~ s/\./\@/;
+     }
+     domain_status("SOA Contact Address", $rname); 
   }
+
+  return;
 </test>
 
 # memorize and report the 
@@ -33,6 +40,11 @@ desc: Reports the signature lifetimes
 
 </init>
 <test>
+
+  # ignore out-of-zone data (such as a parents)
+  if ($record->name ne $current_domain) {
+     next;
+  }
 
   # process the expiration time
   my $newtime = rrsig_date_to_epoch($record->sigexpiration);
