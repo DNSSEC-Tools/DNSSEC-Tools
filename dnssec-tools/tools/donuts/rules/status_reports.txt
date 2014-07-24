@@ -1,0 +1,40 @@
+name:  	  DNS_SOA_STATUS
+level: 	  2
+ruletype: name
+class: 	  Status
+desc:  	  Outputs details found in the status report
+<test>
+  if ($recordname eq $current_domain && $#{$records->{'SOA'}} == 0) {
+     donuts_status("A SOA record for $current_domain was found");
+  }
+</test>
+
+# memorize and report the 
+name:  	   DNSSEC_RRSIG_STATUS
+level: 	   2
+type:  	   RRSIG
+warntime:  604800
+class:     Status
+desc: Reports the signature lifetimes
+<init>
+  use Date::Parse;
+  $donuts::time = time();
+
+  $donuts::sigexptime = undef;
+</init>
+<test>
+  my $date = $record->sigexpiration;
+  $date =~ s/(....)(..)(..)(..)(..)(..)/$2-$3-$1 $4:$5:$6/;
+  my $extime = str2time($date);
+
+  if (!defined($donuts::sigexptime)) {
+    $donuts::sigexptime = $record->sigexpiration;
+    domain_status("Zone valid until", scalar localtime($extime));
+  } elsif ($donuts::sigexptime != $record->sigexpiration) {
+    donuts_error("warning: signatures in this zone are not time aligned");
+    
+    $donuts::sigexptime = $donuts::sigexptime < $record->sigexpiration
+                              ? $donuts::sigexptime : $record->sigexpiration;
+  } 
+
+</test>
