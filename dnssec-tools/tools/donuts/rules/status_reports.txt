@@ -34,6 +34,7 @@ desc: Reports the signature lifetimes
   } elsif ($donuts::sigexpiration != $record->sigexpiration) {
     donuts_error("warning: signatures in this zone are not time aligned");
     
+    # remember the soonest time that the zone might expire
     $donuts::sigexpiration = $donuts::sigexpiration < $record->sigexpiration
                               ? $donuts::sigexpiration : $record->sigexpiration;
   } 
@@ -48,6 +49,7 @@ desc: Reports the signature lifetimes
   } elsif ($donuts::sigexpiration != $record->siginception) {
     donuts_error("warning: signatures in this zone are not time aligned");
     
+    # remember the latest time that the zone might be valid from
     $donuts::siginception = $donuts::siginception > $record->sigexpiration
                               ? $donuts::siginception : $record->sigexpiration;
   } 
