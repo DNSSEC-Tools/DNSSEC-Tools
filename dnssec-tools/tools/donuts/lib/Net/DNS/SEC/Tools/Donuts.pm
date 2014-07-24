@@ -644,11 +644,16 @@ sub donuts_records_by_name_and_type {
     find_records_by_name_and_type(@_);
 }
 
+sub reset {
+	@statuses = ();
+}
+
 sub analyze {
     my ($self, $level) = @_;
     $self->set_global();
 
     my ($rulecount, $errcount) = (0,0);
+    $self->reset();
 
     my $verbose = $self->config('verbose') || 0;
     $level = $level || $self->config('level') || 5;
