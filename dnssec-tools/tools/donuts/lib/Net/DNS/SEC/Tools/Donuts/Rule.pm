@@ -14,7 +14,7 @@ our $VERSION="2.1";
 
 require Exporter;
 our @ISA = qw(Exporter);
-our @EXPORT = qw(donuts_error);
+our @EXPORT = qw(donuts_error donuts_status);
 
 sub new {
     my ($class, $ref) = @_;
@@ -235,17 +235,34 @@ sub Error {
     }
 }
 
-my ($current_errors, $current_warnings);
+sub Status {
+    my ($self, $status) = @_;
+    if (exists($self->{'donuts'})) {
+	$self->{'donuts'}->Status($status);
+    } else {
+	print STDERR $status;
+    }
+}
+
+my ($current_errors, $current_warnings, $current_statuses);
 sub donuts_error {
     push @$current_errors, @_;
+    return;
+}
+
+sub donuts_status {
+    push @$current_statuses, @_;
     return;
 }
 
 sub run_test_for_errors {
     my ($rule, $file, $testargs, $errorargs) = @_;
 
-    $current_errors = [];
+    $current_errors   = [];
+    $current_statuses = [];
 
+    # load the test and run it
+    # (in an eval to detect crashes)
     my $res = eval {
 	import Net::DNS::SEC::Tools::Donuts::Rule qw(donuts_error);
 
@@ -254,6 +271,8 @@ sub run_test_for_errors {
 
 	$rule->{'test'}->(@$testargs);
     };
+
+    # Did it fail to execute?  Report it
     if (!defined($res) && $@) {
 	$rule->Error("\nProblem executing rule $rule->{name}: \n");
 	$rule->Error("  ZoneData: $file\n");
@@ -261,6 +280,11 @@ sub run_test_for_errors {
 	$rule->Error("  Error:    $@\n");
 	return (1,1,[]); # XXX: need to return this data instead
     }
+
+    # pre-pend our summary statuses
+    unshift @$current_errors, @$current_statuses; 
+
+    # Create the resulting results array
     if (ref($res) ne 'ARRAY') {
 	if ($res) {
 	    $res = [@$current_errors, $res];

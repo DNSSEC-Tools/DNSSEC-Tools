@@ -394,6 +394,11 @@ sub Warning {
     print STDERR $message;
 }
 
+sub Status {
+    my ($self, $message, $tag) = @_;
+    print STDERR $message;
+}
+
 sub Verbose {
     my ($self, $message, $level) = @_;
     if ($self->config('verbose')) {
