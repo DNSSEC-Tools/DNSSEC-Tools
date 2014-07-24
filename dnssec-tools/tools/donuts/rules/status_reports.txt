@@ -5,15 +5,9 @@ class: 	  Status
 desc:  	  Outputs details found in the status report
 <test>
   if ($recordname eq $current_domain && $#{$records->{'SOA'}} == 0) {
-     donuts_status("A SOA record for $current_domain was found");
+     domain_status("Zone Serial Number", $records->{'SOA'}[0]->serial); 
+     domain_status("SOA Contact Address", $records->{'SOA'}[0]->rname); 
   }
-
-  sub rrsig_date_to_epoch {
-    my ($incoming) = @_;
-    $incoming =~ s/(....)(..)(..)(..)(..)(..)/$2-$3-$1 $4:$5:$6/;
-    return str2time($incoming);
-  }
-  
 </test>
 
 # memorize and report the 
@@ -29,6 +23,14 @@ desc: Reports the signature lifetimes
 
   $donuts::sigexpiration = undef;
   $donuts::siginception = undef;
+
+  package main;
+  sub rrsig_date_to_epoch {
+    my ($incoming) = @_;
+    $incoming =~ s/(....)(..)(..)(..)(..)(..)/$2-$3-$1 $4:$5:$6/;
+    return str2time($incoming);
+  }
+
 </init>
 <test>
 
@@ -61,6 +63,7 @@ desc: Reports the signature lifetimes
   return;
 </test>
 <end>
+
   if (defined($donuts::siginception)) {
     domain_status("Zone valid from", scalar localtime($donuts::siginception));
   }
