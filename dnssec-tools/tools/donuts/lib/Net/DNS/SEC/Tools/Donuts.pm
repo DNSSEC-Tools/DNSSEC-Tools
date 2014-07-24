@@ -11,6 +11,7 @@ use Net::DNS::SEC::Tools::Donuts::Rule;
 use Net::DNS::SEC::Tools::dnssectools;
 
 use Net::DNS::SEC::Tools::Donuts::Output;
+use Data::Dumper;
 
 our $VERSION="2.1";
 
@@ -258,7 +259,7 @@ sub parse_rule_file {
 	$ruledef .= $_;
 
 	# deal with multi-line records
-	if (/(<|)(test|init)(>|:)/) {
+	if (/(<|)(test|init|end)(>|:)/) {
 	    my $type = $2;
 	    my $xmllike = 0;
 	    $xmllike = 1 if ($1 eq '<');
@@ -269,7 +270,7 @@ sub parse_rule_file {
 		# rule code must begin with white space
 		$count++;
 		last if ((!$xmllike && (!/^\s/ || /^\s*$/)) ||
-			 ($xmllike && /<\/(test|init)>/));
+			 ($xmllike && /<\/(test|init|end)>/));
 		$code .= $_;
 		$ruledef .= $_;
 	    }
@@ -285,10 +286,10 @@ sub parse_rule_file {
 		    $err = 1;
 		}
 	    } else {
-		$rule->{'test'} = $code;
+		$rule->{$type} .= $code;
 	    }
 
-	    if (defined($_) && !/^\s/ && !/<\/(test|init)/) {
+	    if (defined($_) && !/^\s/ && !/<\/(test|init|end)/) {
 		$count--;
 		$nextline = $_;
 	    }
@@ -493,6 +494,7 @@ sub analyze_records {
     $self->output()->StartArray("Record Results");
     $self->output()->Comment("Analyzing individual records in $self->{zonesource}");
 
+    # for each record, execute the rule's tests
     foreach my $rec (@$rrset) {
 	foreach my $r (@rules) {
 	    next if ($self->rule_is_ignored($r));
@@ -510,6 +512,17 @@ sub analyze_records {
 	    push @{$recordByNameType->{lc($rec->name)}{$rec->type}}, $rec;
 	}
 	$firstrun = 0;
+    }
+
+    # run the 'end' routines for each rule, if they have one
+    foreach my $r (@rules) {
+	    next if ($self->rule_is_ignored($r));
+	    next if (!$self->rule_is_only($r));
+	    next if (!exists($r->{'end'}));
+
+#	    print Dumper($r);
+
+	    $r->execute_code('end');
     }
 
     $self->output()->EndArray();
