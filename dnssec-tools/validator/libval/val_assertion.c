@@ -6684,39 +6684,40 @@ _context_as_remove(val_context_t *context, val_async_status *as)
 }
 
 static int
-_async_status_free(val_async_status *as)
+_async_status_free(val_async_status **as)
 {
-    if (NULL == as)
+    if (NULL == as || NULL == *as)
         return VAL_BAD_ARGUMENT;
 
-    val_log(as->val_as_ctx, LOG_DEBUG, "as %p releasing", as);
+    val_log((*as)->val_as_ctx, LOG_DEBUG, "as %p releasing", (*as));
 
     /* remove all pending queries from context list */
-    free_qfq_chain(as->val_as_ctx, as->val_as_queries);
-    as->val_as_queries = NULL;
+    free_qfq_chain((*as)->val_as_ctx, (*as)->val_as_queries);
+    (*as)->val_as_queries = NULL;
 
-    if (as->val_as_results) {
-        val_free_result_chain(as->val_as_results);
-        as->val_as_results = NULL;
+    if ((*as)->val_as_results) {
+        val_free_result_chain((*as)->val_as_results);
+        (*as)->val_as_results = NULL;
     }
 
-    if (as->val_as_answers) {
-        val_free_answer_chain(as->val_as_answers);
-        as->val_as_answers = NULL;
+    if ((*as)->val_as_answers) {
+        val_free_answer_chain((*as)->val_as_answers);
+        (*as)->val_as_answers = NULL;
     }
 
-    _context_as_remove(as->val_as_ctx, as);
+    _context_as_remove((*as)->val_as_ctx, (*as));
 
-    FREE(as->val_as_name);
+    FREE((*as)->val_as_name);
 #ifdef DEBUG_DONT_RELEASE_ANYTHING
     {
         static val_async_status *holding = NULL;
 
-        as->val_as_next = holding;
-        holding = as;
+        (*as)->val_as_next = holding;
+        holding = *as;
     }
 #else
-    FREE(as);
+    FREE(*as);
+    *as = NULL;
 #endif
 
     return VAL_NO_ERROR;
@@ -6829,7 +6830,7 @@ _handle_completed(val_context_t *context)
         completed = completed->val_as_next;
         _call_callbacks(VAL_AS_EVENT_COMPLETED, as);
         as->val_as_ctx = NULL; /* we've already removed ourselves */
-        _async_status_free(as); /* no ctx, so no lock needed */
+        _async_status_free(&as); /* no ctx, so no lock needed */
         CTX_UNLOCK_POL(context);
     }
 }
@@ -6899,7 +6900,7 @@ val_async_submit(val_context_t * ctx,  const char * domain_name, int class_h,
      */
     context = val_create_or_refresh_context(ctx); /* does CTX_LOCK_POL_SH */
     if (NULL == context) {
-        _async_status_free(as); /* no context, so no lock needed */
+        _async_status_free(&as); /* no context, so no lock needed */
         return VAL_INTERNAL_ERROR;
     }
 
@@ -6979,7 +6980,7 @@ val_async_submit(val_context_t * ctx,  const char * domain_name, int class_h,
     }
 
     if ((VAL_NO_ERROR != retval) && (NULL != added_q))
-        _async_status_free(as);
+        _async_status_free(&as);
     else {
         ASSERT_HAVE_AC_LOCK(context);
 
@@ -7371,7 +7372,7 @@ _async_cancel_one(val_context_t *context, val_async_status *as, u_int flags)
     if (! (flags & VAL_AS_CANCEL_CTX_REMOVED))
         _context_as_remove(context, as);
 
-    _async_status_free(as);
+    _async_status_free(&as);
 
     CTX_UNLOCK_POL(context);
 }
