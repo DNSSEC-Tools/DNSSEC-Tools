@@ -1023,7 +1023,7 @@ lower_name(u_char rdata[], size_t * index)
 
     length = wire_name_length(&rdata[(*index)]);
 
-    while ((*index) < length) {
+    while (length-- > 0) {
         rdata[(*index)] = tolower(rdata[(*index)]);
         (*index)++;
     }
