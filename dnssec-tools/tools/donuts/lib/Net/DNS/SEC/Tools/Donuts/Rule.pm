@@ -256,8 +256,11 @@ sub donuts_status {
 
 my $current_donuts;
 sub domain_status {
-	print STDERR "d: $current_donuts\n";
-    $current_donuts->add_status(@_);
+	if ($current_donuts) {
+		$current_donuts->add_status(@_);
+	} else {
+		warn "tried to log a status but no rules have been run yet?";
+	}
 }
 
 sub execute_code {
