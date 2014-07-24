@@ -22,6 +22,7 @@ sub new {
     bless $ref, $class;
 
     $ref->create_code_ref('test');
+    $ref->create_code_ref('end');
 
     return $ref;
 }

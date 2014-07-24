@@ -520,7 +520,8 @@ sub analyze_records {
 	    next if (!$self->rule_is_only($r));
 	    next if (!exists($r->{'end'}));
 
-#	    print Dumper($r);
+	    # drop anything that isn't a record type, or nothing (record is the default)
+	    next if (defined($r->{'ruletype'}) && $r->{'ruletyp'} ne 'record');
 
 	    $r->execute_code('end');
     }
@@ -548,6 +549,7 @@ sub create_name_type_cache {
 my @statuses;
 sub add_status {
 	my ($self, @newstatuses) = @_;
+	
 	push @statuses, \@newstatuses;
 }
 
@@ -586,6 +588,16 @@ sub analyze_names {
             $rulecount += $rulesrun if ($firstrun);
         }
         $firstrun = 0;
+    }
+
+    # run the 'end' routines for each rule, if they have one
+    foreach my $r (@rules) {
+	    next if ($self->rule_is_ignored($r));
+	    next if (!$self->rule_is_only($r));
+	    next if (!exists($r->{'end'}));
+	    next if ($r->{'ruletype'} ne 'name');
+
+	    $r->execute_code('end');
     }
 
     $self->output()->EndArray();
@@ -645,7 +657,8 @@ sub donuts_records_by_name_and_type {
 }
 
 sub reset {
-	@statuses = ();
+	my ($self) = @_;
+	$self->reset_statuses();
 }
 
 sub analyze {
@@ -653,7 +666,7 @@ sub analyze {
     $self->set_global();
 
     my ($rulecount, $errcount) = (0,0);
-    $self->reset();
+    $self->reset_statuses();
 
     my $verbose = $self->config('verbose') || 0;
     $level = $level || $self->config('level') || 5;
