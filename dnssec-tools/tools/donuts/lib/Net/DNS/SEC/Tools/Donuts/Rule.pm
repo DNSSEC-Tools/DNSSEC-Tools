@@ -19,51 +19,59 @@ our @EXPORT = qw(donuts_error donuts_status domain_status);
 sub new {
     my ($class, $ref) = @_;
 
-    # based on the rule type, eval the code 'test' string into a subroutine.
-    #   - if it is already a CODE ref, let it be
-    #   - if it has a sub { prefix, just eval as is
-    #   - otherwise, prepend some local convenience variable names and sub {} it
-    if (exists($ref->{'test'}) && ref($ref->{'test'}) ne 'CODE') {
-	if ($ref->{'test'} !~ /^\s*sub\s*{/) {
-	    my $code = "no strict;\n";
-	    $code .=   "package main;\n";
-	    $code .=   "sub {\n";
-
-	    if(exists($ref->{'requires'})) {
-		$code .= "my \$have_it;\n";
-		foreach my $require (split(/\s+/, $ref->{'requires'})) {
-		    $code .= "\$have_it = eval \"require $require;\";\n";
-		    $code .= "if (!\$have_it) { \n";
-		    $code .= "  return donuts_error('perl module \"$require\" is needed for this rule to run');\n";
-		    $code .= "}\n";
-		    $code .= "import $require;\n";
-		}
-	    }
-
-	    if (exists($ref->{'ruletype'}) && $ref->{'ruletype'} eq 'name') {
-		$code .= "  my (\$records, \$rule, \$recordname) = \@_;\n";
-	    } else {
-		# assume 'record' ruletype...
-		$code .= "  my (\$record, \$rule) = \@_;\n";
-	    }
-	    $code .= "
-                    $ref->{'test'}
-                    }";
-	    $ref->{'test'} = $code;
-	}
-
-	# create the CODE ref from the string
-	$ref->{'test'} = eval("$ref->{test}");
-
-	# if error, mention it
-	if ($@) {
-	    warn "broken code in test for rule '$ref->{name}': $@";
-	}
-    }
-
     bless $ref, $class;
+
+    $ref->create_code_ref('test');
+
     return $ref;
 }
+
+sub create_code_ref {
+	my ($ref, $label) = @_;
+	
+	# based on the rule type, eval the code 'test' string into a subroutine.
+	#   - if it is already a CODE ref, let it be
+	#   - if it has a sub { prefix, just eval as is
+	#   - otherwise, prepend some local convenience variable names and sub {} it
+	if (exists($ref->{$label}) && ref($ref->{$label}) ne 'CODE') {
+		if ($ref->{$label} !~ /^\s*sub\s*{/) {
+			my $code = "no strict;\n";
+			$code .=   "package main;\n";
+			$code .=   "sub {\n";
+
+			if (exists($ref->{'requires'})) {
+				$code .= "my \$have_it;\n";
+				foreach my $require (split(/\s+/, $ref->{'requires'})) {
+					$code .= "\$have_it = eval \"require $require;\";\n";
+					$code .= "if (!\$have_it) { \n";
+					$code .= "  return donuts_error('perl module \"$require\" is needed for this rule to run');\n";
+					$code .= "}\n";
+					$code .= "import $require;\n";
+				}
+			}
+
+			if (exists($ref->{'ruletype'}) && $ref->{'ruletype'} eq 'name') {
+				$code .= "  my (\$records, \$rule, \$recordname) = \@_;\n";
+			} else {
+				# assume 'record' ruletype...
+				$code .= "  my (\$record, \$rule) = \@_;\n";
+			}
+			$code .= "
+                    $ref->{$label}
+                    }";
+			$ref->{$label} = $code;
+		}
+
+		# create the CODE ref from the string
+		$ref->{$label} = eval("$ref->{$label}");
+
+		# if error, mention it
+		if ($@) {
+			warn "broken code in $label for rule '$ref->{name}': $@";
+		}
+	}
+}
+
 
 # XXX: deprecated
 sub output {
