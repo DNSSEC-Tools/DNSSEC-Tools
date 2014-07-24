@@ -6742,6 +6742,9 @@ _call_callbacks(int event, val_async_status *as)
      * call async cancel, which will call callbacks = instant loop!)
      */
     as->val_as_flags |= VAL_AS_CALLBACK_CALLED;
+    if (as->val_as_flags & VAL_AS_INFLIGHT) {
+        as->val_as_flags ^= VAL_AS_INFLIGHT;
+    }
 
     if (VAL_AS_EVENT_COMPLETED == event) {
         if (!(as->val_as_flags & VAL_AS_DONE) ||
@@ -6977,6 +6980,10 @@ val_async_submit(val_context_t * ctx,  const char * domain_name, int class_h,
          * if (NULL == added_q->qfq_query->qc_ea)
          *   retval = VAL_INTERNAL_ERROR;
          */
+
+        if (VAL_NO_ERROR == retval) {
+            as->val_as_flags |= VAL_AS_INFLIGHT;
+        }
     }
 
     if ((VAL_NO_ERROR != retval) && (NULL != added_q))
@@ -7433,6 +7440,22 @@ val_async_cancel_all(val_context_t *context, unsigned int flags)
     CTX_UNLOCK_ACACHE(context);
 
     return VAL_NO_ERROR;
+}
+
+/*
+ * Function: val_async_getflags
+ *
+ * Purpose: Get the flags associated with the asynchronous request 
+ *
+ * Parameter: as -- val_async_status for pending request.
+ */
+unsigned int 
+val_async_getflags(val_async_status *as)
+{
+    if (NULL == as)
+        return 0;
+
+    return as->val_as_flags;
 }
 
 #endif /* VAL_NO_ASYNC */

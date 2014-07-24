@@ -374,6 +374,7 @@ typedef struct val_context_opt {
 
 #define VAL_AS_DONE                  0x01000000 /* have results/answers */
 #define VAL_AS_CALLBACK_CALLED       0x02000000 /* called user callbacks */
+#define VAL_AS_INFLIGHT              0x04000000 /* called user callbacks */
 
     /*
      * asynchronous events
@@ -424,6 +425,7 @@ typedef struct val_context_opt {
                                      val_async_status *as,
                                      unsigned int flags);
     int             val_async_cancel_all(val_context_t *context, unsigned int flags);
+    unsigned int    val_async_getflags(val_async_status *as);
 
     /*
      * backwards compatibility
