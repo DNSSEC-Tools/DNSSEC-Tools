@@ -30,6 +30,7 @@ desc: Reports the signature lifetimes
 
   $donuts::sigexpiration = undef;
   $donuts::siginception = undef;
+  $donuts::parentexpiration = undef;
 
   package main;
   sub rrsig_date_to_epoch {
@@ -41,9 +42,17 @@ desc: Reports the signature lifetimes
 </init>
 <test>
 
-  # ignore out-of-zone data (such as a parents)
-  if ($record->name ne $current_domain) {
-     next;
+  # check for out-of-zone data (such as a parents)
+  if ($record->name !~ /$current_domain$/) {
+    # completely out of zone
+    return 
+  } elsif ($record->typecovered eq 'DS' &&
+           $record->name        eq $current_domain) {
+        
+    # record the parent's notion of the DS validity range
+    $donuts::parentexpiration = rrsig_date_to_epoch($record->sigexpiration);
+    $donuts::parentinception = rrsig_date_to_epoch($record->siginception);
+    return;
   }
 
   # process the expiration time
@@ -84,6 +93,14 @@ desc: Reports the signature lifetimes
     domain_status("Zone valid until", scalar localtime($donuts::sigexpiration));
   } else {
     domain_status("DNSSEC Signed", "No!");
+  }
+
+  if (defined($donuts::parentinception)) {
+    domain_status("Parent zone validity from", scalar localtime($donuts::parentinception));
+  }
+
+  if (defined($donuts::parentexpiration)) {
+    domain_status("Parent zone validity until", scalar localtime($donuts::parentexpiration));
   }
 
   # clean up for the next run
