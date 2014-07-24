@@ -532,6 +532,16 @@ sub create_name_type_cache {
     return \%recordByNameTypeCache;
 }
 
+my @statuses;
+sub add_status {
+	my ($self, @newstatuses) = @_;
+	push @statuses, \@newstatuses;
+}
+
+sub reset_statuses {
+	@statuses = ();
+}
+
 sub analyze_names {
     my ($self, $level, $verbose, $recordByNameTypeCache) = @_;
     my $firstrun = 1;
@@ -659,6 +669,18 @@ sub summarize_results {
     $output->Output("Records Analyzed",      (1+$#{$self->zone_records()}));
     $output->Output("Names Analyzed",        $self->name_count());
     $output->Output("Errors Found",          $self->{'errcount'});
+    $output->EndSection();
+    $output->EndOutput();
+}
+
+sub show_statuses {
+    my ($self) = @_;
+    my $output = $self->output();
+    $output->StartOutput();
+    $output->StartSection("Domain Status",  $self->{'domain'});
+    foreach my $status (@statuses) {
+	    $output->Output(@$status);
+    }
     $output->EndSection();
     $output->EndOutput();
 }

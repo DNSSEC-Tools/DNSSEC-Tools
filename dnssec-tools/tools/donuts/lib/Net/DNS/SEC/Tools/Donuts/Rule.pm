@@ -14,7 +14,7 @@ our $VERSION="2.1";
 
 require Exporter;
 our @ISA = qw(Exporter);
-our @EXPORT = qw(donuts_error donuts_status);
+our @EXPORT = qw(donuts_error donuts_status domain_status);
 
 sub new {
     my ($class, $ref) = @_;
@@ -251,8 +251,12 @@ sub donuts_error {
 }
 
 sub donuts_status {
-    push @$current_statuses, @_;
-    return;
+	push @$current_statuses, @_;
+}
+
+my $current_donuts;
+sub domain_status {
+    $current_donuts->add_status(@_);
 }
 
 sub run_test_for_errors {
@@ -260,6 +264,7 @@ sub run_test_for_errors {
 
     $current_errors   = [];
     $current_statuses = [];
+    $current_donuts = $rule->{'donuts'};
 
     # load the test and run it
     # (in an eval to detect crashes)
