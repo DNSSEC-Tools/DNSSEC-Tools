@@ -7,6 +7,13 @@ desc:  	  Outputs details found in the status report
   if ($recordname eq $current_domain && $#{$records->{'SOA'}} == 0) {
      donuts_status("A SOA record for $current_domain was found");
   }
+
+  sub rrsig_date_to_epoch {
+    my ($incoming) = @_;
+    $incoming =~ s/(....)(..)(..)(..)(..)(..)/$2-$3-$1 $4:$5:$6/;
+    return str2time($incoming);
+  }
+  
 </test>
 
 # memorize and report the 
@@ -20,40 +27,38 @@ desc: Reports the signature lifetimes
   use Date::Parse;
   $donuts::time = time();
 
-  $donuts::sigexptime = undef;
+  $donuts::sigexpiration = undef;
+  $donuts::siginception = undef;
 </init>
 <test>
 
-  # memorize the signature expiration time
-  my $date = $record->sigexpiration;
-  $date =~ s/(....)(..)(..)(..)(..)(..)/$2-$3-$1 $4:$5:$6/;
-  my $extime = str2time($date);
-
+  # process the expiration time
+  my $newtime = rrsig_date_to_epoch($record->sigexpiration);
+  
   if (!defined($donuts::sigexpiration)) {
-    $donuts::sigexpiration = $record->sigexpiration;
-  } elsif ($donuts::sigexpiration != $record->sigexpiration) {
+    $donuts::sigexpiration = $newtime
+  } elsif ($donuts::sigexpiration != $newtime) {
     donuts_error("warning: signatures in this zone are not time aligned");
     
     # remember the soonest time that the zone might expire
-    $donuts::sigexpiration = $donuts::sigexpiration < $record->sigexpiration
-                              ? $donuts::sigexpiration : $record->sigexpiration;
+    $donuts::sigexpiration = $donuts::sigexpiration < $newtime
+                              ? $donuts::sigexpiration : $newtime;
   } 
 
-  # memorize the signature inception time
-  my $date = $record->siginception;
-  $date =~ s/(....)(..)(..)(..)(..)(..)/$2-$3-$1 $4:$5:$6/;
-  my $extime = str2time($date);
+  # process the inception time
+  my $newtime = rrsig_date_to_epoch($record->siginception);
 
-  if (!defined($donuts::sigexpiration)) {
-    $donuts::sigexpiration = $record->siginception;
-  } elsif ($donuts::sigexpiration != $record->siginception) {
+  if (!defined($donuts::siginception)) {
+    $donuts::siginception = $newtime;
+  } elsif ($donuts::siginception != $newtime) {
     donuts_error("warning: signatures in this zone are not time aligned");
     
     # remember the latest time that the zone might be valid from
-    $donuts::siginception = $donuts::siginception > $record->sigexpiration
-                              ? $donuts::siginception : $record->sigexpiration;
+    $donuts::siginception = $donuts::siginception > $newtime
+                              ? $donuts::siginception : $newtime;
   } 
 
+  return;
 </test>
 <end>
   if (defined($donuts::siginception)) {
@@ -65,4 +70,8 @@ desc: Reports the signature lifetimes
   } else {
     domain_status("DNSSEC Signed", "No!");
   }
+
+  # clean up for the next run
+  $donuts::sigexpiration = undef;
+  $donuts::siginception = undef;
 </end>
