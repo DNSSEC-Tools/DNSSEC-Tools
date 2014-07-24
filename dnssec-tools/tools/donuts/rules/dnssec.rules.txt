@@ -167,7 +167,7 @@ type: NSEC3
 name: DNSSEC_DNSKEY_MUST_HAVE_SAME_NAME
 level: 4
 type: DNSKEY
-desc: RFC4034 section 2.1.1: If bit 7 has value 1, then the DNSKEY record holds a DNS zone key, and the DNSKEY RR's owner name MUST be the name of a zone.
+desc: RFC4034 section 2.1.1: If bit 7 has value 1, then the DNSKEY record holds a DNS zone key, and the DNSKEY RR owner name MUST be the name of a zone.
 <test>
   if ($record->flags & 0x100 && $current_domain ne $record->name) {
     donuts_error("DNSKEY record found for '$record->{name}' in wrong domain: '$current_domain'.");
@@ -199,7 +199,7 @@ type: NS
 name: DNSSEC_MISSING_RRSIG_RECORD2
 level: 3
 ruletype: name
-desc: RRSIG records signed by the zone's key are required for all records in order for the domain to be secure, with the exception of NS and glue records for children.
+desc: RRSIG records signed by the zones key are required for all records in order for the domain to be secure, with the exception of the NS and glue records for children.
 <test>
   my %rrsigs;
   foreach my $rec (@{$records->{'RRSIG'}}) {
@@ -219,6 +219,10 @@ desc: RRSIG records signed by the zone's key are required for all records in ord
           donuts_error("$rec->{name} is a child NS record but is signed and shouldn't be");
         }
         next;
+      }
+      if ($current_domain eq $rec->name && $type eq 'DS')) {
+	    # in case they passed in parent zone data, skip this signature as its outside the zone
+	    next;
       }
       # NS glue records for children aren't signed.
       if (exists($rrsigs{$type}{$rec->name}) &&
