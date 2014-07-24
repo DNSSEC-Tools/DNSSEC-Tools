@@ -562,7 +562,8 @@ constant_15 (pTHX_ const char *name, IV *iv_return) {
   /* When generated this function returned values for the list of names given
      here.  However, subsequent manual editing may have added or removed some.
      SR_HEADER_ERROR SR_MEMORY_ERROR VAL_AC_BAD_BASE VAL_AC_LAST_BAD
-     VAL_AC_VERIFIED VAL_BOGUS_PROOF VAL_FROM_ANSWER VAL_QUERY_ASYNC */
+     VAL_AC_VERIFIED VAL_BOGUS_PROOF VAL_FROM_ANSWER VAL_QUERY_ASYNC 
+     VAL_AS_INFLIGHT */
   /* Offset 7 gives the best switch position.  */
   switch (name[7]) {
   case 'B':
@@ -581,6 +582,17 @@ constant_15 (pTHX_ const char *name, IV *iv_return) {
     /*                      ^              */
 #ifdef SR_HEADER_ERROR
       *iv_return = SR_HEADER_ERROR;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
+  case 'I':
+    if (memEQ(name, "VAL_AS_INFLIGHT", 15)) {
+    /*                      ^              */
+#ifdef VAL_AS_INFLIGHT
+      *iv_return = VAL_AS_INFLIGHT;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
