@@ -29,7 +29,6 @@ desc: Reports the signature lifetimes
 
   if (!defined($donuts::sigexptime)) {
     $donuts::sigexptime = $record->sigexpiration;
-    domain_status("Zone valid until", scalar localtime($extime));
   } elsif ($donuts::sigexptime != $record->sigexpiration) {
     donuts_error("warning: signatures in this zone are not time aligned");
     
@@ -38,3 +37,10 @@ desc: Reports the signature lifetimes
   } 
 
 </test>
+<end>
+  if (defined($donuts::sigexptime)) {
+    domain_status("Zone valid until", scalar localtime($donuts::sigexptime));
+  } else {
+    domain_status("DNSSEC Signed", "No!");
+  }
+</end>
