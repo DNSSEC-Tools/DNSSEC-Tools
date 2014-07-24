@@ -166,7 +166,7 @@ extern          "C" {
     (0) /* false */
 #endif
 
-#ifdef HAVE_SHA2
+#ifdef HAVE_SHA_2
 #define IS_KNOWN_DNSSEC_ALG_SHA2(x) \
      (x == ALG_RSASHA256 ||\
      x == ALG_RSASHA512)
