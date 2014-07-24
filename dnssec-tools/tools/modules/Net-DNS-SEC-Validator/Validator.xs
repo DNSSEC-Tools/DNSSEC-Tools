@@ -956,7 +956,7 @@ pval_dnsval_conf_set(file)
 	OUTPUT:
 	RETVAL
 
-ValAsyncStatus * 
+SV * 
 pval_async_submit(self,domain,class,type,flags, cbref, cbparam)
     SV * self
     char *domain = (SvOK($arg) ? (char *)SvPV_nolen($arg) : NULL);
@@ -970,9 +970,9 @@ pval_async_submit(self,domain,class,type,flags, cbref, cbparam)
         SV **ctx_ref;
         ValContext *ctx;
         int ret;
+        int inflight = 0;
         ValAsyncStatus *vas = NULL;
-
-        RETVAL = NULL;
+        AV * results = newAV();
 
         struct _pval_async_cbdata *cbd =
             (struct _pval_async_cbdata *)malloc(sizeof(struct _pval_async_cbdata));
@@ -986,8 +986,11 @@ pval_async_submit(self,domain,class,type,flags, cbref, cbparam)
         ret = val_async_submit(ctx, domain, class, type, flags,
                          _pval_async_cb, cbd,
                          &vas);
+        inflight = (val_async_getflags(vas) & VAL_AS_INFLIGHT)?  1 : 0;
 
-        RETVAL = (ret == VAL_NO_ERROR ? vas : NULL);
+        av_push(results, newSViv(ret));
+        av_push(results, newSViv(inflight));
+        RETVAL = newRV_noinc((SV *)results);
     }
     OUTPUT:
     RETVAL
@@ -1019,6 +1022,13 @@ pval_async_gather(self,active,timeout)
 
         FD_ZERO(&activefds);
 
+        ctx_ref = hv_fetch((HV*)SvRV(self), "_ctx_ptr", 8, 1);
+        ctx = (ValContext *)SvIV((SV*)SvRV(*ctx_ref));
+
+        // Update list of sockets that are ready for current validator
+        // context
+        ret = val_async_select_info(ctx, &activefds, &nfds, &tv);
+
         // Initialize the descriptors that are already set
         if ((SvROK(active)) && (SvTYPE(SvRV(active)) == SVt_PVAV)) {
             active_arr = (AV*) SvRV(active);
@@ -1029,13 +1039,6 @@ pval_async_gather(self,active,timeout)
                 nfds = (fd > nfds)? fd : nfds; 
             }
         }
-
-        ctx_ref = hv_fetch((HV*)SvRV(self), "_ctx_ptr", 8, 1);
-        ctx = (ValContext *)SvIV((SV*)SvRV(*ctx_ref));
-
-        // Update list of sockets that are ready for current validator
-        // context
-        ret = val_async_select_info(ctx, &activefds, &nfds, &tv);
 
         updated = newAV();
 
