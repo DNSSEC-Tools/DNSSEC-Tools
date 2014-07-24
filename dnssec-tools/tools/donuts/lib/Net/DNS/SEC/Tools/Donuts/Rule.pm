@@ -256,7 +256,42 @@ sub donuts_status {
 
 my $current_donuts;
 sub domain_status {
+	print STDERR "d: $current_donuts\n";
     $current_donuts->add_status(@_);
+}
+
+sub execute_code {
+	my ($rule, $label, @args) = @_;
+	my $result;
+	
+	return if (!exists($rule->{$label}) || !defined($rule->{$label}));
+
+	# Set global variables needed by rules
+	$main::current_domain = $rule->{'donuts'}->domain();
+
+	# execute the code
+	if (exists($rule->{$label})) {
+		if (ref($rule->{$label}) eq 'CODE') {
+			# passed code is a subroutine reference
+			# we still wrap it in an eval to ensure we don't crash
+			$result = eval {
+				$rule->{$label}->(@args);
+			}
+		} else {
+			# passed code is a straight code block in raw text
+			$result = eval $rule->{$label};
+		}
+	}
+
+    # Did it fail to execute?  Report it
+	if (!defined($result) && $@) {
+		$rule->Error("\nProblem executing '$label' for rule $rule->{name}: \n");
+		$rule->Error("  Location: $rule->{code_file}:$rule->{code_line}\n");
+		$rule->Error("  Error:    $@\n");
+		return $result;
+	}
+
+	return $result;
 }
 
 sub run_test_for_errors {
