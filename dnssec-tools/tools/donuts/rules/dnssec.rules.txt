@@ -315,6 +315,11 @@ name: DNSSEC_RRSIG_SIGNER_NAME_MATCHES
 type: RRSIG
 desc: RFC4034: section 3.1.7: The Signers Name field MUST contain the name of the zone of the covered RRset
 <test>
+  if ($current_domain eq $record->name && $record->typecovered eq 'DS') {
+      # in case they passed in parent zone data, skip this signature as its outside the zone
+      # XXX: check to make sure the parent's name is correct
+      next;
+  }
   if ($record->signame ne $current_domain . "." &&
       $record->signame ne $current_domain) {
       donuts_error("signer name for $record->{name} is $record->{signame} but it should match the zone name ($current_domain)");
