@@ -1638,8 +1638,10 @@ res_io_read(fd_set * read_descriptors, struct expected_arrival *ea_list)
                 /*
                  * The the query and response ID's/query lines don't match 
                  */
-                res_log(NULL, LOG_WARNING, "libsres: ""dropping response: "
-                        "query and response ID's or q_fields don't match");
+                res_log(NULL, LOG_WARNING, 
+                        "libsres: ""dropping response with rcode=%x : " 
+                        "query and response ID's or query names don't match",
+                        ((HEADER *) arrival->ea_response)->rcode);
                 FREE(arrival->ea_response);
                 arrival->ea_response = NULL;
                 arrival->ea_response_length = 0;
