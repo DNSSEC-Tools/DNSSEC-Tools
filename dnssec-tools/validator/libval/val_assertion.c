@@ -475,14 +475,15 @@ add_to_query_chain(val_context_t *context, u_char * name_n,
             if (temp->qc_state >= Q_ANSWERED && 
                 /* either record has actually timed out */
                 (tv.tv_sec >= temp->qc_ttl_x ||
+                 /* or we never want to cache */ 
+                 (temp->qc_flags & VAL_QUERY_SKIP_CACHE) ||
                  /* 
                   * or we want  want it to time out, modulo our
                   * max_refresh threshold
                   */
-                  ((temp->qc_flags & VAL_QUERY_SKIP_CACHE) &&
-                    temp->qc_last_sent != -1 &&
-                    context->g_opt && context->g_opt->max_refresh >= 0 &&
-                    context->g_opt->max_refresh < (tv.tv_sec - temp->qc_last_sent)))) { 
+                 (temp->qc_last_sent != -1 &&
+                  context->g_opt && context->g_opt->max_refresh >= 0 &&
+                  context->g_opt->max_refresh < (tv.tv_sec - temp->qc_last_sent)))) { 
 
                 /* Remove this data at the next safe opportunity */ 
                 val_log(context, LOG_DEBUG,
@@ -495,10 +496,10 @@ add_to_query_chain(val_context_t *context, u_char * name_n,
 
             } else {
                 val_log(context, LOG_DEBUG, 
-                        "add_to_qfq_chain(): Found query in cache: {%s %s(%d) %s(%d)}, state: %d, exp in: %ld", 
+                        "add_to_qfq_chain(): Found query in cache: {%s %s(%d) %s(%d)}, state: %d, flags = %x exp in: %ld", 
                         name_p, p_class(temp->qc_class_h),
                         temp->qc_class_h, p_type(temp->qc_type_h),
-                        temp->qc_type_h, temp->qc_state,
+                        temp->qc_type_h, temp->qc_state, temp->qc_flags,
                         temp->qc_ttl_x - tv.tv_sec);
                 /* return this cached record */
                 *added_q = temp;
