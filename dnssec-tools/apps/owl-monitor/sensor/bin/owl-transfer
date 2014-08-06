@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Copyright 2012-2013 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2012-2014 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details.
 #
 #
@@ -13,6 +13,7 @@
 #	1.0	Initial version.				121201
 #
 #	2.0	Released as part of DNSSEC-Tools 2.0.		130301
+#	2.0.1	Shutdown on SIGUSR1.				140805
 #
 
 use strict;
@@ -33,7 +34,7 @@ use owlutils;
 # Version information.
 #
 my $NAME   = 'owl-transfer';
-my $VERS   = "$NAME version: 2.0.0";
+my $VERS   = "$NAME version: 2.0.1";
 my $DTVERS = 'DNSSEC-Tools version: 2.0';
 
 ###################################################
@@ -56,6 +57,7 @@ my @opts =
 	'Version',			# Version output.
 	'help',				# Give a usage message and exit.
 );
+
 
 #
 # Flag values for the various options.  Variable/option connection should
@@ -289,7 +291,7 @@ sub startup
 	$SIG{INT}  = \&cleanup;
 	$SIG{QUIT} = \&cleanup;
 	$SIG{TERM} = \&cleanup;
-	$SIG{USR1} = 'IGNORE';
+	$SIG{USR1} = \&cleanup;
 	$SIG{USR2} = 'IGNORE';
 
 	#
@@ -359,7 +361,7 @@ sub teleporter
 	#
 	# Set up our immutable command-line arguments.
 	#
-	$args = "--timeout=60 --partial --append --stats --recursive";
+	$args = "--timeout=60 --partial --append --stats";
 
 	print STDERR "$NAME starting\n";
 
@@ -655,7 +657,7 @@ B<owl-config(5)>
 
 =head1 COPYRIGHT
 
-Copyright 2012-2013 SPARTA, Inc.  All rights reserved.
+Copyright 2012-2014 SPARTA, Inc.  All rights reserved.
 
 =head1 AUTHOR
 
