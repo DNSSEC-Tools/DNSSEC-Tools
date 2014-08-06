@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Copyright 2012-2013 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2012-2014 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details.
 #
 # owl-dnstimer						Owl Monitoring System
@@ -20,6 +20,7 @@
 #	2.0.2	Added -nolog and owl_log() calls.		130530
 #	2.0.3	Added the -nodnssec option.			130617
 #	2.0.4	Moved data to <data/dns> subdirectory.		130726
+#	2.0.5	Shutdown on SIGUSR1.				140806
 #
 
 use strict;
@@ -28,7 +29,7 @@ use strict;
 # Version information.
 #
 my $NAME   = "owl-dnstimer";
-my $VERS   = "$NAME version: 2.0.4";
+my $VERS   = "$NAME version: 2.0.5";
 my $DTVERS = "DNSSEC-Tools version: 2.0";
 
 use FindBin;
@@ -41,7 +42,7 @@ use Getopt::Long qw(:config no_ignore_case_always);
 use Net::DNS;
 use Net::DNS::Packet;
 use Net::DNS::Resolver;
-use Net::DNS::SEC::Validator;
+# use Net::DNS::SEC::Validator;
 use Net::hostent;
 use Socket;
 
@@ -877,7 +878,7 @@ sub sigurd
 	$SIG{INT}  = \&cleanup;
 	$SIG{QUIT} = \&cleanup;
 	$SIG{TERM} = \&cleanup;
-	$SIG{USR1} = 'IGNORE';
+	$SIG{USR1} = \&cleanup;
 	$SIG{USR2} = \&sigmund;
 
 }
@@ -1176,7 +1177,7 @@ B<owl-data(5)>
 
 =head1 COPYRIGHT
 
-Copyright 2012-2013 SPARTA, Inc.  All rights reserved.
+Copyright 2012-2014 SPARTA, Inc.  All rights reserved.
 
 =head1 AUTHOR
 
