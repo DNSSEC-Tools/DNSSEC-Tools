@@ -33,6 +33,17 @@ extern          "C" {
 #define MAX_GLUE_FETCH_DEPTH 10         /* max length of glue dependency chain */
 #define IPADDR_STRING_MAX 128
 
+#ifndef LOG_EMERG
+#define LOG_EMERG VAL_LOG_EMERG 
+#define LOG_ALERT VAL_LOG_ALERT 
+#define LOG_CRIT VAL_LOG_CRIT 
+#define LOG_ERR VAL_LOG_ERR 
+#define LOG_WARNING VAL_LOG_WARNING 
+#define LOG_NOTICE VAL_LOG_NOTICE 
+#define LOG_INFO VAL_LOG_INFO 
+#define LOG_DEBUG VAL_LOG_DEBUG 
+#endif
+
 /*
  * Query states 
  *
