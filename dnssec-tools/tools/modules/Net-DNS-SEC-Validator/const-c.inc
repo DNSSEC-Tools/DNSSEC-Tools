@@ -1044,6 +1044,14 @@ constant_18 (pTHX_ const char *name, IV *iv_return) {
 #else
       return PERL_constant_NOTDEF;
 #endif
+    } else if (memEQ(name, "VAL_POL_GOPT_UNSET", 18)) {
+    /*                                   ^           */
+#ifdef VAL_POL_GOPT_UNSET
+      *iv_return = VAL_POL_GOPT_UNSET;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
     }
     break;
   case 'V':
