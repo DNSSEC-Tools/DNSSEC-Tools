@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Copyright 2013 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2013-2014 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details.
 #
 # owl-resources						Owl Monitoring System
@@ -13,6 +13,7 @@
 # Revision History:
 #	2.0.0	Initial version.				130607
 #	2.0.1	Moved data to <data/rsrc> subdirectory.		130729
+#	2.0.2	Shutdown on SIGUSR1.				140806
 #
 
 use strict;
@@ -21,7 +22,7 @@ use strict;
 # Version information.
 #
 my $NAME   = "owl-resources";
-my $VERS   = "$NAME version: 2.0.1";
+my $VERS   = "$NAME version: 2.0.2";
 my $DTVERS = "DNSSEC-Tools version: 2.0";
 
 
@@ -785,7 +786,7 @@ sub sigurd
 	$SIG{INT}  = \&cleanup;
 	$SIG{QUIT} = \&cleanup;
 	$SIG{TERM} = \&cleanup;
-	$SIG{USR1} = 'IGNORE';
+	$SIG{USR1} = \&cleanup;
 	$SIG{USR2} = \&sigmund;
 
 }
@@ -1038,7 +1039,7 @@ B<uptime(1)>
 
 =head1 COPYRIGHT
 
-Copyright 2013 SPARTA, Inc.  All rights reserved.
+Copyright 2013-2014 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
