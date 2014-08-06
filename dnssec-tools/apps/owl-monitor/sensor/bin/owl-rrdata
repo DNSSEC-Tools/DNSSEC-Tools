@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Copyright 2013 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2013-2014 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details.
 #
 # owl-rrdata						Owl Monitoring System
@@ -17,6 +17,7 @@
 #	2.0.2	Added -nolog and owl_log() calls.		130530
 #	2.0.3	Fixed a comparison operator.			130726
 #	2.0.4	Moved data to <data/rrec> subdirectory.		130726
+#	2.0.5	Shutdown on SIGUSR1.				140806
 #
 
 use strict;
@@ -25,7 +26,7 @@ use strict;
 # Version information.
 #
 my $NAME   = "owl-rrdata";
-my $VERS   = "$NAME version: 2.0.4";
+my $VERS   = "$NAME version: 2.0.5";
 my $DTVERS = "DNSSEC-Tools version: 2.0";
 
 use FindBin;
@@ -288,7 +289,6 @@ sub doopts
 	$querylog   = $options{'querylog'}   || 0;
 	$stopper    = $options{'stop'}	     || 0;
 	$verbose    = $options{'verbose'};
-
 
 	$datadir    = $options{'datadir'};
 	$logdir	    = $options{'logdir'};
@@ -687,7 +687,7 @@ sub sigurd
 	$SIG{INT}  = \&cleanup;
 	$SIG{QUIT} = \&cleanup;
 	$SIG{TERM} = \&cleanup;
-	$SIG{USR1} = 'IGNORE';
+	$SIG{USR1} = \&cleanup;
 	$SIG{USR2} = \&sigmund;
 
 }
@@ -705,7 +705,7 @@ sub sigmund
 #------------------------------------------------------------------------
 # Routine:	sigend()
 #
-# Purpose:	Signal handler for SIGUSR2 for query subprocs.  This is
+# Purpose:	Signal handler for SIGUSR1 for query subprocs.  This is
 #		only used if we're unthreaded.
 #
 sub sigend
@@ -957,7 +957,7 @@ B<owl-data(5)>
 
 =head1 COPYRIGHT
 
-Copyright 2013 SPARTA, Inc.  All rights reserved.
+Copyright 2013-2014 SPARTA, Inc.  All rights reserved.
 
 =head1 AUTHOR
 
