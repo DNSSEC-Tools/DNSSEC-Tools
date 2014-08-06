@@ -181,6 +181,7 @@ our @EXPORT = qw(
 	VAL_OUT_OF_MEMORY
 	VAL_PINSECURE
 	VAL_PINSECURE_UNTRUSTED
+	VAL_POL_GOPT_UNSET
 	VAL_POL_GOPT_DISABLE
 	VAL_POL_GOPT_ENABLE
 	VAL_POL_GOPT_OVERRIDE
@@ -715,6 +716,22 @@ setting it to 0 is equivalent to "no".  The default value is -1.
 
 I<val_global_opt> field:  I<gopt.rec_fallback>
 
+=item I<max_refresh>
+
+This field is equivalent to the I<max-refresh> option in a B<dnsval.conf>
+file.  
+
+I<val_global_opt> field:  I<gopt.max_refresh>
+
+=item I<proto>
+
+This field is equivalent to the I<proto> option in a B<dnsval.conf>
+file. Setting this value to 1 is equivalent to setting I<proto> to
+"ipv4"; setting this value to 2 is equivalent to setting I<proto> to
+"ipv6". The default is 0, which is equivalent to setting I<proto> to
+"any". 
+
+I<val_global_opt> field:  I<gopt.proto>
 =back
 
 =head3 Validator Result Fields

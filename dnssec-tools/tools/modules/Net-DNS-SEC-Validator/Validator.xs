@@ -587,19 +587,31 @@ pval_create_context_ex(optref)
 
     // Global options
     SV **local_is_trusted_svp = hv_fetch((HV*)SvRV(optref), "local_is_trusted", 16, 1);
-    gopt.local_is_trusted = (SvOK(*local_is_trusted_svp) ?  SvIV(*local_is_trusted_svp) : -1);
+    gopt.local_is_trusted = (SvOK(*local_is_trusted_svp) ?
+            SvIV(*local_is_trusted_svp) : VAL_POL_GOPT_UNSET);
     SV **edns0_size_svp = hv_fetch((HV*)SvRV(optref), "edns0_size", 10, 1);
-    gopt.edns0_size = (SvOK(*edns0_size_svp) ? SvIV(*edns0_size_svp) : -1);
+    gopt.edns0_size = (SvOK(*edns0_size_svp) ? SvIV(*edns0_size_svp) :
+            VAL_POL_GOPT_UNSET);
     SV **env_policy_svp = hv_fetch((HV*)SvRV(optref), "env_policy", 10, 1);
-    gopt.env_policy = (SvOK(*env_policy_svp) ? SvIV(*env_policy_svp) : -1);
+    gopt.env_policy = (SvOK(*env_policy_svp) ? SvIV(*env_policy_svp) :
+            VAL_POL_GOPT_UNSET);
     SV **app_policy_svp = hv_fetch((HV*)SvRV(optref), "app_policy", 10, 1);
-    gopt.app_policy = (SvOK(*app_policy_svp) ? SvIV(*app_policy_svp) : -1);
+    gopt.app_policy = (SvOK(*app_policy_svp) ? SvIV(*app_policy_svp) :
+            VAL_POL_GOPT_UNSET);
     SV **log_target_svp = hv_fetch((HV*)SvRV(optref), "log_target", 10, 1);
     gopt.log_target = (SvOK(*log_target_svp) ? SvPV_nolen(*log_target_svp) : NULL);
     SV **closest_ta_only_svp = hv_fetch((HV*)SvRV(optref), "closest_ta_only", 15, 1);
-    gopt.closest_ta_only = (SvOK(*closest_ta_only_svp) ?  SvIV(*closest_ta_only_svp) : -1);
+    gopt.closest_ta_only = (SvOK(*closest_ta_only_svp) ?
+            SvIV(*closest_ta_only_svp) : VAL_POL_GOPT_UNSET);
     SV **rec_fallback_svp = hv_fetch((HV*)SvRV(optref), "rec_fallback", 12, 1);
-    gopt.rec_fallback = (SvOK(*rec_fallback_svp) ?  SvIV(*rec_fallback_svp) : -1);
+    gopt.rec_fallback = (SvOK(*rec_fallback_svp) ?
+            SvIV(*rec_fallback_svp) : VAL_POL_GOPT_UNSET);
+    SV **max_refresh_svp = hv_fetch((HV*)SvRV(optref), "max_refresh", 11, 1);
+    gopt.max_refresh = (SvOK(*max_refresh_svp) ?
+            (long)SvIV(*max_refresh_svp) : VAL_POL_GOPT_UNSET);
+    SV **proto_svp = hv_fetch((HV*)SvRV(optref), "proto", 5, 1);
+    gopt.proto = (SvOK(*proto_svp) ?
+            SvIV(*proto_svp) : VAL_POL_GOPT_UNSET);
 
     opt.vc_gopt = &gopt;
 
