@@ -243,6 +243,7 @@ set_global_opt_defaults(val_global_opt_t *gopt)
     gopt->closest_ta_only = 0;
     gopt->rec_fallback = 1;
     gopt->max_refresh = VAL_POL_GOPT_MAXREFRESH;
+    gopt->proto = VAL_POL_GOPT_PROTO_ANY;
 }
 
 int 
@@ -261,20 +262,22 @@ update_dynamic_gopt(val_global_opt_t **g_new, val_global_opt_t *g)
 
     /* NOTE: We must not update log_target */
 
-    if (g->local_is_trusted != -1)
+    if (g->local_is_trusted != VAL_POL_GOPT_UNSET)
         (*g_new)->local_is_trusted = g->local_is_trusted;        
-    if (g->edns0_size != -1)
+    if (g->edns0_size != VAL_POL_GOPT_UNSET)
         (*g_new)->edns0_size = g->edns0_size;        
-    if (g->env_policy != -1)
+    if (g->env_policy != VAL_POL_GOPT_UNSET)
         (*g_new)->env_policy = g->env_policy;        
-    if (g->app_policy != -1)
+    if (g->app_policy != VAL_POL_GOPT_UNSET)
         (*g_new)->app_policy = g->app_policy;        
-    if (g->closest_ta_only != -1)
+    if (g->closest_ta_only != VAL_POL_GOPT_UNSET)
         (*g_new)->closest_ta_only = g->closest_ta_only;        
-    if (g->rec_fallback != -1)
+    if (g->rec_fallback != VAL_POL_GOPT_UNSET)
         (*g_new)->rec_fallback = g->rec_fallback;        
-    if (g->max_refresh != -1)
+    if (g->max_refresh != VAL_POL_GOPT_UNSET)
         (*g_new)->max_refresh = g->max_refresh;        
+    if (g->proto != VAL_POL_GOPT_UNSET)
+        (*g_new)->proto = g->proto;        
 
     return VAL_NO_ERROR;
 }
@@ -407,7 +410,7 @@ free_trust_anchor(policy_entry_t * pol_entry)
 }
 
 /*
- * parse additional data (time in seconds, -1 for ignore) for the clock skew policy 
+ * parse additional data (time in seconds) for the clock skew policy 
  */
 int
 parse_clock_skew(char **buf_ptr, char *end_ptr, policy_entry_t * pol_entry, 
@@ -1068,6 +1071,41 @@ parse_max_refresh_gopt(char **buf_ptr, char *end_ptr, int *line_number,
 }
 
 static int
+parse_proto(char **buf_ptr, char *end_ptr, int *line_number,
+            int *endst, val_global_opt_t *g_opt)
+{
+    char            token[TOKEN_MAX];
+    int retval;
+
+    if ((buf_ptr == NULL) || (*buf_ptr == NULL) || (end_ptr == NULL) || 
+        (g_opt == NULL) || (endst == NULL) || (line_number == NULL))
+        return VAL_BAD_ARGUMENT;
+
+    /* read the next token */
+    if (VAL_NO_ERROR != (retval = 
+        val_get_token(buf_ptr, end_ptr, line_number, 
+                      token, sizeof(token), endst,
+                      CONF_COMMENT, CONF_END_STMT, 0))) {
+        return retval;
+    }
+    if ((endst && (strlen(token) == 0)) ||
+        (*buf_ptr >= end_ptr)) { 
+        return VAL_CONF_PARSE_ERROR;
+    }
+
+    if (!strncmp(token, GOPT_PROTO_IPV6_STR, strlen(GOPT_PROTO_IPV6_STR))) {
+        g_opt->proto = VAL_POL_GOPT_PROTO_IPV6;
+    } else if (!strncmp(token, GOPT_PROTO_IPV4_STR, strlen(GOPT_PROTO_IPV4_STR))) {
+        g_opt->proto = VAL_POL_GOPT_PROTO_IPV4;
+    } else if (!strncmp(token, GOPT_PROTO_ANY_STR, strlen(GOPT_PROTO_ANY_STR))) {
+        g_opt->proto = VAL_POL_GOPT_PROTO_ANY;
+    } else {
+        return VAL_CONF_PARSE_ERROR;
+    }
+    return VAL_NO_ERROR;
+}
+
+static int
 get_global_options(char **buf_ptr, char *end_ptr, 
                    int *line_number, val_global_opt_t **g_opt) 
 {
@@ -1151,6 +1189,13 @@ get_global_options(char **buf_ptr, char *end_ptr,
             if (VAL_NO_ERROR != 
                     (retval = parse_max_refresh_gopt(buf_ptr, end_ptr,
                                                     line_number, &endst, *g_opt))) {
+                goto err;
+            }
+
+        } else if (!strcmp(token, GOPT_PROTO)) {
+            if (VAL_NO_ERROR != 
+                    (retval = parse_proto(buf_ptr, end_ptr,
+                                          line_number, &endst, *g_opt))) {
                 goto err;
             }
 
