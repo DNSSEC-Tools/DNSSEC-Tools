@@ -323,12 +323,10 @@ static struct name_server *
 _parse_name_server(char *ns_name, int flags) {
     struct name_server *ns;
 
-    ns = parse_name_server(ns_name, NULL);
+    ns = parse_name_server(ns_name, NULL, flags);
 
     if (!ns)
         return NULL;
-
-    ns->ns_options |= flags;
 
     /* 1 retry at 1 second */
     ns->ns_retrans = 1;

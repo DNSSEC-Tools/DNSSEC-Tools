@@ -2154,6 +2154,13 @@ read_res_config_file(val_context_t * ctx)
     struct name_server *ns_head = NULL;
     struct name_server *ns_tail = NULL;
     struct name_server *ns = NULL;
+    unsigned long ns_options = SR_QUERY_RECURSE;
+
+    if (val_context_ip4(context) && !val_context_ip6(context)) {
+        ns_options |= SR_QUERY_IPV4_ONLY;
+    } else if (!val_context_ip4(context) && val_context_ip6(context)) {
+        ns_options |= SR_QUERY_IPV6_ONLY;
+    }
 
     while(counter < 255) { /* arbitary way-too-high upper limit */
         /* shouldn't be necessary, but still wise */
@@ -2166,14 +2173,13 @@ read_res_config_file(val_context_t * ctx)
             break;
         }
 
-        ns = parse_name_server(property_buffer, NULL);
+        ns = parse_name_server(property_buffer, NULL, ns_options);
         if (ns == NULL) {
             val_log(ctx, LOG_WARNING,
                     "read_res_config_file(): error parsing android resource!");
             return VAL_CONF_PARSE_ERROR;
         }
 
-        ns->ns_options |= RES_RECURSE;
         if (ns_tail == NULL) {
             ns_head = ns;
             ns_tail = ns;
@@ -2226,10 +2232,17 @@ read_res_config_file(val_context_t * ctx)
     size_t bufsize = 0;
     int retval;
     time_t mtime = 0;
-    
+    unsigned long ns_options = 0;
+
     if (ctx == NULL)
         return VAL_BAD_ARGUMENT;
 
+    if (val_context_ip4(ctx) && !val_context_ip6(ctx)) {
+        ns_options |= SR_QUERY_IPV4_ONLY;
+    } else if (!val_context_ip4(ctx) && val_context_ip6(ctx)) {
+        ns_options |= SR_QUERY_IPV6_ONLY;
+    }
+    
     /*
      * Use any dynamic resolver policy that we may have
      */
@@ -2357,13 +2370,12 @@ read_res_config_file(val_context_t * ctx)
 			"read_res_config_file(): error getting nameserver token!");
                 goto err;
             }
-            if ((ns = parse_name_server(token, DEFAULT_ZONE)) == NULL) {
+            if ((ns = parse_name_server(token, DEFAULT_ZONE, ns_options|SR_QUERY_RECURSE)) == NULL) {
                 val_log(ctx, LOG_WARNING,
 			"read_res_config_file(): error parsing nameserver token!");
                 goto err;
 	        }
             if (ns != NULL) {
-                ns->ns_options |= SR_QUERY_RECURSE;
                 if (ns_tail == NULL) {
                     ns_head = ns;
                     ns_tail = ns;
@@ -2386,7 +2398,7 @@ read_res_config_file(val_context_t * ctx)
                            ALL_COMMENTS, ZONE_END_STMT, 0))) {
                 goto err;
             }
-            if ((ns = parse_name_server(token, DEFAULT_ZONE)) == NULL)
+            if ((ns = parse_name_server(token, DEFAULT_ZONE, ns_options)) == NULL)
                 goto err;
             /* zone next */
             if (VAL_NO_ERROR !=
@@ -2503,13 +2515,21 @@ read_root_hints_file(val_context_t * ctx)
     char *buf = NULL;
     size_t bufsize = 0;
     time_t mtime;
+    int ipv4_only = 0;
+    int ipv6_only = 0;
 
     class_h = 0;
     have_type = 0;
 
     if (ctx == NULL)
         return VAL_BAD_ARGUMENT;
-    
+   
+   if (val_context_ip4(ctx) && !val_context_ip6(ctx)) {
+       ipv4_only = 1;
+   } else if (!val_context_ip4(ctx) && val_context_ip6(ctx)) {
+       ipv6_only = 1;
+   }
+
     root_hints = ctx->root_conf;
 
     fd = -1;
@@ -2679,7 +2699,7 @@ read_root_hints_file(val_context_t * ctx)
                        ZONE_COMMENT, ZONE_END_STMT, 0))) {
             goto err;
         }
-        if (type_h == ns_t_a) {
+        if (type_h == ns_t_a && !ipv6_only) {
             struct sockaddr_in sa;
             size_t addrlen4 = sizeof(struct sockaddr_in);
             memset(&sa, 0, sizeof(sa));
@@ -2691,7 +2711,7 @@ read_root_hints_file(val_context_t * ctx)
             rdata_len_h = sizeof(struct in_addr);
             memcpy(rdata_n, &sa.sin_addr, rdata_len_h);
 #ifdef VAL_IPV6
-        } else if (type_h == ns_t_aaaa) {
+        } else if (type_h == ns_t_aaaa && !ipv4_only) {
             struct sockaddr_in6 sa6;
             size_t addrlen6 = sizeof(struct sockaddr_in6);
             memset(&sa6, 0, sizeof(sa6));
