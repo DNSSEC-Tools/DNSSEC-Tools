@@ -159,6 +159,9 @@ struct name_server {
 #define SR_QUERY_RECURSE            0x00000002 
 #define SR_QUERY_SET_DO             0x00000004 
 #define SR_QUERY_SET_CD             0x00000008
+#define SR_QUERY_NOREC              0x00000010
+#define SR_QUERY_IPV4_ONLY          0x00000020
+#define SR_QUERY_IPV6_ONLY          0x00000040
 #define SR_QUERY_VALIDATING_STUB_FLAGS  (SR_QUERY_SET_DO | SR_QUERY_SET_CD) 
 #define SR_QUERY_DEFAULT                (SR_QUERY_RECURSE) 
 
@@ -229,7 +232,8 @@ int             res_gettimeofday_buf(char *buf, size_t bufsize);
 struct sockaddr_storage **create_nsaddr_array(int num_addrs);
 struct name_server *create_name_server(void);
 struct name_server *parse_name_server(const char *cp,
-                                      const char *name_n);
+                                      const char *name_n,
+                                      unsigned long options);
 int             clone_ns(struct name_server **cloned_ns,
                          struct name_server *ns);
 int             clone_ns_list(struct name_server **ns_list,

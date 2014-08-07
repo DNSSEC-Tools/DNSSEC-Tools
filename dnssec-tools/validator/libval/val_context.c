@@ -72,6 +72,13 @@ pthread_mutex_t ctx_default =  PTHREAD_MUTEX_INITIALIZER;
  */
 static void
 _have_addrs(int *have4, int *have6) {
+#ifndef HAVE_GETIFADDRS
+    /* Return availability of both */
+    if (have4)
+        *have4 = 1;
+    if (have6)
+        *have6 = 1;
+#else
     struct ifaddrs *ifaddr, *ifa;
     in_addr_t addr;
     struct in6_addr addr6;
@@ -147,6 +154,7 @@ _have_addrs(int *have4, int *have6) {
 
   cleanup:
     freeifaddrs(ifaddr);
+#endif
 }
 
 /*
@@ -303,6 +311,7 @@ val_create_context_internal( const char *label,
     char *resend;
     char *rescur;
     char token[TOKEN_MAX];
+    unsigned long ns_options = 0;
 
 #ifdef WIN32 
     if (!wsaInitialized) {
@@ -385,12 +394,10 @@ val_create_context_internal( const char *label,
             *rescur = '\0';
             rescur++;
  
-            ns = parse_name_server(resptr, NULL);
-            /* Disable recursion if required */
             if (polflags & CTX_DYN_POL_RES_NRD) {
-                if (ns->ns_options & SR_QUERY_RECURSE)
-                    ns->ns_options ^= SR_QUERY_RECURSE;
+                ns_options = SR_QUERY_NOREC;
             }
+            ns = parse_name_server(resptr, NULL, SR_QUERY_NOREC);
 
             /* Ignore name servers that we don't understand */
             if (ns != NULL) {
@@ -522,15 +529,28 @@ val_create_context_internal( const char *label,
     memset(((*newcontext)->e_pol), 0,
            MAX_POL_TOKEN * sizeof(policy_entry_t *));
    
+    (*newcontext)->val_log_targets = NULL;
+    (*newcontext)->q_list = NULL;
+    (*newcontext)->as_list = NULL;
+    (*newcontext)->def_cflags = 0; 
+    (*newcontext)->def_uflags = flags & VAL_QFLAGS_USERMASK; 
+
+    /*
+     * Read the validator configuration file first. Some of the policy
+     * knobs may affect parsing of resolver and root hints files.
+     */
+    (*newcontext)->base_dnsval_conf = dnsval_conf? strdup(dnsval_conf) : dnsval_conf_get();
+    if ((retval =
+         read_val_config_file(*newcontext, label)) != VAL_NO_ERROR) {
+        goto err;
+    }
+
     /*
      * Read the Root Hints file; has to be read before resolver config file 
      */
     if ((retval = read_root_hints_file(*newcontext)) != VAL_NO_ERROR) {
         goto err;
     }
-
-    /* set the log targets to NULL */
-    (*newcontext)->val_log_targets = NULL;
 
     /*
      * Read the Resolver configuration file 
@@ -539,18 +559,6 @@ val_create_context_internal( const char *label,
         goto err;
     }
 
-    /*
-     * Read the validator configuration file 
-     */
-    (*newcontext)->q_list = NULL;
-    (*newcontext)->base_dnsval_conf = dnsval_conf? strdup(dnsval_conf) : dnsval_conf_get();
-    if ((retval =
-         read_val_config_file(*newcontext, label)) != VAL_NO_ERROR) {
-        goto err;
-    }
-
-    (*newcontext)->def_cflags = 0; 
-    (*newcontext)->def_uflags = flags & VAL_QFLAGS_USERMASK; 
     if ((*newcontext)->val_log_targets != NULL) {
         (*newcontext)->def_cflags |= VAL_QUERY_AC_DETAIL;
     }
@@ -835,8 +843,12 @@ val_context_setqflags(val_context_t *context,
 int
 val_context_ip4(val_context_t * context)
 {
-    if(context)
+    if (context) {
+        /* No IPv4 if we're only configured to use IPv6 */
+        if (context->g_opt->proto == VAL_POL_GOPT_PROTO_IPV6)
+            return 0;
         return context->have_ipv4;
+    }
 
     return 0;
 }
@@ -844,8 +856,12 @@ val_context_ip4(val_context_t * context)
 int
 val_context_ip6(val_context_t * context)
 {
-    if(context)
+    if (context) {
+        /* No IPv6 if we're only configured to use IPv4 */
+        if (context->g_opt->proto == VAL_POL_GOPT_PROTO_IPV4)
+            return 0;
         return context->have_ipv6;
+    }
 
     return 0;
 }
