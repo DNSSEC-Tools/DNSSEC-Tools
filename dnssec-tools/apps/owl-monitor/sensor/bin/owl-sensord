@@ -80,7 +80,7 @@ my $confdir;			# Config directory.
 my $config;			# Config file.
 my $foreground;			# Foreground-execution flag.
 my $logdir;			# Log directory.
-my $restarter = '';		# Restart-execution daemon.
+my $restarter = '';		# Restart-execution flag.
 my $stopper;			# Stop-execution flag.
 
 my $ahes;			# Sleep time between executions.
@@ -269,7 +269,7 @@ sub startup
 	halter() if($stopper);
 
 	#
-	# Go restart something  if the -restart flag was given.
+	# Go restart something if the -restart flag was given.
 	#
 	restarter() if($restarter ne '');
 
