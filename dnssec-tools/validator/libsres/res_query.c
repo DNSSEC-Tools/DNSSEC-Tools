@@ -248,8 +248,10 @@ clone_ns_list(struct name_server **ns_list,
     for (ns = orig_ns_list; ns != NULL; ns = ns->ns_next) {
 
         struct name_server *temp_ns;
-        if ((ret_val = clone_ns(&temp_ns, ns)) != SR_UNSET)
+        if ((ret_val = clone_ns(&temp_ns, ns)) != SR_UNSET) {
+            free_name_servers(ns_list);
             return ret_val;
+        }
 
         /*
          * Add the name server record to the list 
@@ -279,14 +281,17 @@ query_send(const char *name,
            int *trans_id)
 {
     int             ret_val;
-    struct timeval      dummy;
+    struct timeval  dummy;
+    struct timeval  now;
 
     ret_val = query_queue(name, type_h, class_h, pref_ns, trans_id);
     if (SR_UNSET != ret_val)
         return ret_val;
 
     timerclear(&dummy);
+    gettimeofday(&now, NULL);
     res_io_check_one_tid(*trans_id, &dummy, NULL);
+    //res_io_check_one_tid(*trans_id, &now, NULL);
 
     return SR_UNSET;
 }
