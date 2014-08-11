@@ -19,9 +19,23 @@ details.
                       libval to query recursive name servers that
                       authorized recursive lookup for only those hosts
                       that used a particular TSIG key.
-                    - Number of bug fixes
     - Validator.pm  - Store respondent name server information in result
                       structure.
+    - Owl           - additional sensor modules
+                    - additional data analysis on manager
+                    - logging to the Owl sensors modules
+                    - optimized sensor data organization
+                     (requires software upgrades on both sensor and
+                      manager at the same time)
+                    - added -restart option to owl-sensord for
+                      restarting sensor modules
+                    - improvements to the installation guide
+    - rollerd       - generalized zonegroup entry in rollecs to be lists of tags
+                    - rndc option support added
+
+ - Bug Fixes
+                    - Fixed bugs in libval, rollerd, blinkenlights, Owl
+                      sensor modules, and Owl manager
 
 
 2.0
