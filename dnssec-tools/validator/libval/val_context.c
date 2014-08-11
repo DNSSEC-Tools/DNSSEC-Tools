@@ -325,6 +325,8 @@ val_create_context_internal( const char *label,
     if (newcontext == NULL)
         return VAL_BAD_ARGUMENT;
 
+    *newcontext = NULL;
+
     /*
      * Process any dynamic policy components
      */ 
@@ -336,7 +338,7 @@ val_create_context_internal( const char *label,
         if (VAL_NO_ERROR != 
                 (retval = update_dynamic_gopt(&dyn_valpolopt,
                                               valpolopt))) {
-            return retval;
+            goto err;
         }
         if (valpolopt->log_target)
             dyn_valpolopt->log_target = strdup(valpolopt->log_target);
@@ -364,8 +366,9 @@ val_create_context_internal( const char *label,
                 break;
             }
         }
-        if (retval != VAL_NO_ERROR)
-            return VAL_CONF_PARSE_ERROR;
+        if (retval != VAL_NO_ERROR) {
+            goto err;
+        }
     }
     if (res_nslist != NULL && strcmp(res_nslist, "")) {
         strncpy(token, res_nslist, sizeof(token));
@@ -412,7 +415,8 @@ val_create_context_internal( const char *label,
             resptr = rescur;
         }
         if (dyn_nslist == NULL) {
-            return VAL_CONF_PARSE_ERROR;
+            retval = VAL_CONF_PARSE_ERROR;
+            goto err;
         }
     }
 
@@ -430,17 +434,25 @@ val_create_context_internal( const char *label,
 
         /* Update the dynamic policies */
         if (the_default_context->dyn_valpolopt != NULL) {
+            if (the_default_context->dyn_valpolopt->log_target)
+                FREE(the_default_context->dyn_valpolopt->log_target);
             FREE(the_default_context->dyn_valpolopt);
         }
         the_default_context->dyn_valpolopt = dyn_valpolopt;
+        dyn_valpolopt = NULL;
+
         if (the_default_context->dyn_valpol != NULL) {
             destroy_valpolovr(&the_default_context->dyn_valpol);
         }
         the_default_context->dyn_valpol = dyn_valpol;
+        dyn_valpol = NULL;
+
         if (the_default_context->dyn_nslist != NULL) {
             free_name_servers(&the_default_context->dyn_nslist);
         }
         the_default_context->dyn_nslist = dyn_nslist;
+        dyn_nslist = NULL;
+
         the_default_context->dyn_polflags = polflags;
 
         *newcontext = the_default_context;
@@ -451,7 +463,7 @@ val_create_context_internal( const char *label,
         UNLOCK_DEFAULT_CONTEXT();
 
         if (VAL_NO_ERROR != retval) {
-            return retval;
+            goto err;
         }
 
 #ifdef VAL_REFCOUNTS
@@ -467,7 +479,8 @@ val_create_context_internal( const char *label,
 
     *newcontext = (val_context_t *) MALLOC(sizeof(val_context_t));
     if (*newcontext == NULL) {
-        return VAL_OUT_OF_MEMORY;
+        retval = VAL_OUT_OF_MEMORY;
+        goto err;
     }
     memset(*newcontext, 0, sizeof(val_context_t));
 #ifdef VAL_REFCOUNTS
@@ -478,13 +491,15 @@ val_create_context_internal( const char *label,
     if (0 != pthread_rwlock_init(&(*newcontext)->pol_rwlock, NULL)) {
         FREE(*newcontext);
         *newcontext = NULL;
-        return VAL_INTERNAL_ERROR;
+        retval = VAL_INTERNAL_ERROR;
+        goto err;
     }
     if (0 != pthread_mutex_init(&(*newcontext)->ac_lock, NULL)) {
         pthread_rwlock_destroy(&(*newcontext)->pol_rwlock);
         FREE(*newcontext);
         *newcontext = NULL;
-        return VAL_INTERNAL_ERROR;
+        retval = VAL_INTERNAL_ERROR;
+        goto err;
     }
 
 #ifdef HAVE_PTHREAD_H
@@ -493,7 +508,8 @@ val_create_context_internal( const char *label,
         pthread_mutex_destroy(&(*newcontext)->ac_lock);
         FREE(*newcontext);
         *newcontext = NULL;
-        return VAL_INTERNAL_ERROR;
+        retval = VAL_INTERNAL_ERROR;
+        goto err;
     }
 #endif
 #endif
@@ -516,9 +532,13 @@ val_create_context_internal( const char *label,
     (*newcontext)->root_ns = NULL; 
     (*newcontext)->nslist = NULL; 
     (*newcontext)->dyn_polflags = polflags;
+
     (*newcontext)->dyn_valpolopt = dyn_valpolopt;
     (*newcontext)->dyn_valpol = dyn_valpol;
     (*newcontext)->dyn_nslist = dyn_nslist;
+    dyn_valpolopt = NULL;
+    dyn_valpol = NULL;
+    dyn_nslist = NULL;
 
     (*newcontext)->e_pol =
         (policy_entry_t **) MALLOC(MAX_POL_TOKEN * sizeof(policy_entry_t *));
@@ -588,7 +608,17 @@ val_create_context_internal( const char *label,
     return VAL_NO_ERROR;
 
 err:
-    val_free_context(*newcontext);
+    if (dyn_valpolopt) {
+        if (dyn_valpolopt->log_target)
+            FREE(dyn_valpolopt->log_target);
+        FREE(dyn_valpolopt);
+    }
+    if (dyn_valpol)
+        destroy_valpolovr(&dyn_valpol);
+    if (dyn_nslist)
+        free_name_servers(&dyn_nslist);
+    if (*newcontext)
+        val_free_context(*newcontext);
     *newcontext = NULL;
     return retval;
 }
@@ -748,8 +778,11 @@ val_free_context(val_context_t * context)
     if (context->root_ns)
         free_name_servers(&context->root_ns);
 
-    if (context->dyn_valpolopt)
+    if (context->dyn_valpolopt) {
+        if (context->dyn_valpolopt->log_target)
+            FREE(context->dyn_valpolopt->log_target);
         FREE(context->dyn_valpolopt);
+    }
 
     if (context->dyn_valpol)
         destroy_valpolovr(&context->dyn_valpol);
