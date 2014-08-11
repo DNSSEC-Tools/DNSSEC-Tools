@@ -55,34 +55,24 @@ static struct zone_ns_map_t *zone_ns_map = NULL;
  * various caches
  */
 static pthread_rwlock_t ns_rwlock;
-static int ns_rwlock_init = -1;
+static int ns_rwlock_init = 0;
 static pthread_rwlock_t ans_rwlock;
-static int ans_rwlock_init = -1;
+static int ans_rwlock_init = 0;
 static pthread_rwlock_t map_rwlock;
-static int map_rwlock_init = -1;
+static int map_rwlock_init = 0;
 
-#define VAL_CACHE_LOCK_INIT(lk, initvar) do {\
-    if (0 != initvar) {\
-        if (0 != pthread_rwlock_init(lk, NULL))\
-	        return VAL_INTERNAL_ERROR; \
-        initvar = 0;\
-    }\
-} while(0)
+#define VAL_CACHE_LOCK_INIT(lk, initvar) \
+    ((initvar != 0) || \
+     ((0 == pthread_rwlock_init(lk, NULL)) && ((initvar = 1))))
 
-#define VAL_CACHE_LOCK_SH(lk) do{				\
-	if(0 != pthread_rwlock_rdlock(lk))\
-		return VAL_INTERNAL_ERROR; \
-} while(0)
+#define VAL_CACHE_LOCK_SH(lk) \
+	(0 != pthread_rwlock_rdlock(lk))
 
-#define VAL_CACHE_LOCK_EX(lk) do{				\
-	if(0 != pthread_rwlock_wrlock(lk))\
-		return VAL_INTERNAL_ERROR;	\
-} while(0)
+#define VAL_CACHE_LOCK_EX(lk) \
+	(0 != pthread_rwlock_wrlock(lk))
 
-#define VAL_CACHE_UNLOCK(lk) do{				\
-	if (0 != pthread_rwlock_unlock(lk)) \
-		return VAL_INTERNAL_ERROR;	\
-} while(0)
+#define VAL_CACHE_UNLOCK(lk) \
+	(0 != pthread_rwlock_unlock(lk))
 
 #else
 
@@ -321,14 +311,17 @@ get_cached_rrset(struct val_query_chain *matched_q,
     if (new_answer) {
         char *name_p;
         name_p = (char *) MALLOC (NS_MAXDNAME * sizeof(char));
-        if (name_p == NULL)
+        if (name_p == NULL) {
+            res_sq_free_rrset_recs(&new_answer);
             return VAL_OUT_OF_MEMORY;
+        }
 
         /*
          * Construct a response 
          */
         *response = (struct domain_info *) MALLOC(sizeof(struct domain_info));
         if (*response == NULL) {
+            FREE(name_p);
             res_sq_free_rrset_recs(&new_answer);
             return VAL_OUT_OF_MEMORY;
         }
@@ -361,12 +354,20 @@ get_cached_rrset(struct val_query_chain *matched_q,
 
         matched_q->qc_state = Q_ANSWERED;
 
-        return process_cname_dname_responses( 
+        retval = process_cname_dname_responses( 
                         new_answer->rrs_name_n, 
                         new_answer->rrs_type_h, 
                         new_answer->rrs_data->rr_rdata, 
                         matched_q, &(*response)->di_qnames, 
                         NULL);
+
+        if (retval != VAL_NO_ERROR) {
+            free_domain_info_ptrs(*response);
+            FREE(*response);
+            *response = NULL;
+        }
+
+        return retval;
     }
 
     return VAL_NO_ERROR;
@@ -557,14 +558,13 @@ get_nslist_from_cache(val_context_t *ctx,
     }
 
     if (saved_map) {
-        clone_ns_list(ref_ns_list, saved_map->nslist);
         *zonecut_n = (u_char *) MALLOC (wire_name_length(saved_map->zone_n) *
                 sizeof (u_char));
         if (*zonecut_n == NULL) {
             VAL_CACHE_UNLOCK(&map_rwlock);
             return VAL_OUT_OF_MEMORY;
         } 
-
+        clone_ns_list(ref_ns_list, saved_map->nslist);
         memcpy(*zonecut_n, saved_map->zone_n, wire_name_length(saved_map->zone_n));
         VAL_CACHE_UNLOCK(&map_rwlock);
         return VAL_NO_ERROR;
@@ -627,6 +627,8 @@ get_nslist_from_cache(val_context_t *ctx,
                 sizeof (u_char));
         if (*zonecut_n == NULL) {
             VAL_CACHE_UNLOCK(&ns_rwlock);
+            free_name_servers(ref_ns_list);
+            *ref_ns_list = NULL;
             return VAL_OUT_OF_MEMORY;
         } 
         memcpy(*zonecut_n, tmp_zonecut_n, wire_name_length(tmp_zonecut_n));
