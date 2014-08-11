@@ -119,15 +119,13 @@ bind_to_random_source(int af, SOCKET s)
             sa = (struct sockaddr *) &sa4;
             sock_size = sizeof(struct sockaddr_in);
 #ifdef VAL_IPV6
-        } else if (af == AF_INET6) {
+        } else {
             sa6.sin6_port = htons(next_port);
             sa = (struct sockaddr *) &sa6;
             sock_size = sizeof(struct sockaddr_in6);
 #endif
-        } else {
-            res_log(NULL,LOG_ERR,"libsres: could not bind to random port for unsupported address family %d", af);
-            return 1; /* failure */
-        }
+        } 
+
         if (0 == bind(s, sa, sock_size)) {
             //res_log(NULL,LOG_ERR,"libsres: bound to random port %d", next_port);
             return 0; /* success */
@@ -604,28 +602,29 @@ res_nsfallback_ea(struct expected_arrival *ea, struct timeval *closest_event,
     if (!temp || !name)
         return -1;
 
-    if (!server && ea->ea_next) {
+    if (!server && temp->ea_next) {
         res_log(NULL, LOG_DEBUG,
                 "libsres: ""no server specified and more than one ea");
         return -1;
     }
 
     if (server) {
-        for(;temp && temp->ea_ns;temp=temp->ea_next) {
+        for(;temp;temp=temp->ea_next) {
             //res_print_ea(temp);
             /** match name, then look for address */
-            if (namecmp(server->ns_name_n, temp->ea_ns->ns_name_n) != 0)
+            if (!temp->ea_ns || namecmp(server->ns_name_n, temp->ea_ns->ns_name_n) != 0)
                 continue;
             if (memcmp(server->ns_address[0],
                        temp->ea_ns->ns_address[temp->ea_which_address],
                        sizeof(*server->ns_address[0])) == 0)
                 break;
         }
-        if (!temp) {
-            res_log(NULL, LOG_DEBUG, "libsres: "
-                    "no matching server found for fallback");
-            return -1;
-        }
+    }
+
+    if (!temp || !temp->ea_ns) {
+        res_log(NULL, LOG_DEBUG, "libsres: "
+                "no matching server found for fallback");
+        return -1;
     }
 
     /** even if there is a smaller size to fall back to, no attempts left */
