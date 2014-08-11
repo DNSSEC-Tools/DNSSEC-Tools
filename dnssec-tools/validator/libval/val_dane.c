@@ -1055,7 +1055,7 @@ done:
         OPENSSL_free(cert_data);
 
     if (rv == VAL_DANE_NOERROR) {
-        val_log(context, LOG_INFO, "DANE check successful");
+        val_log(context, LOG_NOTICE, "DANE check successful");
         X509_STORE_CTX_set_error(x509ctx, X509_V_OK);
         return 1;
     }
