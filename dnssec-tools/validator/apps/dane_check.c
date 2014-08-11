@@ -432,9 +432,6 @@ done:
                 fprintf(stderr, "TCP Connect to %s failed\n", node);
             }
 
-            if (dane_retval != VAL_DANE_NOERROR)
-                ret = -1;
-
             ai = (struct addrinfo *) (ai->ai_next);
         }
 
@@ -442,6 +439,7 @@ done:
         fprintf(stderr, "TLSA is either provably non-existant or provably insecure. It will be ignored.\n");
     } else {
         fprintf(stderr, "TLSA record could not be validated.\n");
+        ret = 1;
     }
 
     if (danestatus != NULL)
