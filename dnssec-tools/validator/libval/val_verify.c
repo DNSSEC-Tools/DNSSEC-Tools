@@ -471,13 +471,12 @@ do_verify(val_context_t * ctx,
      * Use the crypto routines to verify the signature
      */
 
-    u_char       *ver_field;
+    u_char       *ver_field = NULL;
     size_t          ver_length;
     int             ret_val;
     val_rrsig_rdata_t rrsig_rdata;
     int clock_skew = 0;
     u_int32_t ttl_x = 0;
-    int retval = 0;
 
     /*
      * Wildcard expansions for DNSKEYs and DSs are not permitted
@@ -498,6 +497,8 @@ do_verify(val_context_t * ctx,
         val_log(ctx, LOG_INFO, 
                 "do_verify(): Could not construct signature field for verification: %s", 
                 p_val_err(ret_val));
+        if (ver_field)
+            FREE(ver_field);
         *sig_status = VAL_AC_INVALID_RRSIG;
         return 0;
     }
@@ -531,7 +532,7 @@ do_verify(val_context_t * ctx,
     /*
      * Perform the verification 
      */
-    retval = val_sigverify(ctx, is_a_wildcard, ver_field, ver_length, the_key,
+    ret_val = val_sigverify(ctx, is_a_wildcard, ver_field, ver_length, the_key,
                   &rrsig_rdata, dnskey_status, sig_status, clock_skew);
 
     if (rrsig_rdata.signature != NULL) {
@@ -540,7 +541,7 @@ do_verify(val_context_t * ctx,
     }
 
     FREE(ver_field);
-    return retval;
+    return ret_val;
 }
 
 /*

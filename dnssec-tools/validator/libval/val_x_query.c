@@ -472,6 +472,9 @@ compose_answer(const char * name,
     return VAL_NO_ERROR;
 
   err:
+    FREE(anbuf);
+    FREE(nsbuf);
+    FREE(arbuf);
     FREE(f_resp->vr_response);
     f_resp->vr_response = NULL;
     f_resp->vr_length = 0;
