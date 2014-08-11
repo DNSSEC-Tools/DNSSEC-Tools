@@ -326,8 +326,6 @@ parse_trust_anchor(char **buf_ptr, char *end_ptr, policy_entry_t * pol_entry,
     int             retval;
     char           *pkstr;
     char           *endptr;
-    val_dnskey_rdata_t *dnskey_rdata;
-    val_ds_rdata_t *ds_rdata;
 
     if ((buf_ptr == NULL) || (*buf_ptr == NULL) || (end_ptr == NULL) || 
         (pol_entry == NULL) || (line_number == NULL) || (endst == NULL))
@@ -355,11 +353,10 @@ parse_trust_anchor(char **buf_ptr, char *end_ptr, policy_entry_t * pol_entry,
         }
         if (VAL_NO_ERROR !=
             (retval =
-                 val_parse_ds_string(pkstr, strlen(pkstr), &ds_rdata))) {
+                 val_parse_ds_string(pkstr, strlen(pkstr), &ta_pol->ds))) {
             FREE(ta_pol);
             return retval;
         }
-        ta_pol->ds = ds_rdata;
 
     } else {
         if (!strncasecmp(pkstr, DNSKEY_STR, strlen(DNSKEY_STR))) {
@@ -376,11 +373,11 @@ parse_trust_anchor(char **buf_ptr, char *end_ptr, policy_entry_t * pol_entry,
         */ 
         if (VAL_NO_ERROR !=
             (retval =
-                 val_parse_dnskey_string(pkstr, strlen(pkstr), &dnskey_rdata))) {
+                 val_parse_dnskey_string(pkstr, strlen(pkstr),
+                     &ta_pol->publickey))) {
             FREE(ta_pol);
             return retval;
         }
-        ta_pol->publickey = dnskey_rdata;
     }
 
     pol_entry->pol = ta_pol;
@@ -1591,6 +1588,7 @@ read_next_val_config_file(val_context_t *ctx,
     char *env = NULL;
 
     if (ctx == NULL || label == NULL || 
+        dnsval_c == NULL || dlist == NULL ||
         added_files == NULL || 
         overrides == NULL || g_opt == NULL)
         return VAL_BAD_ARGUMENT;
@@ -1601,10 +1599,7 @@ read_next_val_config_file(val_context_t *ctx,
 
     next_label = *label;
    
-    fd = -1;
-    if (dnsval_c != NULL && dlist != NULL) {
-        fd = open(dnsval_c->dnsval_conf, O_RDONLY);
-    }
+    fd = open(dnsval_c->dnsval_conf, O_RDONLY);
 
     if (fd < 0) {
         val_log(ctx, LOG_ERR, 
@@ -1612,7 +1607,7 @@ read_next_val_config_file(val_context_t *ctx,
                 dnsval_c->dnsval_conf);
 
         /* check if we have read at least one file in the past */
-        if (dnsval_c && dlist && (dnsval_c != dlist)) {
+        if (dnsval_c != dlist) {
             return VAL_NO_ERROR;
         }
         /* check if we have the validator policy available inline */
@@ -2269,6 +2264,7 @@ read_res_config_file(val_context_t * ctx)
             FREE(ctx->resolv_conf);
             ctx->resolv_conf = strdup(VAL_DEFAULT_RESOLV_CONF);
             if (ctx->resolv_conf == NULL) {
+                free_name_servers(&ns_head);
                 return VAL_OUT_OF_MEMORY;
             }
             resolv_config = ctx->resolv_conf;
@@ -2372,21 +2368,16 @@ read_res_config_file(val_context_t * ctx)
             }
             if ((ns = parse_name_server(token, DEFAULT_ZONE, ns_options|SR_QUERY_RECURSE)) == NULL) {
                 val_log(ctx, LOG_WARNING,
-			"read_res_config_file(): error parsing nameserver token!");
+                        "read_res_config_file(): Invalid nameserver addresses '%s'.",
+                        token);
                 goto err;
 	        }
-            if (ns != NULL) {
-                if (ns_tail == NULL) {
-                    ns_head = ns;
-                    ns_tail = ns;
-                } else {
-                    ns_tail->ns_next = ns;
-                    ns_tail = ns;
-                }
+            if (ns_tail == NULL) {
+                ns_head = ns;
+                ns_tail = ns;
             } else {
-                val_log(ctx, LOG_WARNING,
-                        "read_res_config_file(): Invalid nameserver addresses '%s', skipping.",
-                        token);
+                ns_tail->ns_next = ns;
+                ns_tail = ns;
             }
         } else if (strncmp(token, "forward", strlen("forward")) == 0) {
 
@@ -2398,24 +2389,31 @@ read_res_config_file(val_context_t * ctx)
                            ALL_COMMENTS, ZONE_END_STMT, 0))) {
                 goto err;
             }
-            if ((ns = parse_name_server(token, DEFAULT_ZONE, ns_options)) == NULL)
+            if ((ns = parse_name_server(token, DEFAULT_ZONE,
+                            ns_options)) == NULL) {
+                val_log(ctx, LOG_WARNING,
+                        "read_res_config_file(): Invalid nameserver addresses '%s.",
+                        token);
                 goto err;
+            }
+
             /* zone next */
-            if (VAL_NO_ERROR !=
+            if (VAL_NO_ERROR ==
                 (retval =
                 val_get_token(&buf_ptr, end_ptr, &line_number, token, sizeof(token), &endst,
-                           ALL_COMMENTS, ZONE_END_STMT, 0))) {
+                           ALL_COMMENTS, ZONE_END_STMT, 0)) &&
+                (ns_name_pton(token, zone_n, sizeof(zone_n)) != -1)) {
+
+                store_ns_for_zone(zone_n, ns);
+
+                free_name_servers(&ns);
+                ns = NULL;
+            } else {
+                free_name_servers(&ns);
+                ns = NULL;
                 goto err;
             }
-            if (ns != NULL) {
-                if (ns_name_pton(token, zone_n, sizeof(zone_n)) == -1)
-                    goto err;
-                store_ns_for_zone(zone_n, ns);
-            } else {
-                val_log(ctx, LOG_WARNING,
-                        "read_res_config_file(): Invalid nameserver addresses '%s', skipping.",
-                        token);
-            }
+
         } else if (strncmp(token, "search", strlen("search")) == 0) {
 
             /* Read the value */
@@ -2435,6 +2433,14 @@ read_res_config_file(val_context_t * ctx)
 
   done:
 
+    if (fd != -1) {
+#ifdef HAVE_FLOCK
+        fl.l_type = F_UNLCK;
+        fcntl(fd, F_SETLK, &fl);
+#endif
+        close(fd);
+    }
+
     /*
      * Check if we have root hints 
      */
@@ -2453,13 +2459,6 @@ read_res_config_file(val_context_t * ctx)
     val_log(ctx, LOG_DEBUG, 
             "read_res_config_file(): Done reading resolver configuration");
 
-    if (fd != -1) {
-#ifdef HAVE_FLOCK
-        fl.l_type = F_UNLCK;
-        fcntl(fd, F_SETLK, &fl);
-#endif
-        close(fd);
-    }
     return VAL_NO_ERROR;
 
   err:
@@ -2535,7 +2534,7 @@ read_root_hints_file(val_context_t * ctx)
     fd = -1;
 
     if (NULL != root_hints && 
-            (fd = open(root_hints, O_RDONLY)) > 0) {
+            (fd = open(root_hints, O_RDONLY)) >= 0) {
 #ifdef HAVE_FLOCK
         memset(&fl, 0, sizeof(fl));
         fl.l_type = F_RDLCK;
@@ -2734,6 +2733,8 @@ read_root_hints_file(val_context_t * ctx)
             continue;
         }
 
+        /* Note that we don't process RRSIGS */
+
         //        SAVE_RR_TO_LIST(NULL, &root_info, zone_n, type_h, type_h, ns_c_in,
         //                        ttl_h, NULL, rdata_n, rdata_len_h, VAL_FROM_UNSET, 0,
         //                        zone_n);
@@ -2744,13 +2745,9 @@ read_root_hints_file(val_context_t * ctx)
             retval = VAL_OUT_OF_MEMORY;
             goto err;
         }
-        if (type_h != ns_t_rrsig) {
-            /* Add this record to its chain. */
-            retval = add_to_set(rr_set, rdata_len_h, rdata_n);
-        } else {
-            /* Add this record's sig to its chain. */
-            retval = add_as_sig(rr_set, rdata_len_h, rdata_n);
-        }
+
+        /* Add this record to its chain. */
+        retval = add_to_set(rr_set, rdata_len_h, rdata_n);
         if (retval != VAL_NO_ERROR) {
             goto err;
         }
@@ -3111,8 +3108,6 @@ val_remove_valpolicy(val_context_t *context, val_policy_handle_t *pol)
 
     /* free the policy */
     conf_elem_array[pol->index].free(p);
-    FREE(p);
-    FREE(pol);
     
     /* Flush queries that match this name */
     for(q=ctx->q_list; q; q=q->qc_next) {
@@ -3120,6 +3115,9 @@ val_remove_valpolicy(val_context_t *context, val_policy_handle_t *pol)
             q->qc_flags |= VAL_QUERY_MARK_FOR_DELETION;
         }
     }
+
+    FREE(p);
+    FREE(pol);
     
     retval = VAL_NO_ERROR;
 
