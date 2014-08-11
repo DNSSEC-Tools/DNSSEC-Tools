@@ -864,6 +864,12 @@ bootstrap_referral(val_context_t *context,
          */
         if (matched_q->qc_referral == NULL) {
             ALLOCATE_REFERRAL_BLOCK(matched_q->qc_referral);
+            if (matched_q->qc_referral == NULL) {
+                free_name_servers(&pending_glue);
+                free_name_servers(ref_ns_list);
+                *ref_ns_list = NULL;
+                return VAL_OUT_OF_MEMORY;
+            }
         } 
             
         matched_q->qc_referral->cur_pending_glue_ns = NULL;
@@ -1033,6 +1039,9 @@ follow_referral_or_alias_link(val_context_t * context,
 
     if (matched_q->qc_referral == NULL) {
         ALLOCATE_REFERRAL_BLOCK(matched_q->qc_referral);
+        if (matched_q->qc_referral == NULL) {
+            return VAL_OUT_OF_MEMORY;
+        }
     } else if (alias_chain && matched_q->qc_referral->queries) {
         /* free up the old set of registered queries and start afresh */
         deregister_queries(&matched_q->qc_referral->queries);
@@ -1127,6 +1136,7 @@ follow_referral_or_alias_link(val_context_t * context,
     } else if (VAL_NO_ERROR != (ret_val = stow_zone_info(learned_zones, matched_q))) {
         res_sq_free_rrset_recs(learned_zones);
         *learned_zones = NULL;
+        free_name_servers(&ref_ns_list);
         return ret_val;
     }
     *learned_zones = NULL; /* consumed */
@@ -1323,8 +1333,12 @@ process_cname_dname_responses(u_char *name_n,
          */
         if ((ret_val = add_to_qname_chain(qnames, rdata)) != VAL_NO_ERROR)
             return ret_val; 
-        if (!matched_q->qc_referral)
+        if (!matched_q->qc_referral) {
             ALLOCATE_REFERRAL_BLOCK(matched_q->qc_referral);
+            if (matched_q->qc_referral == NULL) {
+                return VAL_OUT_OF_MEMORY;
+            }
+        }
             
         if (register_query(&matched_q->qc_referral->queries,
                            rdata,
@@ -1363,8 +1377,12 @@ process_cname_dname_responses(u_char *name_n,
              */
             if ((ret_val = add_to_qname_chain(qnames, name_n)) != VAL_NO_ERROR)
                 return ret_val; 
-            if (!matched_q->qc_referral)
+            if (!matched_q->qc_referral) {
                 ALLOCATE_REFERRAL_BLOCK(matched_q->qc_referral);
+                if (matched_q->qc_referral == NULL) {
+                    return VAL_OUT_OF_MEMORY;
+                }
+            }
 
             if (register_query(&matched_q->qc_referral->queries,
                                name_n,
@@ -2578,12 +2596,12 @@ val_async_select_info(val_context_t *ctx, fd_set *activefds,
         return VAL_BAD_ARGUMENT;
 
     val_log(NULL, LOG_DEBUG, __FUNCTION__);
+    gettimeofday(&now, NULL);
 
     /** need to adjust relative timeout to absolute time used by libval */
     if (timeout) {
         if(timeout->tv_sec < LONG_MAX) {
             /* add current time to delay */
-            gettimeofday(&now, NULL);
             timeradd(&now, timeout, &closest);
         } else
             memcpy(closest_event, timeout, sizeof(struct timeval));
