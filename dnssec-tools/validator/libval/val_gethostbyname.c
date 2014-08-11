@@ -567,8 +567,6 @@ val_gethostbyname2_r(val_context_t * context,
     u_int16_t       type;
     val_context_t *ctx = NULL;
 
-    *val_status = VAL_DONT_KNOW;
-
     memset(&sa, 0, sizeof(sa));
 #ifdef VAL_IPV6
     memset(&sa6, 0, sizeof(sa6));
@@ -577,6 +575,8 @@ val_gethostbyname2_r(val_context_t * context,
     if (!name || !ret || !h_errnop || !val_status || !result || !buf) {
         goto err;
     }
+
+    *val_status = VAL_DONT_KNOW;
 
     ctx = val_create_or_refresh_context(context); /* does CTX_LOCK_POL_SH */
     if (ctx == NULL)
