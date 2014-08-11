@@ -853,7 +853,7 @@ val_log_add_udp(val_log_t **log_head, int level, char *host, int port)
                 sizeof(logp->opt.udp.server)) <= 0) {
         CLOSESOCK(logp->opt.udp.sock);
         FREE(logp);
-        logp = NULL;
+        return NULL;
     }
 
     logp->logf = val_log_udp;
