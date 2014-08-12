@@ -1,11 +1,11 @@
 Summary: A suite of tools for managing dnssec aware DNS usage
 Name: dnssec-tools
-Version: 1.13
-Release: 5%{?dist}
+Version: 2.0
+Release: 10%{?dist}
 License: BSD
 Group: System Environment/Base
 URL: http://www.dnssec-tools.org/
-Source0: https://www.dnssec-tools.org/downloads/%{name}-%{version}.tar.gz
+Source0: https://www.dnssec-tools.org/download/%{name}-%{version}.tar.gz
 Source1: dnssec-tools-dnsval.conf
 Source2: libval-config
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
@@ -14,11 +14,11 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 # are much more useful with the modules in place, so we hand require them.
 Requires: perl(Net::DNS), perl(Net::DNS::SEC), dnssec-tools-perlmods, bind, perl(Getopt::GUI::Long)
 Requires:  perl(:MODULE_COMPAT_%(eval "`%{__perl} -V:version`"; echo $version))
+Requires: perl(GraphViz)
 BuildRequires: openssl-devel
 BuildRequires: perl(Test) perl(ExtUtils::MakeMaker)
 # Makes the code installation linux filesystem friendly
 Patch5: dnssec-tools-linux-conf-paths-1.13.patch
-Patch6: dnssec-tools-zonefile-fast-new-bind-1.13.patch
 
 %description
 
@@ -57,7 +57,6 @@ C-based libraries useful for developing dnssec aware tools.
 %setup -q
 
 %patch5 -p0 
-%patch6 -p2
 
 %build
 %configure --with-validator-testcases-file=%{_datadir}/dnssec-tools/validator-testcases --with-perl-build-args="INSTALLDIRS=vendor OPTIMIZE='$RPM_OPT_FLAGS'" --sysconfdir=/etc --with-root-hints=/etc/dnssec-tools/root.hints --with-resolv-conf=/etc/dnssec-tools/resolv.conf --disable-static --with-nsec3 --with-ipv6 --with-dlv --disable-bind-checks
@@ -65,7 +64,9 @@ sed -i 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' libtool
 sed -i 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g' libtool
 sed -i 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' validator/libtool
 sed -i 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g' validator/libtool
-make %{?_smp_mflags}
+# makefile dependencies are broken; we can't use smp_mflags:
+#make %{?_smp_mflags} CCFLAGS="-D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64"
+make CCFLAGS="-D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64"
 
 %install
 rm -rf %{buildroot}
@@ -148,6 +149,7 @@ rm -rf %{buildroot}
 %{_bindir}/dt-getname
 %{_bindir}/dt-getquery
 %{_bindir}/dt-getrrset
+%{_bindir}/dt-danechk
 
 %{_bindir}/trustman
 %{_bindir}/blinkenlights
@@ -287,6 +289,7 @@ rm -rf %{buildroot}
 %files libs
 %defattr(-,root,root)
 %{_libdir}/*.so.*
+%config(noreplace) %{_sysconfdir}/dnssec-tools
 %config(noreplace) %{_sysconfdir}/dnssec-tools/dnsval.conf
 %config(noreplace) %{_sysconfdir}/dnssec-tools/root.hints
 
@@ -333,6 +336,42 @@ rm -rf %{buildroot}
 %{_mandir}/man3/val_freeaddrinfo.3.gz
 
 %changelog
+* Sat Jun 07 2014 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 2.0-10
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_21_Mass_Rebuild
+
+* Wed Jan 22 2014 Wes Hardaker <wjhns174@hardakers.net> - 2.0-9
+- fix bug #1056277 about nsec3 parsing with new versions of bind
+
+* Sat Aug 03 2013 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 2.0-8
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_20_Mass_Rebuild
+
+* Wed Jul 17 2013 Petr Pisar <ppisar@redhat.com> - 2.0-7
+- Perl 5.18 rebuild
+
+* Thu Jun 20 2013 Wes Hardaker <wjhns174@hardakers.net> - 2.0-6
+- Require GraphViz
+
+* Thu May 23 2013 Wes Hardaker <wjhns174@hardakers.net> - 2.0-5
+- Added a fix for various Zonefile::Fast bugs
+
+* Thu Apr 18 2013 Wes Hardaker <wjhns174@hardakers.net> - 2.0-4
+- update configure from autoconf 2.69 for aarch64 support
+
+* Thu Apr 18 2013 Wes Hardaker <wjhns174@hardakers.net> - 2.0-3
+- Patch to support NSEC3 records from newer versions of bind
+
+* Wed Mar  6 2013 Wes Hardaker <wjhns174@hardakers.net> - 2.0-2
+- Added ownership of the /etc/dnssec-tools package
+
+* Wed Feb 20 2013 Wes Hardaker <wjhns174@hardakers.net> - 2.0-1
+- Release of version 2.0
+
+* Wed Feb 13 2013 Fedora Release Engineering <rel-eng@lists.fedoraproject.org> - 1.14-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_19_Mass_Rebuild
+
+* Fri Oct 12 2012 Wes Hardaker <wjhns174@hardakers.net> - 1.14-1
+- updated to upstream 1.14
+
 * Mon Oct  1 2012 Wes Hardaker <wjhns174@hardakers.net> - 1.13-5
 - Rename the -config program to be unique per arch
 
