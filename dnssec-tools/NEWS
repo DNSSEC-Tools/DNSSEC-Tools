@@ -36,6 +36,11 @@ details.
  - Bug Fixes
                     - Fixed bugs in libval, rollerd, blinkenlights, Owl
                       sensor modules, and Owl manager
+                    - Use rlimits to try and limit file descriptor use in
+                      libsres so we don't run out of available sockets.
+                    - Eliminate a few hardcoded paths in various perl modules
+                    - Fix various compiler warnings
+                    - Update autoconf and related files
 
 
 2.0
