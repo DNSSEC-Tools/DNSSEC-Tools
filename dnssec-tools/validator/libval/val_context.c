@@ -878,7 +878,8 @@ val_context_ip4(val_context_t * context)
 {
     if (context) {
         /* No IPv4 if we're only configured to use IPv6 */
-        if (context->g_opt->proto == VAL_POL_GOPT_PROTO_IPV6)
+        if (context->g_opt && 
+            context->g_opt->proto == VAL_POL_GOPT_PROTO_IPV6)
             return 0;
         return context->have_ipv4;
     }
@@ -891,7 +892,8 @@ val_context_ip6(val_context_t * context)
 {
     if (context) {
         /* No IPv6 if we're only configured to use IPv4 */
-        if (context->g_opt->proto == VAL_POL_GOPT_PROTO_IPV4)
+        if (context->g_opt &&
+            context->g_opt->proto == VAL_POL_GOPT_PROTO_IPV4)
             return 0;
         return context->have_ipv6;
     }
