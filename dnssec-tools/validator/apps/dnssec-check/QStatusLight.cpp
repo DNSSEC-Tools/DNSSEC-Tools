@@ -35,6 +35,7 @@ void QStatusLight::paintEvent(QPaintEvent *e)
 
     switch (m_dnssecTest.status()) {
     case DNSSECTest::UNKNOWN:
+    case DNSSECTest::TESTINGNOW:
         painter.setPen(Qt::gray);
         darkColor = Qt::darkGray;
         gradiant.setColorAt(1, Qt::gray);

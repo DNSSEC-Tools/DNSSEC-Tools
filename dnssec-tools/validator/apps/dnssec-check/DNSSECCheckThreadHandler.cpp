@@ -18,8 +18,6 @@ DNSSECCheckThreadHandler::DNSSECCheckThreadHandler(QObject *parent) :
 
 void DNSSECCheckThreadHandler::startTest(CheckFunction *checkFunction, char *serverAddress, bool async)
 {
-    int rc;
-
     if (!checkFunction || !serverAddress)
         return;
 
@@ -28,7 +26,7 @@ void DNSSECCheckThreadHandler::startTest(CheckFunction *checkFunction, char *ser
     data->m_serverAddress = serverAddress;
     data->m_checkFunction = checkFunction;
     data->m_result_status = DNSSECTest::TESTINGNOW;
-    rc = (*checkFunction)(data->m_serverAddress, data->m_msgBuffer, sizeof(data->m_msgBuffer), &data->m_result_status);
+    (*checkFunction)(data->m_serverAddress, data->m_msgBuffer, sizeof(data->m_msgBuffer), &data->m_result_status);
     if (async) {
         m_dataList.push_back(data);
         emit asyncTestSubmitted();
