@@ -671,8 +671,9 @@ int check_do_bit_async(char *ns_name, char *buf, size_t buf_len, int *testStatus
     struct expected_arrival *ea;
     struct name_server *ns;
 
-    ns = _parse_name_server(ns_name, SR_QUERY_VALIDATING_STUB_FLAGS | SR_QUERY_RECURSE);
+    ns = _parse_name_server(ns_name, SR_QUERY_VALIDATING_STUB_FLAGS | SR_QUERY_RECURSE | SR_QUERY_SET_DO);
     ns->ns_edns0_size = 4096;
+    ns->ns_options |= SR_QUERY_SET_DO;
 
     ea = res_async_query_send("www.dnssec-tools.org", ns_t_a, ns_c_in, ns);
     add_outstanding_async_query(ea, _check_do_bit_async_response,
