@@ -1,8 +1,8 @@
 #include "ValidateViewWidget.h"
 
-#include <QtGui/QGraphicsRectItem>
-#include <QtGui/QGraphicsSimpleTextItem>
-#include <QtCore/QTimer>
+#include <QGraphicsRectItem>
+#include <QGraphicsSimpleTextItem>
+#include <QTimer>
 
 #include <validator/validator-config.h>
 #include <validator/validator.h>
@@ -255,7 +255,7 @@ void ValidateViewWidget::validateSomething(QString name, QString type) {
 
     int ret;
     // XXX: use the type string to look up a user defined type
-    ret = val_resolve_and_check(NULL, name.toAscii().data(), 1, DNSResources::RRNameToType(type),
+    ret = val_resolve_and_check(NULL, name.toLatin1().data(), 1, DNSResources::RRNameToType(type),
                                 VAL_QUERY_ITERATE | VAL_QUERY_AC_DETAIL |
                                 VAL_QUERY_SKIP_CACHE,
                                 &results);

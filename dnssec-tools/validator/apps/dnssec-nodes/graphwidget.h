@@ -41,20 +41,21 @@
 #ifndef GRAPHWIDGET_H
 #define GRAPHWIDGET_H
 
-#include <QtGui/QGraphicsView>
-#include <QtGui/QLineEdit>
-#include <QtGui/QHBoxLayout>
-#include <QtGui/QLabel>
-#include <QtCore/QString>
-#include <QtCore/QRegExp>
-#include <QtCore/QMap>
-#include <QtCore/QPair>
-#include <QtCore/QTextStream>
-#include <QtCore/QFile>
-#include <QtCore/QList>
-#include <QtCore/QSignalMapper>
-#include <QtGui/QPushButton>
-#include <QtGui/QTableWidget>
+#include <QGraphicsView>
+#include <QLineEdit>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QString>
+#include <QRegExp>
+#include <QMap>
+#include <QPair>
+#include <QTextStream>
+#include <QFile>
+#include <QList>
+#include <QSignalMapper>
+#include <QPushButton>
+#include <QTableWidget>
+#include <QWidget>
 
 #include <sys/time.h>
 

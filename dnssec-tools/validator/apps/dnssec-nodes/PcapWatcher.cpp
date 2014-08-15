@@ -150,13 +150,13 @@ void PcapWatcher::openDevice()
 
     closeDevice();
 
-    if (pcap_lookupnet(m_deviceName.toAscii().data(), &net, &mask, m_errorBuffer)) {
+    if (pcap_lookupnet(m_deviceName.toLatin1().data(), &net, &mask, m_errorBuffer)) {
         qWarning() << tr("could not get netmask for device: %s").arg(m_deviceName);
         emit failedToOpenDevice(tr("could not get netmask for device: %s").arg(m_deviceName));
         return;
     }
 
-    m_pcapHandle = pcap_open_live(m_deviceName.toAscii().data(), BUFSIZ, 1, 100, m_errorBuffer);
+    m_pcapHandle = pcap_open_live(m_deviceName.toLatin1().data(), BUFSIZ, 1, 100, m_errorBuffer);
     if (!m_pcapHandle) {
         // TODO: do something on error
         qWarning() << "failed to open the device: " << QString(m_errorBuffer);
@@ -165,7 +165,7 @@ void PcapWatcher::openDevice()
     }
 
     if (m_filterString.length() > 0) {
-        if (pcap_compile(m_pcapHandle, &m_filterCompiled, m_filterString.toAscii().data(), 1, mask) < -1) {
+        if (pcap_compile(m_pcapHandle, &m_filterCompiled, m_filterString.toLatin1().data(), 1, mask) < -1) {
             emit failedToOpenDevice(tr("failed to parse the filter: %s").arg(pcap_geterr(m_pcapHandle)));
             return;
         }
@@ -196,7 +196,7 @@ void PcapWatcher::openFile(const QString &fileNameToOpenIn, bool animatePlayback
 
     closeDevice();
 
-    m_pcapHandle = pcap_open_offline(m_fileName.toAscii().data(), m_errorBuffer);
+    m_pcapHandle = pcap_open_offline(m_fileName.toLatin1().data(), m_errorBuffer);
     if (!m_pcapHandle) {
         // TODO: do something on error
         qWarning() << "failed to open the device: " << QString(m_errorBuffer);
@@ -205,7 +205,7 @@ void PcapWatcher::openFile(const QString &fileNameToOpenIn, bool animatePlayback
     }
 
     if (m_filterString.length() > 0) {
-        if (pcap_compile(m_pcapHandle, &m_filterCompiled, m_filterString.toAscii().data(), 1, mask) < -1) {
+        if (pcap_compile(m_pcapHandle, &m_filterCompiled, m_filterString.toLatin1().data(), 1, mask) < -1) {
             emit failedToOpenDevice(tr("failed to parse the filter: %s").arg(pcap_geterr(m_pcapHandle)));
             return;
         }

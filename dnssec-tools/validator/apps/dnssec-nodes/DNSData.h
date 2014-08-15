@@ -1,8 +1,9 @@
 #ifndef DNSDATA_H
 #define DNSDATA_H
 
-#include <QtCore/QString>
-#include <QtCore/QStringList>
+#include <QGraphicsScene>
+#include <QString>
+#include <QStringList>
 #include <QHash>
 #include <QSet>
 
