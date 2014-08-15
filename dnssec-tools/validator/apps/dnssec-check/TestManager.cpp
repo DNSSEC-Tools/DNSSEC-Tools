@@ -12,6 +12,7 @@
 #include <QtNetwork/QNetworkReply>
 #include <QSettings>
 #include <QCryptographicHash>
+#include <QUrlQuery>
 
 #include "DnssecCheckVersion.h"
 
@@ -40,7 +41,7 @@ TestManager::handlerReady(DNSSECCheckThreadHandler *handler) {
 bool TestManager::testName(const QString &resolverAddress)
 {
     struct name_server *ns;
-    ns = parse_name_server(resolverAddress.toAscii().data(), NULL, 0);
+    ns = parse_name_server(resolverAddress.toLatin1().data(), NULL);
     if (ns == NULL)
         return false;
     free_name_server(&ns);
@@ -53,74 +54,74 @@ DNSSECTest *TestManager::makeTest(testType type, QString address, QString name) 
     switch (type) {
 #ifdef VAL_NO_ASYNC
     case basic_dns:
-        newtest =  new DNSSECTest(m_parent, &check_basic_dns, address.toAscii().data(), name);
+        newtest =  new DNSSECTest(m_parent, &check_basic_dns, address.toLatin1().data(), name);
         break;
     case do_has_rrsigs:
-        newtest =  new DNSSECTest(m_parent, &check_do_has_rrsigs, address.toAscii().data(), name);
+        newtest =  new DNSSECTest(m_parent, &check_do_has_rrsigs, address.toLatin1().data(), name);
         break;
     case can_get_nsec:
-        newtest =  new DNSSECTest(m_parent, &check_can_get_nsec, address.toAscii().data(), name);
+        newtest =  new DNSSECTest(m_parent, &check_can_get_nsec, address.toLatin1().data(), name);
         break;
     case can_get_nsec3:
-        newtest =  new DNSSECTest(m_parent, &check_can_get_nsec3, address.toAscii().data(), name);
+        newtest =  new DNSSECTest(m_parent, &check_can_get_nsec3, address.toLatin1().data(), name);
         break;
     case small_edns0:
-        newtest =  new DNSSECTest(m_parent, &check_small_edns0, address.toAscii().data(), name);
+        newtest =  new DNSSECTest(m_parent, &check_small_edns0, address.toLatin1().data(), name);
         break;
     case can_get_dnskey:
-        newtest =  new DNSSECTest(m_parent, &check_can_get_dnskey, address.toAscii().data(), name);
+        newtest =  new DNSSECTest(m_parent, &check_can_get_dnskey, address.toLatin1().data(), name);
         break;
     case can_get_ds:
-        newtest =  new DNSSECTest(m_parent, &check_can_get_ds, address.toAscii().data(), name);
+        newtest =  new DNSSECTest(m_parent, &check_can_get_ds, address.toLatin1().data(), name);
         break;
     case do_bit:
-        newtest =  new DNSSECTest(m_parent, &check_do_bit, address.toAscii().data(), name);
+        newtest =  new DNSSECTest(m_parent, &check_do_bit, address.toLatin1().data(), name);
         break;
     case ad_bit:
-        newtest =  new DNSSECTest(m_parent, &check_ad_bit, address.toAscii().data(), name);
+        newtest =  new DNSSECTest(m_parent, &check_ad_bit, address.toLatin1().data(), name);
         break;
     case basic_tcp:
-        newtest =  new DNSSECTest(m_parent, &check_basic_tcp, address.toAscii().data(), name);
+        newtest =  new DNSSECTest(m_parent, &check_basic_tcp, address.toLatin1().data(), name);
         break;
 #else
     case basic_dns:
-        newtest =  new DNSSECTest(m_parent, &check_basic_dns_async, address.toAscii().data(), name, true);
+        newtest =  new DNSSECTest(m_parent, &check_basic_dns_async, address.toLatin1().data(), name, true);
         break;
     case do_has_rrsigs:
-        newtest =  new DNSSECTest(m_parent, &check_do_has_rrsigs_async, address.toAscii().data(), name, true);
+        newtest =  new DNSSECTest(m_parent, &check_do_has_rrsigs_async, address.toLatin1().data(), name, true);
         break;
     case can_get_nsec:
-        newtest =  new DNSSECTest(m_parent, &check_can_get_nsec_async, address.toAscii().data(), name, true);
+        newtest =  new DNSSECTest(m_parent, &check_can_get_nsec_async, address.toLatin1().data(), name, true);
         break;
     case can_get_nsec3:
-        newtest =  new DNSSECTest(m_parent, &check_can_get_nsec3_async, address.toAscii().data(), name, true);
+        newtest =  new DNSSECTest(m_parent, &check_can_get_nsec3_async, address.toLatin1().data(), name, true);
         break;
     case small_edns0:
-        newtest =  new DNSSECTest(m_parent, &check_small_edns0_async, address.toAscii().data(), name, true);
+        newtest =  new DNSSECTest(m_parent, &check_small_edns0_async, address.toLatin1().data(), name, true);
         break;
     case can_get_dnskey:
-        newtest =  new DNSSECTest(m_parent, &check_can_get_dnskey_async, address.toAscii().data(), name, true);
+        newtest =  new DNSSECTest(m_parent, &check_can_get_dnskey_async, address.toLatin1().data(), name, true);
         break;
     case can_get_ds:
-        newtest =  new DNSSECTest(m_parent, &check_can_get_ds_async, address.toAscii().data(), name, true);
+        newtest =  new DNSSECTest(m_parent, &check_can_get_ds_async, address.toLatin1().data(), name, true);
         break;
     case do_bit:
-        newtest =  new DNSSECTest(m_parent, &check_do_bit_async, address.toAscii().data(), name, true);
+        newtest =  new DNSSECTest(m_parent, &check_do_bit_async, address.toLatin1().data(), name, true);
         break;
     case ad_bit:
-        newtest =  new DNSSECTest(m_parent, &check_ad_bit_async, address.toAscii().data(), name, true);
+        newtest =  new DNSSECTest(m_parent, &check_ad_bit_async, address.toLatin1().data(), name, true);
         break;
     case basic_tcp:
-        newtest =  new DNSSECTest(m_parent, &check_basic_tcp_async, address.toAscii().data(), name, true, &m_otherThread);
+        newtest =  new DNSSECTest(m_parent, &check_basic_tcp_async, address.toLatin1().data(), name, true, &m_otherThread);
         break;
     case can_get_signed_dname:
-        newtest =  new DNSSECTest(m_parent, &check_can_get_signed_dname_async, address.toAscii().data(), name, true);
+        newtest =  new DNSSECTest(m_parent, &check_can_get_signed_dname_async, address.toLatin1().data(), name, true);
         break;
 #endif
 
 #ifdef LIBVAL_ASYNC_TESTING
     case basic_async:
-        newtest =  new DNSSECTest(m_parent, &check_basic_async, address.toAscii().data(), name);
+        newtest =  new DNSSECTest(m_parent, &check_basic_async, address.toLatin1().data(), name);
         newtest->setAsync(true);
         break;
 #endif
@@ -251,6 +252,7 @@ QStringList TestManager::loadResolvConf()
 
 void TestManager::submitResults(QVariantList tests) {
     QUrl accessURL = resultServerBaseURL;
+    QUrlQuery query;
 
     if (tests.count() % 2 != 0) {
         qWarning() << "data submitted to TestManager::submitResults wasn't in pairs; giving up";
@@ -258,13 +260,15 @@ void TestManager::submitResults(QVariantList tests) {
     }
 
     // add base data
-    accessURL.addQueryItem("dataVersion", "2");
-    accessURL.addQueryItem("DNSSECToolsVersion", "1.14");
+    query.addQueryItem("dataVersion", "2");
+    query.addQueryItem("DNSSECToolsVersion", "1.14");
 
     // add the query results passed to us
     for(int i = 0; i < tests.count(); i += 2) {
-        accessURL.addQueryItem(tests.at(i).toString(), tests.at(i+1).toString());
+        query.addQueryItem(tests.at(i).toString(), tests.at(i+1).toString());
     }
+
+    accessURL.setQuery(query);
 
     if (!m_manager) {
         m_manager = new QNetworkAccessManager();

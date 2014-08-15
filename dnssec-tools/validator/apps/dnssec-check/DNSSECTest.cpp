@@ -128,7 +128,7 @@ int DNSSECTest::statusToRc(DNSSECTest::lightStatus status) {
 
 void DNSSECTest::setMessage(const QString &message)
 {
-    strncpy(m_msgBuffer, message.toAscii().data(), sizeof(m_msgBuffer)-1);
+    strncpy(m_msgBuffer, message.toLatin1().data(), sizeof(m_msgBuffer)-1);
     emit messageChanged();
     emit messageChanged(message);
 }
