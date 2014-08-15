@@ -77,12 +77,20 @@ Flickable {
                 target: resolverMenuBox
                 opacity: 0
             }
+            PropertyChanges {
+                target: resolverMenuBox
+                visible: false
+            }
         },
         State {
             name: "visible"
             PropertyChanges {
                 target: resolverMenuBox
                 opacity: 1
+            }
+            PropertyChanges {
+                target: resolverMenuBox
+                visible: true
             }
         }
 
