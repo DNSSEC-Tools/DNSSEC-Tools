@@ -245,6 +245,27 @@ sub new {
     return $self;
 }
 
+# wrapper around the ever changing Net::DNS API, who's authors refuse
+# to leave things in a backward compatible way.
+my $has_net_dns_parameters = eval 'require Net::DNS::Parameters';
+
+sub typesbyname {
+	if ($has_net_dns_parameters) {
+		return Net::DNS::Parameters::typebyname(@_);
+	} else {
+		return Net::DNS::typesbyname(@_);
+	}
+}
+
+sub classesbyname {
+	if ($has_net_dns_parameters) {
+		return Net::DNS::Parameters::classbyname(@_);
+	} else {
+		return Net::DNS::classesbyname(@_);
+	}
+}
+
+
 # XXX unsupported so far
 sub switch_policy {
     my $self = shift;
@@ -307,8 +328,8 @@ sub res_query {
     $class ||= "IN";
     $type ||= "A";
 
-    $class = Net::DNS::classesbyname($class) unless $class =~ /^\d+$/;
-    $type = Net::DNS::typesbyname($type) unless $type =~ /^\d+$/;
+    $class = classesbyname($class) unless $class =~ /^\d+$/;
+    $type = typesbyname($type) unless $type =~ /^\d+$/;
     
     return Net::DNS::SEC::Validator::_res_query($self, $dname, $class, $type);
 }
@@ -333,8 +354,8 @@ sub resolve_and_check {
     $class ||= "IN";
     $type ||= "A";
 
-    $class = Net::DNS::classesbyname($class) unless $class =~ /^\d+$/;
-    $type = Net::DNS::typesbyname($type) unless $type =~ /^\d+$/;
+    $class = classesbyname($class) unless $class =~ /^\d+$/;
+    $type = typesbyname($type) unless $type =~ /^\d+$/;
 
     return Net::DNS::SEC::Validator::_resolve_and_check($self,
 							$dname,
@@ -429,8 +450,8 @@ sub async_submit {
     $class ||= "IN";
     $type ||= "A";
 
-    $class = Net::DNS::classesbyname($class) unless $class =~ /^\d+$/;
-    $type = Net::DNS::typesbyname($type) unless $type =~ /^\d+$/;
+    $class = classesbyname($class) unless $class =~ /^\d+$/;
+    $type = typesbyname($type) unless $type =~ /^\d+$/;
 
     return Net::DNS::SEC::Validator::_async_submit($self, $domain,
             $class, $type, $flags, $cbref, $cbparam);
