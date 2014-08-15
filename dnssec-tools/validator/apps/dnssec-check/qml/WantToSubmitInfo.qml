@@ -101,6 +101,7 @@ Item {
             PropertyChanges {
                 target: rootWant
                 opacity: 0
+                visible: false
             }
             PropertyChanges {
                 target: rootWant
@@ -111,6 +112,7 @@ Item {
             PropertyChanges {
                 target: rootWant
                 opacity: 1
+                visible: true
             }
             PropertyChanges {
                 target: rootWant

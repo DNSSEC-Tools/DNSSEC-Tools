@@ -174,6 +174,10 @@ Flickable {
                 target: infoBox
                 statusText: ""
             }
+            PropertyChanges {
+                target: infoBox
+                visible: false
+            }
         },
         State {
             name: "visible"
@@ -184,6 +188,10 @@ Flickable {
             PropertyChanges {
                 target: infoBox
                 statusText: ""
+            }
+            PropertyChanges {
+                target: infoBox
+                visible: true
             }
         }
 

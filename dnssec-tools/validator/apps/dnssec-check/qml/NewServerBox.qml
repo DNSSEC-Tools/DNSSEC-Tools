@@ -12,7 +12,8 @@ Rectangle {
     anchors.left: resultsBox.left
     anchors.topMargin: 10
     color: "#222"
-    opacity: dnssecCheckTop.state != "running"
+    opacity: dnssecCheckTop.state != "running" ? 1 : 0
+    visible: dnssecCheckTop.state != "running" ? true : false
 
     signal addHost(string hostaddr)
 
@@ -78,5 +79,6 @@ Rectangle {
         anchors.margins: 5
         enabled: (newHost.text == newHost.defaultText || newHost.text == "") ? false : true
         opacity: (newHost.text == newHost.defaultText || newHost.text == "") ? 0 : 1.0
+        visible: (newHost.text == newHost.defaultText || newHost.text == "") ? false : true
     }
 }

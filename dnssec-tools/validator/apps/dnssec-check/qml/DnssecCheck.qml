@@ -92,6 +92,7 @@ Rectangle {
                 anchors.fill: parent
                 onClicked: {
                     helpBox.state = "visible"
+                    console.log("clicked help")
                 }
             }
         }
@@ -266,6 +267,7 @@ Rectangle {
         width: dnssecCheckTop.width
         height: dnssecCheckTop.height
         opacity: 0
+        visible: false
 
         onSubmitOk: {
             DNSSECCheck.submitResults()
@@ -331,7 +333,8 @@ Rectangle {
             testManager.saveSetting("initMessageDisplayed", dnssecToolsVersion)
         }
         Component.onCompleted: {
-            text = "<style>a { color: #8888ff; } a:visited { color: red; }</style><h2>Welcome to DNSSEC-Check</h2>"
+            //text = "<style>a { color: #8888ff; } a:visited { color: red; }</style>"
+            text = "<h2>Welcome to DNSSEC-Check</h2>"
                     + "<h3><i>(version "
                     + dnssecCheckTop.dnssecToolsVersion + ")</i></h2><img style=\"float: right;\" src=\"qrc:/images/dnssec-check-64x64.png\" />"
                     + "<p>On the following screen you will see a list of the DNS resolvers configured for your system.</p>"
@@ -508,6 +511,10 @@ Rectangle {
             PropertyChanges {
                 target: wantToSubmitBox
                 opacity: 1
+            }
+            PropertyChanges {
+                target: wantToSubmitBox
+                visible: true
             }
         }
     ]

@@ -23,6 +23,7 @@ Item {
                 target: rootResults
                 submittingText: ""
                 opacity: 0
+                visible: false
             }
             PropertyChanges {
                 target: messageBox
@@ -35,6 +36,7 @@ Item {
                 target: rootResults
                 submittingText: "Sending results to the results server..."
                 opacity: 0
+                visible: true
             }
             PropertyChanges {
                 target: messageBox

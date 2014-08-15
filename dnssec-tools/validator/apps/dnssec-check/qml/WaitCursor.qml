@@ -6,6 +6,7 @@ Item {
     width: dnssecCheckTop.width
     height: newServerBox.height
     opacity: 0
+    visible: false
 
     property int waitLength:    0
     property int waitLengthMax: giveUpTimer.interval * (giveUpTimer.retryCount + 1)/ 1000;
@@ -50,6 +51,7 @@ Item {
             PropertyChanges {
                 target: waitCursor
                 opacity: 0
+                visible: false
             }
         },
         State {
@@ -57,6 +59,7 @@ Item {
             PropertyChanges {
                 target: waitCursor
                 opacity: 1
+                visible: true
             }
             when: dnssecCheckTop.state == "running"
         }

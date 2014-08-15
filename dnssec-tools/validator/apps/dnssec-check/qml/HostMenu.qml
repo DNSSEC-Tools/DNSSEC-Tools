@@ -89,12 +89,20 @@ Flickable {
                 target: hostMenuBox
                 opacity: 0
             }
+            PropertyChanges {
+                target: hostMenuBox
+                visible: false
+            }
         },
         State {
             name: "visible"
             PropertyChanges {
                 target: hostMenuBox
                 opacity: 1
+            }
+            PropertyChanges {
+                target: hostMenuBox
+                visible: true
             }
         }
 
