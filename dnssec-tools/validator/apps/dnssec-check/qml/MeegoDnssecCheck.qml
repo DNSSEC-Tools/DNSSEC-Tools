@@ -1,4 +1,4 @@
-import QtQuick 1.0
+import QtQuick 2.0
 
 // wrapper just for meego/harmattan to set up the screen correctly
 

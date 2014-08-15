@@ -1,14 +1,16 @@
 #include "mainwindow.h"
 #include "whatami.h"
-#include "qmlapplicationviewer.h"
+#include <QtGui/QGuiApplication>
+#include "qtquick2applicationviewer.h"
 #include "TestManager.h"
 
 #include <qdebug.h>
 
 #include <QtGui/QApplication>
-#include <QtDeclarative/QDeclarativeContext>
+//#include <QtDeclarative/QDeclarativeContext>
 #include <QtDeclarative/QDeclarativeEngine>
 #include <QtDeclarative/QDeclarativeComponent>
+#include <QQmlContext>
 
 #define USE_QML 1
 
@@ -34,15 +36,16 @@ int main(int argc, char *argv[])
         use_qml = false;
 
     if (use_qml) {
+        qDebug() << "here...  registering";
         qRegisterMetaType<DNSSECTest>("DNSSECTest");
         qmlRegisterType<DNSSECTest, 1>("DNSSECTools", 1, 0, "DNSSECTest");
-        qmlRegisterType<TestManager, 1>("DNSSECTools", 1, 0, "TestManager");
+        qmlRegisterType<TestManager,1 >("DNSSECTools", 1, 0, "TestManager");
 
-        QmlApplicationViewer viewer;
-        QDeclarativeContext *context;
+        QtQuick2ApplicationViewer viewer;
+        QQmlContext *context;
         viewer.addImportPath(":/qml");
-        viewer.setWindowIcon(QIcon(":/images/dnssec-check-64x64.png"));
-        viewer.setWindowTitle("DNSSEC-Check");
+        viewer.setIcon(QIcon(":/images/dnssec-check-64x64.png"));
+        viewer.setTitle("DNSSEC-Check");
 
         TestManager manager;
         context = viewer.rootContext();
@@ -51,11 +54,10 @@ int main(int argc, char *argv[])
         #ifdef IS_MEEGO
         viewer.setSource(QUrl("qrc:/qml/MeegoDnssecCheck.qml"));
         #else
-        viewer.setSource(QUrl("qrc:/qml/DnssecCheck.qml"));
+        viewer.setSource(QUrl("qrc:/qml/Wrapper.qml"));
         #endif
 
-
-        viewer.setOrientation(QmlApplicationViewer::ScreenOrientationLockLandscape);
+        //viewer.setOrientation(QmlApplicationViewer::ScreenOrientationLockLandscape);
         #ifdef IS_MEEGO
         viewer.showFullScreen();
         #else
@@ -64,6 +66,7 @@ int main(int argc, char *argv[])
 
         return app.exec();
     } else { // don't use QML
+#ifdef NOT_ON_QT5
         MainWindow mainWindow;
         mainWindow.setOrientation(MainWindow::Auto);
 
@@ -76,5 +79,6 @@ int main(int argc, char *argv[])
         #endif
 
         return app.exec();
+#endif
     }
 }

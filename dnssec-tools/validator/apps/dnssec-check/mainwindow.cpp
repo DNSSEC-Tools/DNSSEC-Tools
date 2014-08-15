@@ -17,6 +17,8 @@
 #include <QtNetwork/QNetworkRequest>
 #include <QtNetwork/QNetworkReply>
 #include <QCryptographicHash>
+#include <QUrl>
+#include <QUrlQuery>
 
 #include <qdebug.h>
 
@@ -360,10 +362,11 @@ void MainWindow::maybeSubmitResults()
 void MainWindow::submitResults(QString locationDescription)
 {
     QUrl accessURL = resultServerBaseURL;
-    accessURL.addQueryItem("dataVersion", "1");
+    QUrlQuery query;
+    query.addQueryItem("dataVersion", "1");
     int count=0;
     foreach(QString serverAddress, m_serverAddresses) {
-        accessURL.addQueryItem("server" + QString::number(count++),
+        query.addQueryItem("server" + QString::number(count++),
                                QCryptographicHash::hash(serverAddress.toUtf8(), QCryptographicHash::Sha1).toHex());
     }
 
@@ -371,11 +374,13 @@ void MainWindow::submitResults(QString locationDescription)
 
     foreach(QStatusLight *light, m_tests) {
         test = light->test();
-        accessURL.addQueryItem(test->name() + QString::number(light->rowNumber()), test->statusString());
+        query.addQueryItem(test->name() + QString::number(light->rowNumber()), test->statusString());
     }
 
-    accessURL.addQueryItem("locationDescription", locationDescription);
-    accessURL.addQueryItem("DNSSECToolsVersion", DNSSEC_CHECK_VERSION);
+    query.addQueryItem("locationDescription", locationDescription);
+    query.addQueryItem("DNSSECToolsVersion", DNSSEC_CHECK_VERSION);
+
+    accessURL.setQuery(query);
 
     if (!m_manager) {
         m_manager = new QNetworkAccessManager();

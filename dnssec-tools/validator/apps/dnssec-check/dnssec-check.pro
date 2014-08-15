@@ -4,6 +4,8 @@
 # dir1.source = mydir
 DEPLOYMENTFOLDERS = # file1 dir1
 
+TEMPLATE = app
+
 # Avoid auto screen rotation
 #DEFINES += ORIENTATIONLOCK
 
@@ -44,7 +46,7 @@ isEmpty(ANDROID_PLATFORM) {
 # Needs to be defined for Symbian
 DEFINES += NETWORKACCESS
 
-QT += network declarative
+QT += network qml quick declarative gui core widgets
 
 # OS X icon
 ICON=images/dnssec-check.icns
@@ -64,13 +66,18 @@ unix:!symbian {
     }
 }
 
+# Please do not modify the following two lines. Required for deployment.
+include(qtquick2applicationviewer/qtquick2applicationviewer.pri)
+qtcAddDeployment()
+
 # If your application uses the Qt Mobility libraries, uncomment
 # the following lines and add the respective components to the 
 # MOBILITY variable. 
 # CONFIG += mobility
 # MOBILITY +=
 
-SOURCES += main.cpp mainwindow.cpp \
+# not on qt5 with qml: mainwindow.cpp
+SOURCES += main.cpp  \
     dnssec_checks.cpp \
     QStatusLight.cpp \
     SubmitDialog.cpp \
@@ -78,7 +85,9 @@ SOURCES += main.cpp mainwindow.cpp \
     TestManager.cpp \
     DNSSECCheckThread.cpp \
     DNSSECCheckThreadHandler.cpp
-HEADERS += mainwindow.h \
+
+# not on qt5 with qml: mainwindow.h
+HEADERS +=  \
     QStatusLight.h \
     dnssec_checks.h \
     SubmitDialog.h \
@@ -149,15 +158,8 @@ OTHER_FILES += \
     qml/ResolverMenu.qml \
     qml/Header.qml \
     qml/ResultInfo.qml \
-    qml/Grade.qml
-
-# Please do not modify the following two lines. Required for deployment.
-include(deployment.pri)
-qtcAddDeployment()
-
-# Please do not modify the following two lines. Required for deployment.
-include(qmlapplicationviewer/qmlapplicationviewer.pri)
-qtcAddDeployment()
+    qml/Grade.qml \
+    qml/Wrapper.qml
 
 OTHER_FILES += \
     android/src/eu/licentia/necessitas/industrius/QtActivity.java \
