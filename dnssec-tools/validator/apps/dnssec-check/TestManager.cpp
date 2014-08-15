@@ -41,7 +41,7 @@ TestManager::handlerReady(DNSSECCheckThreadHandler *handler) {
 bool TestManager::testName(const QString &resolverAddress)
 {
     struct name_server *ns;
-    ns = parse_name_server(resolverAddress.toLatin1().data(), NULL);
+    ns = parse_name_server(resolverAddress.toLatin1().data(), NULL, 0);
     if (ns == NULL)
         return false;
     free_name_server(&ns);
