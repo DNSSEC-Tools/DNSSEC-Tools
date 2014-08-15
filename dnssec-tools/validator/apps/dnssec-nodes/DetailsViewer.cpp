@@ -1,5 +1,6 @@
 #include "DetailsViewer.h"
 
+#define QT_NO_PRINTER
 #include <QtGui/QLabel>
 #include <QtGui/QTextEdit>
 #include <QtGui/QFont>

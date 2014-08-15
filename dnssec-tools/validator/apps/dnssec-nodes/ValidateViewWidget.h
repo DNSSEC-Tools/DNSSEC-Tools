@@ -4,6 +4,8 @@
 #include <QGraphicsView>
 #include <QtCore/QMap>
 #include <QtGui/QColor>
+#include <QWidget>
+#include <QGraphicsLineItem>
 
 #include "NodeList.h"
 #include "graphwidget.h"
