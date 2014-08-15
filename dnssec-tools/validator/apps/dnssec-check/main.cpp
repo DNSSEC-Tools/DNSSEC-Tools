@@ -16,7 +16,7 @@
 #define USE_QML 1
 
 extern "C" {
-void val_freeaddrinfo(addrinfo *foo) { }
+void val_freeaddrinfo(addrinfo *foo) { Q_UNUSED(foo);}
 }
 
 int main(int argc, char *argv[])
