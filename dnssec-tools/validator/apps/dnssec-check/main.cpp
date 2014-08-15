@@ -1,5 +1,6 @@
 #include "mainwindow.h"
 #include "whatami.h"
+#include <QtQml>
 #include <QtGui/QGuiApplication>
 #include "qtquick2applicationviewer.h"
 #include "TestManager.h"
@@ -9,7 +10,7 @@
 #include <QtGui/QApplication>
 //#include <QtDeclarative/QDeclarativeContext>
 #include <QtDeclarative/QDeclarativeEngine>
-#include <QtDeclarative/QDeclarativeComponent>
+//#include <QtDeclarative/QDeclarativeComponent>
 #include <QQmlContext>
 
 #define USE_QML 1
@@ -38,8 +39,14 @@ int main(int argc, char *argv[])
     if (use_qml) {
         qDebug() << "here...  registering";
         qRegisterMetaType<DNSSECTest>("DNSSECTest");
-        qmlRegisterType<DNSSECTest, 1>("DNSSECTools", 1, 0, "DNSSECTest");
-        qmlRegisterType<TestManager,1 >("DNSSECTools", 1, 0, "TestManager");
+
+        int ret = 0;
+        ret = qmlRegisterType<DNSSECTest, 1>("DNSSECTools", 1, 0, "DNSSECTest");
+        qDebug() << "registration status 1: " << ret;
+        ret = qmlRegisterType<TestManager, 1>("DNSSECTools", 1, 0, "TestManager");
+        qDebug() << "registration status 2: " << ret;
+        ret = qmlRegisterType<DNSSECTest, 1>("DNSSECTools", 1, 0, "DNSSECTest");
+        qDebug() << "registration status 1: " << ret;
 
         QtQuick2ApplicationViewer viewer;
         QQmlContext *context;
@@ -54,7 +61,7 @@ int main(int argc, char *argv[])
         #ifdef IS_MEEGO
         viewer.setSource(QUrl("qrc:/qml/MeegoDnssecCheck.qml"));
         #else
-        viewer.setSource(QUrl("qrc:/qml/Wrapper.qml"));
+        viewer.setSource(QUrl("qrc:/qml/DnssecCheck.qml"));
         #endif
 
         //viewer.setOrientation(QmlApplicationViewer::ScreenOrientationLockLandscape);

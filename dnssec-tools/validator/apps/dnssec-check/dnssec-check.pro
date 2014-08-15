@@ -47,6 +47,7 @@ isEmpty(ANDROID_PLATFORM) {
 DEFINES += NETWORKACCESS
 
 QT += network qml quick declarative gui core widgets
+#QT += network declarative gui core widgets
 
 # OS X icon
 ICON=images/dnssec-check.icns
