@@ -4180,7 +4180,7 @@ sub getprogs
 	#
 	$keyarch = $dtconf{'keyarch'}	  || dnssec_tools_default("keyarch");
 	$rndc 	 = $dtconf{'rndc'}	  || dnssec_tools_default("rndc");
-	$rndc 	 = $dtconf{'rndcopts'}	  || dnssec_tools_default("rndcopts");
+	$rndcopts = $dtconf{'rndcopts'}	  || dnssec_tools_default("rndcopts");
 	$rrchk	 = $dtconf{'rollrec_chk'} || dnssec_tools_default("rollrec_check");
 }
 
