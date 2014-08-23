@@ -38,16 +38,16 @@
 
 #define ALLOCATE_REFERRAL_BLOCK(ref) do{ \
 		ref = (struct delegation_info *) MALLOC (sizeof(struct delegation_info)); \
-		if (ref == NULL) \
-			return VAL_OUT_OF_MEMORY; \
-		ref->queries = NULL; \
-		ref->answers = NULL; \
-		ref->proofs = NULL; \
-		ref->qnames = NULL; \
-		ref->pending_glue_ns = NULL; \
-		ref->cur_pending_glue_ns = NULL; \
-		ref->saved_zonecut_n = NULL; \
-		ref->learned_zones = NULL; \
+		if (ref) { \
+		    ref->queries = NULL; \
+		    ref->answers = NULL; \
+		    ref->proofs = NULL; \
+		    ref->qnames = NULL; \
+		    ref->pending_glue_ns = NULL; \
+		    ref->cur_pending_glue_ns = NULL; \
+		    ref->saved_zonecut_n = NULL; \
+		    ref->learned_zones = NULL; \
+        }\
 } while(0)
 
 

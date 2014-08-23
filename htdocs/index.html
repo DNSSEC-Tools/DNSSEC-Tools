@@ -1,10 +1,19 @@
     <!--#include virtual="/top.html" -->
-<div class="mainsection">
-    <div class="logobase" align="center">
-        <div class="overlaplogo"> 
-            <a href="whybad.html">
-            <img src="http://badsign-a.test.dnssec-tools.org/bumper.png"/>
-            </a> </div>
+    <div class="container">
+      <div class="alert alert-danger alert-dismissable dtbadsign">
+        <button type="button" class="close dtclose" data-dismiss="alert" aria-hidden="true">&times;</button>
+        <p><strong>You are insecure!!</strong> We've
+        detected you are insecure.  <a href="/whybad.html"
+        class="alert-link">Learn about</a> what you can do about
+        it.</p>
+      </div>
+
+      <div class="alert alert-success alert-dismissable dtgoodsign">
+        <button type="button" class="close dtclose" data-dismiss="alert" aria-hidden="true">&times;</button>
+        <h1>DNSSEC Secured!</h1>
+        <p>Congratulations!!<br /> We've detected you're browsing in a
+        DNSSEC secured environment!!</p>
+      </div>
     </div>
 
     <h2>About DNSSEC-Tools </h2>
@@ -93,12 +102,6 @@
 	  Homeland Security/Science &amp; Technology (S&amp;T)</a></li>
 	</ul>
       </div>
-<!--#include virtual="/page-bottom.html" -->
-    <hr />
-<!-- Created: Tue Oct 19 14:05:17 PDT 2004 -->
-    </div>
-  </div>
-</div>
-</div>
-  </body>
-</html>
+
+<!-- <script src="http://badsign-a.test.dnssec-tools.org/bumper.js"></script> -->
+<!--#include virtual="verybottom.html" -->

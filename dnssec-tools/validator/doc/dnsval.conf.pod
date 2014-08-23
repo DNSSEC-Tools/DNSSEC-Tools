@@ -336,6 +336,27 @@ a recursive lookup of the name if the response from the caching name server
 returned an error. By default this options is set to B<yes>; it can be turned
 off by setting this option to B<no>.
 
+=item max-refresh 
+
+This option is used in conjunction with the VAL_QUERY_SKIP_CACHE query
+flag. When queries have this flag enabled they would normally skip
+cached entries. However, max-refresh can throttle how often queries
+are actually sent on the wire. Whe this option is set to a positive
+value a new query is only sent out if the cached value was stored more
+than (the value specified by) max-refresh seconds ago. If max-refresh is
+0, then the cache is always skipped. If the value is -1 the cache is
+never skipped. The default value for max-refresh is 60 seconds. That
+means that two queries sent with the the VAL_QUERY_SKIP_CACHE flag set
+less than a minute apart will only result in one query seen on the wire. 
+
+=item proto
+
+This option is used to control the network protocol that libval uses to
+send queries out to various name servers. If the value is set to
+B<ipv6>, libval uses only IPv6; if it is set to B<ipv4> libval uses only
+IPv4. The default is B<any>, which causes libval to send over any of the
+available protocols for the given name server.
+
 =item log
 
 This option controls the level of logging and the log target for libval. 

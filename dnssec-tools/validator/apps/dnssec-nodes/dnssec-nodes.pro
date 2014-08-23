@@ -70,7 +70,7 @@ INCLUDEPATH += ../../include
 isEmpty(ANDROID_PLATFORM) {
     QMAKE_LIBDIR     += ../../libval/.libs
     QMAKE_LIBDIR     += ../../libsres/.libs
-    LIBS        += -lval-threads -lsres -lnsl -lcrypto -lpthread
+    LIBS        += -lval-threads -lsres -lnsl -lcrypto -lssl -lpthread
     contains(MEEGO_EDITION,harmattan): {
         QMAKE_LIBDIR += /scratchbox/users/hardaker/targets/HARMATTAN_ARMEL/usr/lib
     } else:osx {
@@ -97,7 +97,7 @@ contains(MEEGO_EDITION,harmattan): {
     LIBS += -L/usr/local/lib
 }
 
-QT += network
+QT += network widgets core
 # this is needed for symbian
 DEFINES += NETWORKACCESS
 
@@ -128,10 +128,14 @@ simulator: warning(This example might not fully work on Simulator platform)
 # optional pcap development
 # (comment these lines out if not desired)
 SOURCES += PcapWatcher.cpp
-HEADERS += PcapWatcher.h
-QMAKE_LIBDIR += c:/windows/system32
-LIBS    += -lwpcap
 DEFINES += WITH_PCAP
+HEADERS += PcapWatcher.h
+win32 {
+    QMAKE_LIBDIR += c:/windows/system32
+    LIBS    += -lwpcap
+} else {
+    LIBS    += -lpcap
+}
 
 OTHER_FILES += \
     qtc_packaging/debian_fremantle/rules \

@@ -33,6 +33,17 @@ extern          "C" {
 #define MAX_GLUE_FETCH_DEPTH 10         /* max length of glue dependency chain */
 #define IPADDR_STRING_MAX 128
 
+#ifndef LOG_EMERG
+#define LOG_EMERG VAL_LOG_EMERG 
+#define LOG_ALERT VAL_LOG_ALERT 
+#define LOG_CRIT VAL_LOG_CRIT 
+#define LOG_ERR VAL_LOG_ERR 
+#define LOG_WARNING VAL_LOG_WARNING 
+#define LOG_NOTICE VAL_LOG_NOTICE 
+#define LOG_INFO VAL_LOG_INFO 
+#define LOG_DEBUG VAL_LOG_DEBUG 
+#endif
+
 /*
  * Query states 
  *
@@ -134,9 +145,7 @@ extern          "C" {
 /*
  * Algorithm definitions for NSEC3 digest 
  */
-#ifdef LIBVAL_NSEC3
 #define ALG_NSEC3_HASH_SHA1 1
-#endif
 #define NSEC3_FLAG_OPTOUT 0x01
 
 /*
@@ -146,26 +155,51 @@ extern          "C" {
 #define ALG_DH      2
 #define ALG_DSASHA1 3
 #define ALG_RSASHA1 5
-#ifdef LIBVAL_NSEC3
 #define ALG_NSEC3_DSASHA1 6 
 #define ALG_NSEC3_RSASHA1 7 
-#endif
 #define ALG_RSASHA256 8
 #define ALG_RSASHA512 10 
 #define ALG_ECDSAP256SHA256 13
 #define ALG_ECDSAP384SHA384 14
 
-#define IS_KNOWN_DNSSEC_ALG(x) \
+#define IS_KNOWN_DNSSEC_ALG_BASIC(x) \
     (x == ALG_RSAMD5 || \
      x == ALG_DH ||\
      x == ALG_DSASHA1 ||\
-     x == ALG_RSASHA1 ||\
-     x == ALG_NSEC3_DSASHA1 ||\
-     x == ALG_NSEC3_RSASHA1 ||\
-     x == ALG_RSASHA256 ||\
-     x == ALG_RSASHA512 ||\
-     x == ALG_ECDSAP256SHA256 ||\
+     x == ALG_RSASHA1)
+
+#ifdef LIBVAL_NSEC3
+#define IS_KNOWN_DNSSEC_ALG_NSEC3(x) \
+     (x == ALG_NSEC3_DSASHA1 ||\
+     x == ALG_NSEC3_RSASHA1)
+#else
+#define IS_KNOWN_DNSSEC_ALG_NSEC3(x)\
+    (0) /* false */
+#endif
+
+#ifdef HAVE_SHA_2
+#define IS_KNOWN_DNSSEC_ALG_SHA2(x) \
+     (x == ALG_RSASHA256 ||\
+     x == ALG_RSASHA512)
+#else
+#define IS_KNOWN_DNSSEC_ALG_SHA2(x)\
+    (0) /* false */
+#endif
+
+#ifdef HAVE_ECDSA
+#define IS_KNOWN_DNSSEC_ALG_ECDSA(x) \
+     (x == ALG_ECDSAP256SHA256 ||\
      x == ALG_ECDSAP384SHA384)
+#else
+#define IS_KNOWN_DNSSEC_ALG_ECDSA(x)\
+    (0) /* false */
+#endif
+     
+#define IS_KNOWN_DNSSEC_ALG(x) \
+    (IS_KNOWN_DNSSEC_ALG_BASIC(x) ||\
+     IS_KNOWN_DNSSEC_ALG_NSEC3(x) ||\
+     IS_KNOWN_DNSSEC_ALG_SHA2(x) ||\
+     IS_KNOWN_DNSSEC_ALG_ECDSA(x))
 
 /* query types for which edns0 is required */
 #ifdef LIBVAL_DLV
@@ -224,6 +258,7 @@ extern          "C" {
         struct name_server *qc_respondent_server;
         unsigned long qc_respondent_server_options;
         int    qc_trans_id;             //  synchronous queries only
+        long   qc_last_sent;            //  last time the query was sent
         struct expected_arrival *qc_ea; // asynchronous queries only
 
         struct val_digested_auth_chain *qc_ans;

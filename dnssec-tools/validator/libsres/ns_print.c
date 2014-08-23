@@ -57,7 +57,11 @@ static int      addstr(const char *src, size_t len,
                        char **buf, size_t * buflen);
 static int      addtab(size_t len, size_t target, int spaced,
                        char **buf, size_t * buflen);
-
+int             ns_sprintrrf_data(const u_char * msg, size_t msglen,
+                  const char *name, ns_class class_h, ns_type type_h,
+                  u_long ttl, const u_char * rdata, size_t rdlen,
+                  const char *origin,
+                  char *buf, size_t buflen);
 /*
  * Macros. 
  */
@@ -136,7 +140,6 @@ ns_sprintrrf(const u_char * msg, size_t msglen,
     const char     *obuf = buf;
     int             spaced = 0;
 
-    const char     *comment;
     char            tmp[100];
     int             len, x;
 
@@ -517,12 +520,11 @@ ns_sprintrrf_data(const u_char * msg, size_t msglen,
         }
 
     case ns_t_ds:{
-            u_int           key_id;
             u_int           algo;
             u_int           digest_type;
             u_int           hashlen = 0;
 
-            RES_GET16(key_id, rdata);
+            rdata += NS_INT16SZ; /* skip key_id */
             algo = *rdata++ & 0xF;
             digest_type = *rdata++ & 0xF;
 

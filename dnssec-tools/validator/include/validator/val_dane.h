@@ -121,6 +121,11 @@ int val_dane_match(val_context_t *ctx,
                    const unsigned char *data, 
                    int len);
 
+int val_dane_cert_namechk(val_context_t *context,
+                   char *qname,
+                   const unsigned char *data, 
+                   int len); 
+
 int val_enable_dane_ssl(val_context_t *ctx,
                         SSL_CTX *sslctx,
                         char *qname,

@@ -258,7 +258,7 @@ create_name_server(void)
 }
 
 struct name_server *
-parse_name_server(const char *cp, const char *name_n)
+parse_name_server(const char *cp, const char *name_n, unsigned long options)
 {
     short port_num = NS_DEFAULTPORT;
     struct name_server *ns;
@@ -274,7 +274,7 @@ parse_name_server(const char *cp, const char *name_n)
 #if defined( WIN32 )
     size_t addrlen4 = sizeof(struct sockaddr_in);
 #endif
-    char  *addr = NULL;
+    const char  *addr = NULL;
     char  *tsig = NULL;
     char *buf = NULL;
     char *c;
@@ -295,6 +295,13 @@ parse_name_server(const char *cp, const char *name_n)
         FREE(ns);
         return NULL;
     }
+
+    ns->ns_options |= options; 
+
+    /* Disable recursion if requested */
+    if ((ns->ns_options & SR_QUERY_NOREC) && 
+            (ns->ns_options & SR_QUERY_RECURSE))
+        ns->ns_options ^= SR_QUERY_RECURSE;
 
     /*
      * Look for port number in address string
@@ -337,12 +344,16 @@ parse_name_server(const char *cp, const char *name_n)
      */
     memset(&serv_addr, 0, sizeof(serv_addr));
     if (INET_PTON(AF_INET, addr, ((struct sockaddr *)sin), &addrlen4) > 0) {
+        if (ns->ns_options & SR_QUERY_IPV6_ONLY)
+            goto err;
+
         sin->sin_family = AF_INET;     // host byte order
         sin->sin_port = htons(port_num);       // short, network byte order
     }
     else {
 #ifdef VAL_IPV6
-        if (INET_PTON(AF_INET6, addr, ((struct sockaddr *)sin6), &addrlen6) != 1)
+        if ((ns->ns_options & SR_QUERY_IPV4_ONLY) ||
+                INET_PTON(AF_INET6, addr, ((struct sockaddr *)sin6), &addrlen6) != 1)
             goto err;
 
         sin6->sin6_family = AF_INET6;     // host byte order

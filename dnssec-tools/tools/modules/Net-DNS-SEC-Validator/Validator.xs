@@ -587,19 +587,31 @@ pval_create_context_ex(optref)
 
     // Global options
     SV **local_is_trusted_svp = hv_fetch((HV*)SvRV(optref), "local_is_trusted", 16, 1);
-    gopt.local_is_trusted = (SvOK(*local_is_trusted_svp) ?  SvIV(*local_is_trusted_svp) : -1);
+    gopt.local_is_trusted = (SvOK(*local_is_trusted_svp) ?
+            SvIV(*local_is_trusted_svp) : VAL_POL_GOPT_UNSET);
     SV **edns0_size_svp = hv_fetch((HV*)SvRV(optref), "edns0_size", 10, 1);
-    gopt.edns0_size = (SvOK(*edns0_size_svp) ? SvIV(*edns0_size_svp) : -1);
+    gopt.edns0_size = (SvOK(*edns0_size_svp) ? SvIV(*edns0_size_svp) :
+            VAL_POL_GOPT_UNSET);
     SV **env_policy_svp = hv_fetch((HV*)SvRV(optref), "env_policy", 10, 1);
-    gopt.env_policy = (SvOK(*env_policy_svp) ? SvIV(*env_policy_svp) : -1);
+    gopt.env_policy = (SvOK(*env_policy_svp) ? SvIV(*env_policy_svp) :
+            VAL_POL_GOPT_UNSET);
     SV **app_policy_svp = hv_fetch((HV*)SvRV(optref), "app_policy", 10, 1);
-    gopt.app_policy = (SvOK(*app_policy_svp) ? SvIV(*app_policy_svp) : -1);
+    gopt.app_policy = (SvOK(*app_policy_svp) ? SvIV(*app_policy_svp) :
+            VAL_POL_GOPT_UNSET);
     SV **log_target_svp = hv_fetch((HV*)SvRV(optref), "log_target", 10, 1);
     gopt.log_target = (SvOK(*log_target_svp) ? SvPV_nolen(*log_target_svp) : NULL);
     SV **closest_ta_only_svp = hv_fetch((HV*)SvRV(optref), "closest_ta_only", 15, 1);
-    gopt.closest_ta_only = (SvOK(*closest_ta_only_svp) ?  SvIV(*closest_ta_only_svp) : -1);
+    gopt.closest_ta_only = (SvOK(*closest_ta_only_svp) ?
+            SvIV(*closest_ta_only_svp) : VAL_POL_GOPT_UNSET);
     SV **rec_fallback_svp = hv_fetch((HV*)SvRV(optref), "rec_fallback", 12, 1);
-    gopt.rec_fallback = (SvOK(*rec_fallback_svp) ?  SvIV(*rec_fallback_svp) : -1);
+    gopt.rec_fallback = (SvOK(*rec_fallback_svp) ?
+            SvIV(*rec_fallback_svp) : VAL_POL_GOPT_UNSET);
+    SV **max_refresh_svp = hv_fetch((HV*)SvRV(optref), "max_refresh", 11, 1);
+    gopt.max_refresh = (SvOK(*max_refresh_svp) ?
+            (long)SvIV(*max_refresh_svp) : VAL_POL_GOPT_UNSET);
+    SV **proto_svp = hv_fetch((HV*)SvRV(optref), "proto", 5, 1);
+    gopt.proto = (SvOK(*proto_svp) ?
+            SvIV(*proto_svp) : VAL_POL_GOPT_UNSET);
 
     opt.vc_gopt = &gopt;
 
@@ -956,7 +968,7 @@ pval_dnsval_conf_set(file)
 	OUTPUT:
 	RETVAL
 
-ValAsyncStatus * 
+SV * 
 pval_async_submit(self,domain,class,type,flags, cbref, cbparam)
     SV * self
     char *domain = (SvOK($arg) ? (char *)SvPV_nolen($arg) : NULL);
@@ -970,9 +982,9 @@ pval_async_submit(self,domain,class,type,flags, cbref, cbparam)
         SV **ctx_ref;
         ValContext *ctx;
         int ret;
+        int inflight = 0;
         ValAsyncStatus *vas = NULL;
-
-        RETVAL = NULL;
+        AV * results = newAV();
 
         struct _pval_async_cbdata *cbd =
             (struct _pval_async_cbdata *)malloc(sizeof(struct _pval_async_cbdata));
@@ -986,8 +998,11 @@ pval_async_submit(self,domain,class,type,flags, cbref, cbparam)
         ret = val_async_submit(ctx, domain, class, type, flags,
                          _pval_async_cb, cbd,
                          &vas);
+        inflight = (val_async_getflags(vas) & VAL_AS_INFLIGHT)?  1 : 0;
 
-        RETVAL = (ret == VAL_NO_ERROR ? vas : NULL);
+        av_push(results, newSViv(ret));
+        av_push(results, newSViv(inflight));
+        RETVAL = newRV_noinc((SV *)results);
     }
     OUTPUT:
     RETVAL
@@ -1019,6 +1034,13 @@ pval_async_gather(self,active,timeout)
 
         FD_ZERO(&activefds);
 
+        ctx_ref = hv_fetch((HV*)SvRV(self), "_ctx_ptr", 8, 1);
+        ctx = (ValContext *)SvIV((SV*)SvRV(*ctx_ref));
+
+        // Update list of sockets that are ready for current validator
+        // context
+        ret = val_async_select_info(ctx, &activefds, &nfds, &tv);
+
         // Initialize the descriptors that are already set
         if ((SvROK(active)) && (SvTYPE(SvRV(active)) == SVt_PVAV)) {
             active_arr = (AV*) SvRV(active);
@@ -1029,13 +1051,6 @@ pval_async_gather(self,active,timeout)
                 nfds = (fd > nfds)? fd : nfds; 
             }
         }
-
-        ctx_ref = hv_fetch((HV*)SvRV(self), "_ctx_ptr", 8, 1);
-        ctx = (ValContext *)SvIV((SV*)SvRV(*ctx_ref));
-
-        // Update list of sockets that are ready for current validator
-        // context
-        ret = val_async_select_info(ctx, &activefds, &nfds, &tv);
 
         updated = newAV();
 

@@ -1,11 +1,11 @@
 #!/usr/bin/perl
 #
-# Copyright 2012-2013 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2012-2014 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details.
 #
 # owl-sensord						Owl Monitoring System
 #
-#       This script is the driver for running timing tests for DNS lookups.
+#       This script is the driver for running sensor daemons for Screech Owl.
 #
 # Revision History:
 #	1.0	121201	Initial version.
@@ -14,12 +14,13 @@
 #	2.0.1	Modified to obey "host execute" config line.	130227
 #	2.0.2	Generalized sensor-execution code to make it	130327
 #		easier to add additional sensors.
+#	2.0.3	Added the -restart option.			140806
 #
 
 use strict;
 
 use FindBin;
-use POSIX qw(setsid SIGHUP);
+use POSIX qw(setsid SIGHUP SIGUSR1);
 
 use lib "$FindBin::Bin/../perllib";
 use owlutils;
@@ -30,11 +31,12 @@ use Log::Dispatch::FileRotate;
 use Date::Format;
 use Getopt::Long qw(:config no_ignore_case_always);
 
+
 #
 # Version information.
 #
 my $NAME   = 'owl-sensord';
-my $VERS   = "$NAME version: 2.0.2";
+my $VERS   = "$NAME version: 2.0.3";
 my $DTVERS = 'DNSSEC-Tools version: 2.0';
 
 #------------------------------------------------------------------------
@@ -64,6 +66,7 @@ my @opts =
 	'quickcount=i',		# Consecutive quick executions before pausing.
 	'quickseconds=i',	# Seconds that make a quick execution.
 
+	'restart=s',		# Restart a specific Owl daemon.
 	'foreground|fg',	# Run in foreground.
 	'stop',			# Stop execution.
 
@@ -77,6 +80,7 @@ my $confdir;			# Config directory.
 my $config;			# Config file.
 my $foreground;			# Foreground-execution flag.
 my $logdir;			# Log directory.
+my $restarter = '';		# Restart-execution flag.
 my $stopper;			# Stop-execution flag.
 
 my $ahes;			# Sleep time between executions.
@@ -118,6 +122,14 @@ my @owldaemons =
 	'owl-rrdata',
 	'owl-rrsec',
 	'owl-transfer',
+);
+my %owldaemons =
+(
+	'owl-dnstimer'	=> 1,
+	'owl-resources'	=> 1,
+	'owl-rrdata'	=> 1,
+	'owl-rrsec'	=> 1,
+	'owl-transfer'	=> 1,
 );
 
 #
@@ -196,6 +208,7 @@ sub doopts
 	$config	    = $options{'config'}     || $DEF_CONFIG;
 	$logdir	    = $options{'logdir'}     || $DEF_LOGDIR;
 	$foreground = $options{'foreground'} || 0;
+	$restarter  = $options{'restart'}    || '';
 	$stopper    = $options{'stop'}       || 0;
 	$verbose    = $options{'verbose'};
 
@@ -216,6 +229,7 @@ sub doopts
 	# Set up the value we'll need for the /dev/null redirect.
 	#
 	$devnull = $verbose ? '' : '> /dev/null 2>&1';
+
 }
 
 #------------------------------------------------------------------------
@@ -253,6 +267,11 @@ sub startup
 	# Clean up if the -stop flag was given.
 	#
 	halter() if($stopper);
+
+	#
+	# Go restart something if the -restart flag was given.
+	#
+	restarter() if($restarter ne '');
 
 	#
 	# Make sure we're the only owl-sensord running.  We'll also allow a
@@ -744,6 +763,101 @@ sub sigurd
 }
 
 #------------------------------------------------------------------------
+# Routine:	restarter()
+#
+# Purpose:	Restart the specified Owl daemons.
+#
+#		This is accomplished by signalling the selected daemons  to
+#		shut down.  owl-sensord will then see that they've died and
+#		start them again.
+#
+sub restarter
+{
+	my %owls = ();				# Owl daemons to restart.
+	my @owls = ();				# Temporary list of Owl daemons.
+	my $errs = 0;				# Error count.
+
+	#
+	# Split out our (potentially) comma-separated list of daemons into
+	# a complete, no-commas list of daemons.
+	#
+	foreach my $wol (split /,/, $restarter)
+	{
+		if($wol =~ /^all$/i)
+		{
+			push @owls, @owldaemons;
+		}
+		else
+		{
+			push @owls, $wol;
+		}
+	}
+
+	#
+	# Distill the full list, as given by the user, down into the minimal
+	# set of daemons.  Ensure no invalid daemons were specified.
+	#
+	foreach my $wol (@owls)
+	{
+		if(! defined($owldaemons{$wol}))
+		{
+			print STDERR "\"$wol\" is not a valid Owl daemon\n";
+			$errs++;
+		}
+
+		$owls{$wol}++;
+	}
+
+	exit(1) if($errs);
+
+	#
+	# Signal each of the selected Owl daemons to restart.
+	#
+	# This is actually accomplished by signalling them to shut down,
+	# then owl-sensord will see that they've died and start them again.
+	#
+	foreach my $wol (sort(keys(%owls)))
+	{
+		my $owlpf;			# Owl daemon's pid filename.
+		my $pid;			# Owl daemon's process id.
+
+
+		#
+		# Set the name of the pidfile we'll be using.
+		#
+		$owlpf = "$confdir/$wol.pid";
+
+		#
+		# Open the pidfile.
+		#
+		next if(open(OPF,"< $owlpf") == 0);
+
+		#
+		# Get the Owl daemon's pid and slice off the newline.
+		#
+		$pid = <OPF>;
+		close(OPF);
+		chomp $pid;
+
+		#
+		# Send this daemon the signal to halt.
+		#
+		if(kill(SIGUSR1, $pid) == 0)
+		{
+			logger("unable to signal $wol for a restart:  $?",1);
+			next;
+		}
+
+		logger("$wol was signalled for a restart",1);
+	}
+
+	#
+	# Now it's time to say goodbye...
+	#
+	exit(0);
+}
+
+#------------------------------------------------------------------------
 # Routine:	halter()
 #
 # Purpose:	Tell the actual owl-sensord to close up shop.
@@ -895,6 +1009,7 @@ sub usage
 	print "\t-logdir <log-dir>        Specify log directory.\n";
 	print "\t-quickcount <count>      Consecutive quick executions before pausing.\n";
 	print "\t-quickseconds <count>    Seconds that make a quick execution.\n";
+	print "\t-restart <daemons>       Restart given list of daemons.\n";
 	print "\t-stop                    Stop execution.\n";
 	print "\n";
 
@@ -934,10 +1049,10 @@ be notified of the problem.
 There are four values that control B<owl-sensord>'s behavior when it comes
 to restarting its children.  These are:
 
-    hesitation      sleep time in seconds between executions of owl-dnstimer
-		    or owl-transfer
-    hibernation     sleep time if owl-dnstimer or owl-transfer is executing
-		    too frequently
+    hesitation      sleep time in seconds between executions of
+		    owl-dnstimer or owl-transfer
+    hibernation     sleep time if owl-dnstimer or owl-transfer is
+		    executing too frequently
     quickcount      number of consecutive fast executions of owl-dnstimer
 		    or owl-transfer before a hibernation occurs
     quickseconds    number of seconds that define a fast execution
@@ -991,17 +1106,24 @@ this is not given, then the default B<log> name will be used.  If this is
 a relative path, it will be relative from the point of execution.  If this
 directory doesn't exist, it will be created.
 
-=item B<-quickcount>
+=item B<-quickcount count>
 
 The number of consecutive fast executions of B<owl-dnstimer> or B<owl-transfer>
 that may occur before B<owl-sensord> decides to suspend restarts.
 The default value is 5.
 
-=item B<-quickseconds>
+=item B<-quickseconds count>
 
 The number of seconds (from start to exit) that defines a fast execution of
 B<owl-dnstimer> or B<owl-transfer>.
 The default value is 20 seconds.
+
+=item B<-restart daemon-list>
+
+Restarts the Owl daemons given in the I<daemon-list> argument.  This is a
+comma-separated list of the daemons in the Owl system.  If "all" is given
+as part of the list, then all the Owl daemons will be restarted.  If an
+unknown daemon is given, then nothing will be restarted.
 
 =item B<-stop>
 
@@ -1055,6 +1177,7 @@ Using I<owl-dnstimer> and I<owl-rrdata> as models, do the following:
 =head1 SEE ALSO
 
 B<owl-dnstimer(1)>,
+B<owl-resources(1)>,
 B<owl-rrdata(1)>,
 B<owl-rrsec(1)>,
 B<owl-transfer(1)>
@@ -1063,7 +1186,7 @@ B<owl-config(5)>
 
 =head1 COPYRIGHT
 
-Copyright 2012-2013 SPARTA, Inc.  All rights reserved.
+Copyright 2012-2014 SPARTA, Inc.  All rights reserved.
 
 =head1 AUTHOR
 

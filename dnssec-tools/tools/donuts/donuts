@@ -392,6 +392,7 @@ while ($#ARGV > -1) {
     $donuts->output()->StartSection("Donuts Analysis", "$current_domain");
     ($rulecount, $errcount) = $donuts->analyze($opts{'l'});
 
+    $donuts->show_statuses() if (!$opts{'q'});
     $donuts->summarize_results() if (!$opts{'q'});
     
     

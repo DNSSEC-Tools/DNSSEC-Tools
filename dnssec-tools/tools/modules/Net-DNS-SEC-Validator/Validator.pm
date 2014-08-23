@@ -17,7 +17,7 @@ require Net::hostent;			# return type from gethost*
 use Net::DNS;				# to interpret DNS classes and types
 use Carp;
 
-our $VERSION = '1.11';   # current release version number
+our $VERSION = '1.12';   # current release version number
 our $DNSSECTOOLSVERSION = "DNSSEC-Tools Version: 2.0";
 
 use Exporter;
@@ -135,6 +135,7 @@ our @EXPORT = qw(
 	VAL_AC_WCARD_VERIFIED_SKEW
 	VAL_AC_WRONG_LABEL_COUNT
 	VAL_AS_CB_COMPLETED
+	VAL_AS_INFLIGHT
 	VAL_AS_CTX_USER_SUPPLIED
 	VAL_AS_DONE
 	VAL_AS_IGNORE_CACHE
@@ -180,6 +181,7 @@ our @EXPORT = qw(
 	VAL_OUT_OF_MEMORY
 	VAL_PINSECURE
 	VAL_PINSECURE_UNTRUSTED
+	VAL_POL_GOPT_UNSET
 	VAL_POL_GOPT_DISABLE
 	VAL_POL_GOPT_ENABLE
 	VAL_POL_GOPT_OVERRIDE
@@ -201,6 +203,7 @@ our @EXPORT = qw(
 	VAL_QUERY_SKIP_CACHE
 	VAL_QUERY_EDNS0_FALLBACK
 	VAL_QUERY_GLUE_REQUEST
+	VAL_QUERY_CHECK_ALL_RRSIGS
 	VAL_RESOURCE_UNAVAILABLE
 	VAL_SUCCESS
 	VAL_TRUSTED_ANSWER
@@ -241,6 +244,27 @@ sub new {
     bless($self, $class);
     return $self;
 }
+
+# wrapper around the ever changing Net::DNS API, who's authors refuse
+# to leave things in a backward compatible way.
+my $has_net_dns_parameters = eval 'require Net::DNS::Parameters';
+
+sub typesbyname {
+	if ($has_net_dns_parameters) {
+		return Net::DNS::Parameters::typebyname(@_);
+	} else {
+		return Net::DNS::typesbyname(@_);
+	}
+}
+
+sub classesbyname {
+	if ($has_net_dns_parameters) {
+		return Net::DNS::Parameters::classbyname(@_);
+	} else {
+		return Net::DNS::classesbyname(@_);
+	}
+}
+
 
 # XXX unsupported so far
 sub switch_policy {
@@ -304,8 +328,8 @@ sub res_query {
     $class ||= "IN";
     $type ||= "A";
 
-    $class = Net::DNS::classesbyname($class) unless $class =~ /^\d+$/;
-    $type = Net::DNS::typesbyname($type) unless $type =~ /^\d+$/;
+    $class = classesbyname($class) unless $class =~ /^\d+$/;
+    $type = typesbyname($type) unless $type =~ /^\d+$/;
     
     return Net::DNS::SEC::Validator::_res_query($self, $dname, $class, $type);
 }
@@ -330,8 +354,8 @@ sub resolve_and_check {
     $class ||= "IN";
     $type ||= "A";
 
-    $class = Net::DNS::classesbyname($class) unless $class =~ /^\d+$/;
-    $type = Net::DNS::typesbyname($type) unless $type =~ /^\d+$/;
+    $class = classesbyname($class) unless $class =~ /^\d+$/;
+    $type = typesbyname($type) unless $type =~ /^\d+$/;
 
     return Net::DNS::SEC::Validator::_resolve_and_check($self,
 							$dname,
@@ -426,8 +450,8 @@ sub async_submit {
     $class ||= "IN";
     $type ||= "A";
 
-    $class = Net::DNS::classesbyname($class) unless $class =~ /^\d+$/;
-    $type = Net::DNS::typesbyname($type) unless $type =~ /^\d+$/;
+    $class = classesbyname($class) unless $class =~ /^\d+$/;
+    $type = typesbyname($type) unless $type =~ /^\d+$/;
 
     return Net::DNS::SEC::Validator::_async_submit($self, $domain,
             $class, $type, $flags, $cbref, $cbparam);
@@ -713,6 +737,22 @@ setting it to 0 is equivalent to "no".  The default value is -1.
 
 I<val_global_opt> field:  I<gopt.rec_fallback>
 
+=item I<max_refresh>
+
+This field is equivalent to the I<max-refresh> option in a B<dnsval.conf>
+file.  
+
+I<val_global_opt> field:  I<gopt.max_refresh>
+
+=item I<proto>
+
+This field is equivalent to the I<proto> option in a B<dnsval.conf>
+file. Setting this value to 1 is equivalent to setting I<proto> to
+"ipv4"; setting this value to 2 is equivalent to setting I<proto> to
+"ipv6". The default is 0, which is equivalent to setting I<proto> to
+"any". 
+
+I<val_global_opt> field:  I<gopt.proto>
 =back
 
 =head3 Validator Result Fields

@@ -562,7 +562,8 @@ constant_15 (pTHX_ const char *name, IV *iv_return) {
   /* When generated this function returned values for the list of names given
      here.  However, subsequent manual editing may have added or removed some.
      SR_HEADER_ERROR SR_MEMORY_ERROR VAL_AC_BAD_BASE VAL_AC_LAST_BAD
-     VAL_AC_VERIFIED VAL_BOGUS_PROOF VAL_FROM_ANSWER VAL_QUERY_ASYNC */
+     VAL_AC_VERIFIED VAL_BOGUS_PROOF VAL_FROM_ANSWER VAL_QUERY_ASYNC 
+     VAL_AS_INFLIGHT */
   /* Offset 7 gives the best switch position.  */
   switch (name[7]) {
   case 'B':
@@ -581,6 +582,17 @@ constant_15 (pTHX_ const char *name, IV *iv_return) {
     /*                      ^              */
 #ifdef SR_HEADER_ERROR
       *iv_return = SR_HEADER_ERROR;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
+  case 'I':
+    if (memEQ(name, "VAL_AS_INFLIGHT", 15)) {
+    /*                      ^              */
+#ifdef VAL_AS_INFLIGHT
+      *iv_return = VAL_AS_INFLIGHT;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
@@ -1028,6 +1040,14 @@ constant_18 (pTHX_ const char *name, IV *iv_return) {
     /*                            ^           */
 #ifdef SR_ZI_STATUS_UNSET
       *iv_return = SR_ZI_STATUS_UNSET;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    } else if (memEQ(name, "VAL_POL_GOPT_UNSET", 18)) {
+    /*                                   ^           */
+#ifdef VAL_POL_GOPT_UNSET
+      *iv_return = VAL_POL_GOPT_UNSET;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
@@ -1858,7 +1878,7 @@ constant_26 (pTHX_ const char *name, IV *iv_return) {
   /* When generated this function returned values for the list of names given
      here.  However, subsequent manual editing may have added or removed some.
      VAL_AC_RRSIG_VERIFIED_SKEW VAL_AC_RRSIG_VERIFY_FAILED
-     VAL_AC_WCARD_VERIFIED_SKEW */
+     VAL_AC_WCARD_VERIFIED_SKEW VAL_QUERY_CHECK_ALL_RRSIGS*/
   /* Offset 8 gives the best switch position.  */
   switch (name[8]) {
   case 'C':
@@ -1886,6 +1906,17 @@ constant_26 (pTHX_ const char *name, IV *iv_return) {
     /*                       ^                        */
 #ifdef VAL_AC_RRSIG_VERIFY_FAILED
       *iv_return = VAL_AC_RRSIG_VERIFY_FAILED;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
+  case 'Y':
+    if (memEQ(name, "VAL_QUERY_CHECK_ALL_RRSIGS", 26)) {
+    /*                       ^                        */
+#ifdef VAL_QUERY_CHECK_ALL_RRSIGS
+      *iv_return = VAL_QUERY_CHECK_ALL_RRSIGS;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
@@ -2004,7 +2035,7 @@ my @names = (qw(LIBSRES_NS_STAGGER LOG_ALERT LOG_CRIT LOG_DEBUG LOG_EMERG
 	       VAL_POL_GOPT_OVERRIDE VAL_QFLAGS_ANY VAL_QFLAGS_CACHE_MASK
 	       VAL_QFLAGS_NOCACHE_MASK VAL_QFLAGS_USERMASK VAL_QUERY_AC_DETAIL
 	       VAL_QUERY_ASYNC VAL_QUERY_DONT_VALIDATE VAL_QUERY_EDNS0_FALLBACK
-	       VAL_QUERY_GLUE_REQUEST VAL_QUERY_NO_DLV 
+	       VAL_QUERY_GLUE_REQUEST VAL_QUERY_NO_DLV VAL_QUERY_CHECK_ALL_RRSIGS
 	       VAL_QUERY_NO_EDNS0_FALLBACK VAL_QUERY_RECURSE VAL_QUERY_ITERATE
 	       VAL_QUERY_USING_DLV
 	       VAL_RESOURCE_UNAVAILABLE VAL_SUCCESS VAL_TRUSTED_ANSWER

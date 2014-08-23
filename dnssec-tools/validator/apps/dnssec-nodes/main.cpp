@@ -39,6 +39,7 @@
 ****************************************************************************/
 
 #include <QtGui>
+#include <QApplication>
 
 #include "graphwidget.h"
 #include "TypeMenu.h"

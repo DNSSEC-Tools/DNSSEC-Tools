@@ -1,9 +1,10 @@
-import QtQuick 1.0
+import QtQuick 2.0
 
 Rectangle {
     id: root
     color: "#aac"
     border.color: "#bbe"
+    z: 100
 
     property int maxDefaultButtonSize: 125
 

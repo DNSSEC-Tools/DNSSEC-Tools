@@ -9,10 +9,12 @@
 name: DNS_SOA_REQUIRED
 level: 2
 ruletype: name
-desc: Checks for the existence of an SOA record in a zone.
+desc: Checks for the number of a SOA records found in a zone (must be 1).
 <test>
   if ($recordname eq $current_domain && $#{$records->{'SOA'}} == -1) {
      donuts_error("A SOA record for $current_domain is required");
+  } elsif ($recordname eq $current_domain && $#{$records->{'SOA'}} > 0) {
+     donuts_error("Multiple SOA records were found");
   }
 </test>
 

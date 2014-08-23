@@ -1,4 +1,4 @@
-import QtQuick 1.0
+import QtQuick 2.0
 
 Flickable {
     id: resolverMenuBox
@@ -77,12 +77,20 @@ Flickable {
                 target: resolverMenuBox
                 opacity: 0
             }
+            PropertyChanges {
+                target: resolverMenuBox
+                visible: false
+            }
         },
         State {
             name: "visible"
             PropertyChanges {
                 target: resolverMenuBox
                 opacity: 1
+            }
+            PropertyChanges {
+                target: resolverMenuBox
+                visible: true
             }
         }
 

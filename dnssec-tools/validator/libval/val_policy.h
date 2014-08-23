@@ -84,7 +84,7 @@
 
 int             read_root_hints_file(val_context_t * ctx);
 int             read_res_config_file(val_context_t * ctx);
-int             read_val_config_file(val_context_t * ctx, char *scope);
+int             read_val_config_file(val_context_t * ctx, const char *scope);
 void            destroy_valpol(val_context_t * ctx);
 void            destroy_respol(val_context_t * ctx);
 struct hosts   *parse_etc_hosts(const char *name);
@@ -105,8 +105,8 @@ int             free_nsec3_max_iter(policy_entry_t * pol_entry);
 int             parse_dlv_trust_points(char **, char *, policy_entry_t *, int *, int *);
 int             free_dlv_trust_points(policy_entry_t *);
 #endif
-int             check_relevance(char *label, char *scope, int *label_count,
-                                int *relevant);
+int             check_relevance(const char *label, const char *scope,
+                                int *label_count, int *relevant);
 int             val_is_local_trusted(val_context_t *context, int *trusted);
 int             val_get_token(char **buf_ptr,
                               char *end_ptr,
@@ -130,7 +130,7 @@ struct policy_fragment {
 };
 
 int
-get_next_policy_fragment(char **buf_ptr, char *end_ptr, char *scope,
+get_next_policy_fragment(char **buf_ptr, char *end_ptr, const char *scope,
                          struct policy_fragment **pol_frag,
                          int *line_number, int *g_opt_seen, 
                          int *include_seen);

@@ -80,6 +80,8 @@ struct timeval;
 #define VAL_QFLAGS_NOCACHE_MASK     0xff000000
 #define VAL_QUERY_EDNS0_FALLBACK    0x01000000 //obsolete
 #define VAL_QUERY_GLUE_REQUEST      0x02000000
+#define VAL_QUERY_CHECK_ALL_RRSIGS  0x04000000
+#define VAL_QUERY_SEC_LEAF          0x08000000
 
 
 #define VAL_QFLAGS_USERMASK (VAL_QUERY_AC_DETAIL |\
@@ -88,20 +90,19 @@ struct timeval;
                              VAL_QUERY_ASYNC |\
                              VAL_QUERY_NO_EDNS0_FALLBACK |\
                              VAL_QUERY_SKIP_RESOLVER |\
-                             VAL_QUERY_RECURSE |\
-                             VAL_QUERY_SKIP_CACHE|\
-                             VAL_QUERY_IGNORE_SKEW)
+                             VAL_QUERY_IGNORE_SKEW|\
+                             VAL_QUERY_ITERATE |\
+                             VAL_QUERY_SKIP_CACHE |\
+                             VAL_QUERY_CHECK_ALL_RRSIGS)
 
-#ifndef LOG_EMERG
-#define LOG_EMERG 0
-#define LOG_ALERT 1
-#define LOG_CRIT 2
-#define LOG_ERR 3
-#define LOG_WARNING 4
-#define LOG_NOTICE 5
-#define LOG_INFO 6
-#define LOG_DEBUG 7
-#endif
+#define VAL_LOG_EMERG 0
+#define VAL_LOG_ALERT 1
+#define VAL_LOG_CRIT 2
+#define VAL_LOG_ERR 3
+#define VAL_LOG_WARNING 4
+#define VAL_LOG_NOTICE 5
+#define VAL_LOG_INFO 6
+#define VAL_LOG_DEBUG 7
 
 /* validator return types */
 typedef unsigned char val_status_t;
@@ -126,6 +127,8 @@ typedef struct val_global_opt {
     char *log_target;
     int closest_ta_only;
     int rec_fallback;
+    long max_refresh;
+    int proto;
 } val_global_opt_t;
 
 /*
@@ -160,21 +163,40 @@ typedef struct val_context_opt {
 #define POL_NSEC3_MAX_ITER_STR "nsec3-max-iter"
 #define GOPT_TRUST_OOB_STR "trust-oob-answers"
 #define GOPT_EDNS0_SIZE_STR "edns0-size"
-#define GOPT_YES_STR "yes"
-#define GOPT_NO_STR "no"
 #define GOPT_ENV_POL_STR "env-policy"
 #define GOPT_APP_POL_STR "app-policy"
-#define GOPT_ENABLE_STR "enable"
-#define GOPT_DISBLE_STR "disable"
-#define GOPT_OVERRIDE_STR "override"
 #define GOPT_LOGTARGET_STR "log"
 #define GOPT_CLOSEST_TA_ONLY_STR "closest-ta-only"
 #define GOPT_REC_FALLBACK "rec-fallback"
+#define GOPT_MAX_REFRESH_STR "max-refresh"
+#define GOPT_PROTO "proto"
+/* 
+ * The following policies are deprecated. 
+ * They are defined here for backwards compatibility
+ */
+#define GOPT_TRUST_LOCAL_STR "trust-local-answers"
+
+
+#define GOPT_YES_STR "yes"
+#define GOPT_NO_STR "no"
+#define GOPT_ENABLE_STR "enable"
+#define GOPT_DISBLE_STR "disable"
+#define GOPT_OVERRIDE_STR "override"
+#define GOPT_PROTO_IPV6_STR "ipv6"
+#define GOPT_PROTO_IPV4_STR "ipv4"
+#define GOPT_PROTO_ANY_STR "any"
+
+#define VAL_POL_GOPT_UNSET -100
 
 #define VAL_POL_GOPT_DISABLE 0 
 #define VAL_POL_GOPT_ENABLE 1
 #define VAL_POL_GOPT_OVERRIDE 2
 
+#define VAL_POL_GOPT_MAXREFRESH 60
+
+#define VAL_POL_GOPT_PROTO_ANY 0 
+#define VAL_POL_GOPT_PROTO_IPV4 1 
+#define VAL_POL_GOPT_PROTO_IPV6 2 
 
 #define ZONE_PU_TRUSTED_MSG "trusted"
 #define ZONE_PU_UNTRUSTED_MSG "untrusted"
@@ -182,15 +204,10 @@ typedef struct val_context_opt {
 #define ZONE_SE_DO_VAL_MSG     "validate"
 #define ZONE_SE_UNTRUSTED_MSG  "untrusted"
 
-/* 
- * The following policies are deprecated. 
- * They are defined here for backwards compatibility
- */
-#define GOPT_TRUST_LOCAL_STR "trust-local-answers"
-
 #ifndef NS_MAXDNAME
 #define NS_MAXDNAME 1025
 #endif
+
 
     /*
      * Response structures  
@@ -367,6 +384,7 @@ typedef struct val_context_opt {
 
 #define VAL_AS_DONE                  0x01000000 /* have results/answers */
 #define VAL_AS_CALLBACK_CALLED       0x02000000 /* called user callbacks */
+#define VAL_AS_INFLIGHT              0x04000000 /* called user callbacks */
 
     /*
      * asynchronous events
@@ -417,6 +435,7 @@ typedef struct val_context_opt {
                                      val_async_status *as,
                                      unsigned int flags);
     int             val_async_cancel_all(val_context_t *context, unsigned int flags);
+    unsigned int    val_async_getflags(val_async_status *as);
 
     /*
      * backwards compatibility
@@ -453,15 +472,15 @@ typedef struct val_context_opt {
     /*
      * from val_context.h 
      */
-    int             val_create_context_with_conf(char *label,
+    int             val_create_context_with_conf(const char *label,
                                                  char *dnsval_conf,
                                                  char *resolv_conf,
                                                  char *root_conf,
                                                  val_context_t ** newcontext);
-    int             val_create_context_ex(char *label,
+    int             val_create_context_ex(const char *label,
                                           val_context_opt_t *opt,
                                           val_context_t ** newcontext);
-    int             val_create_context(char *label,
+    int             val_create_context(const char *label,
                                        val_context_t ** newcontext);
     void            val_free_context(val_context_t * context);
     int             val_free_validator_state(void);
@@ -615,9 +634,9 @@ typedef struct val_context_opt {
                    int class_h,
                    long ttl,
                    size_t rdatalen,
-                   u_char *rdata,
+                   unsigned char *rdata,
                    size_t *buflen,
-                   u_char **buf);
+                   unsigned char **buf);
 
     /*
      * utility functions. mostly used internal to libval.

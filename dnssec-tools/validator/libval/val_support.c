@@ -511,7 +511,7 @@ init_rr_set(struct rrset_rec *new_set, u_char * name_n,
     return VAL_NO_ERROR;
 }
 
-#define IS_THE_ONE(a,n,l,t,s,c,r) \
+#define IS_THE_ONE(a,n,t,s,c,r) \
 (                                                                             \
     a &&                                     /* If there's a record */        \
     (                                                                         \
@@ -561,7 +561,6 @@ find_rr_set(struct name_server *respondent_server,
     struct rrset_rec *tryit;
     struct rrset_rec *last;
     struct rrset_rec *new_one;
-    size_t             name_len;
 
     if ((the_list == NULL) || (name_n == NULL))
         return NULL;
@@ -571,7 +570,6 @@ find_rr_set(struct name_server *respondent_server,
      */
     tryit = *the_list;
     last = NULL;
-    name_len = wire_name_length(name_n);
 
     while (tryit) {
         /*
@@ -584,7 +582,7 @@ find_rr_set(struct name_server *respondent_server,
          * <hash>.example.com in the parent zone and
          * <hash>.a.example.com in the child zone
          */
-        if (IS_THE_ONE(tryit, name_n, name_len, type_h, set_type_h,
+        if (IS_THE_ONE(tryit, name_n, type_h, set_type_h,
                        class_h, rdata_n))
             break;
 
@@ -1025,7 +1023,7 @@ lower_name(u_char rdata[], size_t * index)
 
     length = wire_name_length(&rdata[(*index)]);
 
-    while ((*index) < length) {
+    while (length-- > 0) {
         rdata[(*index)] = tolower(rdata[(*index)]);
         (*index)++;
     }

@@ -241,10 +241,14 @@ val_log_assertion_pfx(const val_context_t * ctx, int level,
     int             class_h;
     int             type_h;
     struct          val_rr_rec  *data;
-    struct          val_rr_rec  *sig;
     struct          sockaddr *serv;
     val_astatus_t   status;
-    struct val_rr_rec  *curkey, *cursig;
+    struct val_rr_rec  *curkey;
+#undef VAL_LOG_SIG
+#ifdef VAL_LOG_SIG
+    struct          val_rr_rec  *sig;
+    struct val_rr_rec  *cursig;
+#endif
 
 
     if (next_as == NULL)
@@ -253,7 +257,9 @@ val_log_assertion_pfx(const val_context_t * ctx, int level,
     class_h = next_as->val_ac_rrset->val_rrset_class;
     type_h = next_as->val_ac_rrset->val_rrset_type;
     data = next_as->val_ac_rrset->val_rrset_data;
+#ifdef VAL_LOG_SIG
     sig = next_as->val_ac_rrset->val_rrset_sig;
+#endif
     serv = next_as->val_ac_rrset->val_rrset_server;
     status = next_as->val_ac_status;
 
@@ -300,7 +306,7 @@ val_log_assertion_pfx(const val_context_t * ctx, int level,
                 prefix, name_pr, p_class(class_h), p_type(type_h), serv_pr,
                 p_ac_status(status), status);
     }
-#if 0
+#ifdef VAL_LOG_SIG
     for (cursig = sig; cursig; cursig = cursig->rr_next) {
         char incpTime[1028];
         char exprTime[1028];
@@ -325,7 +331,7 @@ val_log_assertion_pfx(const val_context_t * ctx, int level,
     }
 #endif
 
-#if 0
+#ifdef VAL_LOG_SIG
     struct val_rr_rec  *rr;
     struct val_rr_rec  *sig = next_as->val_ac_rrset->val_rrset_sig;
     for (rr = data; rr; rr = rr->rr_next) {
@@ -765,9 +771,6 @@ val_log_filep(val_log_t * logp, const val_context_t * ctx, int level,
               const char *template, va_list ap)
 {
     char            buf[1028];
-    struct timeval  tv;
-    struct tm       tm;
-    struct tm       *tp;
 
     if (NULL == logp)
         return;
@@ -850,7 +853,7 @@ val_log_add_udp(val_log_t **log_head, int level, char *host, int port)
                 sizeof(logp->opt.udp.server)) <= 0) {
         CLOSESOCK(logp->opt.udp.sock);
         FREE(logp);
-        logp = NULL;
+        return NULL;
     }
 
     logp->logf = val_log_udp;

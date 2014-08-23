@@ -613,7 +613,7 @@ run_suite_async(val_context_t *context, testsuite *suite, testcase *start_test,
         return 0;
     }
 
-    memset(sstats, 0x00, sizeof(sstats));
+    memset(sstats, 0x00, sizeof(*sstats));
     i = tcs;
     sstats->remaining = tce - tcs + 1;
     sstats->in_flight = 0;
@@ -836,6 +836,8 @@ self_test(val_context_t *context, int tcs, int tce, u_int32_t flags,
         while(NULL != suite) {
             rc = run_test_suite(context, tcs, tce, flags, suite, doprint,
                                 max_in_flight);
+            if (rc)
+                fprintf(stderr, "bad rc %d from run_test_suite\n", rc);
             /** does rc mean anything? */
             suite = suite->next;
         }
@@ -856,6 +858,9 @@ self_test(val_context_t *context, int tcs, int tce, u_int32_t flags,
             else {
                 rc = run_test_suite(context, tcs, tce, flags, suite, doprint,
                                     max_in_flight);
+                if (rc)
+                    fprintf(stderr, "bad rc %d from run_test_suite %s\n",
+                            rc, name);
                 /** does rc mean anything? */
             }
             

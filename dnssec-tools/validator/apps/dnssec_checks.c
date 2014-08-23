@@ -34,9 +34,11 @@ int check_small_edns0(char *ns_name, char *buf, size_t buf_len) {
     u_char *response;
     size_t len;
 
-    ns = parse_name_server(ns_name, NULL);
+    ns = parse_name_server(ns_name, NULL, RES_USE_DNSSEC | RES_USE_EDNS0);
+    if (!ns)
+        RETURN_ERROR("query failed entirely");
+
     ns->ns_edns0_size = 512;
-    ns->ns_options |= RES_USE_DNSSEC | RES_USE_EDNS0;
 
     rc = get("test.dnssec-tools.org", ns_t_dnskey, ns_c_in, ns,
              &server, &response, &len);
@@ -66,8 +68,9 @@ int check_do_bit(char *ns_name, char *buf, size_t buf_len) {
     ns_rr           rr;
     int             rrnum;
 
-    ns = parse_name_server(ns_name, NULL);
-    ns->ns_options |= RES_USE_DNSSEC | RES_USE_EDNS0;
+    ns = parse_name_server(ns_name, NULL, RES_USE_DNSSEC | RES_USE_EDNS0);
+    if (!ns)
+        RETURN_ERROR("query failed entirely");
 
     rc = get("test.dnssec-tools.org", ns_t_dnskey, ns_c_in, ns,
              &server, &response, &len);

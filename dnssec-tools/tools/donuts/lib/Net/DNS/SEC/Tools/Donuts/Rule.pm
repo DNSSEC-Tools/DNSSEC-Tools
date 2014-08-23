@@ -14,56 +14,65 @@ our $VERSION="2.1";
 
 require Exporter;
 our @ISA = qw(Exporter);
-our @EXPORT = qw(donuts_error);
+our @EXPORT = qw(donuts_error donuts_status domain_status);
 
 sub new {
     my ($class, $ref) = @_;
 
-    # based on the rule type, eval the code 'test' string into a subroutine.
-    #   - if it is already a CODE ref, let it be
-    #   - if it has a sub { prefix, just eval as is
-    #   - otherwise, prepend some local convenience variable names and sub {} it
-    if (exists($ref->{'test'}) && ref($ref->{'test'}) ne 'CODE') {
-	if ($ref->{'test'} !~ /^\s*sub\s*{/) {
-	    my $code = "no strict;\n";
-	    $code .=   "package main;\n";
-	    $code .=   "sub {\n";
-
-	    if(exists($ref->{'requires'})) {
-		$code .= "my \$have_it;\n";
-		foreach my $require (split(/\s+/, $ref->{'requires'})) {
-		    $code .= "\$have_it = eval \"require $require;\";\n";
-		    $code .= "if (!\$have_it) { \n";
-		    $code .= "  return donuts_error('perl module \"$require\" is needed for this rule to run');\n";
-		    $code .= "}\n";
-		    $code .= "import $require;\n";
-		}
-	    }
-
-	    if (exists($ref->{'ruletype'}) && $ref->{'ruletype'} eq 'name') {
-		$code .= "  my (\$records, \$rule, \$recordname) = \@_;\n";
-	    } else {
-		# assume 'record' ruletype...
-		$code .= "  my (\$record, \$rule) = \@_;\n";
-	    }
-	    $code .= "
-                    $ref->{'test'}
-                    }";
-	    $ref->{'test'} = $code;
-	}
-
-	# create the CODE ref from the string
-	$ref->{'test'} = eval("$ref->{test}");
-
-	# if error, mention it
-	if ($@) {
-	    warn "broken code in test for rule '$ref->{name}': $@";
-	}
-    }
-
     bless $ref, $class;
+
+    $ref->create_code_ref('test');
+    $ref->create_code_ref('end');
+
     return $ref;
 }
+
+sub create_code_ref {
+	my ($ref, $label) = @_;
+	
+	# based on the rule type, eval the code 'test' string into a subroutine.
+	#   - if it is already a CODE ref, let it be
+	#   - if it has a sub { prefix, just eval as is
+	#   - otherwise, prepend some local convenience variable names and sub {} it
+	if (exists($ref->{$label}) && ref($ref->{$label}) ne 'CODE') {
+		if ($ref->{$label} !~ /^\s*sub\s*{/) {
+			my $code = "no strict;\n";
+			$code .=   "package main;\n";
+			$code .=   "sub {\n";
+
+			if (exists($ref->{'requires'})) {
+				$code .= "my \$have_it;\n";
+				foreach my $require (split(/\s+/, $ref->{'requires'})) {
+					$code .= "\$have_it = eval \"require $require;\";\n";
+					$code .= "if (!\$have_it) { \n";
+					$code .= "  return donuts_error('perl module \"$require\" is needed for this rule to run');\n";
+					$code .= "}\n";
+					$code .= "import $require;\n";
+				}
+			}
+
+			if (exists($ref->{'ruletype'}) && $ref->{'ruletype'} eq 'name') {
+				$code .= "  my (\$records, \$rule, \$recordname) = \@_;\n";
+			} else {
+				# assume 'record' ruletype...
+				$code .= "  my (\$record, \$rule) = \@_;\n";
+			}
+			$code .= "
+                    $ref->{$label}
+                    }";
+			$ref->{$label} = $code;
+		}
+
+		# create the CODE ref from the string
+		$ref->{$label} = eval("$ref->{$label}");
+
+		# if error, mention it
+		if ($@) {
+			warn "broken code in $label for rule '$ref->{name}': $@";
+		}
+	}
+}
+
 
 # XXX: deprecated
 sub output {
@@ -235,17 +244,77 @@ sub Error {
     }
 }
 
-my ($current_errors, $current_warnings);
+sub Status {
+    my ($self, $status) = @_;
+    if (exists($self->{'donuts'})) {
+	$self->{'donuts'}->Status($status);
+    } else {
+	print STDERR $status;
+    }
+}
+
+my ($current_errors, $current_warnings, $current_statuses);
 sub donuts_error {
     push @$current_errors, @_;
     return;
 }
 
+sub donuts_status {
+	push @$current_statuses, @_;
+}
+
+my $current_donuts;
+sub domain_status {
+	if ($current_donuts) {
+		$current_donuts->add_status(@_);
+	} else {
+		warn "tried to log a status but no rules have been run yet?";
+	}
+}
+
+sub execute_code {
+	my ($rule, $label, @args) = @_;
+	my $result;
+	
+	return if (!exists($rule->{$label}) || !defined($rule->{$label}));
+
+	# Set global variables needed by rules
+	$main::current_domain = $rule->{'donuts'}->domain();
+
+	# execute the code
+	if (exists($rule->{$label})) {
+		if (ref($rule->{$label}) eq 'CODE') {
+			# passed code is a subroutine reference
+			# we still wrap it in an eval to ensure we don't crash
+			$result = eval {
+				$rule->{$label}->(@args);
+			}
+		} else {
+			# passed code is a straight code block in raw text
+			$result = eval $rule->{$label};
+		}
+	}
+
+    # Did it fail to execute?  Report it
+	if (!defined($result) && $@) {
+		$rule->Error("\nProblem executing '$label' for rule $rule->{name}: \n");
+		$rule->Error("  Location: $rule->{code_file}:$rule->{code_line}\n");
+		$rule->Error("  Error:    $@\n");
+		return $result;
+	}
+
+	return $result;
+}
+
 sub run_test_for_errors {
     my ($rule, $file, $testargs, $errorargs) = @_;
 
-    $current_errors = [];
+    $current_errors   = [];
+    $current_statuses = [];
+    $current_donuts = $rule->{'donuts'};
 
+    # load the test and run it
+    # (in an eval to detect crashes)
     my $res = eval {
 	import Net::DNS::SEC::Tools::Donuts::Rule qw(donuts_error);
 
@@ -254,6 +323,8 @@ sub run_test_for_errors {
 
 	$rule->{'test'}->(@$testargs);
     };
+
+    # Did it fail to execute?  Report it
     if (!defined($res) && $@) {
 	$rule->Error("\nProblem executing rule $rule->{name}: \n");
 	$rule->Error("  ZoneData: $file\n");
@@ -261,6 +332,11 @@ sub run_test_for_errors {
 	$rule->Error("  Error:    $@\n");
 	return (1,1,[]); # XXX: need to return this data instead
     }
+
+    # pre-pend our summary statuses
+    unshift @$current_errors, @$current_statuses; 
+
+    # Create the resulting results array
     if (ref($res) ne 'ARRAY') {
 	if ($res) {
 	    $res = [@$current_errors, $res];

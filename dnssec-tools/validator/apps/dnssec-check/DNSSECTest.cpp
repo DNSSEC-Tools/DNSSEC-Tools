@@ -5,7 +5,7 @@
 
 DNSSECTest::DNSSECTest(QObject *parent, CheckFunction *check_function, const char *serverAddress, const QString &checkName, bool isAsync, DNSSECCheckThread *otherThread) :
     QObject(parent), m_status(UNKNOWN), m_checkFunction(check_function), m_serverAddress(0), m_checkName(checkName), m_statusStrings(),
-    m_async(isAsync), m_otherThread(otherThread), m_result_status(-1)
+    m_async(isAsync), m_result_status(-1), m_otherThread(otherThread)
 {
     if (serverAddress)
         m_serverAddress = strdup(serverAddress);
@@ -128,7 +128,7 @@ int DNSSECTest::statusToRc(DNSSECTest::lightStatus status) {
 
 void DNSSECTest::setMessage(const QString &message)
 {
-    strncpy(m_msgBuffer, message.toAscii().data(), sizeof(m_msgBuffer)-1);
+    strncpy(m_msgBuffer, message.toLatin1().data(), sizeof(m_msgBuffer)-1);
     emit messageChanged();
     emit messageChanged(message);
 }

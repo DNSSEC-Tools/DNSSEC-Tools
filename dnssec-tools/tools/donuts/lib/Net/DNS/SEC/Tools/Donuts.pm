@@ -11,6 +11,7 @@ use Net::DNS::SEC::Tools::Donuts::Rule;
 use Net::DNS::SEC::Tools::dnssectools;
 
 use Net::DNS::SEC::Tools::Donuts::Output;
+use Data::Dumper;
 
 our $VERSION="2.1";
 
@@ -258,7 +259,7 @@ sub parse_rule_file {
 	$ruledef .= $_;
 
 	# deal with multi-line records
-	if (/(<|)(test|init)(>|:)/) {
+	if (/(<|)(test|init|end)(>|:)/) {
 	    my $type = $2;
 	    my $xmllike = 0;
 	    $xmllike = 1 if ($1 eq '<');
@@ -269,7 +270,7 @@ sub parse_rule_file {
 		# rule code must begin with white space
 		$count++;
 		last if ((!$xmllike && (!/^\s/ || /^\s*$/)) ||
-			 ($xmllike && /<\/(test|init)>/));
+			 ($xmllike && /<\/(test|init|end)>/));
 		$code .= $_;
 		$ruledef .= $_;
 	    }
@@ -285,10 +286,10 @@ sub parse_rule_file {
 		    $err = 1;
 		}
 	    } else {
-		$rule->{'test'} = $code;
+		$rule->{$type} .= $code;
 	    }
 
-	    if (defined($_) && !/^\s/ && !/<\/(test|init)/) {
+	    if (defined($_) && !/^\s/ && !/<\/(test|init|end)/) {
 		$count--;
 		$nextline = $_;
 	    }
@@ -394,6 +395,11 @@ sub Warning {
     print STDERR $message;
 }
 
+sub Status {
+    my ($self, $message, $tag) = @_;
+    print STDERR $message;
+}
+
 sub Verbose {
     my ($self, $message, $level) = @_;
     if ($self->config('verbose')) {
@@ -488,6 +494,7 @@ sub analyze_records {
     $self->output()->StartArray("Record Results");
     $self->output()->Comment("Analyzing individual records in $self->{zonesource}");
 
+    # for each record, execute the rule's tests
     foreach my $rec (@$rrset) {
 	foreach my $r (@rules) {
 	    next if ($self->rule_is_ignored($r));
@@ -505,6 +512,18 @@ sub analyze_records {
 	    push @{$recordByNameType->{lc($rec->name)}{$rec->type}}, $rec;
 	}
 	$firstrun = 0;
+    }
+
+    # run the 'end' routines for each rule, if they have one
+    foreach my $r (@rules) {
+	    next if ($self->rule_is_ignored($r));
+	    next if (!$self->rule_is_only($r));
+	    next if (!exists($r->{'end'}));
+
+	    # drop anything that isn't a record type, or nothing (record is the default)
+	    next if (defined($r->{'ruletype'}) && $r->{'ruletyp'} ne 'record');
+
+	    $r->execute_code('end');
     }
 
     $self->output()->EndArray();
@@ -525,6 +544,17 @@ sub create_name_type_cache {
     }
 
     return \%recordByNameTypeCache;
+}
+
+my @statuses;
+sub add_status {
+	my ($self, @newstatuses) = @_;
+	
+	push @statuses, \@newstatuses;
+}
+
+sub reset_statuses {
+	@statuses = ();
 }
 
 sub analyze_names {
@@ -558,6 +588,16 @@ sub analyze_names {
             $rulecount += $rulesrun if ($firstrun);
         }
         $firstrun = 0;
+    }
+
+    # run the 'end' routines for each rule, if they have one
+    foreach my $r (@rules) {
+	    next if ($self->rule_is_ignored($r));
+	    next if (!$self->rule_is_only($r));
+	    next if (!exists($r->{'end'}));
+	    next if ($r->{'ruletype'} ne 'name');
+
+	    $r->execute_code('end');
     }
 
     $self->output()->EndArray();
@@ -616,11 +656,17 @@ sub donuts_records_by_name_and_type {
     find_records_by_name_and_type(@_);
 }
 
+sub reset {
+	my ($self) = @_;
+	$self->reset_statuses();
+}
+
 sub analyze {
     my ($self, $level) = @_;
     $self->set_global();
 
     my ($rulecount, $errcount) = (0,0);
+    $self->reset_statuses();
 
     my $verbose = $self->config('verbose') || 0;
     $level = $level || $self->config('level') || 5;
@@ -654,6 +700,18 @@ sub summarize_results {
     $output->Output("Records Analyzed",      (1+$#{$self->zone_records()}));
     $output->Output("Names Analyzed",        $self->name_count());
     $output->Output("Errors Found",          $self->{'errcount'});
+    $output->EndSection();
+    $output->EndOutput();
+}
+
+sub show_statuses {
+    my ($self) = @_;
+    my $output = $self->output();
+    $output->StartOutput();
+    $output->StartSection("Domain Status",  $self->{'domain'});
+    foreach my $status (@statuses) {
+	    $output->Output(@$status);
+    }
     $output->EndSection();
     $output->EndOutput();
 }

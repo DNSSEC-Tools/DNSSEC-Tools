@@ -366,12 +366,15 @@ get_addrinfo_from_etc_hosts(val_context_t * ctx,
 {
     struct hosts   *hs = NULL;
     struct addrinfo *retval = NULL;
-    int ret;
+    int ret = EAI_NONAME;
+    struct hosts   *h_prev = NULL;
+    struct addrinfo *ainfo = NULL;
 
     if (res == NULL) 
         return 0;
 
-    val_log(ctx, LOG_DEBUG, "get_addrinfo_from_etc_hosts(): Parsing /etc/hosts");
+    val_log(ctx, LOG_DEBUG, "get_addrinfo_from_etc_hosts(): Parsing "
+            ETC_HOSTS);
 
     /*
      * Parse the /etc/hosts/ file 
@@ -390,15 +393,13 @@ get_addrinfo_from_etc_hosts(val_context_t * ctx,
         size_t addrlen6 = sizeof(struct sockaddr_in6);
 #endif
 #endif
-        struct hosts   *h_prev = hs;
-        struct addrinfo *ainfo;
+        h_prev = hs;
 
         ainfo =
             (struct addrinfo *) malloc(sizeof(struct addrinfo));
         if (!ainfo) {
-            if (retval)
-                val_freeaddrinfo(retval);
-            return EAI_MEMORY;
+            ret = EAI_MEMORY;
+            goto err;
         }
 
         //val_log(ctx, LOG_DEBUG, "{");
@@ -427,10 +428,8 @@ get_addrinfo_from_etc_hosts(val_context_t * ctx,
             struct sockaddr_in *saddr4 =
                 (struct sockaddr_in *) malloc(sizeof(struct sockaddr_in));
             if (saddr4 == NULL) {
-                if (retval)
-                    val_freeaddrinfo(retval);
-                val_freeaddrinfo(ainfo);
-                return EAI_MEMORY;
+                ret = EAI_MEMORY;
+                goto err;
             }
             memset(saddr4, 0, sizeof(struct sockaddr_in));
             ainfo->ai_family = AF_INET;
@@ -448,10 +447,8 @@ get_addrinfo_from_etc_hosts(val_context_t * ctx,
             struct sockaddr_in6 *saddr6 = (struct sockaddr_in6 *)
                 malloc(sizeof(struct sockaddr_in6));
             if (saddr6 == NULL) {
-                if (retval)
-                    val_freeaddrinfo(retval);
-                val_freeaddrinfo(ainfo);
-                return EAI_MEMORY;
+                ret = EAI_MEMORY;
+                goto err;
             }
             memset(saddr6, 0, sizeof(struct sockaddr_in6));
             ainfo->ai_family = AF_INET6;
@@ -474,12 +471,9 @@ get_addrinfo_from_etc_hosts(val_context_t * ctx,
          * Expand the results based on servname and hints 
          */
         if ((ret = process_service_and_hints(servname, hints, &ainfo)) != 0) {
-            val_freeaddrinfo(ainfo);
-            if (retval)
-                val_freeaddrinfo(retval);
             val_log(ctx, LOG_INFO, 
                     "get_addrinfo_from_etc_hosts(): Failed in process_service_and_hints()");
-            return ret;
+            goto err;
         }
 
         if (retval) {
@@ -492,7 +486,8 @@ get_addrinfo_from_etc_hosts(val_context_t * ctx,
         FREE_HOSTS(h_prev);
     }
 
-    val_log(ctx, LOG_DEBUG, "get_addrinfo_from_etc_hosts(): Parsing /etc/hosts OK");
+    val_log(ctx, LOG_DEBUG, "get_addrinfo_from_etc_hosts(): Parsing "
+            ETC_HOSTS " OK");
 
     *res = retval;
     if (retval) {
@@ -500,6 +495,21 @@ get_addrinfo_from_etc_hosts(val_context_t * ctx,
     } else {
         return EAI_NONAME;
     }
+
+err:
+    if (ainfo) {
+        val_freeaddrinfo(ainfo);
+    }
+    if (retval) {
+        val_freeaddrinfo(retval);
+    }
+
+    while (hs) {
+        h_prev = hs;
+        hs = hs->next;
+        FREE_HOSTS(h_prev);
+    }
+    return ret;
 }                               /* get_addrinfo_from_etc_hosts() */
 
 
@@ -1263,8 +1273,6 @@ val_getnameinfo(val_context_t * context,
 
     val_log(ctx, LOG_DEBUG, "val_getnameinfo(): called");
 
-    *val_status = VAL_UNTRUSTED_ANSWER;
-
     /*
      * check misc parameters, there should be at least one of host or
      * server, check if flags indicate host is required 
@@ -1273,6 +1281,8 @@ val_getnameinfo(val_context_t * context,
       retval = EAI_FAIL;
       goto done;
     }
+
+    *val_status = VAL_UNTRUSTED_ANSWER;
 
     if (!host && !serv) {
       retval = EAI_NONAME;
@@ -1573,6 +1583,8 @@ _vgai_async_callback(val_async_status *as, int event,
         val_log(ctx, LOG_DEBUG, "val_getaddrinfo no callback data!");
         return VAL_NO_ERROR;
     }
+    gai_rc = EAI_FAIL;
+
     val_log(ctx, LOG_DEBUG,
             "val_getaddrinfo async callback for %p, %s %s(%d)", as,
             vgai->nodename, p_type(cbp->type_h), cbp->type_h);
@@ -1789,6 +1801,7 @@ val_getaddrinfo_submit(val_context_t * context, const char *nodename,
                              VAL_AS_CANCEL_NO_CALLBACKS);
             goto done;
         }
+        // XXX SK: Are these two lines really required?
         vgai->inet6_status->val_as_result_cb = &_vgai_async_callback;
         vgai->inet6_status->val_as_cb_user_ctx = vgai;
     }

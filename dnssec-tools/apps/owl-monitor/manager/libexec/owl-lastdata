@@ -1,0 +1,638 @@
+#!/usr/bin/perl
+#
+# Copyright 2014 SPARTA, Inc.  All rights reserved.
+# See the COPYING file distributed with this software for details.
+#
+# owl-lastdata
+#
+#	This script retrieves the DNS response data gathered by an Owl sensor.
+#	It runs on the Owl manager and provides data for use by a Nagios
+#	monitoring environment.
+#
+#	File organization:
+#		/owl/data/owldev1/data/
+#		/owl/data/owldev1/history/
+#		/owl/data/owldev1/history/dnstimer
+#
+#
+# Revision History
+#	1.0	Initial version.				140608
+#
+
+use strict;
+
+use Getopt::Long qw(:config no_ignore_case_always);
+
+#######################################################################
+#
+# Version information.
+#
+my $NAME   = "owl-lastdata";
+my $VERS   = "$NAME version: 1.0.0";
+my $DTVERS = "DNSSEC-Tools version: 2.0";
+
+#######################################################################
+#
+# Paths.
+#
+#	The installer must set the value of $OWLDIR to reflect the
+#	desired file hierarchy.
+#	The $sub_data and $subhist values may be set, but the values
+#	given below are sufficient.
+#
+
+my $OWLDIR	 = '/owl';		# Owl directory.
+my $OWLDATA	 = '/owl/data';		# Owl data directory.
+
+my $sub_data = 'data';			# Subdirectory for dnstimer data.
+
+my $datadir;				# Data directory.
+
+#######################################################################
+#
+# Nagios return codes.
+#
+my $RC_NORMAL	= 0;			# Normal return code.
+my $RC_WARNING	= 1;			# Warning return code.
+my $RC_CRITICAL	= 2;			# Critical return code.
+my $RC_UNKNOWN	= 3;			# Unknown return code.
+
+
+my $HOUR		= 3600;		# Seconds in an hour.
+my $WARNING_THRESHOLD	= $HOUR;	# Warning threshold for late queries.
+my $CRITICAL_THRESHOLD	= (6 * $HOUR);	# Critical threshold for late queries.
+
+######################################################################r
+#
+# Data required for command line options.
+#
+my %options = ();			# Filled option array.
+my @opts =
+(
+	'Version',			# Display the version number.
+	'help',				# Give a usage message and exit.
+);
+
+#######################################################################
+#
+# Data from command line.
+#
+
+my $sensor = '';				# Owl sensor host.
+my $query = '';					# Type of Owl query.
+my $querytype = '';				# Query as given by user.
+
+#
+# Valid query arguments and what they indicate we should look for.
+#
+my %queries =
+	(
+		'all'		=> '*',
+		'anycast'	=> '*,ANYCAST.dns',
+		'dns'		=> '*.dns',
+		'rrec'		=> '*.rrec',
+		'rrsec'		=> '*.rrsec',
+		'rsrc'		=> '*.rsrc',
+	);
+
+#######################################################################
+
+my $rc = $RC_UNKNOWN;			# Command's return code.
+
+my @datafiles;				# Files for this sensor/query.
+
+################################################################################
+
+#
+# Run shtuff.
+#
+$rc = main();
+exit($rc);
+
+#-----------------------------------------------------------------------------
+# Routine:	main()
+#
+# Purpose:	Main controller routine for owl-lastdata.
+#
+sub main
+{
+	my $retcode = 0;			# Service's return code.
+	my $kronos;				# Timestamp of last entry.
+
+	#
+	# Check our options.
+	#
+	doopts();
+
+	#
+	# Get the names of our data directory.
+	#
+	getdatadir();
+
+	#
+	# Get the names of the files to check for data.
+	#
+	getfiles();
+
+	#
+	# Get timestamp of the most recent entry for this sensor/query pair.
+	#
+	$kronos = getlast();
+
+	#
+	# Figure out what to tell Nagios about the most recent entry.
+	#
+	$retcode = checktime($kronos);
+
+	#
+	# Exit with the command's return code.
+	#
+	return($retcode);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	doopts()
+#
+# Purpose:	This routine shakes and bakes our command line options.
+#
+sub doopts
+{
+	#
+	# Parse the command line.
+	#
+	GetOptions(\%options,@opts) || usage();
+
+	#
+	# Show the version number or usage if requested.
+	#
+	version()   if(defined($options{'Version'}));
+	usage()     if(defined($options{'help'}));
+
+	usage() if(@ARGV != 2);
+
+	#
+	# Get our arguments.
+	#
+	$sensor	   = $ARGV[0];
+	$querytype = lc($ARGV[1]);
+
+	#
+	# Ensure the query type is valid.
+	#
+	if(!defined($queries{$querytype}))
+	{
+		print "unknown query type - \"$querytype\"\n";
+		exit($RC_UNKNOWN);
+	}
+
+	#
+	# Translate the query into the globstring we'll use.
+	#
+	$query = $queries{$querytype};
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	getdatadir()
+#
+# Purpose:	Build the data directory's name. 
+#		Give an unknown error if the data directory doesn't exist.
+#
+sub getdatadir
+{
+	#
+	# Build the directory name we'll need.
+	#
+	$datadir = "$OWLDATA/$sensor/$sub_data";
+
+	#
+	# Ensure the data directory exists.
+	#
+	if(! -e $datadir)
+	{
+		print "data directory \"$datadir\" does not exist\n";
+		exit($RC_UNKNOWN);
+	}
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	getfiles()
+#
+# Purpose:	Get the data files for this sensor/query pair.
+#		Give an unknown error if there aren't any.
+#		Look for data in the old data location ($datadir) and in
+#		the new data location ($datadir/$querytype).
+#
+sub getfiles
+{
+	@datafiles = sort(glob("$datadir/$query"));
+	if(@datafiles == 0)
+	{
+		@datafiles = sort(glob("$datadir/$querytype/$query"));
+		if(@datafiles == 0)
+		{
+			if($query eq '*')
+			{
+				print "no query results available for $sensor\n";
+			}
+			else
+			{
+				print "no $querytype query results available for $sensor\n";
+			}
+			exit($RC_UNKNOWN);
+		}
+	}
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	getlast()
+#
+# Purpose:	Get the last file and entry for this sensor/service pair.
+#
+sub getlast
+{
+	my $kronos;				# Timestamp of last entry.
+
+	#
+	# Read the file list backwards to find the most recent valid
+	# query entry.  We'll skip zero-length files.
+	#
+	for(my $ind = @datafiles; $ind >= 0; $ind--)
+	{
+		my $fn = $datafiles[$ind];	# Data file to read.
+		my $data = ();			# Contents of data file.
+		my $kronos;			# Timestamp of last entry.
+
+		#
+		# Go to previous file if this one is empty.
+		#
+		next if(-z $fn);
+
+		#
+		# Get the last entry from the data file.
+		#
+		$kronos = readfile($fn);
+
+		#
+		# If we found a valid entry, we'll return it.
+		#
+		return($kronos) if($kronos > 0);
+	}
+
+	#
+	# If we found a valid entry, we'll return it.
+	#
+	return(-1);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	readfile()
+#
+# Purpose:	Get the last file and entry for this sensor/service pair.
+#
+sub readfile
+{
+	my $fn = shift;				# Data file to read.
+	my @data = ();				# Contents of data file.
+	my $qtype = $querytype;			# Copy of query type.
+	my $kronos = -1;			# Timestamp of entry.
+
+	#
+	# Read the data file.
+	#
+	open(DF,"< $fn") || next;
+	@data = <DF>;
+	close(DF);
+
+	#
+	# Get the file's query type if we're looking at any query type.
+	# We'll take it from the file suffix, unless it's an anycast file.
+	#
+	if($qtype eq 'all')
+	{
+		if($fn =~ /,ANYCAST.dns$/)
+		{
+			$qtype = 'anycast';
+		}
+		else
+		{
+			$fn =~ /\.([a-z]+)$/;
+			$qtype = $1;
+		}
+	}
+
+	#
+	# Get the file's query type if we're looking at any query type.
+	#
+	for(my $ind = 0; $ind < @data; $ind++)
+	{
+		my $line;			# Current line in data file.
+		my $datalen = 0;		# Length of entry's data.
+
+		#
+		# Get the entry's first line.
+		#
+		$line = $data[$ind];
+		chomp($line);
+
+		#
+		# Get the entry's timestamp from the entry, and the length
+		# of any associated data.
+		#
+		($kronos, $datalen) = parseline($qtype,$line);
+
+		#
+		# Skim past any additional data the entry has.  We'll make
+		# sure we don't go past the end of the entry or the end of
+		# the file.
+		#
+		if($datalen)
+		{
+			for($ind++; $ind < @data; $ind++)
+			{
+				my $dln;		# The entry's data line.
+
+				$dln = $data[$ind];
+				$datalen -= length($dln);
+				last if($datalen <= 0);
+			}
+		}
+
+	}
+
+	#
+	# Return the timestamp of the most recent file.
+	#
+	return($kronos);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	parseline()
+#
+# Purpose:	Parse a line of Owl data to find the entry's timestamp and
+#		the length of any associated data.
+#
+sub parseline
+{
+	my $qtype = shift;			# Type of query file.
+	my $line = shift;			# Data line to parse.
+	my $kronos = -1;			# Timestamp of entry.
+	my $datalen = 0;			# Length of entry's data.
+
+	#
+	# Get the entry's timestamp from the entry, and the length
+	# of any associated data.
+	#
+	if($qtype eq 'anycast')
+	{
+		$line =~ /^([0-9]+).[0-9]+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+$/;
+		$kronos	= $1;
+	}
+	elsif($qtype eq 'dns')
+	{
+		$line =~ /^([0-9]+).[0-9]+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+\s*$/;
+		$kronos	= $1;
+	}
+	elsif($qtype eq 'rrec')
+	{
+		$line =~ /^([0-9]+).[0-9]+\s+\S+\s+\S+\s+\S+\s+\S+\s+(\d+)$/;
+		$kronos	 = $1;
+		$datalen = $2;
+	}
+	elsif($qtype eq 'rrsec')
+	{
+		$line =~ /^([0-9]+).[0-9]+\s+\S+\s+\S+\s+\S+\s+\S+\s+(\d+)$/;
+		$kronos	 = $1;
+		$datalen = $2;
+	}
+	elsif($qtype eq 'rsrc')
+	{
+		#
+		# owl-resources data files have a blank line between
+		# entries, so we've got to bump the datalen a little.
+		#
+		$line =~ /^([0-9]+).[0-9]+\s+\S+\s+(\d+)$/;
+		$kronos	 = $1;
+		$datalen = $2 + 1;
+	}
+
+	#
+	# Return the timestamp and data length.
+	#
+	return($kronos,$datalen);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	checktime()
+#
+# Purpose:	Give a line of output to Nagios and determine the exit code.
+#		The exit code will depend on comparing the last entry's
+#		timestamp to the current time.
+#
+sub checktime
+{
+	my $kronos = shift;			# Timestamp of latest entry.
+	my $tempus;				# Time difference.
+	my $rc = $RC_NORMAL;			# Return value.
+
+	#
+	# Determine the return code.
+	#
+	$tempus = time - $kronos;
+	if($tempus > $CRITICAL_THRESHOLD)
+	{
+		$rc = $RC_CRITICAL;
+	}
+	elsif($tempus > $WARNING_THRESHOLD)
+	{
+		$rc = $RC_WARNING;
+	}
+
+	#
+	# Give a line of output for Nagios.
+	#
+	nagiout($tempus);
+
+	#
+	# Return the response data.
+	#
+	return($rc);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	nagiout()
+#
+# Purpose:	Generate a line of output for Nagios.
+#
+sub nagiout
+{
+	my $tdiff = shift;				# Time difference.
+	my $outstr;					# Output string.
+	my $tempus;					# Time string.
+	my $adj = $tdiff;				# Adjusted time.
+
+	if($tdiff < 60)
+	{
+		$tempus = sprintf("%5.1f %s", $tdiff, ($tdiff == 1) ? "second" : "seconds");
+	}
+	elsif($tdiff < 3600)
+	{
+		$adj = $tdiff / 60;
+		$tempus = sprintf("%5.1f %s", $adj, ($adj == 1) ? "minute" : "minutes");
+	}
+	elsif($tdiff < 86400)
+	{
+		$adj = $tdiff / 3600;
+		$tempus = sprintf("%5.1f %s", $adj, ($adj == 1) ? "hour" : "hours");
+	}
+	else
+	{
+		$adj = $tdiff / 86400;
+#		$tempus = "$adj " . (($adj == 1) ? "day" : "days");
+		$tempus = sprintf("%5.1f %s", $adj, ($adj == 1) ? "day" : "days");
+	}
+
+	$outstr = "last entry is $tempus old";
+
+	print "$outstr\n";
+}
+
+#----------------------------------------------------------------------
+# Routine:	version()
+#
+sub version
+{
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+	exit(1);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	usage()
+#
+sub usage
+{
+	print STDERR "$VERS
+$DTVERS
+Copyright 2014 SPARTA, Inc.  All rights reserved.
+
+This script retrieves the DNS timer data gathered by a Owl sensor.
+
+
+usage:  owl-lastdata [options] <sensor> <query>
+	options:
+		-Version        display program version
+		-help           display this message
+
+";
+
+	exit(1);
+}
+
+1;
+
+###############################################################################
+
+=pod
+
+=head1 NAME
+
+owl-lastdata - Nagios plugin to display time of most recent response from an Owl sensor
+
+=head1 SYNOPSIS
+
+  owl-lastdata [options] <sensor> <query>
+
+=head1 DESCRIPTION
+
+B<owl-lastdata> displays the time of the most recent response from an Owl
+sensor.  This provides an easy way to see that an Owl sensor is still
+providing data to the Owl manager.
+
+The I<query> argument indicates the type of data whose time will be checked.
+These are the valid I<query> arguments that may be used:
+
+    all         Check all data files in the sensor's data directory.
+    anycast     Check ANYCAST-specific DNS-timer data files.
+    dns         Check DNS-timer data files.
+    rrec        Check resource-record data files.
+    rrsec       Check DNSSEC-specific resource-record data files.
+    rsrc        Check sensor-resource data files.
+
+If B<owl-lastdata> time is being used as a Nagios plugin, then its
+exit code will be:
+
+    0 (normal)    most recent time is within an hour
+    1 (warning)   most recent time is between an hour and six hours
+    2 (critical)  most recent time is more than six hours
+    3 (unknown)   invalid query type, non-existent data directory,
+		  no data for requested query type
+
+The data directories are hard-coded in B<owl-lastdata>, and are expected
+to be in B</owl/data/<sensor>/data>.
+
+B<owl-lastdata> is expected to only be run by the Nagios monitoring system,
+but it may be run manually.
+
+=head1 NAGIOS USE
+
+B<owl-lastdata> is run from a Nagios I<command> object.  These are examples
+of how the Nagios objects should be defined:
+
+    define command {
+         command_name    owl-lastdata
+         command_line    $USER1$/owl-lastdata $ARG1$ $ARG2$
+    }
+
+    define service {
+         service_description     last dnstimer data
+         host_name               sensor42
+         check_command		 owl-lastdata!sensor42!dns
+         active_checks_enabled   1 
+         ...
+    }
+
+    define service {
+         service_description     last sensor data
+         host_name               sensor42
+         check_command		 owl-lastdata!sensor42!all
+         active_checks_enabled   1 
+         ...
+    }
+
+=head1 OPTIONS
+
+The following options are recognized by B<owl-lastdata>:
+
+=over 4
+
+=item I<-Version>
+
+Display the program version and exit.
+
+=item I<-help>
+
+Display a usage message and exit.
+
+=back
+
+=head1 SEE ALSO
+
+B<owl-dnstimer(1)>,
+B<owl-rrdata(1)>,
+B<owl-rrsec(1)>,
+B<owl-resources(1)>
+
+Nagios
+
+=head1 COPYRIGHT
+
+Copyright 2014 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@tislabs.com
+
+=cut
+

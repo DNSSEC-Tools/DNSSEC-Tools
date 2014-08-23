@@ -48,6 +48,9 @@
     } while(0)
 
 
+static long     _max_fd = 0;
+static long     _open_sockets = 0;
+
 #define MAX_TRANSACTIONS    128
 static struct expected_arrival *transactions[MAX_TRANSACTIONS] = {
     NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
@@ -116,15 +119,13 @@ bind_to_random_source(int af, SOCKET s)
             sa = (struct sockaddr *) &sa4;
             sock_size = sizeof(struct sockaddr_in);
 #ifdef VAL_IPV6
-        } else if (af == AF_INET6) {
+        } else {
             sa6.sin6_port = htons(next_port);
             sa = (struct sockaddr *) &sa6;
             sock_size = sizeof(struct sockaddr_in6);
 #endif
-        } else {
-            res_log(NULL,LOG_ERR,"libsres: could not bind to random port for unsupported address family %d", af);
-            return 1; /* failure */
-        }
+        } 
+
         if (0 == bind(s, sa, sock_size)) {
             //res_log(NULL,LOG_ERR,"libsres: bound to random port %d", next_port);
             return 0; /* success */
@@ -135,6 +136,49 @@ bind_to_random_source(int af, SOCKET s)
     res_log(NULL,LOG_ERR,"libsres: could not bind to random port");
 
     return 1; /* failure */
+}
+
+/*
+ * find the max number of file descriptors for this process
+ */
+static int _init_max_fd(void) {
+    struct rlimit info;
+    int rc;
+    int lim;
+
+#ifndef HAVE_GETRLIMIT
+    /** hmm, cannot get current value. let's just guess. */
+    info.rlim_cur = info.rlim_max = SR_IO_NOFILE_UNKNOWN_SIZE;
+#else
+    rc = getrlimit( RLIMIT_NOFILE, &info);
+    if (rc) {
+        /** hmm, cannot get current value. let's just guess. */
+        info.rlim_cur = info.rlim_max = SR_IO_NOFILE_UNKNOWN_SIZE;
+    }
+#ifdef HAVE_SETRLIMIT
+    else if (info.rlim_cur < info.rlim_max) {
+        int prev = info.rlim_cur;
+        info.rlim_cur = info.rlim_max;
+        rc = setrlimit( RLIMIT_NOFILE, &info);
+        if (rc) /* oh well, we tried. revert to previous limit */
+            info.rlim_cur = prev;
+    }
+#endif /* HAVE_GETRLIMIT */
+#endif /* HAVE_GETRLIMIT */
+    lim = info.rlim_cur - SR_IO_NOFILE_RESERVED;
+    if (lim <= 0)
+        lim = 1;
+    return lim;
+}
+
+long
+res_io_get_max_fd(void) {
+    return _max_fd;
+}
+
+long
+res_io_get_open_sockets(void) {
+    return _open_sockets;
 }
 
 long
@@ -170,8 +214,10 @@ res_sq_free_expected_arrival(struct expected_arrival **ea)
     if ((*ea)->name != NULL)
         free((*ea)->name);
 #endif
-    if ((*ea)->ea_socket != INVALID_SOCKET)
+    if ((*ea)->ea_socket != INVALID_SOCKET) {
         CLOSESOCK((*ea)->ea_socket);
+        --_open_sockets;
+    }
     if ((*ea)->ea_signed)
         FREE((*ea)->ea_signed);
     if ((*ea)->ea_response)
@@ -262,6 +308,7 @@ res_io_retry_source(struct expected_arrival *ea)
     /* close socket */
     if (ea->ea_socket != INVALID_SOCKET) {
         CLOSESOCK(ea->ea_socket);
+        --_open_sockets;
         ea->ea_socket = INVALID_SOCKET;
     }
 
@@ -282,6 +329,7 @@ res_io_reset_source(struct expected_arrival *ea)
     /* close socket */
     if (ea->ea_socket != INVALID_SOCKET) {
         CLOSESOCK(ea->ea_socket);
+        --_open_sockets;
         ea->ea_socket = INVALID_SOCKET;
     }
 
@@ -302,6 +350,7 @@ res_io_cancel_source(struct expected_arrival *ea)
     /* close socket */
     if (ea->ea_socket != INVALID_SOCKET) {
         CLOSESOCK(ea->ea_socket);
+        --_open_sockets;
         ea->ea_socket = INVALID_SOCKET;
     }
 
@@ -346,15 +395,31 @@ res_io_send(struct expected_arrival *shipit)
     size_t          socket_size;
     size_t          bytes_sent;
     long            delay;
+    struct timeval  timeout;
 
     if (shipit == NULL)
         return SR_IO_INTERNAL_ERROR;
 
+    /** init _max_fd as needed */
+    if (0 == _max_fd) {
+        _max_fd =  _init_max_fd();
+        res_log(NULL, LOG_INFO, "libsres: ""max fd  initialized to %d", _max_fd);
+    }
+
     socket_type = (shipit->ea_using_stream == 1) ? SOCK_STREAM : SOCK_DGRAM;
     socket_proto = (socket_type == SOCK_STREAM) ? IPPROTO_TCP : IPPROTO_UDP;
-    res_log(NULL, LOG_DEBUG, "libsres: ""ea %p SENDING type %d %s", shipit,
+    res_log(NULL, LOG_DEBUG, "libsres: ""ea %p SENDING type %d %s over %s",
+            shipit,
             shipit->ea_ns->ns_address[shipit->ea_which_address]->ss_family,
-            shipit->ea_using_stream ? "stream" : "dgram");
+            shipit->ea_using_stream ? "stream" : "dgram",
+            (socket_proto == IPPROTO_TCP) ? "tcp" : "udp");
+
+    /* don't send too many packets at once. */
+    if (shipit->ea_socket == INVALID_SOCKET && _open_sockets >= _max_fd) {
+        res_log(NULL, LOG_DEBUG, "libsres: ""ea %p too many packets in flight",
+                shipit);
+        return SR_IO_TOO_MANY_TRANS;
+    }
 
     /*
      * If no socket exists for the transfer, create and connect it (TCP
@@ -371,9 +436,23 @@ res_io_send(struct expected_arrival *shipit)
                     errno, strerror(errno));
             return SR_IO_SOCKET_ERROR;
         }
+        ++_open_sockets;
 
         /* Set the source port */
         if (0 != bind_to_random_source(af, shipit->ea_socket)) {
+            /* error */
+            res_io_retry_source(shipit);
+            return SR_IO_SOCKET_ERROR;
+        }
+
+        /*
+         * Set the timeout interval
+         */
+        timeout.tv_sec = shipit->ea_ns->ns_retrans;
+        timeout.tv_usec = 0;
+
+        if (setsockopt (shipit->ea_socket, SOL_SOCKET, SO_SNDTIMEO, 
+                    (char *)&timeout, sizeof(timeout)) < 0) {
             /* error */
             res_io_retry_source(shipit);
             return SR_IO_SOCKET_ERROR;
@@ -523,28 +602,29 @@ res_nsfallback_ea(struct expected_arrival *ea, struct timeval *closest_event,
     if (!temp || !name)
         return -1;
 
-    if (!server && ea->ea_next) {
+    if (!server && temp->ea_next) {
         res_log(NULL, LOG_DEBUG,
                 "libsres: ""no server specified and more than one ea");
         return -1;
     }
 
     if (server) {
-        for(;temp && temp->ea_ns;temp=temp->ea_next) {
+        for(;temp;temp=temp->ea_next) {
             //res_print_ea(temp);
             /** match name, then look for address */
-            if (namecmp(server->ns_name_n, temp->ea_ns->ns_name_n) != 0)
+            if (!temp->ea_ns || namecmp(server->ns_name_n, temp->ea_ns->ns_name_n) != 0)
                 continue;
             if (memcmp(server->ns_address[0],
                        temp->ea_ns->ns_address[temp->ea_which_address],
                        sizeof(*server->ns_address[0])) == 0)
                 break;
         }
-        if (!temp) {
-            res_log(NULL, LOG_DEBUG, "libsres: "
-                    "no matching server found for fallback");
-            return -1;
-        }
+    }
+
+    if (!temp || !temp->ea_ns) {
+        res_log(NULL, LOG_DEBUG, "libsres: "
+                "no matching server found for fallback");
+        return -1;
     }
 
     /** even if there is a smaller size to fall back to, no attempts left */
@@ -610,8 +690,10 @@ res_nsfallback_ea(struct expected_arrival *ea, struct timeval *closest_event,
     }
 
     /** close socket so retry uses different port */
-    if (temp->ea_socket != INVALID_SOCKET)
+    if (temp->ea_socket != INVALID_SOCKET) {
         CLOSESOCK(temp->ea_socket);
+        --_open_sockets;
+    }
     temp->ea_socket = INVALID_SOCKET;
 
     res_log(NULL, LOG_INFO, "libsres: "
@@ -635,6 +717,7 @@ res_io_next_address(struct expected_arrival *ea,
          */
         if (ea->ea_socket != INVALID_SOCKET) {
             CLOSESOCK (ea->ea_socket);
+            --_open_sockets;
             ea->ea_socket = INVALID_SOCKET;
         }
         ea->ea_which_address++;
@@ -661,7 +744,7 @@ res_io_next_address(struct expected_arrival *ea,
     res_print_ea(ea);
 }
 /*
- * net_change : optional pointer for returning the next change in the
+ * net_change : optional pointer for returning the net change in the
  *              number of open/active sockets.
  *
  * active : optional pointer for returning number of active queries.
@@ -728,7 +811,7 @@ res_io_check_ea_list(struct expected_arrival *ea, struct timeval *next_evt,
                 }
                 else {
                     if (needed_new_socket) {
-                        if (net_change)
+                        if (net_change && ea->ea_socket != INVALID_SOCKET)
                             ++(*net_change);
                     }
                     break; /* from while remaining attempts */
@@ -876,6 +959,7 @@ res_io_deliver(int *transaction_id, u_char * signed_query,
     int             rc;
 
     rc = res_io_queue(transaction_id, signed_query, signed_length, ns, delay);
+    res_log(NULL, LOG_DEBUG, "libsres: "" res_io_queue rc %d", rc);
 
     /*
      * Call the res_io_check routine 
@@ -1141,6 +1225,7 @@ wait_for_res_data(fd_set * pending_desc, struct timeval *closest_event)
             closest_event->tv_sec, closest_event->tv_usec);
     res_io_set_timeout(&timeout, closest_event);
     ready = res_io_select_sockets(pending_desc, &timeout); 
+    res_log(NULL, LOG_DEBUG, "libsres: ""   %d ready", ready);
 	
     // ignore return value from previous function, 
     // will catch this condition when we actually read data
@@ -1208,6 +1293,7 @@ res_io_get_a_response(struct expected_arrival *ea_list, u_char ** answer,
             /** close socket so retry uses different port */
             if (ea_list->ea_socket != INVALID_SOCKET) {
                 CLOSESOCK (ea_list->ea_socket);
+                --_open_sockets;
                 ea_list->ea_socket = INVALID_SOCKET;
             }
             res_print_ea(ea_list);
@@ -1446,6 +1532,7 @@ res_switch_to_tcp(struct expected_arrival *ea)
     ea->ea_using_stream = TRUE;
     if (ea->ea_socket != INVALID_SOCKET) {
         CLOSESOCK(ea->ea_socket);
+        --_open_sockets;
         ea->ea_socket = INVALID_SOCKET;
     }
     ea->ea_remaining_attempts = ea->ea_ns->ns_retry+1;
@@ -1475,6 +1562,7 @@ res_switch_all_to_tcp(struct expected_arrival *ea)
         ea->ea_using_stream = TRUE;
         if (ea->ea_socket != INVALID_SOCKET) {
             CLOSESOCK(ea->ea_socket);
+            --_open_sockets;
             ea->ea_socket = INVALID_SOCKET;
         }
     }
@@ -1549,8 +1637,10 @@ res_io_read(fd_set * read_descriptors, struct expected_arrival *ea_list)
                 /*
                  * The the query and response ID's/query lines don't match 
                  */
-                res_log(NULL, LOG_WARNING, "libsres: ""dropping response: "
-                        "query and response ID's or q_fields don't match");
+                res_log(NULL, LOG_WARNING, 
+                        "libsres: ""dropping response with rcode=%x : " 
+                        "query and response ID's or query names don't match",
+                        ((HEADER *) arrival->ea_response)->rcode);
                 FREE(arrival->ea_response);
                 arrival->ea_response = NULL;
                 arrival->ea_response_length = 0;
@@ -1859,8 +1949,12 @@ res_async_query_send(const char *name, const u_int16_t type_h,
     struct expected_arrival *head = 
         res_async_query_create(name, type_h, class_h, pref_ns, 0);
 
-    if (NULL != head)
+    if (NULL != head) {
         ret_val = res_io_check_ea_list(head,NULL,NULL,NULL,NULL);
+        res_log(NULL,LOG_DEBUG, "libsres: "" res_io_check_ea_list returned %d",
+                ret_val);
+    } else
+        res_log(NULL,LOG_DEBUG, "libsres: "" *** res_async_query_create returned NULL");
 
     return head;
 }

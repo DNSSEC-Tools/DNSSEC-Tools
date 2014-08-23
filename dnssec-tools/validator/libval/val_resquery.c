@@ -503,7 +503,6 @@ res_zi_unverified_ns_list(val_context_t *context,
     struct name_server *temp_ns;
     struct name_server *ns;
     struct name_server *pending_glue_last;
-    struct name_server *trail_ns;
     struct name_server *outer_trailer;
     struct name_server *tail_ns;
     size_t          name_len;
@@ -601,7 +600,6 @@ res_zi_unverified_ns_list(val_context_t *context,
             /*
              * If the owner name matches the name in an *ns_list entry...
              */
-            trail_ns = NULL;
             ns = *ns_list;
             while (ns) {
                 int matching_cred = 1;
@@ -624,7 +622,6 @@ res_zi_unverified_ns_list(val_context_t *context,
                         return retval;
                     break;
                 } else {
-                    trail_ns = ns;
                     ns = ns->ns_next;
                 }
             }
@@ -867,6 +864,12 @@ bootstrap_referral(val_context_t *context,
          */
         if (matched_q->qc_referral == NULL) {
             ALLOCATE_REFERRAL_BLOCK(matched_q->qc_referral);
+            if (matched_q->qc_referral == NULL) {
+                free_name_servers(&pending_glue);
+                free_name_servers(ref_ns_list);
+                *ref_ns_list = NULL;
+                return VAL_OUT_OF_MEMORY;
+            }
         } 
             
         matched_q->qc_referral->cur_pending_glue_ns = NULL;
@@ -888,20 +891,38 @@ bootstrap_referral(val_context_t *context,
                     len);
         }
 
+
         if (*ref_ns_list != NULL) {
+
+            /* save the pending list for some future occasion */
             matched_q->qc_referral->pending_glue_ns = pending_glue;
             matched_q->qc_state = Q_INIT;
+
+        } else if (!namecmp(pending_glue->ns_name_n, matched_q->qc_name_n)) {
+
+            /* 
+             * Break out of a cyclic dependency
+             * Ideally we want the next NS higher up, but its not worth
+             * the trouble. Simply start from root in such circumstances
+             */
+            free_name_servers(&pending_glue);
+            if (context->root_ns != NULL) {
+                clone_ns_list(ref_ns_list, context->root_ns);
+                matched_q->qc_flags |= VAL_QUERY_ITERATE;
+                matched_q->qc_state = Q_INIT;
+            }
+
         } else {
+
             matched_q->qc_referral->cur_pending_glue_ns = pending_glue;
             matched_q->qc_referral->pending_glue_ns = pending_glue->ns_next;
             pending_glue->ns_next = NULL;
 
             /*
              * Create a query for glue for pending_ns 
-            */
-            flags = matched_q->qc_flags | 
+             */
+            flags = matched_q->qc_flags | VAL_QUERY_ITERATE | 
                         (VAL_QUERY_GLUE_REQUEST | VAL_QUERY_DONT_VALIDATE);
-
             matched_q->qc_state = Q_INIT;
 
             if (val_context_ip4(context)) {
@@ -920,7 +941,6 @@ bootstrap_referral(val_context_t *context,
                     return ret_val;
             }
 #endif
-
         }
     } else if (*ref_ns_list != NULL) {
         matched_q->qc_state = Q_INIT;
@@ -1019,6 +1039,9 @@ follow_referral_or_alias_link(val_context_t * context,
 
     if (matched_q->qc_referral == NULL) {
         ALLOCATE_REFERRAL_BLOCK(matched_q->qc_referral);
+        if (matched_q->qc_referral == NULL) {
+            return VAL_OUT_OF_MEMORY;
+        }
     } else if (alias_chain && matched_q->qc_referral->queries) {
         /* free up the old set of registered queries and start afresh */
         deregister_queries(&matched_q->qc_referral->queries);
@@ -1032,7 +1055,8 @@ follow_referral_or_alias_link(val_context_t * context,
         matched_q->qc_referral->qnames = *qnames;
     else if (*qnames) {
         struct qname_chain *t_q;
-        for (t_q = *qnames; t_q->qnc_next; t_q = t_q->qnc_next);
+        for (t_q = *qnames; t_q->qnc_next; t_q = t_q->qnc_next)
+            ; /* no body. ';' on new line to suppress warning. */
         t_q->qnc_next = matched_q->qc_referral->qnames;
         matched_q->qc_referral->qnames = *qnames;
     }
@@ -1112,6 +1136,7 @@ follow_referral_or_alias_link(val_context_t * context,
     } else if (VAL_NO_ERROR != (ret_val = stow_zone_info(learned_zones, matched_q))) {
         res_sq_free_rrset_recs(learned_zones);
         *learned_zones = NULL;
+        free_name_servers(&ref_ns_list);
         return ret_val;
     }
     *learned_zones = NULL; /* consumed */
@@ -1308,8 +1333,12 @@ process_cname_dname_responses(u_char *name_n,
          */
         if ((ret_val = add_to_qname_chain(qnames, rdata)) != VAL_NO_ERROR)
             return ret_val; 
-        if (!matched_q->qc_referral)
+        if (!matched_q->qc_referral) {
             ALLOCATE_REFERRAL_BLOCK(matched_q->qc_referral);
+            if (matched_q->qc_referral == NULL) {
+                return VAL_OUT_OF_MEMORY;
+            }
+        }
             
         if (register_query(&matched_q->qc_referral->queries,
                            rdata,
@@ -1348,8 +1377,12 @@ process_cname_dname_responses(u_char *name_n,
              */
             if ((ret_val = add_to_qname_chain(qnames, name_n)) != VAL_NO_ERROR)
                 return ret_val; 
-            if (!matched_q->qc_referral)
+            if (!matched_q->qc_referral) {
                 ALLOCATE_REFERRAL_BLOCK(matched_q->qc_referral);
+                if (matched_q->qc_referral == NULL) {
+                    return VAL_OUT_OF_MEMORY;
+                }
+            }
 
             if (register_query(&matched_q->qc_referral->queries,
                                name_n,
@@ -1508,7 +1541,7 @@ digest_response(val_context_t * context,
                 size_t response_length, 
                 struct domain_info *di_response)
 {
-    u_int16_t       question, answer, authority, additional;
+    u_int16_t       answer, authority, additional;
     u_int16_t       rrs_to_go;
     int             i;
     size_t          response_index;
@@ -1571,7 +1604,6 @@ digest_response(val_context_t * context,
     hptr = NULL;
     rdata = NULL;
 
-    question = ntohs(header->qdcount);
     answer = ntohs(header->ancount);
     authority = ntohs(header->nscount);
     additional = ntohs(header->arcount);
@@ -2162,6 +2194,7 @@ val_resquery_send(val_context_t * context,
     struct name_server *tempns;
     struct val_query_chain *matched_q;
     struct name_server *nslist;
+    struct timeval now;
 
     val_log(NULL, LOG_DEBUG, __FUNCTION__);
     /*
@@ -2172,7 +2205,7 @@ val_resquery_send(val_context_t * context,
     if ((matched_qfq == NULL) || 
         (matched_qfq->qfq_query->qc_ns_list == NULL)
 #ifndef VAL_NO_ASYNC
-        || (matched_qfq->qfq_flags & VAL_QUERY_ASYNC)
+        || (matched_qfq->qfq_query->qc_flags & VAL_QUERY_ASYNC)
 #endif
         ) {
         return VAL_BAD_ARGUMENT;
@@ -2200,6 +2233,12 @@ val_resquery_send(val_context_t * context,
                                   name_buf, sizeof(name_buf)));
         }
     }
+
+    /*
+     * Update the qc_last_sent timestamp
+     */
+    gettimeofday(&now, NULL);
+    matched_q->qc_last_sent = now.tv_sec;
 
     if ((ret_val =
          query_send(name_p, matched_q->qc_type_h, matched_q->qc_class_h,
@@ -2237,7 +2276,7 @@ val_resquery_rcv(val_context_t * context,
     if ((matched_qfq == NULL) || (response == NULL) || (queries == NULL) ||
         (pending_desc == NULL)
 #ifndef VAL_NO_ASYNC
-        || (matched_qfq->qfq_flags & VAL_QUERY_ASYNC)
+        || (matched_qfq->qfq_query->qc_flags & VAL_QUERY_ASYNC)
 #endif
         )
         return VAL_BAD_ARGUMENT;
@@ -2329,9 +2368,8 @@ val_res_nsfallback(val_context_t *context, struct val_query_chain *matched_q,
                 "val_res_nsfallback(): Doing EDNS0 fallback"); 
     }
     else {
-        matched_q->qc_state = Q_RESPONSE_ERROR;
         val_log(context, LOG_DEBUG,
-                "val_res_nsfallback(): EDNS0 fallback failed"); 
+                "val_res_nsfallback(): Moving to next address"); 
     }
 }
 
@@ -2558,12 +2596,12 @@ val_async_select_info(val_context_t *ctx, fd_set *activefds,
         return VAL_BAD_ARGUMENT;
 
     val_log(NULL, LOG_DEBUG, __FUNCTION__);
+    gettimeofday(&now, NULL);
 
     /** need to adjust relative timeout to absolute time used by libval */
     if (timeout) {
         if(timeout->tv_sec < LONG_MAX) {
             /* add current time to delay */
-            gettimeofday(&now, NULL);
             timeradd(&now, timeout, &closest);
         } else
             memcpy(closest_event, timeout, sizeof(struct timeval));
@@ -2597,7 +2635,7 @@ val_async_select_info(val_context_t *ctx, fd_set *activefds,
             char         name_p[NS_MAXDNAME];
             if (-1 == ns_name_ntop(qfq->qfq_query->qc_name_n, name_p, sizeof(name_p)))
                 snprintf(name_p, sizeof(name_p), "unknown/error");
-            if (!qfq->qfq_query->qc_ea || (qfq->qfq_flags & VAL_QUERY_SKIP_RESOLVER)) {
+            if (!qfq->qfq_query->qc_ea || (qfq->qfq_query->qc_flags & VAL_QUERY_SKIP_RESOLVER)) {
                 val_log(NULL, LOG_DEBUG+1, " as %p query %p {%s %s(%d) %s(%d)} ea %p", as, qfq,
                         name_p, p_class(qfq->qfq_query->qc_class_h),
                         qfq->qfq_query->qc_class_h,

@@ -35,9 +35,16 @@ query_async_test(int async, int burst_max, int inflight_max, int numq)
     struct timeval     timeout, now;
     fd_set             activefds;
 
-    ns = parse_name_server("192.168.1.7", NULL);
+    ns = parse_name_server("192.168.1.7", NULL, 0);
+    if (!ns) {
+        printf("ns could not be created\n");
+        free_name_servers(&ns);
+        return -1;
+    }
 
     memset(ea, 0x00, sizeof(ea));
+
+    gettimeofday(&now, NULL);
 
     for (i=0; i < 26; ++i)
         for (j=0; j<26; ++j)
@@ -192,6 +199,7 @@ query_async_test(int async, int burst_max, int inflight_max, int numq)
     }
   }
     printf("sent %d, answered %d\n", sent, answered);
+    free_name_servers(&ns);
 
     return 0;
 }

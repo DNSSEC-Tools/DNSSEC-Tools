@@ -38,6 +38,8 @@
 **
 ****************************************************************************/
 
+#include <QMessageBox>
+
 #include "graphwidget.h"
 #include "edge.h"
 #include "node.h"
@@ -289,8 +291,6 @@ void GraphWidget::wheelEvent(QWheelEvent *event)
 
 void GraphWidget::drawBackground(QPainter *painter, const QRectF &rect)
 {
-    Q_UNUSED(rect);
-
     // Shadow
     QRectF sceneRect = QRectF(mapToScene(0, 0), mapToScene(width(), height())); //scene()->sceneRect();
 
@@ -298,7 +298,7 @@ void GraphWidget::drawBackground(QPainter *painter, const QRectF &rect)
     QLinearGradient gradient(sceneRect.topLeft(), sceneRect.bottomRight());
     gradient.setColorAt(0, Qt::white);
     gradient.setColorAt(1, Qt::lightGray);
-    painter->fillRect(rect.intersect(sceneRect), gradient);
+    painter->fillRect(rect.intersected(sceneRect), gradient);
     painter->setBrush(Qt::NoBrush);
     painter->drawRect(sceneRect);
 }

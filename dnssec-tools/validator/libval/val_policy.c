@@ -242,6 +242,8 @@ set_global_opt_defaults(val_global_opt_t *gopt)
     gopt->log_target = NULL;
     gopt->closest_ta_only = 0;
     gopt->rec_fallback = 1;
+    gopt->max_refresh = VAL_POL_GOPT_MAXREFRESH;
+    gopt->proto = VAL_POL_GOPT_PROTO_ANY;
 }
 
 int 
@@ -260,18 +262,22 @@ update_dynamic_gopt(val_global_opt_t **g_new, val_global_opt_t *g)
 
     /* NOTE: We must not update log_target */
 
-    if (g->local_is_trusted != -1)
+    if (g->local_is_trusted != VAL_POL_GOPT_UNSET)
         (*g_new)->local_is_trusted = g->local_is_trusted;        
-    if (g->edns0_size != -1)
+    if (g->edns0_size != VAL_POL_GOPT_UNSET)
         (*g_new)->edns0_size = g->edns0_size;        
-    if (g->env_policy != -1)
+    if (g->env_policy != VAL_POL_GOPT_UNSET)
         (*g_new)->env_policy = g->env_policy;        
-    if (g->app_policy != -1)
+    if (g->app_policy != VAL_POL_GOPT_UNSET)
         (*g_new)->app_policy = g->app_policy;        
-    if (g->closest_ta_only != -1)
+    if (g->closest_ta_only != VAL_POL_GOPT_UNSET)
         (*g_new)->closest_ta_only = g->closest_ta_only;        
-    if (g->rec_fallback != -1)
+    if (g->rec_fallback != VAL_POL_GOPT_UNSET)
         (*g_new)->rec_fallback = g->rec_fallback;        
+    if (g->max_refresh != VAL_POL_GOPT_UNSET)
+        (*g_new)->max_refresh = g->max_refresh;        
+    if (g->proto != VAL_POL_GOPT_UNSET)
+        (*g_new)->proto = g->proto;        
 
     return VAL_NO_ERROR;
 }
@@ -320,8 +326,6 @@ parse_trust_anchor(char **buf_ptr, char *end_ptr, policy_entry_t * pol_entry,
     int             retval;
     char           *pkstr;
     char           *endptr;
-    val_dnskey_rdata_t *dnskey_rdata;
-    val_ds_rdata_t *ds_rdata;
 
     if ((buf_ptr == NULL) || (*buf_ptr == NULL) || (end_ptr == NULL) || 
         (pol_entry == NULL) || (line_number == NULL) || (endst == NULL))
@@ -349,11 +353,10 @@ parse_trust_anchor(char **buf_ptr, char *end_ptr, policy_entry_t * pol_entry,
         }
         if (VAL_NO_ERROR !=
             (retval =
-                 val_parse_ds_string(pkstr, strlen(pkstr), &ds_rdata))) {
+                 val_parse_ds_string(pkstr, strlen(pkstr), &ta_pol->ds))) {
             FREE(ta_pol);
             return retval;
         }
-        ta_pol->ds = ds_rdata;
 
     } else {
         if (!strncasecmp(pkstr, DNSKEY_STR, strlen(DNSKEY_STR))) {
@@ -370,11 +373,11 @@ parse_trust_anchor(char **buf_ptr, char *end_ptr, policy_entry_t * pol_entry,
         */ 
         if (VAL_NO_ERROR !=
             (retval =
-                 val_parse_dnskey_string(pkstr, strlen(pkstr), &dnskey_rdata))) {
+                 val_parse_dnskey_string(pkstr, strlen(pkstr),
+                     &ta_pol->publickey))) {
             FREE(ta_pol);
             return retval;
         }
-        ta_pol->publickey = dnskey_rdata;
     }
 
     pol_entry->pol = ta_pol;
@@ -404,7 +407,7 @@ free_trust_anchor(policy_entry_t * pol_entry)
 }
 
 /*
- * parse additional data (time in seconds, -1 for ignore) for the clock skew policy 
+ * parse additional data (time in seconds) for the clock skew policy 
  */
 int
 parse_clock_skew(char **buf_ptr, char *end_ptr, policy_entry_t * pol_entry, 
@@ -797,9 +800,9 @@ done:
  * obtained.
  */
 int
-check_relevance(char *label, char *scope, int *label_count, int *relevant)
+check_relevance(const char *label, const char *scope, int *label_count, int *relevant)
 {
-    char           *c, *p, *e;
+    const char           *c, *p, *e;
 
     /*
      * sanity check; NULL scope is OK 
@@ -1037,6 +1040,67 @@ parse_rec_fallback(char **buf_ptr, char *end_ptr, int *line_number,
     return VAL_NO_ERROR;
 }
 
+static int
+parse_max_refresh_gopt(char **buf_ptr, char *end_ptr, int *line_number, 
+                      int *endst, val_global_opt_t *g_opt) 
+{
+    char            token[TOKEN_MAX];
+    int retval;
+
+    if ((buf_ptr == NULL) || (*buf_ptr == NULL) || (end_ptr == NULL) || 
+        (g_opt == NULL) || (endst == NULL) || (line_number == NULL))
+        return VAL_BAD_ARGUMENT;
+
+    if (VAL_NO_ERROR != (retval = 
+        val_get_token(buf_ptr, end_ptr, line_number, 
+                      token, sizeof(token), endst,
+                      CONF_COMMENT, CONF_END_STMT, 0))) {
+        return retval;
+    }
+    if ((endst && (strlen(token) == 0)) ||
+        (*buf_ptr >= end_ptr)) { 
+        return VAL_CONF_PARSE_ERROR;
+    }
+
+    g_opt->max_refresh = strtol(token, (char **)NULL, 10);
+    
+    return VAL_NO_ERROR;
+}
+
+static int
+parse_proto(char **buf_ptr, char *end_ptr, int *line_number,
+            int *endst, val_global_opt_t *g_opt)
+{
+    char            token[TOKEN_MAX];
+    int retval;
+
+    if ((buf_ptr == NULL) || (*buf_ptr == NULL) || (end_ptr == NULL) || 
+        (g_opt == NULL) || (endst == NULL) || (line_number == NULL))
+        return VAL_BAD_ARGUMENT;
+
+    /* read the next token */
+    if (VAL_NO_ERROR != (retval = 
+        val_get_token(buf_ptr, end_ptr, line_number, 
+                      token, sizeof(token), endst,
+                      CONF_COMMENT, CONF_END_STMT, 0))) {
+        return retval;
+    }
+    if ((endst && (strlen(token) == 0)) ||
+        (*buf_ptr >= end_ptr)) { 
+        return VAL_CONF_PARSE_ERROR;
+    }
+
+    if (!strncmp(token, GOPT_PROTO_IPV6_STR, strlen(GOPT_PROTO_IPV6_STR))) {
+        g_opt->proto = VAL_POL_GOPT_PROTO_IPV6;
+    } else if (!strncmp(token, GOPT_PROTO_IPV4_STR, strlen(GOPT_PROTO_IPV4_STR))) {
+        g_opt->proto = VAL_POL_GOPT_PROTO_IPV4;
+    } else if (!strncmp(token, GOPT_PROTO_ANY_STR, strlen(GOPT_PROTO_ANY_STR))) {
+        g_opt->proto = VAL_POL_GOPT_PROTO_ANY;
+    } else {
+        return VAL_CONF_PARSE_ERROR;
+    }
+    return VAL_NO_ERROR;
+}
 
 static int
 get_global_options(char **buf_ptr, char *end_ptr, 
@@ -1118,6 +1182,20 @@ get_global_options(char **buf_ptr, char *end_ptr,
                 goto err;
             }
 
+        } else if (!strcmp(token, GOPT_MAX_REFRESH_STR)) {
+            if (VAL_NO_ERROR != 
+                    (retval = parse_max_refresh_gopt(buf_ptr, end_ptr,
+                                                    line_number, &endst, *g_opt))) {
+                goto err;
+            }
+
+        } else if (!strcmp(token, GOPT_PROTO)) {
+            if (VAL_NO_ERROR != 
+                    (retval = parse_proto(buf_ptr, end_ptr,
+                                          line_number, &endst, *g_opt))) {
+                goto err;
+            }
+
         } else {
             retval = VAL_CONF_PARSE_ERROR;
             goto err;
@@ -1137,7 +1215,7 @@ err:
  * from the configuration file file
  */
 int
-get_next_policy_fragment(char **buf_ptr, char *end_ptr, char *scope,
+get_next_policy_fragment(char **buf_ptr, char *end_ptr, const char *scope,
                          struct policy_fragment **pol_frag,
                          int *line_number, int *g_opt_seen, int *include_seen)
 {
@@ -1481,7 +1559,7 @@ destroy_valpol(val_context_t * ctx)
 
 static int
 read_next_val_config_file(val_context_t *ctx, 
-                          char **label, 
+                          const char **label, 
                           struct dnsval_list *dnsval_c, 
                           struct dnsval_list *dlist, 
                           struct dnsval_list **added_files,
@@ -1505,11 +1583,12 @@ read_next_val_config_file(val_context_t *ctx,
     char *dnsval_filename = NULL;
     struct dnsval_list *dnsval_l;
     int retval = VAL_NO_ERROR;
-    char *next_label;
+    const char *next_label;
     int done;
     char *env = NULL;
 
     if (ctx == NULL || label == NULL || 
+        dnsval_c == NULL || dlist == NULL ||
         added_files == NULL || 
         overrides == NULL || g_opt == NULL)
         return VAL_BAD_ARGUMENT;
@@ -1520,10 +1599,7 @@ read_next_val_config_file(val_context_t *ctx,
 
     next_label = *label;
    
-    fd = -1;
-    if (dnsval_c != NULL && dlist != NULL) {
-        fd = open(dnsval_c->dnsval_conf, O_RDONLY);
-    }
+    fd = open(dnsval_c->dnsval_conf, O_RDONLY);
 
     if (fd < 0) {
         val_log(ctx, LOG_ERR, 
@@ -1531,7 +1607,7 @@ read_next_val_config_file(val_context_t *ctx,
                 dnsval_c->dnsval_conf);
 
         /* check if we have read at least one file in the past */
-        if (dnsval_c && dlist && (dnsval_c != dlist)) {
+        if (dnsval_c != dlist) {
             return VAL_NO_ERROR;
         }
         /* check if we have the validator policy available inline */
@@ -1672,7 +1748,7 @@ read_next_val_config_file(val_context_t *ctx,
                                     "read_next_val_config_file(): Using policy label from app name: %s",
                                     c_next_label);
                             done = 0;
-                            next_label = (char *)c_next_label;
+                            next_label = (const char *)c_next_label;
                             break;
                         }
                         /* policy does not exist, dont create the impression that we have one */
@@ -1850,12 +1926,12 @@ err:
  * Precedence is environment, app and user
  */
 int
-read_val_config_file(val_context_t * ctx, char *scope)
+read_val_config_file(val_context_t * ctx, const char *scope)
 {
     struct policy_overrides *t;
     struct dnsval_list *dnsval_c;
     int             retval;
-    char *label;
+    const char *label;
     char *newctxlab;
     struct val_query_chain *q;
     char *logtarget = NULL;
@@ -2073,6 +2149,13 @@ read_res_config_file(val_context_t * ctx)
     struct name_server *ns_head = NULL;
     struct name_server *ns_tail = NULL;
     struct name_server *ns = NULL;
+    unsigned long ns_options = SR_QUERY_RECURSE;
+
+    if (val_context_ip4(context) && !val_context_ip6(context)) {
+        ns_options |= SR_QUERY_IPV4_ONLY;
+    } else if (!val_context_ip4(context) && val_context_ip6(context)) {
+        ns_options |= SR_QUERY_IPV6_ONLY;
+    }
 
     while(counter < 255) { /* arbitary way-too-high upper limit */
         /* shouldn't be necessary, but still wise */
@@ -2085,14 +2168,13 @@ read_res_config_file(val_context_t * ctx)
             break;
         }
 
-        ns = parse_name_server(property_buffer, NULL);
+        ns = parse_name_server(property_buffer, NULL, ns_options);
         if (ns == NULL) {
             val_log(ctx, LOG_WARNING,
                     "read_res_config_file(): error parsing android resource!");
             return VAL_CONF_PARSE_ERROR;
         }
 
-        ns->ns_options |= RES_RECURSE;
         if (ns_tail == NULL) {
             ns_head = ns;
             ns_tail = ns;
@@ -2145,10 +2227,17 @@ read_res_config_file(val_context_t * ctx)
     size_t bufsize = 0;
     int retval;
     time_t mtime = 0;
-    
+    unsigned long ns_options = 0;
+
     if (ctx == NULL)
         return VAL_BAD_ARGUMENT;
 
+    if (val_context_ip4(ctx) && !val_context_ip6(ctx)) {
+        ns_options |= SR_QUERY_IPV4_ONLY;
+    } else if (!val_context_ip4(ctx) && val_context_ip6(ctx)) {
+        ns_options |= SR_QUERY_IPV6_ONLY;
+    }
+    
     /*
      * Use any dynamic resolver policy that we may have
      */
@@ -2175,6 +2264,7 @@ read_res_config_file(val_context_t * ctx)
             FREE(ctx->resolv_conf);
             ctx->resolv_conf = strdup(VAL_DEFAULT_RESOLV_CONF);
             if (ctx->resolv_conf == NULL) {
+                free_name_servers(&ns_head);
                 return VAL_OUT_OF_MEMORY;
             }
             resolv_config = ctx->resolv_conf;
@@ -2276,24 +2366,18 @@ read_res_config_file(val_context_t * ctx)
 			"read_res_config_file(): error getting nameserver token!");
                 goto err;
             }
-            if ((ns = parse_name_server(token, DEFAULT_ZONE)) == NULL) {
+            if ((ns = parse_name_server(token, DEFAULT_ZONE, ns_options|SR_QUERY_RECURSE)) == NULL) {
                 val_log(ctx, LOG_WARNING,
-			"read_res_config_file(): error parsing nameserver token!");
+                        "read_res_config_file(): Invalid nameserver addresses '%s'.",
+                        token);
                 goto err;
 	        }
-            if (ns != NULL) {
-                ns->ns_options |= SR_QUERY_RECURSE;
-                if (ns_tail == NULL) {
-                    ns_head = ns;
-                    ns_tail = ns;
-                } else {
-                    ns_tail->ns_next = ns;
-                    ns_tail = ns;
-                }
+            if (ns_tail == NULL) {
+                ns_head = ns;
+                ns_tail = ns;
             } else {
-                val_log(ctx, LOG_WARNING,
-                        "read_res_config_file(): Invalid nameserver addresses '%s', skipping.",
-                        token);
+                ns_tail->ns_next = ns;
+                ns_tail = ns;
             }
         } else if (strncmp(token, "forward", strlen("forward")) == 0) {
 
@@ -2305,24 +2389,31 @@ read_res_config_file(val_context_t * ctx)
                            ALL_COMMENTS, ZONE_END_STMT, 0))) {
                 goto err;
             }
-            if ((ns = parse_name_server(token, DEFAULT_ZONE)) == NULL)
+            if ((ns = parse_name_server(token, DEFAULT_ZONE,
+                            ns_options)) == NULL) {
+                val_log(ctx, LOG_WARNING,
+                        "read_res_config_file(): Invalid nameserver addresses '%s.",
+                        token);
                 goto err;
+            }
+
             /* zone next */
-            if (VAL_NO_ERROR !=
+            if (VAL_NO_ERROR ==
                 (retval =
                 val_get_token(&buf_ptr, end_ptr, &line_number, token, sizeof(token), &endst,
-                           ALL_COMMENTS, ZONE_END_STMT, 0))) {
+                           ALL_COMMENTS, ZONE_END_STMT, 0)) &&
+                (ns_name_pton(token, zone_n, sizeof(zone_n)) != -1)) {
+
+                store_ns_for_zone(zone_n, ns);
+
+                free_name_servers(&ns);
+                ns = NULL;
+            } else {
+                free_name_servers(&ns);
+                ns = NULL;
                 goto err;
             }
-            if (ns != NULL) {
-                if (ns_name_pton(token, zone_n, sizeof(zone_n)) == -1)
-                    goto err;
-                store_ns_for_zone(zone_n, ns);
-            } else {
-                val_log(ctx, LOG_WARNING,
-                        "read_res_config_file(): Invalid nameserver addresses '%s', skipping.",
-                        token);
-            }
+
         } else if (strncmp(token, "search", strlen("search")) == 0) {
 
             /* Read the value */
@@ -2342,6 +2433,14 @@ read_res_config_file(val_context_t * ctx)
 
   done:
 
+    if (fd != -1) {
+#ifdef HAVE_FLOCK
+        fl.l_type = F_UNLCK;
+        fcntl(fd, F_SETLK, &fl);
+#endif
+        close(fd);
+    }
+
     /*
      * Check if we have root hints 
      */
@@ -2360,13 +2459,6 @@ read_res_config_file(val_context_t * ctx)
     val_log(ctx, LOG_DEBUG, 
             "read_res_config_file(): Done reading resolver configuration");
 
-    if (fd != -1) {
-#ifdef HAVE_FLOCK
-        fl.l_type = F_UNLCK;
-        fcntl(fd, F_SETLK, &fl);
-#endif
-        close(fd);
-    }
     return VAL_NO_ERROR;
 
   err:
@@ -2411,7 +2503,7 @@ read_root_hints_file(val_context_t * ctx)
     u_int16_t       type_h, class_h;
     int             success;
     u_long          ttl_h;
-    int             retval;
+    int             retval = VAL_NO_ERROR;
     u_int16_t       rdata_len_h;
     struct rrset_rec *rr_set;
     struct name_server *ns_list = NULL;
@@ -2422,19 +2514,27 @@ read_root_hints_file(val_context_t * ctx)
     char *buf = NULL;
     size_t bufsize = 0;
     time_t mtime;
+    int ipv4_only = 0;
+    int ipv6_only = 0;
 
     class_h = 0;
     have_type = 0;
 
     if (ctx == NULL)
         return VAL_BAD_ARGUMENT;
-    
+   
+   if (val_context_ip4(ctx) && !val_context_ip6(ctx)) {
+       ipv4_only = 1;
+   } else if (!val_context_ip4(ctx) && val_context_ip6(ctx)) {
+       ipv6_only = 1;
+   }
+
     root_hints = ctx->root_conf;
 
     fd = -1;
 
     if (NULL != root_hints && 
-            (fd = open(root_hints, O_RDONLY)) > 0) {
+            (fd = open(root_hints, O_RDONLY)) >= 0) {
 #ifdef HAVE_FLOCK
         memset(&fl, 0, sizeof(fl));
         fl.l_type = F_RDLCK;
@@ -2598,7 +2698,7 @@ read_root_hints_file(val_context_t * ctx)
                        ZONE_COMMENT, ZONE_END_STMT, 0))) {
             goto err;
         }
-        if (type_h == ns_t_a) {
+        if (type_h == ns_t_a && !ipv6_only) {
             struct sockaddr_in sa;
             size_t addrlen4 = sizeof(struct sockaddr_in);
             memset(&sa, 0, sizeof(sa));
@@ -2610,7 +2710,7 @@ read_root_hints_file(val_context_t * ctx)
             rdata_len_h = sizeof(struct in_addr);
             memcpy(rdata_n, &sa.sin_addr, rdata_len_h);
 #ifdef VAL_IPV6
-        } else if (type_h == ns_t_aaaa) {
+        } else if (type_h == ns_t_aaaa && !ipv4_only) {
             struct sockaddr_in6 sa6;
             size_t addrlen6 = sizeof(struct sockaddr_in6);
             memset(&sa6, 0, sizeof(sa6));
@@ -2633,6 +2733,8 @@ read_root_hints_file(val_context_t * ctx)
             continue;
         }
 
+        /* Note that we don't process RRSIGS */
+
         //        SAVE_RR_TO_LIST(NULL, &root_info, zone_n, type_h, type_h, ns_c_in,
         //                        ttl_h, NULL, rdata_n, rdata_len_h, VAL_FROM_UNSET, 0,
         //                        zone_n);
@@ -2643,13 +2745,9 @@ read_root_hints_file(val_context_t * ctx)
             retval = VAL_OUT_OF_MEMORY;
             goto err;
         }
-        if (type_h != ns_t_rrsig) {
-            /* Add this record to its chain. */
-            retval = add_to_set(rr_set, rdata_len_h, rdata_n);
-        } else {
-            /* Add this record's sig to its chain. */
-            retval = add_as_sig(rr_set, rdata_len_h, rdata_n);
-        }
+
+        /* Add this record to its chain. */
+        retval = add_to_set(rr_set, rdata_len_h, rdata_n);
         if (retval != VAL_NO_ERROR) {
             goto err;
         }
@@ -3010,8 +3108,6 @@ val_remove_valpolicy(val_context_t *context, val_policy_handle_t *pol)
 
     /* free the policy */
     conf_elem_array[pol->index].free(p);
-    FREE(p);
-    FREE(pol);
     
     /* Flush queries that match this name */
     for(q=ctx->q_list; q; q=q->qc_next) {
@@ -3019,6 +3115,9 @@ val_remove_valpolicy(val_context_t *context, val_policy_handle_t *pol)
             q->qc_flags |= VAL_QUERY_MARK_FOR_DELETION;
         }
     }
+
+    FREE(p);
+    FREE(pol);
     
     retval = VAL_NO_ERROR;
 

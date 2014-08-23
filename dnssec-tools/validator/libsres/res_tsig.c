@@ -93,7 +93,7 @@ res_set_ns_tsig(struct name_server *ns, char *tsigstr)
     char *name_s; 
     char *fudge_s;
     char *key_s;
-    char *alg_s; 
+    const char *alg_s; 
     int i;
 
     char *buf, *c, *n;
@@ -173,7 +173,7 @@ res_set_ns_tsig(struct name_server *ns, char *tsigstr)
     }
 
     /* Decode the base64 key */
-    tsig->key = (u_char *) MALLOC (strlen(key_s));
+    tsig->key = (u_char *) MALLOC (strlen(key_s)+1);
     if (tsig->key == NULL) {
         goto err;
     }

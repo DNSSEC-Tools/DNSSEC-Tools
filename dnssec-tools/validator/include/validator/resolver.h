@@ -57,10 +57,17 @@
 #ifndef RESOLVER_H
 #define RESOLVER_H
 
-#include <sys/types.h>
+#ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
+#endif
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
 #ifdef __MINGW32__
 #include <winsock2.h>
+#endif
+#ifdef HAVE_SYS_RESOURCE_H
+#include <sys/resource.h>
 #endif
 
 #ifdef __cplusplus
@@ -152,6 +159,9 @@ struct name_server {
 #define SR_QUERY_RECURSE            0x00000002 
 #define SR_QUERY_SET_DO             0x00000004 
 #define SR_QUERY_SET_CD             0x00000008
+#define SR_QUERY_NOREC              0x00000010
+#define SR_QUERY_IPV4_ONLY          0x00000020
+#define SR_QUERY_IPV6_ONLY          0x00000040
 #define SR_QUERY_VALIDATING_STUB_FLAGS  (SR_QUERY_SET_DO | SR_QUERY_SET_CD) 
 #define SR_QUERY_DEFAULT                (SR_QUERY_RECURSE) 
 
@@ -222,7 +232,8 @@ int             res_gettimeofday_buf(char *buf, size_t bufsize);
 struct sockaddr_storage **create_nsaddr_array(int num_addrs);
 struct name_server *create_name_server(void);
 struct name_server *parse_name_server(const char *cp,
-                                      const char *name_n);
+                                      const char *name_n,
+                                      unsigned long options);
 int             clone_ns(struct name_server **cloned_ns,
                          struct name_server *ns);
 int             clone_ns_list(struct name_server **ns_list,
@@ -277,19 +288,12 @@ void
 res_async_query_free(struct expected_arrival *ea);
 
 int
-res_io_check_one(struct expected_arrival *ea, struct timeval *next_evt,
-                 struct timeval *now);
-
-int
 res_io_check_ea_list(struct expected_arrival *ea, struct timeval *next_evt,
                      struct timeval *now, int *net_change, int *active);
 
 int
 res_io_get_a_response(struct expected_arrival *ea_list, unsigned char **answer,
                       size_t *answer_length, struct name_server **respondent);
-
-void
-res_io_cancel_remaining_attempts(struct expected_arrival *ea);
 
 void
 res_io_cancel_all_remaining_attempts(struct expected_arrival *ea);

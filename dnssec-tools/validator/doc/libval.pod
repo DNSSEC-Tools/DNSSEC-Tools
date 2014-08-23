@@ -218,6 +218,8 @@ The I<gopt> field points to the following structure:
         char *log_target;
         int closest_ta_only;
         int rec_fallback;
+        long max_refresh;
+        int proto;
     } val_global_opt_t;
 
 Setting a value of 1 for I<local_is_trusted> is equivalent to specifying the
@@ -227,8 +229,14 @@ members to 1 is equivalent to setting the I<closest-ta-only>
 and I<rec-fallback> options to B<yes> in the B<dnsval.conf> file. 
 A value of 0 is equivalent to the B<no> setting for these option.
 
-Setting the I<edns0_size> member to a particular value is identical to
+Setting the I<edns0_size> member to a particular value has the same effect 
 setting the I<edns0-size> option in the B<dnsval.conf> file.
+
+Setting the I<max_refresh> member to a particular value has the same effect 
+setting the I<max-refresh> option in the B<dnsval.conf> file.
+
+Setting the I<proto> member to a particular value has the same effect 
+setting the I<proto> option in the B<dnsval.conf> file.
 
 I<env_policy> and I<app_policy> can be set to one of B<VAL_POL_GOPT_DISABLE>,
 B<VAL_POL_GOPT_ENABLE>, or B<VAL_POL_GOPT_OVERRIDE>.  These values correspond

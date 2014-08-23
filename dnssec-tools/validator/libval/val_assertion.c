@@ -79,11 +79,7 @@ extern const char *p_query_status(int err);
 }while (0)
 
 /* 
- * The flags in VAL_QFLAGS_CACHE_PREF_MASK: 
- * (VAL_QUERY_ITERATE, VAL_QUERY_SKIP_CACHE) are special 
- * If we are not looking for these flags, then return what ever we find 
- * If we are looking for this flag, only return a node that has this 
- * flag set
+ * See validator.h for matching semantics
  */
 #define QUERY_FLAGS_MATCHING(cacheflag, queryflag) \
     ((queryflag == VAL_QFLAGS_ANY) ||\
@@ -282,6 +278,7 @@ val_free_result_chain(struct val_result_chain *results)
  *  qc_flags
  *  qc_type
  *  qc_class
+ *  qc_last_sent
  */
 static void 
 init_query_chain_node(struct val_query_chain *q) 
@@ -472,24 +469,37 @@ add_to_query_chain(val_context_t *context, u_char * name_n,
                 } 
             }
 
-
             if (-1 == ns_name_ntop(temp->qc_original_name, name_p, sizeof(name_p)))
                 snprintf(name_p, sizeof(name_p), "unknown/error");
-            if (temp->qc_state >= Q_ANSWERED && tv.tv_sec >= temp->qc_ttl_x) { 
+
+            if (temp->qc_state >= Q_ANSWERED && 
+                /* either record has actually timed out */
+                (tv.tv_sec >= temp->qc_ttl_x ||
+                 /* 
+                  * or we want  want it to time out, modulo our
+                  * max_refresh threshold
+                  */
+                 ((temp->qc_flags & VAL_QUERY_SKIP_CACHE) &&
+                   temp->qc_last_sent != -1 && 
+                   context->g_opt && context->g_opt->max_refresh >= 0 && 
+                   context->g_opt->max_refresh < (tv.tv_sec - temp->qc_last_sent)))) { 
+
                 /* Remove this data at the next safe opportunity */ 
-                val_log(context, LOG_INFO, "add_to_qfq_chain(): Data in cache timed out: {%s %s(%d) %s(%d)}", 
+                val_log(context, LOG_DEBUG,
+                        "ask_cache(): Forcing expiry of {%s %s(%d) %s(%d)}, flags=%x",
                         name_p, p_class(temp->qc_class_h),
                         temp->qc_class_h, p_type(temp->qc_type_h),
-                        temp->qc_type_h);
+                        temp->qc_type_h, temp->qc_flags);
+
                 temp->qc_flags |= VAL_QUERY_MARK_FOR_DELETION;
-                /* There should be no other matching query in the list, so bail out */ 
-                break;
+
             } else {
                 val_log(context, LOG_DEBUG, 
-                        "add_to_qfq_chain(): Found data in cache: {%s %s(%d) %s(%d)}, exp in: %ld", 
+                        "add_to_qfq_chain(): Found query in cache: {%s %s(%d) %s(%d)}, state: %d, flags = %x exp in: %ld", 
                         name_p, p_class(temp->qc_class_h),
                         temp->qc_class_h, p_type(temp->qc_type_h),
-                        temp->qc_type_h, temp->qc_ttl_x - tv.tv_sec);
+                        temp->qc_type_h, temp->qc_state, temp->qc_flags,
+                        temp->qc_ttl_x - tv.tv_sec);
                 /* return this cached record */
                 *added_q = temp;
                 return VAL_NO_ERROR;
@@ -509,15 +519,7 @@ add_to_query_chain(val_context_t *context, u_char * name_n,
     temp->qc_type_h = type_h;
     temp->qc_class_h = class_h;
     temp->qc_flags = flags;
-#if 0
-        /*
-         * If we have caching disabled then don't re-use this element
-         */
-        if(temp->qc_flags & VAL_QUERY_SKIP_CACHE) {
-            temp->qc_flags |= VAL_QUERY_MARK_FOR_DELETION;
-        }
-#endif
-
+    temp->qc_last_sent = -1;
 
     init_query_chain_node(temp);
     
@@ -591,14 +593,13 @@ check_in_qfq_chain(val_context_t *context, struct queries_for_query **queries,
      * sanity checks performed in calling function
      */
 
-    struct queries_for_query *temp, *prev;
+    struct queries_for_query *temp;
     temp = *queries;
-    prev = temp;
 
     while (temp) {
         if ((temp->qfq_query->qc_type_h == type_h)
             && (temp->qfq_query->qc_class_h == class_h)
-            && (QUERY_FLAGS_MATCHING(temp->qfq_query->qc_flags, flags))
+            && (QUERY_FLAGS_MATCHING(temp->qfq_flags, flags))
             && (namecmp(temp->qfq_query->qc_original_name, name_n) == 0)) {
 #ifdef LIBVAL_DLV
             if (type_h == ns_t_dlv) {
@@ -621,7 +622,6 @@ check_in_qfq_chain(val_context_t *context, struct queries_for_query **queries,
 #endif
             break;
         }
-        prev = temp;
         temp = temp->qfq_next;
     }
     return temp;
@@ -1363,16 +1363,16 @@ fails_to_answer_query(struct qname_chain *q_names_n,
     int             type_match;
     int             class_match;
 
-    if ((NULL == the_set) || (NULL == q_names_n) || (NULL == status)) {
-        *status = VAL_AC_DNS_ERROR;
-        return TRUE;
-    }
-
     /*
      * If this is already a wrong answer return 
      */
-    if (*status == (VAL_AC_DNS_ERROR))
+    if (NULL == status || *status == (VAL_AC_DNS_ERROR))
         return TRUE;
+
+    if ((NULL == the_set) || (NULL == q_names_n)) {
+        *status = VAL_AC_DNS_ERROR;
+        return TRUE;
+    }
 
     name_present = name_in_q_names(q_names_n, the_set->rrs_name_n);
     type_match = (the_set->rrs_type_h == q_type_h)
@@ -1887,7 +1887,7 @@ copy_rr_rec_list(struct rrset_rr *o_rr)
 {
     struct rrset_rr *c_rr;
     struct val_rr_rec *n_rr, *head_rr;
-    size_t siz = 0;;
+    size_t siz = 0;
     u_char *buf;
 
     if (NULL == o_rr)
@@ -2584,7 +2584,6 @@ nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
         *status = VAL_NONEXISTENT_NAME;
     }
 
-#if 0
     if (soa_set && !soa_set->val_rc_consumed) { 
         if (VAL_NO_ERROR !=
                 (retval = transform_single_result(ctx, soa_set, queries, results,
@@ -2593,7 +2592,6 @@ nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
         }
         *proof_res = new_res;
     }
-#endif
 
     if (span && !span->res->val_rc_consumed) { 
         if (VAL_NO_ERROR !=
@@ -3112,7 +3110,6 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
         *proof_res = new_res;
     }
 
-#if 0
     if (soa_set && !soa_set->val_rc_consumed) {
         if (VAL_NO_ERROR !=
                 (retval = transform_single_result(ctx, soa_set, queries, results,
@@ -3121,7 +3118,6 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
         }
         *proof_res = new_res;
     }
-#endif
 
     retval = VAL_NO_ERROR;
     goto done;
@@ -3344,13 +3340,6 @@ prove_nonexistence(val_context_t * ctx,
             continue;
 
         /*
-         * skip any proof that doesn't seem to be relevant
-         */
-        if (NULL == namename(qname_n, the_set->rrs_zonecut_n)) {
-            continue;
-        }
-
-        /*
          * check if can skip validation 
          */
         if (val_istrusted(res->val_rc_status) &&
@@ -3374,6 +3363,13 @@ prove_nonexistence(val_context_t * ctx,
             goto err;
         }
         skip_validation = -1;
+
+        /*
+         * skip any proof that doesn't seem to be relevant
+         */
+        if (NULL == namename(qname_n, the_set->rrs_zonecut_n)) {
+            continue;
+        }
 
         if (the_set->rrs_type_h == ns_t_soa) {
             /* Use the SOA minimum time */
@@ -3491,7 +3487,8 @@ prove_nonexistence(val_context_t * ctx,
  */
 static int
 find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
-              u_char * qname_n, int *done, u_char ** name_n)
+                  u_char * qname_n, u_int16_t q_type_h, u_int32_t flags, 
+                  int *done, u_char ** name_n)
 {
     int             retval;
     struct val_result_chain *results = NULL;
@@ -3506,8 +3503,9 @@ find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
     *name_n = NULL;
     *done = 1;
 
-    if (qname_n == NULL)
+    if (qname_n == NULL) {
         return VAL_NO_ERROR;
+    }
 
     /* 
      * if we already have a matching query structure with the zonecut 
@@ -3521,25 +3519,30 @@ find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
             && (q->qc_zonecut_n != NULL)
             && (q->qc_class_h == ns_c_in)
             && (namecmp(q->qc_name_n, qname_n) == 0)) {
+
+            zonecut_name_n = q->qc_zonecut_n;
             break;
         }
         temp_qfq = temp_qfq->qfq_next;
     }
 
-    if (NULL != temp_qfq) { 
-        zonecut_name_n = temp_qfq->qfq_query->qc_zonecut_n;
-        *done = 1;
-        
-    } else {
+    if (NULL == zonecut_name_n) { 
 
+        /*
+         * It is important that we don't enable validation when we look
+         * for the zonecut. If validation is enabled we can run into an
+         * infinite loop. Example:
+         * in order to validate the non-existence of an NS against a
+         * given name for a PI zone we will have to prove that the DS
+         * for that name does not exist. 
+         * In order to determine the DS record, we need  to find the zonecut
+         * ie issue an NS request. This may result in an infinite loop
+         */
         u_char *cur_q = qname_n;  
         if (VAL_NO_ERROR !=
-            (retval = try_chase_query(context, cur_q, ns_c_in,
-                                      ns_t_soa, 
-                                      (*queries)->qfq_flags|\
-                                        VAL_QUERY_DONT_VALIDATE|\
-                                        VAL_QUERY_AC_DETAIL,
-                                      queries, &results, done))) {
+            (retval = try_chase_query(context, cur_q, ns_c_in, ns_t_ns, 
+                          flags|VAL_QUERY_DONT_VALIDATE|VAL_QUERY_AC_DETAIL,
+                          queries, &results, done))) {
             return retval;
         } else if (!(*done)) {
             goto end; 
@@ -3547,21 +3550,11 @@ find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
 
         for (res = results; res; res = res->val_rc_next) {
             int             i;
-            struct val_rrset_rec *soa_rrset = NULL;
-
-            /* 
-             * if we just proved that the type does not exist,
-             * it means that the query name itself is the zonecut
-             */
-            if ((res->val_rc_status == VAL_NONEXISTENT_TYPE) ||
-                (res->val_rc_status == VAL_NONEXISTENT_TYPE_NOCHAIN)) {
-
-                zonecut_name_n = cur_q;
-                break;
-            }
+            struct val_rrset_rec *zc_rrset = NULL;
 
             if ((res->val_rc_answer == NULL)
                 || (res->val_rc_answer->val_ac_rrset == NULL)) {
+                /* If we have a NACK, look for the SOA */
                 if (res->val_rc_proof_count == 0)
                     continue;
                 for (i = 0; i < res->val_rc_proof_count; i++) {
@@ -3570,19 +3563,20 @@ find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
                         /* ensure that this is a real soa and not a hand-crafted one */
                         (res->val_rc_proofs[i]->val_ac_rrset->
                          val_rrset_data != NULL)) {
+
+                        zc_rrset = res->val_rc_proofs[i]->val_ac_rrset;
                         break;
                     }
                 }
-                if (i == res->val_rc_proof_count)
-                    continue;
-                soa_rrset = res->val_rc_proofs[i]->val_ac_rrset;
             } else if (res->val_rc_answer->val_ac_rrset->
-                       val_rrset_type == ns_t_soa) {
-                soa_rrset = res->val_rc_answer->val_ac_rrset;
+                       val_rrset_type == ns_t_ns) {
+                /* If we have an answer, look for the NS */
+                zc_rrset = res->val_rc_answer->val_ac_rrset;
             }
-            if (soa_rrset) {
+
+            if (zc_rrset) {
                 /* store resultant name into *tname_n */
-                if (ns_name_pton(soa_rrset->val_rrset_name, 
+                if (ns_name_pton(zc_rrset->val_rrset_name, 
                             tname_n, sizeof(tname_n)) == -1) {
 
                     /* Cannot find the zonecut */
@@ -3868,41 +3862,31 @@ verify_provably_insecure(val_context_t * context,
     if (-1 == ns_name_ntop(q_name_n, name_p, sizeof(name_p)))
         snprintf(name_p, sizeof(name_p), "unknown/error");
 
+    /*
+     * If we've already tried checking for PI status for this node,
+     * don't repeat the checks. It not only saves us cycles, but it also
+     * prevents a loop when the validation of the DS
+     * existance/non-existence leads to an error that triggers another
+     * PI check
+     */
+    if (flags & VAL_QUERY_SEC_LEAF) {
+        val_log(context, LOG_INFO, "verify_provably_insecure(): No PI zone above %s", name_p);
+        goto err;
+    }
+
     val_log(context, LOG_INFO, "verify_provably_insecure(): Checking PI status for %s", name_p);
 
-    /* find the zonecut for the query */
     if (known_zonecut_n == NULL) {
-        /* 
-         * in order to fetch an SOA with validation enabled, when the zone is not signed
-         * we might have to prove that the DS for that name does not exist. 
-         * In order to determine the DS record to query, we need  to find the zonecut
-         * ie issue an SOA request. This may result in an infinite loop, so don't find
-         * the zonecut in such cases.
-         */
-        if ((q_type_h != ns_t_soa) || (flags & VAL_QUERY_DONT_VALIDATE)) {
-            if (VAL_NO_ERROR != find_next_zonecut(context, queries, q_name_n, done, &q_zonecut_n)) {
-                val_log(context, LOG_INFO, "verify_provably_insecure(): Cannot find zone cut for %s", name_p);
-                goto err;
-
-            } else if (*done == 0) {
-                /* Need more data */
-                val_log(context, LOG_INFO, "verify_provably_insecure(): Finding zonecut data for %s", name_p);
-                goto donefornow;
-            }
-        }
-       
         /* 
          * In cases where the zonecut does not exist simply start with the qname 
          */
+        size_t len = wire_name_length(q_name_n);
+        q_zonecut_n = (u_char *) MALLOC (len * sizeof (u_char));
         if (q_zonecut_n == NULL) {
-            size_t len = wire_name_length(q_name_n);
-            q_zonecut_n = (u_char *) MALLOC (len * sizeof (u_char));
-            if (q_zonecut_n == NULL) {
-                retval = VAL_OUT_OF_MEMORY;
-                goto err;
-            }
-            memcpy(q_zonecut_n, q_name_n, len);
+            retval = VAL_OUT_OF_MEMORY;
+            goto err;
         }
+        memcpy(q_zonecut_n, q_name_n, len);
         
     } else {
         /* copy the known zonecut into our zonecut variable */
@@ -4030,19 +4014,11 @@ verify_provably_insecure(val_context_t * context,
             snprintf(tempname_p, sizeof(tempname_p), "unknown/error");
         } 
     
-        /* 
-         * in order to fetch an SOA with validation enabled, when the zone is not signed
-         * we might have to prove that the DS for that name does not exist. 
-         * In order to determine the DS record to query, we need  to find the zonecut
-         * ie issue an SOA request. This may result in an infinite loop so don't look
-         * for the SOA record.
-         */
-        if ( q_type_h != ns_t_soa || 
-            (flags & VAL_QUERY_DONT_VALIDATE) ||
-            namecmp(q_name_n, nxt_qname)) {
+        if (namecmp(q_name_n, nxt_qname)) {
 
             /* find next zone cut going down from the trust anchor */
-            if (VAL_NO_ERROR != find_next_zonecut(context, queries, nxt_qname, done, &zonecut_n)) {
+            if (VAL_NO_ERROR != find_next_zonecut(context, queries,
+                        nxt_qname, q_type_h, flags, done, &zonecut_n)) {
                 val_log(context, LOG_INFO, "verify_provably_insecure(): Cannot find zone cut for %s", tempname_p);
                 goto err;
             } else if (*done == 0) {
@@ -4090,7 +4066,7 @@ verify_provably_insecure(val_context_t * context,
         /* if older zonecut is more specific than the new one bail out */
         if (namename(curzone_n, zonecut_n) != NULL) {
             val_log(context, LOG_INFO, 
-                    "verify_provably_insecure(): Older zonecut is more current than the current one: %s",
+                    "verify_provably_insecure(): Older zonecut is more specific than the current one: %s",
                     tempname_p);
             goto err;
         }
@@ -4098,7 +4074,9 @@ verify_provably_insecure(val_context_t * context,
         /* try validating the DS */
         if (VAL_NO_ERROR != (retval = 
                     try_chase_query(context, zonecut_n, ns_c_in, 
-                                    ns_t_ds, flags|VAL_QUERY_AC_DETAIL, queries, &results, done))) {
+                                    ns_t_ds, 
+                                    flags|VAL_QUERY_SEC_LEAF|VAL_QUERY_AC_DETAIL, 
+                                    queries, &results, done))) {
             val_log(context, LOG_INFO, 
                     "verify_provably_insecure(): Cannot chase DS record for %s", tempname_p);
             goto err;
@@ -4173,6 +4151,12 @@ verify_provably_insecure(val_context_t * context,
                     if (ds.d_hash != NULL)
                         FREE(ds.d_hash);
                     rr = rr->rr_next;
+                }
+                if (*is_pinsecure) {
+                    val_log(context, LOG_INFO,
+                            "verify_provably_insecure(): Unknown DS alg for %s", name_p);
+                    val_log(context, LOG_INFO, 
+                            "verify_provably_insecure(): %s is provably insecure", name_p);
                 }
             }
         }
@@ -4338,16 +4322,20 @@ try_verify_assertion(val_context_t * context,
 
     if (next_as->val_ac_status == VAL_AC_WAIT_FOR_RRSIG) {
 
+        if (next_as->val_ac_rrset.ac_data == NULL) {
+            /*
+             * if no data exists, why are we waiting for an RRSIG again? 
+             */
+            next_as->val_ac_status = VAL_AC_DATA_MISSING;
+            return VAL_NO_ERROR;
+        }
+
         /* find the pending query */
         if (VAL_NO_ERROR != (retval = add_to_qfq_chain(context,
                                                        queries,
-                                                       next_as->val_ac_rrset.ac_data->
-                                                       
-                                                       rrs_name_n,
+                                                       next_as->val_ac_rrset.ac_data->rrs_name_n,
                                                        ns_t_rrsig,
-                                                       next_as->val_ac_rrset.ac_data->
-                                                       
-                                                       rrs_class_h,
+                                                       next_as->val_ac_rrset.ac_data->rrs_class_h,
                                                        flags,
                                                        &pc)))
                 return retval;
@@ -4359,64 +4347,56 @@ try_verify_assertion(val_context_t * context,
         else if (pc->qfq_query->qc_state < Q_ANSWERED)
             return VAL_NO_ERROR; 
             
-        if (next_as->val_ac_rrset.ac_data == NULL) {
-            /*
-             * if no data exists, why are we waiting for an RRSIG again? 
-             */
-            next_as->val_ac_status = VAL_AC_DATA_MISSING;
-            return VAL_NO_ERROR;
-        } else {
-            struct val_digested_auth_chain *pending_as;
-            for (pending_as = pc->qfq_query->qc_ans; pending_as;
+        struct val_digested_auth_chain *pending_as;
+        for (pending_as = pc->qfq_query->qc_ans; pending_as;
                  pending_as = pending_as->val_ac_rrset.val_ac_rrset_next) {
-                /*
-                 * We were waiting for the RRSIG 
-                 */
-                pending_rrset = pending_as->val_ac_rrset.ac_data;
-                if ((pending_rrset == NULL) ||
-                    (pending_rrset->rrs_sig == NULL) ||
-                    (pending_rrset->rrs_sig->rr_rdata == NULL)) {
-                        continue;
-                }
+            /*
+             * We were waiting for the RRSIG 
+             */
+            pending_rrset = pending_as->val_ac_rrset.ac_data;
+            if ((pending_rrset == NULL) ||
+                (pending_rrset->rrs_sig == NULL) ||
+                (pending_rrset->rrs_sig->rr_rdata == NULL)) {
+                continue;
+            }
 
+            /*
+             * Check if what we got was an RRSIG 
+             */
+            if (pending_as->val_ac_status == VAL_AC_BARE_RRSIG) {
                 /*
-                 * Check if what we got was an RRSIG 
+                 * Find the RRSIG that matches the type 
+                 * Check if type is in the RRSIG 
                  */
-                if (pending_as->val_ac_status == VAL_AC_BARE_RRSIG) {
+                u_int16_t       rrsig_type_n;
+                memcpy(&rrsig_type_n,
+                       pending_rrset->rrs_sig->rr_rdata,
+                       sizeof(u_int16_t));
+                if (next_as->val_ac_rrset.ac_data->rrs_type_h ==
+                    ntohs(rrsig_type_n)) {
                     /*
-                     * Find the RRSIG that matches the type 
-                     * Check if type is in the RRSIG 
+                     * store the RRSIG in the assertion 
                      */
-                    u_int16_t       rrsig_type_n;
-                    memcpy(&rrsig_type_n,
-                           pending_rrset->rrs_sig->rr_rdata,
-                           sizeof(u_int16_t));
-                    if (next_as->val_ac_rrset.ac_data->rrs_type_h ==
-                        ntohs(rrsig_type_n)) {
-                        /*
-                         * store the RRSIG in the assertion 
-                         */
-                        next_as->val_ac_rrset.ac_data->rrs_sig = pending_rrset->rrs_sig;
-                        pending_rrset->rrs_sig = NULL;
-                        next_as->val_ac_status = VAL_AC_WAIT_FOR_TRUST;
-                        /*
-                         * create a pending query for the trust portion 
-                         */
-                        if (VAL_NO_ERROR !=
+                    next_as->val_ac_rrset.ac_data->rrs_sig = pending_rrset->rrs_sig;
+                    pending_rrset->rrs_sig = NULL;
+                    next_as->val_ac_status = VAL_AC_WAIT_FOR_TRUST;
+                    /*
+                     * create a pending query for the trust portion 
+                     */
+                    if (VAL_NO_ERROR !=
                             (retval =
                              build_pending_query(context, queries, next_as, &added_q, flags)))
-                            return retval;
-                        break;
-                    }
+                        return retval;
+                    break;
                 }
             }
-            if (pending_as == NULL) {
-                /*
-                 * Could not find any RRSIG matching query type
-                 */
-                next_as->val_ac_status = VAL_AC_RRSIG_MISSING;
-                return VAL_NO_ERROR;
-            }
+        }
+        if (pending_as == NULL) {
+            /*
+             * Could not find any RRSIG matching query type
+             */
+            next_as->val_ac_status = VAL_AC_RRSIG_MISSING;
+            return VAL_NO_ERROR;
         }
     } else if (next_as->val_ac_status == VAL_AC_WAIT_FOR_TRUST) {
 
@@ -4804,12 +4784,12 @@ int switch_to_root(val_context_t * context,
 
     /* reset the flags that are not in the user mask */
     matched_q->qc_flags &= VAL_QFLAGS_USERMASK;
-    matched_q->qc_flags |= (VAL_QUERY_ITERATE|VAL_QUERY_SKIP_CACHE);
+    matched_q->qc_flags |= VAL_QUERY_ITERATE;
     /*
      * Iteratively lookup from root for all additional queries sent in
      * in relation to this query; e.g. queries for DNSKEYs, DS etc 
      */
-    matched_qfq->qfq_flags |= (VAL_QUERY_ITERATE|VAL_QUERY_SKIP_CACHE);
+    matched_qfq->qfq_flags |= VAL_QUERY_ITERATE;
     val_log(context, LOG_INFO,
             "switch_to_root(): Re-initiating query from root for {%s %s %s}",
             name_p,
@@ -5289,6 +5269,7 @@ restart_query:
                                                   &added_q, 
                                                   res->val_rc_flags)))
                     return retval;
+                /* XXX SK Need to think about this */
                 res->val_rc_status = VAL_DONT_KNOW;
                 goto restart_query;
             }
@@ -5419,17 +5400,19 @@ _ask_cache_one(val_context_t * context, struct queries_for_query **queries,
     if (-1 == ns_name_ntop(next_q->qfq_query->qc_name_n, name_p, sizeof(name_p)))
         snprintf(name_p, sizeof(name_p), "unknown/error");
 
-    if (next_q->qfq_query->qc_flags & VAL_QUERY_SKIP_CACHE) {
+    if ((next_q->qfq_query->qc_flags & VAL_QUERY_ITERATE)||
+        (next_q->qfq_query->qc_flags & VAL_QUERY_SKIP_CACHE)) {
+
         /* don't look at the cache for this query */
         val_log(context, LOG_DEBUG,
-                "ask_cache(): skipping cache for {%s %s(%d) %s(%d)}, flags=%x",
+                "ask_cache(): skipping cache for iterative mode {%s %s(%d) %s(%d)}, flags=%x",
                 name_p, p_class(next_q->qfq_query->qc_class_h),
                 next_q->qfq_query->qc_class_h,
                 p_type(next_q->qfq_query->qc_type_h),
                 next_q->qfq_query->qc_type_h, next_q->qfq_query->qc_flags);
         return VAL_NO_ERROR;
     }
- 
+
     val_log(context, LOG_DEBUG,
             "ask_cache(): looking for {%s %s(%d) %s(%d)}, flags=%x", name_p,
             p_class(next_q->qfq_query->qc_class_h),
@@ -5501,6 +5484,11 @@ _ask_cache_one(val_context_t * context, struct queries_for_query **queries,
 
         if (next_q->qfq_query->qc_referral == NULL) {
             ALLOCATE_REFERRAL_BLOCK(next_q->qfq_query->qc_referral);
+            if (next_q->qfq_query->qc_referral == NULL) {
+                free_domain_info_ptrs(response);
+                FREE(response);
+                return VAL_OUT_OF_MEMORY;
+            }
         }
         /*
          * Consume qnames
@@ -5789,7 +5777,7 @@ check_wildcard_sanity(val_context_t * context,
     struct val_result_chain *target_res;
     struct val_result_chain *new_res;
     struct val_query_chain *top_q;
-    u_char       *zonecut_n;
+    /*u_char       *zonecut_n;*/
     val_status_t    status;
     int             retval;
     u_int32_t       soa_ttl_x = 0;
@@ -5799,7 +5787,7 @@ check_wildcard_sanity(val_context_t * context,
     
     top_q = top_qfq->qfq_query;
     
-    zonecut_n = NULL;
+    /*zonecut_n = NULL;*/
     target_res = NULL;
 
     for (res = w_results; res; res = res->val_rc_next) {
@@ -6357,6 +6345,7 @@ int try_chase_query(val_context_t * context,
         return retval;
     }
 
+
     /* 
      * Never release a query when we're chasing it in the
      * context of another query
@@ -6696,39 +6685,40 @@ _context_as_remove(val_context_t *context, val_async_status *as)
 }
 
 static int
-_async_status_free(val_async_status *as)
+_async_status_free(val_async_status **as)
 {
-    if (NULL == as)
+    if (NULL == as || NULL == *as)
         return VAL_BAD_ARGUMENT;
 
-    val_log(as->val_as_ctx, LOG_DEBUG, "as %p releasing", as);
+    val_log((*as)->val_as_ctx, LOG_DEBUG, "as %p releasing", (*as));
 
     /* remove all pending queries from context list */
-    free_qfq_chain(as->val_as_ctx, as->val_as_queries);
-    as->val_as_queries = NULL;
+    free_qfq_chain((*as)->val_as_ctx, (*as)->val_as_queries);
+    (*as)->val_as_queries = NULL;
 
-    if (as->val_as_results) {
-        val_free_result_chain(as->val_as_results);
-        as->val_as_results = NULL;
+    if ((*as)->val_as_results) {
+        val_free_result_chain((*as)->val_as_results);
+        (*as)->val_as_results = NULL;
     }
 
-    if (as->val_as_answers) {
-        val_free_answer_chain(as->val_as_answers);
-        as->val_as_answers = NULL;
+    if ((*as)->val_as_answers) {
+        val_free_answer_chain((*as)->val_as_answers);
+        (*as)->val_as_answers = NULL;
     }
 
-    _context_as_remove(as->val_as_ctx, as);
+    _context_as_remove((*as)->val_as_ctx, (*as));
 
-    FREE(as->val_as_name);
+    FREE((*as)->val_as_name);
 #ifdef DEBUG_DONT_RELEASE_ANYTHING
     {
         static val_async_status *holding = NULL;
 
-        as->val_as_next = holding;
-        holding = as;
+        (*as)->val_as_next = holding;
+        holding = *as;
     }
 #else
-    FREE(as);
+    FREE(*as);
+    *as = NULL;
 #endif
 
     return VAL_NO_ERROR;
@@ -6753,6 +6743,9 @@ _call_callbacks(int event, val_async_status *as)
      * call async cancel, which will call callbacks = instant loop!)
      */
     as->val_as_flags |= VAL_AS_CALLBACK_CALLED;
+    if (as->val_as_flags & VAL_AS_INFLIGHT) {
+        as->val_as_flags ^= VAL_AS_INFLIGHT;
+    }
 
     if (VAL_AS_EVENT_COMPLETED == event) {
         if (!(as->val_as_flags & VAL_AS_DONE) ||
@@ -6767,6 +6760,7 @@ _call_callbacks(int event, val_async_status *as)
         val_cb_params_t cbp;
         memset(&cbp, 0, sizeof(cbp));
 
+        // XXX SK Do we need to set val_status to val_as_retval?
         cbp.val_status = as->val_as_retval;
         cbp.name = as->val_as_name;
         cbp.class_h = as->val_as_class;
@@ -6840,7 +6834,7 @@ _handle_completed(val_context_t *context)
         completed = completed->val_as_next;
         _call_callbacks(VAL_AS_EVENT_COMPLETED, as);
         as->val_as_ctx = NULL; /* we've already removed ourselves */
-        _async_status_free(as); /* no ctx, so no lock needed */
+        _async_status_free(&as); /* no ctx, so no lock needed */
         CTX_UNLOCK_POL(context);
     }
 }
@@ -6910,7 +6904,7 @@ val_async_submit(val_context_t * ctx,  const char * domain_name, int class_h,
      */
     context = val_create_or_refresh_context(ctx); /* does CTX_LOCK_POL_SH */
     if (NULL == context) {
-        _async_status_free(as); /* no context, so no lock needed */
+        _async_status_free(&as); /* no context, so no lock needed */
         return VAL_INTERNAL_ERROR;
     }
 
@@ -6971,17 +6965,30 @@ val_async_submit(val_context_t * ctx,  const char * domain_name, int class_h,
      * Send un-sent queries
      */
     if ((VAL_NO_ERROR == retval) &&
-        (added_q->qfq_query->qc_state == Q_INIT) &&
-        (! (flags & VAL_QUERY_SKIP_RESOLVER))) {
+        (added_q->qfq_query->qc_state == Q_INIT)) {
 
         retval = _resolver_submit_one(context, &as->val_as_queries,
                                       added_q);
-        if (NULL == added_q->qfq_query->qc_ea)
-            retval = VAL_INTERNAL_ERROR;
+        /*
+         * SK: 
+         * Commented this block out to fix an issue that I was
+         * seeing in dt-validate async checks
+         * There are legitimate reasons for qc_ea to be NULL, so we
+         * shouldn't treat this as an error as we are doing below
+         * All errors should be theoretically caught by retval above, so
+         * commenting this out should be okay.
+         *
+         * if (NULL == added_q->qfq_query->qc_ea)
+         *   retval = VAL_INTERNAL_ERROR;
+         */
+
+        if (VAL_NO_ERROR == retval) {
+            as->val_as_flags |= VAL_AS_INFLIGHT;
+        }
     }
 
     if ((VAL_NO_ERROR != retval) && (NULL != added_q))
-        _async_status_free(as);
+        _async_status_free(&as);
     else {
         ASSERT_HAVE_AC_LOCK(context);
 
@@ -7127,8 +7134,6 @@ _async_check_one(val_async_status *as, fd_set *pending_desc,
             as->val_as_flags |= VAL_AS_DONE;
             val_log(context, LOG_DEBUG, "as %p _async_check_one/DONE", as);
         } else {
-            if (-1 == done)
-                ++as_remain; /* switched to root */
             val_free_result_chain(as->val_as_results);
             as->val_as_results = NULL;
         }
@@ -7373,7 +7378,7 @@ _async_cancel_one(val_context_t *context, val_async_status *as, u_int flags)
     if (! (flags & VAL_AS_CANCEL_CTX_REMOVED))
         _context_as_remove(context, as);
 
-    _async_status_free(as);
+    _async_status_free(&as);
 
     CTX_UNLOCK_POL(context);
 }
@@ -7434,6 +7439,22 @@ val_async_cancel_all(val_context_t *context, unsigned int flags)
     CTX_UNLOCK_ACACHE(context);
 
     return VAL_NO_ERROR;
+}
+
+/*
+ * Function: val_async_getflags
+ *
+ * Purpose: Get the flags associated with the asynchronous request 
+ *
+ * Parameter: as -- val_async_status for pending request.
+ */
+unsigned int 
+val_async_getflags(val_async_status *as)
+{
+    if (NULL == as)
+        return 0;
+
+    return as->val_as_flags;
 }
 
 #endif /* VAL_NO_ASYNC */

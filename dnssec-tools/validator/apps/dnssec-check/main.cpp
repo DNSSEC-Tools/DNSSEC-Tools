@@ -1,19 +1,22 @@
 #include "mainwindow.h"
 #include "whatami.h"
-#include "qmlapplicationviewer.h"
+#include <QtQml>
+#include <QtGui/QGuiApplication>
+#include "qtquick2applicationviewer.h"
 #include "TestManager.h"
 
 #include <qdebug.h>
 
 #include <QtGui/QApplication>
-#include <QtDeclarative/QDeclarativeContext>
+//#include <QtDeclarative/QDeclarativeContext>
 #include <QtDeclarative/QDeclarativeEngine>
-#include <QtDeclarative/QDeclarativeComponent>
+//#include <QtDeclarative/QDeclarativeComponent>
+#include <QQmlContext>
 
 #define USE_QML 1
 
 extern "C" {
-void val_freeaddrinfo(addrinfo *foo) { }
+void val_freeaddrinfo(addrinfo *foo) { Q_UNUSED(foo);}
 }
 
 int main(int argc, char *argv[])
@@ -34,15 +37,22 @@ int main(int argc, char *argv[])
         use_qml = false;
 
     if (use_qml) {
+        qDebug() << "here...  registering";
         qRegisterMetaType<DNSSECTest>("DNSSECTest");
-        qmlRegisterType<DNSSECTest, 1>("DNSSECTools", 1, 0, "DNSSECTest");
-        qmlRegisterType<TestManager, 1>("DNSSECTools", 1, 0, "TestManager");
 
-        QmlApplicationViewer viewer;
-        QDeclarativeContext *context;
+        int ret = 0;
+        ret = qmlRegisterType<DNSSECTest, 1>("DNSSECTools", 1, 0, "DNSSECTest");
+        qDebug() << "registration status 1: " << ret;
+        ret = qmlRegisterType<TestManager, 1>("DNSSECTools", 1, 0, "TestManager");
+        qDebug() << "registration status 2: " << ret;
+        ret = qmlRegisterType<DNSSECTest, 1>("DNSSECTools", 1, 0, "DNSSECTest");
+        qDebug() << "registration status 1: " << ret;
+
+        QtQuick2ApplicationViewer viewer;
+        QQmlContext *context;
         viewer.addImportPath(":/qml");
-        viewer.setWindowIcon(QIcon(":/images/dnssec-check-64x64.png"));
-        viewer.setWindowTitle("DNSSEC-Check");
+        viewer.setIcon(QIcon(":/images/dnssec-check-64x64.png"));
+        viewer.setTitle("DNSSEC-Check");
 
         TestManager manager;
         context = viewer.rootContext();
@@ -54,8 +64,7 @@ int main(int argc, char *argv[])
         viewer.setSource(QUrl("qrc:/qml/DnssecCheck.qml"));
         #endif
 
-
-        viewer.setOrientation(QmlApplicationViewer::ScreenOrientationLockLandscape);
+        //viewer.setOrientation(QmlApplicationViewer::ScreenOrientationLockLandscape);
         #ifdef IS_MEEGO
         viewer.showFullScreen();
         #else
@@ -64,6 +73,7 @@ int main(int argc, char *argv[])
 
         return app.exec();
     } else { // don't use QML
+#ifdef NOT_ON_QT5
         MainWindow mainWindow;
         mainWindow.setOrientation(MainWindow::Auto);
 
@@ -76,5 +86,6 @@ int main(int argc, char *argv[])
         #endif
 
         return app.exec();
+#endif
     }
 }

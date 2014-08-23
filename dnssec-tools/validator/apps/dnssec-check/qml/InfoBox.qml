@@ -1,4 +1,4 @@
-import QtQuick 1.0
+import QtQuick 2.0
 
 Flickable {
     id: infoBox
@@ -102,7 +102,7 @@ Flickable {
         opacity: infoFlickable.atYEnd ? 0 : 1
         Image {
             id: downArrow
-            source: ":/images/arrow.png"
+            source: "qrc:/images/arrow.png"
             anchors.centerIn: parent
         }
         MouseArea {
@@ -129,7 +129,7 @@ Flickable {
         opacity: infoFlickable.atYBeginning ? 0 : 1
         Image {
             id: upArrow
-            source: ":/images/arrow.png"
+            source: "qrc:/images/arrow.png"
             anchors.centerIn: parent
             rotation: 180
         }
@@ -150,7 +150,7 @@ Flickable {
         anchors.rightMargin: 4
         z: infoFlickable.z + 2
 
-        source: ":/images/xbox.png"
+        source: "qrc:/images/xbox.png"
 
         MouseArea {
             anchors.fill: parent
@@ -174,6 +174,10 @@ Flickable {
                 target: infoBox
                 statusText: ""
             }
+            PropertyChanges {
+                target: infoBox
+                visible: false
+            }
         },
         State {
             name: "visible"
@@ -184,6 +188,10 @@ Flickable {
             PropertyChanges {
                 target: infoBox
                 statusText: ""
+            }
+            PropertyChanges {
+                target: infoBox
+                visible: true
             }
         }
 

@@ -19,7 +19,7 @@
 use strict;
 
 use Getopt::Long qw(:config no_ignore_case_always);
-# use Net::DNS::SEC::Tools::dnssectools;
+use Net::DNS::SEC::Tools::conf;
 
 #######################################################################
 #
@@ -117,7 +117,7 @@ sub run_trustman
 	#
 	# Get trustman's opinion.
 	#
-	$out = `/usr/local/bin/trustman -M -k /etc/dnsval.conf`;
+	$out = `/usr/local/bin/trustman -M -k $Net::DNS::SEC::Tools::conf::sysconfdir/dnsval.conf`;
 	$ret = $? >> 8;
 # out("dt_trustman:  trustman out - <$out>");
 # out("dt_trustman:  trustman returned <$ret>");
@@ -205,7 +205,7 @@ with DNSSEC-Tools.
 
 B<dt_trustman> passes the following arguments to B<trustman>
 
-    -M -k /etc/dnsval.conf
+    -M -k DT_SYSCONFDIR/dnsval.conf
 
 The filename may have to be adjusted, depending on the individual
 installation.
