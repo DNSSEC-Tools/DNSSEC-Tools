@@ -35,7 +35,7 @@ DEPENDPATH  +=
 VPATH       += src uis
 CONFIG      -= 
 CONFIG      += debug
-QT=core gui
+QT=core gui widgets network
 
 
 

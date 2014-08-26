@@ -1,18 +1,18 @@
 #ifndef LOOKUP_H
 #define LOOKUP_H
 
-#include <QtCore/QString>
-#include <QtGui/QWidget>
-#include <QtGui/QLineEdit>
-#include <QtGui/QLabel>
-#include <QtGui/QTreeView>
-#include <QtGui/QStandardItemModel>
-#include <QtGui/QGridLayout>
-#include <QtGui/QScrollArea>
-#include <QtGui/QPushButton>
-#include <QtCore/QSize>
-#include <QtCore/QSignalMapper>
-#include <QtGui/QMainWindow>
+#include <QWidget>
+#include <QString>
+#include <QLineEdit>
+#include <QLabel>
+#include <QTreeView>
+#include <QStandardItemModel>
+#include <QGridLayout>
+#include <QScrollArea>
+#include <QPushButton>
+#include <QSize>
+#include <QSignalMapper>
+#include <QMainWindow>
 
 #include <arpa/inet.h>
 #include <arpa/nameser.h>

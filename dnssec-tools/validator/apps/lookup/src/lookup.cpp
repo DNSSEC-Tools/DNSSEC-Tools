@@ -1,26 +1,27 @@
-#include <QtGui/QApplication>
-#include <QtGui/QFont>
-#include <QtGui/QGridLayout>
-#include <QtGui/QHBoxLayout>
-#include <QtGui/QLCDNumber>
-#include <QtGui/QLabel>
-#include <QtGui/QPushButton>
-#include <QtGui/QShortcut>
-#include <QtGui/QVBoxLayout>
-#include <QtGui/QLineEdit>
-#include <QtGui/QWidget>
-#include <QtGui/QScrollArea>
-#include <QtGui/QMenu>
-#include <QtGui/QPixmap>
-#include <QtCore/QRegExp>
-#include <QtCore/QMap>
-#include <QtCore/QVector>
-#include <QtCore/QTimer>
-#include <QtCore/QTime>
-#include <QtGui/QMenu>
-#include <QtGui/QMenuBar>
-#include <QtGui/QMessageBox>
-#include <QtCore/QSettings>
+#include <QWidget>
+#include <QApplication>
+#include <QFont>
+#include <QGridLayout>
+#include <QHBoxLayout>
+#include <QLCDNumber>
+#include <QLabel>
+#include <QPushButton>
+#include <QShortcut>
+#include <QVBoxLayout>
+#include <QLineEdit>
+#include <QWidget>
+#include <QScrollArea>
+#include <QMenu>
+#include <QPixmap>
+#include <QRegExp>
+#include <QMap>
+#include <QVector>
+#include <QTimer>
+#include <QTime>
+#include <QMenu>
+#include <QMenuBar>
+#include <QMessageBox>
+#include <QSettings>
 #include <QDebug>
 
 #include "lookup.h"
@@ -262,7 +263,7 @@ Lookup::init_libval() {
     // create a validator context
     val_create_context("lookup", &val_ctx);
     if (m_logLocation.length() > 0)
-        val_log_add_optarg(QString("7:file:" + m_logLocation).toAscii().data(), 0);
+        val_log_add_optarg(QString("7:file:" + m_logLocation).toLatin1().data(), 0);
 
     // capture our own log messages
     val_log_add_cb(NULL, 99, &val_collect_logs);

@@ -1,3 +1,4 @@
+#include <QWidget>
 #include "QDNSItemModel.h"
 
 QDNSItemModel::QDNSItemModel(QObject *parent) 

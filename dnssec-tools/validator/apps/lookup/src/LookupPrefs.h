@@ -5,6 +5,7 @@
 #include <QtGui/QVBoxLayout>
 #include <QtGui/QFormLayout>
 #include <QtGui/QLineEdit>
+#include <QWidget>
 
 class LookupPrefs : public QDialog
 {

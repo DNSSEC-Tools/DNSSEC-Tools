@@ -1,3 +1,4 @@
+#include <QWidget>
 #include "LookupPrefs.h"
 #include <QtGui/QWidget>
 #include <QtGui/QDialogButtonBox>
