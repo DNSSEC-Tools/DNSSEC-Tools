@@ -28,6 +28,7 @@ const char resolv_conf_inline_buf[] = "";
 
 #ifdef ANDROID
 #include <sys/system_properties.h>
+#define atexit()
 #endif /* ANDROID */
 
 #define READ_POL_FOR_ZONE(buf_ptr, end_ptr, line_number, endst, retval, err, token)  do {\
