@@ -1310,8 +1310,10 @@ sub parse_tlsa
   {
       # got more data
       if (/\)\s*$/) {
-	  if (/\G\s*(\S*)\s*\)\s*$/gc) {
+	  while (/\G\s*([0-9A-Za-z]+)\s*/gc) {
 	      $tlsa->{'cert'} .= $1;
+	  }
+	  if (/\G\s*\)$/gc) {
 	      $tlsa->{'cert'} = lc($tlsa->{'cert'});
 
 	      # we're done
@@ -1321,7 +1323,7 @@ sub parse_tlsa
 	      push @zone, $tlsa;
 	      $tlsa = undef;
 	  } else {
-	      error("bad tlsa last line");
+	      error("bad tlsa last line: $_");
 	  }
       } else {
 	  if (/\G\s*(\S+)\s*$/gc) {
