@@ -1541,7 +1541,7 @@ destroy_valpol(val_context_t * ctx)
 }
 
 
-#ifdef __linux__
+#if defined(__linux__) && !defined(eabi)
 #define getprogname() program_invocation_short_name 
 #endif
 #ifdef solaris2
