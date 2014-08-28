@@ -81,7 +81,7 @@ static int ns_rwlock = -1;
 static int ns_rwlock_init = -1;
 static int ans_rwlock = -1;
 static int ans_rwlock_init = -1;
-static int map_rwlock -1;
+static int map_rwlock = -1;
 static int map_rwlock_init = -1;
 
 #define VAL_CACHE_LOCK_INIT(lk, initvar)
