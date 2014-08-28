@@ -2151,9 +2151,9 @@ read_res_config_file(val_context_t * ctx)
     struct name_server *ns = NULL;
     unsigned long ns_options = SR_QUERY_RECURSE;
 
-    if (val_context_ip4(context) && !val_context_ip6(context)) {
+    if (val_context_ip4(ctx) && !val_context_ip6(ctx)) {
         ns_options |= SR_QUERY_IPV4_ONLY;
-    } else if (!val_context_ip4(context) && val_context_ip6(context)) {
+    } else if (!val_context_ip4(ctx) && val_context_ip6(ctx)) {
         ns_options |= SR_QUERY_IPV6_ONLY;
     }
 
