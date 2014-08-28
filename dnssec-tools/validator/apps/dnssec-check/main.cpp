@@ -1,17 +1,18 @@
 #include "mainwindow.h"
 #include "whatami.h"
 #include <QtQml>
-#include <QtGui/QGuiApplication>
+#include <QGuiApplication>
 #include "qtquick2applicationviewer.h"
 #include "TestManager.h"
 
 #include <qdebug.h>
 
-#include <QtGui/QApplication>
+#include <QApplication>
 //#include <QtDeclarative/QDeclarativeContext>
 #include <QtDeclarative/QDeclarativeEngine>
 //#include <QtDeclarative/QDeclarativeComponent>
 #include <QQmlContext>
+
 
 #define USE_QML 1
 

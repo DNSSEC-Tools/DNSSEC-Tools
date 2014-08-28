@@ -2,18 +2,21 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
-#include <QtGui/QMainWindow>
+#include <QMainWindow>
+
+#include <sys/types.h>
+#ifdef NEED_SYS_SELECT_H
+#include <sys/select.h>
+#endif
 
 #include <validator/resolver.h>
 #include <validator/validator.h>
 
-#include <sys/types.h>
-
-#include <QtGui/QGridLayout>
-#include <QtGui/QVBoxLayout>
-#include <QtGui/QLabel>
-#include <QtGui/QPushButton>
-#include <QtGui/QLineEdit>
+#include <QGridLayout>
+#include <QVBoxLayout>
+#include <QLabel>
+#include <QPushButton>
+#include <QLineEdit>
 
 #include <QtNetwork/QNetworkAccessManager>
 

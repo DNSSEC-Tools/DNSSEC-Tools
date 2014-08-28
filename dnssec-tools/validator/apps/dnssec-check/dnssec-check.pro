@@ -40,6 +40,8 @@ isEmpty(ANDROID_PLATFORM) {
     QMAKE_LIBDIR += /root/necessitas/android-ndk-r5c/platforms/android-4/arch-arm/usr/lib/
     QMAKE_LIBDIR     += ../../libval/.libs
     QMAKE_LIBDIR     += ../../libsres/.libs
+    DEFINES += HAVE_SYS_TYPES_H
+    DEFINES += NEED_SYS_SELECT_H
     LIBS        += -lval -lsres -lssl -lcrypto
 }
 
