@@ -6,10 +6,11 @@ SOURCES       = main.cpp \
                 dnssec-system-tray.cpp \
     DnssecSystemTrayPrefs.cpp
 RESOURCES     = dnssec-system-tray.qrc
-QT           += xml svg
+QT           += xml svg core widgets
 
-include(deployment.pri)
-qtcAddDeployment()
+#include(deployment.pri)
+#include(qtquick2applicationviewer/qtquick2applicationviewer.pri)
+#qtcAddDeployment()
 
 BINDIR = $$PREFIX/bin
 DATADIR =$$PREFIX/share

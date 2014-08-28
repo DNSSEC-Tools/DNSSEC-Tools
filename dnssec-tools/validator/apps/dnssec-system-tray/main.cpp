@@ -39,6 +39,8 @@
 ****************************************************************************/
 
 #include <QtGui>
+#include <QApplication>
+#include <QMessageBox>
 
 #include "dnssec-system-tray.h"
 

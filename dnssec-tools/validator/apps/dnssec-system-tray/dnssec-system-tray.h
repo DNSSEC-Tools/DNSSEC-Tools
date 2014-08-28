@@ -41,6 +41,8 @@
 #ifndef WINDOW_H
 #define WINDOW_H
 
+#define QT_NO_PRINTER
+
 #include <QSystemTrayIcon>
 #include <QDialog>
 #include <QtGui/QVBoxLayout>

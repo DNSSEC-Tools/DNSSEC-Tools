@@ -42,6 +42,12 @@
 
 #include <qdebug.h>
 
+#include <QAction>
+#include <QMessageBox>
+#include <QHeaderView>
+#include <QMenu>
+#include <QMenuBar>
+
 #include "dnssec-system-tray.h"
 #include "DnssecSystemTrayPrefs.h"
 

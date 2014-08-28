@@ -1,6 +1,8 @@
 #ifndef DNSSECSYSTEMTRAYPREFS_H
 #define DNSSECSYSTEMTRAYPREFS_H
 
+#define QT_NO_PRINTER
+
 #include <QDialog>
 #include <QtGui/QVBoxLayout>
 #include <QtGui/QFormLayout>
