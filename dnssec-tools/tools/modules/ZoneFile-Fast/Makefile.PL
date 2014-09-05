@@ -10,4 +10,15 @@ WriteMakefile(
 			     'MIME::Base64'  => 0,
                              'IO::File'      => 0,
 			   },
+
+	META_MERGE => {
+	    'meta-spec' => { version => 2 },
+	     resources => {
+	         repository => {
+	             type => 'svn',
+	             url  => 'https://dnssec-tools.org/svn/dnssec-tools/',
+	             web  => 'https://dnssec-tools.org/svn/dnssec-tools/',
+	         },
+	     },
+	},
 );
