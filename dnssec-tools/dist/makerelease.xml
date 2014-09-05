@@ -182,7 +182,9 @@
     </step>
 
     <step type="system" title="copy in the COPYING file">
-	<command>cp -p COPYING dnsval-{VERSION}</command>
+	    <commands>
+		    <command>cp -p COPYING dnsval-{VERSION}</command>
+		</commands>
     </step>
 
     <step type="system" title="create the tar file">
