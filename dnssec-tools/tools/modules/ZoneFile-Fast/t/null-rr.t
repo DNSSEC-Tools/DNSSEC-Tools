@@ -1,6 +1,6 @@
 # This is -*- perl -*-
 
-use Net::DNS::RR;
+use Net::DNS;
 use Net::DNS::ZoneFile::Fast;
 use Test::More tests => 4;
 

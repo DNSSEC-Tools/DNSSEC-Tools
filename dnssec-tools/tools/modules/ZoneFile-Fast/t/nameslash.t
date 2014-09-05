@@ -5,7 +5,7 @@
 # This file was copied from zone.t.
 #
 
-use Net::DNS::RR;
+use Net::DNS;
 use Net::DNS::ZoneFile::Fast;
 
 my $zone = <<'EOF';
