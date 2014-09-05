@@ -1,4 +1,4466 @@
 ------------------------------------------------------------------------
+r8302 | hardaker | 2014-09-05 10:19:13 -0700 (Fri, 05 Sep 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/dist/makerelease.xml
+
+put a commands tag wrapper around command
+------------------------------------------------------------------------
+r8301 | hardaker | 2014-09-05 10:16:09 -0700 (Fri, 05 Sep 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/dist/makerelease.xml
+
+fix broken xml
+------------------------------------------------------------------------
+r8300 | hardaker | 2014-09-05 10:11:18 -0700 (Fri, 05 Sep 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/ZoneFile-Fast/Makefile.PL
+
+flag our svn server in the meta info
+------------------------------------------------------------------------
+r8299 | hardaker | 2014-09-05 10:00:36 -0700 (Fri, 05 Sep 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/ZoneFile-Fast/t/nameslash.t
+   M /trunk/dnssec-tools/tools/modules/ZoneFile-Fast/t/null-rr.t
+   M /trunk/dnssec-tools/tools/modules/ZoneFile-Fast/t/zone.t
+
+fix use statements to use the parent module
+------------------------------------------------------------------------
+r8298 | hardaker | 2014-08-28 11:31:44 -0700 (Thu, 28 Aug 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/ZoneFile-Fast/Fast.pm
+
+Update Fast.pm Version Number: 1.23
+------------------------------------------------------------------------
+r8297 | hardaker | 2014-08-28 11:28:08 -0700 (Thu, 28 Aug 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/ZoneFile-Fast/Fast.pm
+   M /trunk/dnssec-tools/tools/modules/ZoneFile-Fast/t/rrs.t
+
+fix line break detection for TLSA records
+------------------------------------------------------------------------
+r8296 | hardaker | 2014-08-28 11:27:59 -0700 (Thu, 28 Aug 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_policy.c
+
+define atexit macro with one arg (android only)
+------------------------------------------------------------------------
+r8295 | hardaker | 2014-08-28 11:27:51 -0700 (Thu, 28 Aug 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_policy.c
+
+define atexit as empty
+------------------------------------------------------------------------
+r8294 | hardaker | 2014-08-28 11:27:43 -0700 (Thu, 28 Aug 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_policy.c
+
+fix variable syntax errors for android
+------------------------------------------------------------------------
+r8293 | hardaker | 2014-08-28 11:27:32 -0700 (Thu, 28 Aug 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_policy.c
+
+don't define getprogname if eabi
+------------------------------------------------------------------------
+r8292 | hardaker | 2014-08-28 11:27:22 -0700 (Thu, 28 Aug 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_cache.c
+
+fix syntax error
+------------------------------------------------------------------------
+r8291 | hardaker | 2014-08-28 11:27:10 -0700 (Thu, 28 Aug 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec-check.pro
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/main.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/mainwindow.h
+
+misc android fixes
+------------------------------------------------------------------------
+r8290 | hardaker | 2014-08-28 11:26:59 -0700 (Thu, 28 Aug 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/NEWS
+   M /trunk/dnssec-tools/validator/apps/dnssec-system-tray/DnssecSystemTrayPrefs.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-system-tray/dnssec-system-tray.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-system-tray/dnssec-system-tray.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-system-tray/dnssec-system-tray.pro
+   M /trunk/dnssec-tools/validator/apps/dnssec-system-tray/main.cpp
+
+ported dnssec-system-tray to Qt5
+------------------------------------------------------------------------
+r8289 | hardaker | 2014-08-26 10:09:59 -0700 (Tue, 26 Aug 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/NEWS
+   M /trunk/dnssec-tools/validator/apps/lookup/lookup.pro
+   M /trunk/dnssec-tools/validator/apps/lookup/src/LookupPrefs.cpp
+   M /trunk/dnssec-tools/validator/apps/lookup/src/LookupPrefs.h
+   M /trunk/dnssec-tools/validator/apps/lookup/src/QDNSItemModel.cpp
+   M /trunk/dnssec-tools/validator/apps/lookup/src/lookup.cpp
+   M /trunk/dnssec-tools/validator/apps/lookup/src/lookup.h
+   M /trunk/dnssec-tools/validator/apps/lookup/src/qtmain.cpp
+   M /trunk/dnssec-tools/validator/apps/lookup/src/src.pro
+
+ported lookup to Qt5
+------------------------------------------------------------------------
+r8288 | hserus | 2014-08-20 20:42:08 -0700 (Wed, 20 Aug 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/trustman
+
+new Net::DNS::Packet (now?) only returns a single value
+
+------------------------------------------------------------------------
+r8287 | hserus | 2014-08-20 20:29:47 -0700 (Wed, 20 Aug 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollerd
+
+Fix copy-paste typo
+
+------------------------------------------------------------------------
+r8286 | tewok | 2014-08-18 12:48:28 -0700 (Mon, 18 Aug 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-sensord
+
+Fixed intro comment.
+
+------------------------------------------------------------------------
+r8285 | hardaker | 2014-08-15 13:20:25 -0700 (Fri, 15 Aug 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/NEWS
+
+mentioned porting dnssec-nodes to qt5
+------------------------------------------------------------------------
+r8284 | hardaker | 2014-08-15 13:20:16 -0700 (Fri, 15 Aug 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/DNSData.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/DetailsViewer.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/PcapWatcher.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/ValidateViewWidget.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/ValidateViewWidget.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/dnssec-nodes.pro
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/graphwidget.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/graphwidget.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/main.cpp
+
+Ported the building to qt5
+------------------------------------------------------------------------
+r8283 | hardaker | 2014-08-15 11:34:47 -0700 (Fri, 15 Aug 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/Validator.pm
+
+deal with incompatibilities (again) in Net::DNS versions
+------------------------------------------------------------------------
+r8282 | hardaker | 2014-08-15 10:16:10 -0700 (Fri, 15 Aug 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/NEWS
+
+mention dnssec-check -> qt5
+------------------------------------------------------------------------
+r8281 | hardaker | 2014-08-15 10:16:02 -0700 (Fri, 15 Aug 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec_checks.cpp
+
+revert last unneeded change
+------------------------------------------------------------------------
+r8280 | hardaker | 2014-08-15 10:15:52 -0700 (Fri, 15 Aug 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec_checks.cpp
+
+force set the do bit
+------------------------------------------------------------------------
+r8279 | hardaker | 2014-08-15 10:15:41 -0700 (Fri, 15 Aug 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/DNSSECCheckThreadHandler.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/DNSSECTest.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/QStatusLight.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/TestManager.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/main.cpp
+
+warning squashes
+------------------------------------------------------------------------
+r8278 | hardaker | 2014-08-15 10:15:30 -0700 (Fri, 15 Aug 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/Button.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DnssecCheck.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/HostMenu.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/InfoBox.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/NewServerBox.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/ResolverMenu.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/SubmitResults.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/WaitCursor.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/WantToSubmitInfo.qml
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/qtquick2applicationviewer
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/qtquick2applicationviewer/qtquick2applicationviewer.cpp
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/qtquick2applicationviewer/qtquick2applicationviewer.h
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/qtquick2applicationviewer/qtquick2applicationviewer.pri
+
+Modified the visibility state along with opacity for better qt5 support
+------------------------------------------------------------------------
+r8277 | hardaker | 2014-08-15 10:15:15 -0700 (Fri, 15 Aug 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec-check.pro
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/main.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/Header.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/InfoBox.qml
+
+almost working under qt5
+------------------------------------------------------------------------
+r8276 | hardaker | 2014-08-15 10:15:03 -0700 (Fri, 15 Aug 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/TestManager.cpp
+
+made build
+------------------------------------------------------------------------
+r8275 | hardaker | 2014-08-15 09:44:15 -0700 (Fri, 15 Aug 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/DNSSECTest.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/TestManager.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec-check.pro
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec-check.qrc
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/main.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/mainwindow.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/Button.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DnssecCheck.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/Grade.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/Header.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/Help.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/HostLabel.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/HostMenu.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/InfoBox.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/MeegoDnssecCheck.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/NewServerBox.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/ResolverMenu.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/Result.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/ResultInfo.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/SubmitResults.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/WaitCursor.qml
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/WantToSubmitInfo.qml
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/qml/Wrapper.qml
+
+qt5 update attempt for dnssec-check
+------------------------------------------------------------------------
+r8274 | hardaker | 2014-08-15 09:33:00 -0700 (Fri, 15 Aug 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/Makefile.top
+
+bump libcurrent
+------------------------------------------------------------------------
+r8273 | hserus | 2014-08-13 13:13:14 -0700 (Wed, 13 Aug 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_context.c
+
+Add check for null
+
+------------------------------------------------------------------------
+r8272 | rstory | 2014-08-12 06:33:51 -0700 (Tue, 12 Aug 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/dist/dnssec-tools.spec
+
+merge fedora packaging changes to rpm spec file
+------------------------------------------------------------------------
+r8271 | rstory | 2014-08-12 06:33:44 -0700 (Tue, 12 Aug 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/NEWS
+
+add a few news items
+------------------------------------------------------------------------
+r8270 | hserus | 2014-08-11 15:53:15 -0700 (Mon, 11 Aug 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/NEWS
+
+Added owl and rollerd related news items
+
+------------------------------------------------------------------------
+r8269 | hserus | 2014-08-11 15:40:37 -0700 (Mon, 11 Aug 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+Remove some unreachable code.
+
+------------------------------------------------------------------------
+r8268 | hserus | 2014-08-11 15:39:20 -0700 (Mon, 11 Aug 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_policy.c
+
+Some memory clean-up and some removal of unreachable code.
+
+------------------------------------------------------------------------
+r8267 | hserus | 2014-08-11 15:29:38 -0700 (Mon, 11 Aug 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_cache.c
+
+Don't return from within macro. Perform some memory cleanup.
+
+------------------------------------------------------------------------
+r8266 | hserus | 2014-08-11 15:27:26 -0700 (Mon, 11 Aug 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_gethostbyname.c
+
+Check for NULL before accessing pointer variable
+
+------------------------------------------------------------------------
+r8265 | hserus | 2014-08-11 15:25:33 -0700 (Mon, 11 Aug 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_getaddrinfo.c
+
+Perform memory clean-up under certain error conditions
+
+------------------------------------------------------------------------
+r8264 | hserus | 2014-08-11 15:23:20 -0700 (Mon, 11 Aug 2014) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libsres/res_tsig.c
+
+Bump up allocated block for memory for tsig key to be safe wrt strlen
+bounds.
+
+------------------------------------------------------------------------
+r8263 | hserus | 2014-08-11 15:21:35 -0700 (Mon, 11 Aug 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libsres/res_query.c
+
+Some memory cleanup and add placeholder for code under test.
+
+------------------------------------------------------------------------
+r8262 | hserus | 2014-08-11 15:19:32 -0700 (Mon, 11 Aug 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libsres/res_io_manager.c
+
+Remove unreachable code
+
+------------------------------------------------------------------------
+r8261 | hserus | 2014-08-11 15:18:24 -0700 (Mon, 11 Aug 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_dane.c
+
+Display final status with high enough log level
+
+------------------------------------------------------------------------
+r8260 | hserus | 2014-08-11 15:16:34 -0700 (Mon, 11 Aug 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_context.c
+   M /trunk/dnssec-tools/validator/libval/val_verify.c
+   M /trunk/dnssec-tools/validator/libval/val_x_query.c
+
+Perform some memory cleanup.
+
+------------------------------------------------------------------------
+r8259 | hserus | 2014-08-11 15:13:42 -0700 (Mon, 11 Aug 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_log.c
+
+fix missing return from error condition.
+
+------------------------------------------------------------------------
+r8258 | hserus | 2014-08-11 15:12:08 -0700 (Mon, 11 Aug 2014) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_resquery.c
+   M /trunk/dnssec-tools/validator/libval/val_support.h
+
+Don't return from within the ALLOCATE_REFERRAL_BLOCK macro. 
+Test for error codes outside the macro.
+
+------------------------------------------------------------------------
+r8257 | hserus | 2014-08-11 15:01:59 -0700 (Mon, 11 Aug 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/libsres_test.c
+
+perform memory clean-up
+
+------------------------------------------------------------------------
+r8256 | hserus | 2014-08-11 15:00:39 -0700 (Mon, 11 Aug 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dane_check.c
+
+Remove unreachable code
+
+------------------------------------------------------------------------
+r8255 | tewok | 2014-08-07 17:01:13 -0700 (Thu, 07 Aug 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-sensord
+
+Two minor comment fixen.
+
+------------------------------------------------------------------------
+r8254 | hserus | 2014-08-07 09:40:44 -0700 (Thu, 07 Aug 2014) | 5 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/TestManager.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec_checks.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec_checks.c
+   M /trunk/dnssec-tools/validator/apps/libsres_test.c
+   M /trunk/dnssec-tools/validator/include/validator/resolver.h
+   M /trunk/dnssec-tools/validator/libsres/res_support.c
+   M /trunk/dnssec-tools/validator/libval/val_context.c
+   M /trunk/dnssec-tools/validator/libval/val_policy.c
+
+- parse_name_server now takes a new argument for the ns options
+- Handle SR_QUERY_NOREC, SR_QUERY_IPV6_ONLY and SR_QUERY_IPV4_ONLY query
+  options (untested)
+- Support the proto policy knob
+
+------------------------------------------------------------------------
+r8253 | tewok | 2014-08-06 09:35:41 -0700 (Wed, 06 Aug 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-dataarch
+
+Subdirectory modifications.
+
+------------------------------------------------------------------------
+r8252 | tewok | 2014-08-06 09:33:42 -0700 (Wed, 06 Aug 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-sensord
+
+Added the -restart option.
+
+------------------------------------------------------------------------
+r8251 | tewok | 2014-08-06 09:31:30 -0700 (Wed, 06 Aug 2014) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-dnstimer
+
+Allow for restarts via owl-sensord.
+Removed Validator inclusion.
+
+------------------------------------------------------------------------
+r8250 | tewok | 2014-08-06 09:30:44 -0700 (Wed, 06 Aug 2014) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-transfer
+
+Allow for restarts via owl-sensord.
+Removed -recursive from ssh command.
+
+------------------------------------------------------------------------
+r8249 | tewok | 2014-08-06 09:29:15 -0700 (Wed, 06 Aug 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-rrsec
+
+Allow for restarts via owl-sensord.
+
+------------------------------------------------------------------------
+r8248 | tewok | 2014-08-06 09:28:47 -0700 (Wed, 06 Aug 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-rrdata
+
+Allow for restarts via owl-sensord.
+
+------------------------------------------------------------------------
+r8247 | tewok | 2014-08-06 09:27:53 -0700 (Wed, 06 Aug 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-resources
+
+Allow for restarts via owl-sensord.
+
+------------------------------------------------------------------------
+r8246 | hserus | 2014-08-06 09:06:36 -0700 (Wed, 06 Aug 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/Validator.pm
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/Validator.xs
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/const-c.inc
+
+Add support for proto policy knob in Validator.pm
+
+------------------------------------------------------------------------
+r8245 | hserus | 2014-08-06 09:05:24 -0700 (Wed, 06 Aug 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/doc/dnsval.conf.3
+   M /trunk/dnssec-tools/validator/doc/dnsval.conf.pod
+   M /trunk/dnssec-tools/validator/doc/libval.3
+   M /trunk/dnssec-tools/validator/doc/libval.pod
+
+Add initial documentation for new "proto" policy knob
+
+------------------------------------------------------------------------
+r8244 | hserus | 2014-08-06 09:04:15 -0700 (Wed, 06 Aug 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/validator.h
+   M /trunk/dnssec-tools/validator/include/validator-internal.h
+   M /trunk/dnssec-tools/validator/libval/val_policy.c
+
+Add beginings of support for the proto policy knob
+
+------------------------------------------------------------------------
+r8243 | hserus | 2014-08-06 09:02:46 -0700 (Wed, 06 Aug 2014) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+Re-introduce logic for enforcing the max-refresh policy when
+VAL_QUERY_SKIP_CACHE is in effect.
+
+------------------------------------------------------------------------
+r8242 | tewok | 2014-08-06 08:30:20 -0700 (Wed, 06 Aug 2014) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-json-notify-service
+
+Initial version.
+
+------------------------------------------------------------------------
+r8241 | tewok | 2014-08-06 08:29:55 -0700 (Wed, 06 Aug 2014) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-json-notify-host
+
+Initial version.
+
+------------------------------------------------------------------------
+r8240 | hardaker | 2014-07-31 10:38:37 -0700 (Thu, 31 Jul 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/NEWS
+
+added a new donuts entry
+------------------------------------------------------------------------
+r8239 | hserus | 2014-07-25 11:42:55 -0700 (Fri, 25 Jul 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+Fix the conditional check that triggers logic for VAL_QUERY_SKIP_CACHE
+
+------------------------------------------------------------------------
+r8238 | hserus | 2014-07-25 11:37:39 -0700 (Fri, 25 Jul 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libsres/res_io_manager.c
+
+Log the rcode when dropping a message with mismatched ID or qname
+
+------------------------------------------------------------------------
+r8237 | hardaker | 2014-07-24 11:39:57 -0700 (Thu, 24 Jul 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/rules/status_reports.txt
+
+reset the parent data after a run
+------------------------------------------------------------------------
+r8236 | hardaker | 2014-07-24 11:39:51 -0700 (Thu, 24 Jul 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/rules/status_reports.txt
+
+set the parentinception to undef too
+------------------------------------------------------------------------
+r8235 | hardaker | 2014-07-24 11:39:45 -0700 (Thu, 24 Jul 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/rules/status_reports.txt
+
+check for parent validity dates too if DS exists
+------------------------------------------------------------------------
+r8234 | hardaker | 2014-07-24 11:39:39 -0700 (Thu, 24 Jul 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/rules/status_reports.txt
+
+misc status improvements
+------------------------------------------------------------------------
+r8233 | hardaker | 2014-07-24 11:39:33 -0700 (Thu, 24 Jul 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/rules/dnssec.rules.txt
+
+don't check the signer name for parent DS records
+------------------------------------------------------------------------
+r8232 | hardaker | 2014-07-24 11:39:27 -0700 (Thu, 24 Jul 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/rules/dnssec.rules.txt
+
+fix another extra )
+------------------------------------------------------------------------
+r8231 | hardaker | 2014-07-24 11:39:21 -0700 (Thu, 24 Jul 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/rules/dnssec.rules.txt
+
+fix extra )
+------------------------------------------------------------------------
+r8230 | hardaker | 2014-07-24 11:39:13 -0700 (Thu, 24 Jul 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/rules/dnssec.rules.txt
+
+don't ensure parent-DS records are signed
+------------------------------------------------------------------------
+r8229 | hardaker | 2014-07-24 11:39:07 -0700 (Thu, 24 Jul 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/rules/dnssec.rules.txt
+
+Don't check parent DS record signatures
+------------------------------------------------------------------------
+r8228 | hardaker | 2014-07-24 11:39:01 -0700 (Thu, 24 Jul 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/rules/status_reports.txt
+
+report the serial number and the contact address
+------------------------------------------------------------------------
+r8227 | hardaker | 2014-07-24 11:38:55 -0700 (Thu, 24 Jul 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Rule.pm
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts.pm
+
+handle name ruletype statuses and clear status records between zones
+------------------------------------------------------------------------
+r8226 | hardaker | 2014-07-24 11:38:47 -0700 (Thu, 24 Jul 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Rule.pm
+
+create code references generically
+------------------------------------------------------------------------
+r8225 | hardaker | 2014-07-24 11:38:39 -0700 (Thu, 24 Jul 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/rules/status_reports.txt
+
+process dnssec dates properly
+------------------------------------------------------------------------
+r8224 | hardaker | 2014-07-24 11:38:34 -0700 (Thu, 24 Jul 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts.pm
+
+reset statuses before reporting again
+------------------------------------------------------------------------
+r8223 | hardaker | 2014-07-24 11:38:27 -0700 (Thu, 24 Jul 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/rules/status_reports.txt
+
+Added a comment
+------------------------------------------------------------------------
+r8222 | hardaker | 2014-07-24 11:38:21 -0700 (Thu, 24 Jul 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/rules/status_reports.txt
+
+memorize a signature inception time and report it.
+------------------------------------------------------------------------
+r8221 | hardaker | 2014-07-24 11:38:15 -0700 (Thu, 24 Jul 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Rule.pm
+
+warn if there is no donuts to add a status report to
+------------------------------------------------------------------------
+r8220 | hardaker | 2014-07-24 11:38:06 -0700 (Thu, 24 Jul 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Rule.pm
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts.pm
+
+created an <end> clause for doing stuff after processing is over
+------------------------------------------------------------------------
+r8219 | hardaker | 2014-07-24 11:37:55 -0700 (Thu, 24 Jul 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/rules/status_reports.txt
+
+use an end clause to print the status info
+------------------------------------------------------------------------
+r8218 | hardaker | 2014-07-24 11:37:49 -0700 (Thu, 24 Jul 2014) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/tools/donuts/rules/status_reports.txt
+
+Added a file to print status reports from
+------------------------------------------------------------------------
+r8217 | hardaker | 2014-07-24 11:37:43 -0700 (Thu, 24 Jul 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/donuts
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Rule.pm
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts.pm
+
+beginning support for showing high-level status information about a zone
+------------------------------------------------------------------------
+r8216 | hardaker | 2014-07-24 11:37:36 -0700 (Thu, 24 Jul 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Rule.pm
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts.pm
+
+beginning support for status output
+------------------------------------------------------------------------
+r8215 | hardaker | 2014-07-24 11:37:27 -0700 (Thu, 24 Jul 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/rules/dns.errors.txt
+
+complain about multiple soa records being found
+------------------------------------------------------------------------
+r8214 | hserus | 2014-07-24 09:44:45 -0700 (Thu, 24 Jul 2014) | 5 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/Validator.pm
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/Validator.xs
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/const-c.inc
+
+Change return values of val_async_submit to now return a reference to an
+array. The first element is the return value of the val_async_submit()
+function and the second element indicates whether the operation 
+actually resulted in a new "inflight" request. 
+
+------------------------------------------------------------------------
+r8213 | hserus | 2014-07-24 09:24:28 -0700 (Thu, 24 Jul 2014) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/validator.h
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+Set a new VAL_AS_ flag to indicate that a query is "inflight."
+Add a new interface to retrieve the flags for a given val_async_status
+object.
+
+------------------------------------------------------------------------
+r8212 | hserus | 2014-07-24 09:18:02 -0700 (Thu, 24 Jul 2014) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+Modify _async_status_free to take a reference to the async status
+pointer, so that it can be set to null before returning.
+
+------------------------------------------------------------------------
+r8211 | hserus | 2014-07-24 08:39:08 -0700 (Thu, 24 Jul 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator-internal.h
+
+Fix typo in ifdef'ed type 
+
+------------------------------------------------------------------------
+r8210 | hserus | 2014-07-24 08:33:13 -0700 (Thu, 24 Jul 2014) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_support.c
+
+Use correct offset when calling lower_name multiple times for a given
+resource record
+
+------------------------------------------------------------------------
+r8209 | hserus | 2014-07-06 08:36:12 -0700 (Sun, 06 Jul 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/NEWS
+
+NEWS update for libval
+
+------------------------------------------------------------------------
+r8208 | rstory | 2014-07-01 10:40:32 -0700 (Tue, 01 Jul 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/configure
+
+run autoconf for updated configure.in
+------------------------------------------------------------------------
+r8207 | rstory | 2014-07-01 10:40:25 -0700 (Tue, 01 Jul 2014) | 5 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/configure.in
+   M /trunk/dnssec-tools/validator/include/validator/resolver.h
+   M /trunk/dnssec-tools/validator/include/validator/validator-config.h.in
+   M /trunk/dnssec-tools/validator/libsres/res_io_manager.c
+   M /trunk/dnssec-tools/validator/libsres/res_io_manager.h
+
+libsres: limit the number of sockets opened
+
+- configure checks for sys/resource, getrlimit and setrlimit
+- track socket open/close calls
+- if open >= max, return SR_IO_TOO_MANY_TRANS
+------------------------------------------------------------------------
+r8206 | tewok | 2014-06-26 17:12:23 -0700 (Thu, 26 Jun 2014) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-lastdata
+
+Look for data in the old data location ($datadir) and in
+the new data location ($datadir/$querytype).
+
+------------------------------------------------------------------------
+r8205 | tewok | 2014-06-26 16:56:57 -0700 (Thu, 26 Jun 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-lastdata
+
+Added a missing newline to two error messages.
+
+------------------------------------------------------------------------
+r8204 | hserus | 2014-06-19 08:15:02 -0700 (Thu, 19 Jun 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_policy.c
+
+Set default value for variable 
+
+------------------------------------------------------------------------
+r8203 | hserus | 2014-06-19 08:13:53 -0700 (Thu, 19 Jun 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/resolver.h
+
+Remove duplicate prototype for res_io_check_one()
+
+------------------------------------------------------------------------
+r8202 | hserus | 2014-06-19 08:12:43 -0700 (Thu, 19 Jun 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_resquery.c
+
+Do fallback to other name servers if EDNS0 fallback fails
+
+------------------------------------------------------------------------
+r8201 | tewok | 2014-06-17 16:44:44 -0700 (Tue, 17 Jun 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-2-installation.html
+
+Added a few fixes about ssh key generation.
+
+------------------------------------------------------------------------
+r8200 | tewok | 2014-06-10 14:47:28 -0700 (Tue, 10 Jun 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/nagios-objects/sensor42.cfg
+
+Added last-query services to the sensor's servicegroup.
+
+------------------------------------------------------------------------
+r8199 | tewok | 2014-06-10 14:38:54 -0700 (Tue, 10 Jun 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/nagios-objects/sensor42.cfg
+
+Added services for owl-lastdata.
+
+------------------------------------------------------------------------
+r8198 | tewok | 2014-06-10 14:34:41 -0700 (Tue, 10 Jun 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/nagios-objects/owl-commands.cfg
+
+Fixed owl-lastdata comment.
+
+------------------------------------------------------------------------
+r8197 | tewok | 2014-06-10 14:33:45 -0700 (Tue, 10 Jun 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/nagios-objects/owl-commands.cfg
+
+Added an entry for owl-lastdata.
+
+------------------------------------------------------------------------
+r8196 | tewok | 2014-06-10 13:28:56 -0700 (Tue, 10 Jun 2014) | 3 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-lastdata
+
+Initial revision of a plugin to monitor the time of a sensor's last
+recorded query.
+
+------------------------------------------------------------------------
+r8179 | rstory | 2014-05-22 12:57:42 -0700 (Thu, 22 May 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/apps/nagios/dt_trustman
+   M /trunk/dnssec-tools/tools/scripts/genkrf
+
+use Net::DNS::SEC::Tools::conf not hardcoded paths
+------------------------------------------------------------------------
+r8178 | tewok | 2014-05-21 16:45:08 -0700 (Wed, 21 May 2014) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollerd
+
+Removed an unneeded argument from runner().
+Fixed some logic problems with runner()'s return codes.
+
+------------------------------------------------------------------------
+r8177 | tewok | 2014-05-20 16:53:39 -0700 (Tue, 20 May 2014) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollerd
+
+Ensure rollerd is in a zone's directory.   (bug #178)
+Force a repaint after a "rollctl -rollzone" command.
+
+------------------------------------------------------------------------
+r8176 | tewok | 2014-05-20 16:48:32 -0700 (Tue, 20 May 2014) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/blinkenlights
+
+Clarified an error message.
+Force repaint when starting a skipped zone.
+
+------------------------------------------------------------------------
+r8172 | rstory | 2014-05-20 06:50:09 -0700 (Tue, 20 May 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/validator_driver.c
+
+file compiler warning: add cast for warning on OS X
+------------------------------------------------------------------------
+r8168 | rstory | 2014-05-20 06:16:58 -0700 (Tue, 20 May 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_resquery.c
+
+reformat code to eliminate compiler warning
+------------------------------------------------------------------------
+r8167 | rstory | 2014-05-20 06:16:53 -0700 (Tue, 20 May 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_context.c
+
+use unsigned long to print ptr
+------------------------------------------------------------------------
+r8166 | rstory | 2014-05-20 06:16:48 -0700 (Tue, 20 May 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/validator_selftest.c
+
+clear whole structure, not pointer
+------------------------------------------------------------------------
+r8165 | rstory | 2014-05-20 06:16:41 -0700 (Tue, 20 May 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/getaddr.c
+   M /trunk/dnssec-tools/validator/apps/gethost.c
+   M /trunk/dnssec-tools/validator/apps/validator_selftest.c
+   M /trunk/dnssec-tools/validator/libsres/ns_print.c
+   M /trunk/dnssec-tools/validator/libsres/res_debug.c
+   M /trunk/dnssec-tools/validator/libsres/res_io_manager.c
+   M /trunk/dnssec-tools/validator/libsres/res_query.c
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+   M /trunk/dnssec-tools/validator/libval/val_cache.c
+   M /trunk/dnssec-tools/validator/libval/val_context.c
+   M /trunk/dnssec-tools/validator/libval/val_log.c
+   M /trunk/dnssec-tools/validator/libval/val_resquery.c
+   M /trunk/dnssec-tools/validator/libval/val_support.c
+
+fix compiler warnings: unused variables
+------------------------------------------------------------------------
+r8164 | rstory | 2014-05-20 06:16:25 -0700 (Tue, 20 May 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dane_check.c
+   M /trunk/dnssec-tools/validator/include/validator/validator.h
+   M /trunk/dnssec-tools/validator/libsres/res_support.c
+   M /trunk/dnssec-tools/validator/libsres/res_tsig.c
+   M /trunk/dnssec-tools/validator/libval/val_context.c
+   M /trunk/dnssec-tools/validator/libval/val_context.h
+   M /trunk/dnssec-tools/validator/libval/val_policy.c
+   M /trunk/dnssec-tools/validator/libval/val_policy.h
+
+fix compiler warnings: add const as needed
+------------------------------------------------------------------------
+r8163 | tewok | 2014-05-16 09:08:39 -0700 (Fri, 16 May 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-diskuse
+
+Better handling for unknown sensors.
+
+------------------------------------------------------------------------
+r8162 | rstory | 2014-05-16 08:37:23 -0700 (Fri, 16 May 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/configure
+
+re-run autoconf for sysconf hosts changes
+------------------------------------------------------------------------
+r8161 | rstory | 2014-05-16 08:37:15 -0700 (Fri, 16 May 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/ltmain.sh
+
+update ltmain.sh to match aclocal
+------------------------------------------------------------------------
+r8160 | rstory | 2014-05-16 08:37:00 -0700 (Fri, 16 May 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/configure.in
+   M /trunk/dnssec-tools/validator/include/validator/validator-config.h.in
+   M /trunk/dnssec-tools/validator/libval/val_getaddrinfo.c
+   M /trunk/dnssec-tools/validator/libval/val_gethostbyname.c
+   M /trunk/dnssec-tools/validator/libval/val_parse.h
+
+use sysconfdir to define path for hosts file
+------------------------------------------------------------------------
+r8159 | rstory | 2014-05-16 07:27:49 -0700 (Fri, 16 May 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/configure
+   M /trunk/dnssec-tools/validator/configure
+
+re-run autoconf
+------------------------------------------------------------------------
+r8158 | rstory | 2014-05-16 07:13:53 -0700 (Fri, 16 May 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval-config.in
+
+add support for datarootdir
+------------------------------------------------------------------------
+r8157 | rstory | 2014-05-16 07:13:43 -0700 (Fri, 16 May 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/aclocal.m4
+   M /trunk/dnssec-tools/validator/aclocal.m4
+
+update aclocal.m4
+------------------------------------------------------------------------
+r8156 | hserus | 2014-05-13 15:41:45 -0700 (Tue, 13 May 2014) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+In PNE checks check for "skip validation" conditions before processing
+proof. Also add some more logging statements.
+
+------------------------------------------------------------------------
+r8155 | hserus | 2014-05-12 10:03:46 -0700 (Mon, 12 May 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/configure
+
+Update configure script based on recent configure.in changes
+
+------------------------------------------------------------------------
+r8154 | hserus | 2014-05-12 10:02:57 -0700 (Mon, 12 May 2014) | 6 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/configure.in
+   M /trunk/dnssec-tools/validator/include/validator/resolver.h
+   M /trunk/dnssec-tools/validator/include/validator/validator-compat.h
+   M /trunk/dnssec-tools/validator/include/validator/validator-config.h.in
+
+Make some configure changes
+- Check for availability of ECDSA before use
+- Check for availability of some more header files
+- Check for availability of some more types 
+
+
+------------------------------------------------------------------------
+r8153 | hserus | 2014-05-12 09:29:09 -0700 (Mon, 12 May 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libsres/ns_print.c
+   M /trunk/dnssec-tools/validator/libsres/res_debug.c
+
+Fix a couple of compile warnings
+
+------------------------------------------------------------------------
+r8150 | hserus | 2014-04-30 09:04:27 -0700 (Wed, 30 Apr 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libsres/res_io_manager.c
+
+Set the connect timeout to the same as the retry interval
+
+------------------------------------------------------------------------
+r8149 | hserus | 2014-04-29 08:16:07 -0700 (Tue, 29 Apr 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+when _resolver_submit_one returns, don't treat a null qc_ea directly as a failure condition
+
+------------------------------------------------------------------------
+r8148 | hserus | 2014-04-25 10:23:09 -0700 (Fri, 25 Apr 2014) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/doc/dnsval.conf.3
+   M /trunk/dnssec-tools/validator/doc/dnsval.conf.pod
+   M /trunk/dnssec-tools/validator/doc/libval.3
+   M /trunk/dnssec-tools/validator/doc/libval.pod
+   M /trunk/dnssec-tools/validator/include/validator/validator.h
+   M /trunk/dnssec-tools/validator/include/validator-internal.h
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+   M /trunk/dnssec-tools/validator/libval/val_policy.c
+   M /trunk/dnssec-tools/validator/libval/val_resquery.c
+
+Support the VAL_QUERY_SKIP_CACHE function.  Also support a new policy
+knob max-refresh to throttle the number of queries that may ignore
+caching using the above option within a given time interval
+
+------------------------------------------------------------------------
+r8147 | hserus | 2014-04-25 10:13:35 -0700 (Fri, 25 Apr 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator-internal.h
+   M /trunk/dnssec-tools/validator/libval/val_crypto.c
+   M /trunk/dnssec-tools/validator/libval/val_verify.c
+
+Check for HAVE_ECDSA in order to determine ECDSA availability
+
+------------------------------------------------------------------------
+r8146 | hserus | 2014-04-22 19:06:21 -0700 (Tue, 22 Apr 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_cache.c
+
+Add a log message when existing cache element is updated
+
+------------------------------------------------------------------------
+r8145 | hserus | 2014-04-22 08:22:54 -0700 (Tue, 22 Apr 2014) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+   M /trunk/dnssec-tools/validator/libval/val_resquery.c
+
+- Consume SOAs that may be part of the NACK response
+- Look for zonecuts based on NS records, not SOA
+
+
+------------------------------------------------------------------------
+r8144 | hserus | 2014-04-22 08:21:01 -0700 (Tue, 22 Apr 2014) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_cache.c
+
+If we're looking for the NS and we don't care about validation 
+search for data in the hints cache too
+
+------------------------------------------------------------------------
+r8143 | hserus | 2014-04-11 11:01:07 -0700 (Fri, 11 Apr 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/val_dane.h
+
+Add prototype for val_dane_cert_namechk
+
+------------------------------------------------------------------------
+r8142 | hserus | 2014-04-11 10:59:58 -0700 (Fri, 11 Apr 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libsres/libsres.def
+
+Remove unused symbol
+
+------------------------------------------------------------------------
+r8141 | hserus | 2014-04-09 15:20:52 -0700 (Wed, 09 Apr 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/Validator.pm
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/const-c.inc
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/examples.pl
+
+Add support for VAL_QUERY_CHECK_ALL_RRSIGS
+
+------------------------------------------------------------------------
+r8140 | hserus | 2014-04-09 15:17:16 -0700 (Wed, 09 Apr 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/validator.h
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+optimize handling of provably insecure determination
+
+------------------------------------------------------------------------
+r8139 | hserus | 2014-04-09 15:12:27 -0700 (Wed, 09 Apr 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/validator.h
+   M /trunk/dnssec-tools/validator/libval/val_verify.c
+
+Add support to validate all rrsigs in assertion
+
+------------------------------------------------------------------------
+r8138 | hserus | 2014-04-04 16:55:11 -0700 (Fri, 04 Apr 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/Validator.pm
+
+Bump up version number to account for all recent changes
+
+------------------------------------------------------------------------
+r8136 | hardaker | 2014-04-02 17:38:33 -0700 (Wed, 02 Apr 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/donuts
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts.pm
+
+Added a new -s option to sort input records so the output order is
+always consistent.
+------------------------------------------------------------------------
+r8134 | hardaker | 2014-03-24 14:48:44 -0700 (Mon, 24 Mar 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/ZoneFile-Fast/Fast.pm
+
+new version (1.22)
+------------------------------------------------------------------------
+r8133 | hardaker | 2014-03-24 14:41:57 -0700 (Mon, 24 Mar 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/rules/dnssec.rules.txt
+
+don't print the (useless) rrsig record number in the output
+------------------------------------------------------------------------
+r8130 | hserus | 2014-03-06 13:08:17 -0800 (Thu, 06 Mar 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/Validator.xs
+
+Dont lose the value of name, class, type and ttl for the rrset received
+
+------------------------------------------------------------------------
+r8129 | hserus | 2014-02-21 06:37:18 -0800 (Fri, 21 Feb 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_verify.c
+
+Move declaration to top of code block to keep compiler happy
+
+------------------------------------------------------------------------
+r8128 | hserus | 2014-02-13 16:04:17 -0800 (Thu, 13 Feb 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libsres/res_support.h
+
+Remove prototype for function that has gone away
+
+------------------------------------------------------------------------
+r8127 | hserus | 2014-02-13 07:11:38 -0800 (Thu, 13 Feb 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/Validator.xs
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/examples.pl
+
+Store respondent name server information in result structure
+
+------------------------------------------------------------------------
+r8126 | hserus | 2014-02-11 11:20:44 -0800 (Tue, 11 Feb 2014) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libsres/res_query.c
+
+Don't do any checks on response beyond simple header checking. All
+checks happen in libval since we need to uncompress names
+
+------------------------------------------------------------------------
+r8125 | hserus | 2014-02-11 08:29:58 -0800 (Tue, 11 Feb 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libsres/res_query.c
+
+Revert previous change
+
+------------------------------------------------------------------------
+r8124 | hserus | 2014-02-11 08:18:21 -0800 (Tue, 11 Feb 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libsres/res_query.c
+
+Fix incorrect iteration over empty response sections
+
+------------------------------------------------------------------------
+r8121 | hserus | 2014-02-05 06:26:31 -0800 (Wed, 05 Feb 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libsres/res_query.c
+
+In wire_name_length() Check label limit before using value 
+
+------------------------------------------------------------------------
+r8119 | hserus | 2014-01-28 06:56:26 -0800 (Tue, 28 Jan 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+Set 'done' status to one when we hit an error condition
+
+------------------------------------------------------------------------
+r8118 | hserus | 2014-01-23 12:40:31 -0800 (Thu, 23 Jan 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/Validator.pm
+
+Cleanup validator context when object is destroyed
+
+------------------------------------------------------------------------
+r8117 | hserus | 2014-01-23 09:54:58 -0800 (Thu, 23 Jan 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/Validator.pm
+
+Release existing context memory when associating Validator object with new policy
+
+------------------------------------------------------------------------
+r8116 | hserus | 2014-01-22 20:06:44 -0800 (Wed, 22 Jan 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+Handle DNS error conditions outside verify_and_validate
+
+------------------------------------------------------------------------
+r8115 | hserus | 2014-01-22 19:07:30 -0800 (Wed, 22 Jan 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+Free memory that may be held during certain error conditions
+
+------------------------------------------------------------------------
+r8114 | hserus | 2014-01-22 19:05:48 -0800 (Wed, 22 Jan 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_context.c
+
+Free some memory associated with the context during clean-up
+
+------------------------------------------------------------------------
+r8113 | hserus | 2014-01-22 19:04:26 -0800 (Wed, 22 Jan 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dane_check.c
+   M /trunk/dnssec-tools/validator/libsres/res_tsig.c
+
+Fix couple of warnings
+
+------------------------------------------------------------------------
+r8112 | hserus | 2014-01-22 13:45:06 -0800 (Wed, 22 Jan 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_resquery.c
+
+Initialize rrs_ttl_x when we create the rrset structure
+
+------------------------------------------------------------------------
+r8111 | hardaker | 2014-01-22 10:15:58 -0800 (Wed, 22 Jan 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/ZoneFile-Fast/Fast.pm
+
+squash a warning
+------------------------------------------------------------------------
+r8110 | hardaker | 2014-01-22 10:15:41 -0800 (Wed, 22 Jan 2014) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/ZoneFile-Fast/Fast.pm
+
+Apply nsec3 patch from Glen Eustace for multi-line nsec3's generated by new versions of bind
+------------------------------------------------------------------------
+r8109 | hserus | 2014-01-22 09:42:48 -0800 (Wed, 22 Jan 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_dane.c
+
+Fix missing pointer assignment
+
+------------------------------------------------------------------------
+r8107 | hserus | 2014-01-21 13:48:39 -0800 (Tue, 21 Jan 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libsres/res_tsig.c
+
+Use FREE instead of free per convention
+
+------------------------------------------------------------------------
+r8106 | hserus | 2014-01-21 13:47:04 -0800 (Tue, 21 Jan 2014) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dane_check.c
+   M /trunk/dnssec-tools/validator/include/validator/val_dane.h
+
+val_enable_dane_ssl takes a new argument now
+
+
+------------------------------------------------------------------------
+r8105 | hserus | 2014-01-21 13:43:59 -0800 (Tue, 21 Jan 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_resquery.c
+
+Re-insert a missing ; 
+
+------------------------------------------------------------------------
+r8104 | hserus | 2014-01-21 13:43:18 -0800 (Tue, 21 Jan 2014) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_dane.c
+
+Avoid certain unnecessary conversions between Cert and DER formats
+begin to implement name checks; this is still a work in progress
+Do some memory cleanup
+
+------------------------------------------------------------------------
+r8101 | hserus | 2014-01-17 21:30:11 -0800 (Fri, 17 Jan 2014) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_crypto.c
+
+re-work ecdsa verification logic
+
+------------------------------------------------------------------------
+r8088 | hserus | 2014-01-03 21:49:13 -0800 (Fri, 03 Jan 2014) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_resquery.c
+
+Save an SOA record's zonecut information even if it is received from a
+recursive name server
+
+------------------------------------------------------------------------
+r8087 | tewok | 2013-12-31 17:58:17 -0800 (Tue, 31 Dec 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/zonesigner
+
+Stop zonesigner from checking for the existence of rndc.  It doesn't use
+rndc, so it shouldn't care whether or not it's there.
+
+------------------------------------------------------------------------
+r8086 | hserus | 2013-12-30 13:34:21 -0800 (Mon, 30 Dec 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/doc/dnsval.conf.3
+   M /trunk/dnssec-tools/validator/doc/dnsval.conf.pod
+   M /trunk/dnssec-tools/validator/include/validator/resolver.h
+   M /trunk/dnssec-tools/validator/include/validator-internal.h
+   M /trunk/dnssec-tools/validator/libsres/res_query.c
+   M /trunk/dnssec-tools/validator/libsres/res_support.c
+   M /trunk/dnssec-tools/validator/libsres/res_support.h
+   M /trunk/dnssec-tools/validator/libsres/res_tsig.c
+   M /trunk/dnssec-tools/validator/libsres/res_tsig.h
+
+Add initial support for TSIG (sending-end only)
+
+------------------------------------------------------------------------
+r8085 | hserus | 2013-12-30 13:10:22 -0800 (Mon, 30 Dec 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_context.c
+   M /trunk/dnssec-tools/validator/libval/val_parse.c
+   M /trunk/dnssec-tools/validator/libval/val_resquery.c
+   M /trunk/dnssec-tools/validator/libval/val_support.c
+
+Fix some problematic compile warnings
+
+------------------------------------------------------------------------
+r8084 | hserus | 2013-12-24 08:13:55 -0800 (Tue, 24 Dec 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_cache.c
+
+Don't look at referral cache when trying to find an rrset that should be
+present in the answer section.
+
+------------------------------------------------------------------------
+r8083 | hardaker | 2013-12-18 09:54:12 -0800 (Wed, 18 Dec 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/getds
+
+New feature to read a key file and use that for comparing DS records
+------------------------------------------------------------------------
+r8079 | hardaker | 2013-12-12 10:51:48 -0800 (Thu, 12 Dec 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DNSSECCheck.js
+
+Directly connect the result changed signal to checking letter grades
+------------------------------------------------------------------------
+r8078 | hardaker | 2013-12-12 10:51:36 -0800 (Thu, 12 Dec 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec_checks.cpp
+
+don't test for edns0 sizes any longer,
+as that tests what they can receive not what they send
+------------------------------------------------------------------------
+r8077 | hardaker | 2013-12-12 10:51:21 -0800 (Thu, 12 Dec 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qmlapplicationviewer/qmlapplicationviewer.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qmlapplicationviewer/qmlapplicationviewer.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qmlapplicationviewer/qmlapplicationviewer.pri
+
+update files from new qtcreator
+------------------------------------------------------------------------
+r8076 | hardaker | 2013-12-12 10:51:07 -0800 (Thu, 12 Dec 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/validator.h
+
+change class/type variable names to class_h/type_h for C++ compatability
+------------------------------------------------------------------------
+r8074 | hserus | 2013-12-12 08:56:48 -0800 (Thu, 12 Dec 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_verify.c
+
+Set rr_status for the RRSIG to VAL_AC_DNSKEY_NOMATCH only if there was
+really no match (i.e. if no other status value was set for that rrsig)
+
+------------------------------------------------------------------------
+r8073 | hserus | 2013-12-04 08:49:52 -0800 (Wed, 04 Dec 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/examples.pl
+
+Use rdatastr() instead of rdstring() to print RRs
+
+------------------------------------------------------------------------
+r8072 | hserus | 2013-12-02 14:36:30 -0800 (Mon, 02 Dec 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/Validator.xs
+
+Set the CTX_DYN_POL_RES_OVR flag only when we have a valid dyn_nslist
+
+------------------------------------------------------------------------
+r8071 | hserus | 2013-12-02 14:35:46 -0800 (Mon, 02 Dec 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_context.c
+
+Treat empty dyn_nslist as directive to recurse from root
+
+------------------------------------------------------------------------
+r8068 | hserus | 2013-11-25 15:14:31 -0800 (Mon, 25 Nov 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+Revert previous change. It causes the memory usage to grow for some
+reason.
+
+------------------------------------------------------------------------
+r8067 | hserus | 2013-11-25 13:34:13 -0800 (Mon, 25 Nov 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+Don't reuse a saved query element if we have caching disabled for that
+query
+
+------------------------------------------------------------------------
+r8064 | hserus | 2013-11-15 04:14:34 -0800 (Fri, 15 Nov 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_dane.c
+
+Tweak comment
+
+------------------------------------------------------------------------
+r8063 | hserus | 2013-11-14 18:53:40 -0800 (Thu, 14 Nov 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_dane.c
+
+Document some of our assumptions on the the openssl X509 verification
+logic as it relates to our DANE implementation
+
+------------------------------------------------------------------------
+r8062 | hserus | 2013-11-14 10:43:08 -0800 (Thu, 14 Nov 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_dane.c
+
+Add a comment to indicate when we're falling through in a switch case
+
+------------------------------------------------------------------------
+r8061 | hserus | 2013-11-14 10:30:27 -0800 (Thu, 14 Nov 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_dane.c
+
+Fix mis-aligned braces
+
+------------------------------------------------------------------------
+r8060 | hserus | 2013-11-14 10:17:36 -0800 (Thu, 14 Nov 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_dane.c
+
+Revert the previous change. Clarify what we do in the two loops.
+
+------------------------------------------------------------------------
+r8059 | hserus | 2013-11-14 09:39:06 -0800 (Thu, 14 Nov 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_dane.c
+
+Fix redundant loop
+
+------------------------------------------------------------------------
+r8058 | hserus | 2013-11-08 10:03:49 -0800 (Fri, 08 Nov 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+When checking prove of non-existence set *soa_ttl to minval of nsec and
+nsec3 ttls since soa may not be returned always
+
+------------------------------------------------------------------------
+r8057 | hserus | 2013-11-08 09:12:31 -0800 (Fri, 08 Nov 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+Add/clarify debug lines associated with caching
+
+------------------------------------------------------------------------
+r8055 | hserus | 2013-10-31 09:47:47 -0700 (Thu, 31 Oct 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/Validator.xs
+
+Use new_from_data first; if that doesn't exist because it was deprecated
+use the decode function instead
+
+------------------------------------------------------------------------
+r8054 | hserus | 2013-10-31 08:34:55 -0700 (Thu, 31 Oct 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/examples.pl
+
+Create a new common function to display results
+
+------------------------------------------------------------------------
+r8053 | hserus | 2013-10-31 08:32:38 -0700 (Thu, 31 Oct 2013) | 6 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/Validator.xs
+
+Use the decode function instead of the new_from_data function to create
+a new Net::DNS::Packet structure
+Return the fdset from val_async_check since the calling function may
+need to know what sockets were processed.
+
+
+------------------------------------------------------------------------
+r8052 | hserus | 2013-10-31 08:29:14 -0700 (Thu, 31 Oct 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/validator.h
+   M /trunk/dnssec-tools/validator/libval/val_support.c
+
+Add new function to encode the wire-representation for an RR into a buffer.
+
+------------------------------------------------------------------------
+r8051 | hserus | 2013-10-31 08:27:46 -0700 (Thu, 31 Oct 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_resquery.c
+
+Use correct size during memcpy operation
+
+------------------------------------------------------------------------
+r8050 | hardaker | 2013-10-30 09:42:47 -0700 (Wed, 30 Oct 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/rules/dnssec.rules.txt
+
+remove a newline that shouldn't be in the output
+------------------------------------------------------------------------
+r8049 | hserus | 2013-10-17 20:33:45 -0700 (Thu, 17 Oct 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/Validator.xs
+
+Use iterator instead of head variable within loop 
+
+------------------------------------------------------------------------
+r8047 | hserus | 2013-10-12 11:59:55 -0700 (Sat, 12 Oct 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/Validator.xs
+
+Ensure that fdset is zeroed before use
+
+------------------------------------------------------------------------
+r8046 | hserus | 2013-10-12 11:54:20 -0700 (Sat, 12 Oct 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/Validator.xs
+
+Reduce reference count for async result object
+
+------------------------------------------------------------------------
+r8045 | hserus | 2013-10-11 14:32:34 -0700 (Fri, 11 Oct 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/Validator.xs
+
+Tweak refcount handling for arrays
+
+------------------------------------------------------------------------
+r8044 | hserus | 2013-10-11 13:53:13 -0700 (Fri, 11 Oct 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/Validator.xs
+
+Release some reference counts over perl objects
+
+------------------------------------------------------------------------
+r8043 | hserus | 2013-10-10 15:44:52 -0700 (Thu, 10 Oct 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_crypto.c
+
+Use array to hold temporary query names instead of mallocing each time
+
+------------------------------------------------------------------------
+r8042 | hserus | 2013-10-10 14:57:10 -0700 (Thu, 10 Oct 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+Remove unused variable
+
+------------------------------------------------------------------------
+r8041 | hserus | 2013-10-10 14:53:09 -0700 (Thu, 10 Oct 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+Break out of async submit if we are done
+
+------------------------------------------------------------------------
+r8040 | hserus | 2013-10-10 14:40:36 -0700 (Thu, 10 Oct 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libsres/res_io_manager.c
+   M /trunk/dnssec-tools/validator/libsres/res_support.c
+   M /trunk/dnssec-tools/validator/libsres/res_tsig.c
+
+Fix compile warnings and valgrind errors
+
+------------------------------------------------------------------------
+r8038 | hserus | 2013-10-10 06:01:10 -0700 (Thu, 10 Oct 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/Validator.xs
+
+set pointer to null after deallocating it
+
+------------------------------------------------------------------------
+r8037 | hserus | 2013-10-09 12:20:49 -0700 (Wed, 09 Oct 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/Validator.xs
+
+Free validator result structure after use
+
+------------------------------------------------------------------------
+r8036 | hardaker | 2013-10-02 12:14:06 -0700 (Wed, 02 Oct 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/bin/owl-dataarch-mgr
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/bin/owl-newsensor
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/bin/owl-transfer-mgr
+
+set paths for loading
+------------------------------------------------------------------------
+r8035 | hserus | 2013-10-02 08:48:38 -0700 (Wed, 02 Oct 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/Validator.pm
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/const-c.inc
+
+Add definition for VAL_QUERY_ITERATE
+
+------------------------------------------------------------------------
+r8034 | hserus | 2013-09-24 09:03:50 -0700 (Tue, 24 Sep 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/Validator.xs
+
+Remove unused variable.
+
+------------------------------------------------------------------------
+r8033 | hserus | 2013-09-24 06:00:09 -0700 (Tue, 24 Sep 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/Validator.pm
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/Validator.xs
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/examples.pl
+
+Encode authentication chain as an array instead of a nested hash
+structure
+
+------------------------------------------------------------------------
+r8032 | hserus | 2013-09-23 07:55:09 -0700 (Mon, 23 Sep 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/Validator.xs
+
+set correct type for rrsig in encoded structure
+
+------------------------------------------------------------------------
+r8030 | hserus | 2013-09-18 08:29:57 -0700 (Wed, 18 Sep 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/Validator.pm
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/Validator.xs
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/examples.pl
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/typemap
+
+Expose some of the async APIs
+
+------------------------------------------------------------------------
+r8029 | tewok | 2013-09-12 17:12:26 -0700 (Thu, 12 Sep 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-anycaster
+
+Initialize an unrecognized anycaster entry.
+
+------------------------------------------------------------------------
+r8028 | tewok | 2013-09-12 11:10:24 -0700 (Thu, 12 Sep 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-rrsec
+
+Made query logging optional.
+
+------------------------------------------------------------------------
+r8027 | tewok | 2013-09-12 11:10:04 -0700 (Thu, 12 Sep 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-rrdata
+
+Made query logging optional.
+
+------------------------------------------------------------------------
+r8026 | tewok | 2013-09-12 11:09:43 -0700 (Thu, 12 Sep 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-resources
+
+Made query logging optional.
+
+------------------------------------------------------------------------
+r8025 | tewok | 2013-09-12 11:08:48 -0700 (Thu, 12 Sep 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-dnstimer
+
+Make query logging optional.
+
+------------------------------------------------------------------------
+r8024 | tewok | 2013-09-10 13:36:18 -0700 (Tue, 10 Sep 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-archold
+
+Fixed version number.
+
+------------------------------------------------------------------------
+r8023 | tewok | 2013-09-10 13:34:26 -0700 (Tue, 10 Sep 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-collect-rrsec
+
+Fixed version number.
+
+------------------------------------------------------------------------
+r8022 | tewok | 2013-09-10 13:32:31 -0700 (Tue, 10 Sep 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/bin/owl-newsensor
+
+Fixed version number.
+
+------------------------------------------------------------------------
+r8021 | tewok | 2013-09-10 13:29:53 -0700 (Tue, 10 Sep 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-transfer
+
+Added --recursive to rsync call.
+
+------------------------------------------------------------------------
+r8020 | tewok | 2013-09-10 13:28:37 -0700 (Tue, 10 Sep 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-status
+
+Updated SEE ALSO pod.
+
+------------------------------------------------------------------------
+r8019 | tewok | 2013-09-10 13:27:50 -0700 (Tue, 10 Sep 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-dataarch
+
+Added data segmentation.
+
+------------------------------------------------------------------------
+r8018 | tewok | 2013-09-10 13:20:29 -0700 (Tue, 10 Sep 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-dnstimer
+
+Added data segmentation.
+
+------------------------------------------------------------------------
+r8017 | tewok | 2013-09-10 13:19:36 -0700 (Tue, 10 Sep 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-resources
+
+Added data segmentation.
+
+------------------------------------------------------------------------
+r8016 | tewok | 2013-09-10 13:18:51 -0700 (Tue, 10 Sep 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-rrsec
+
+Added data segmentation.
+
+------------------------------------------------------------------------
+r8015 | tewok | 2013-09-10 13:17:11 -0700 (Tue, 10 Sep 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-rrdata
+
+Added data segmentation.
+
+------------------------------------------------------------------------
+r8014 | tewok | 2013-09-10 13:00:50 -0700 (Tue, 10 Sep 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-diskuse
+
+Added version-history comment for initial release. 
+
+------------------------------------------------------------------------
+r8013 | tewok | 2013-09-10 12:10:35 -0700 (Tue, 10 Sep 2013) | 9 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-collect-rrsec
+
+Added sensor module's data subdirectory to $datadir.
+Improved checking of filenames to ensure correct domain and to check for the
+name server.
+Modified donuts execution to assume correct DNSSEC-Tools is installed.
+Moved sourcesensor argument to be the first argument and added a name server
+argument.
+	*This will require changes in existing Nagios object files*
+
+
+------------------------------------------------------------------------
+r8012 | tewok | 2013-09-10 07:32:16 -0700 (Tue, 10 Sep 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/bin/owl-dataarch-mgr
+
+Moved the location of the -f option for mv.
+
+------------------------------------------------------------------------
+r8011 | tewok | 2013-09-09 16:10:35 -0700 (Mon, 09 Sep 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-collect-rrsec
+
+Added copyright, header, version info, and a pod skeleton.
+
+------------------------------------------------------------------------
+r8010 | tewok | 2013-09-09 16:08:00 -0700 (Mon, 09 Sep 2013) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-collect-rrsec
+
+Wes Hardaker's original version of this plugin.
+
+------------------------------------------------------------------------
+r8009 | hserus | 2013-09-06 19:10:22 -0700 (Fri, 06 Sep 2013) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_dane.c
+
+restructure validation logic to look for any success (instead of bailing
+on first error). Also treat provably insecure TLSA records as
+VAL_DANE_IGNORE_TLSA
+
+------------------------------------------------------------------------
+r8008 | hardaker | 2013-09-06 07:02:32 -0700 (Fri, 06 Sep 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts.pm
+
+Added documentation headers and documentation about loading zones
+------------------------------------------------------------------------
+r8007 | hardaker | 2013-09-06 07:02:08 -0700 (Fri, 06 Sep 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/t/55dataaccess.t
+
+warning squash
+------------------------------------------------------------------------
+r8006 | hardaker | 2013-09-06 07:01:57 -0700 (Fri, 06 Sep 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts.pm
+
+start of documentation
+------------------------------------------------------------------------
+r8005 | hardaker | 2013-09-06 07:01:44 -0700 (Fri, 06 Sep 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/donuts
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts.pm
+   M /trunk/dnssec-tools/tools/donuts/t/40rulestest.t
+
+Added a --only flag to only run certain rules
+------------------------------------------------------------------------
+r8004 | hardaker | 2013-09-06 07:01:31 -0700 (Fri, 06 Sep 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/rules/dnssec.rules.txt
+
+remove unneeded variable
+------------------------------------------------------------------------
+r8003 | hardaker | 2013-09-06 07:01:21 -0700 (Fri, 06 Sep 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/rules/dnssec.rules.txt
+
+remove the need to memorize dnskeys ahead of time
+------------------------------------------------------------------------
+r8002 | hardaker | 2013-09-06 07:01:11 -0700 (Fri, 06 Sep 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/rules/dnssec.rules.txt
+   M /trunk/dnssec-tools/tools/donuts/rules/nsec_check.rules.txt
+
+use dynamic nsec3 zone determination
+------------------------------------------------------------------------
+r8001 | hardaker | 2013-09-06 07:01:02 -0700 (Fri, 06 Sep 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/rules/dnssec.rules.txt
+
+remove the need to memorize NS records and use the new APIs instead
+------------------------------------------------------------------------
+r8000 | hardaker | 2013-09-06 07:00:53 -0700 (Fri, 06 Sep 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts.pm
+
+define a routine to load records by name and type
+------------------------------------------------------------------------
+r7999 | hardaker | 2013-09-06 07:00:43 -0700 (Fri, 06 Sep 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts.pm
+
+make the cache store and retrieve indexes in lower case
+------------------------------------------------------------------------
+r7998 | hardaker | 2013-09-06 07:00:33 -0700 (Fri, 06 Sep 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/rules/check_nameservers.txt
+
+fix a comment
+------------------------------------------------------------------------
+r7997 | hardaker | 2013-09-06 07:00:22 -0700 (Fri, 06 Sep 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/rules/dns.errors.txt
+
+use donuts_records_by_name for checking NS/CNAME combos
+------------------------------------------------------------------------
+r7996 | hardaker | 2013-09-06 07:00:11 -0700 (Fri, 06 Sep 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/rules/check_nameservers.txt
+
+use donuts_records_by_name() to retrieve the NS records
+------------------------------------------------------------------------
+r7995 | hardaker | 2013-09-06 07:00:01 -0700 (Fri, 06 Sep 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts.pm
+   M /trunk/dnssec-tools/tools/donuts/t/55dataaccess.t
+
+Added a global donuts_records_by_name() wrapper
+------------------------------------------------------------------------
+r7994 | hardaker | 2013-09-06 06:59:47 -0700 (Fri, 06 Sep 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts.pm
+   A /trunk/dnssec-tools/tools/donuts/t/55dataaccess.t
+
+Added a $donuts->find_records_by_name() function for doing lookups
+------------------------------------------------------------------------
+r7993 | hardaker | 2013-09-06 06:59:33 -0700 (Fri, 06 Sep 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/donuts
+
+use newer methods of outputting when running as a cgi
+------------------------------------------------------------------------
+r7992 | tewok | 2013-09-05 20:48:31 -0700 (Thu, 05 Sep 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/common/perllib/owlutils.pm
+
+Supports %owlutils for data segmentation.
+
+------------------------------------------------------------------------
+r7991 | tewok | 2013-09-05 20:47:38 -0700 (Thu, 05 Sep 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-stethoscope
+
+Added version-history comment.
+
+------------------------------------------------------------------------
+r7990 | tewok | 2013-09-05 20:46:57 -0700 (Thu, 05 Sep 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-rrecdata
+
+Data segmentation.
+Require a name server to be specified.
+
+------------------------------------------------------------------------
+r7989 | tewok | 2013-09-05 20:44:47 -0700 (Thu, 05 Sep 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-perfdata
+
+Aded version-history comment.
+
+------------------------------------------------------------------------
+r7988 | tewok | 2013-09-05 20:44:12 -0700 (Thu, 05 Sep 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-dnswatch
+
+
+Data segmentation.
+
+------------------------------------------------------------------------
+r7987 | tewok | 2013-09-05 20:43:05 -0700 (Thu, 05 Sep 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-comp-dnswatch
+
+
+Data segmentation.
+
+------------------------------------------------------------------------
+r7985 | tewok | 2013-09-05 20:42:08 -0700 (Thu, 05 Sep 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-anycaster
+
+
+Data segmentation.
+
+------------------------------------------------------------------------
+r7984 | tewok | 2013-09-05 20:40:11 -0700 (Thu, 05 Sep 2013) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/manager/bin/owl-rsyncer
+
+Initial version of an rrsync wrapper.
+
+------------------------------------------------------------------------
+r7983 | tewok | 2013-09-05 20:38:32 -0700 (Thu, 05 Sep 2013) | 6 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/bin/owl-newsensor
+
+
+Support data segmentation.
+Support sensor modules besides owl-dnswatch.
+Added version-history comment.
+
+
+------------------------------------------------------------------------
+r7982 | tewok | 2013-09-05 20:35:20 -0700 (Thu, 05 Sep 2013) | 6 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/bin/owl-dataarch-mgr
+
+
+Support data segmentation.
+Passes -f to mv.
+Includes owlutils, which is expected to be in owl-dataarch-mgr's directory.
+Added version-history comment.
+
+------------------------------------------------------------------------
+r7981 | tewok | 2013-09-05 20:32:05 -0700 (Thu, 05 Sep 2013) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/bin/owl-archdata
+
+Fixed for data segmentation.
+Passes -verbose to owl-dataarch-mgr if owl-archdata gets it itself.
+Added version-history comment.
+
+------------------------------------------------------------------------
+r7980 | tewok | 2013-09-05 20:28:31 -0700 (Thu, 05 Sep 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/bin/owl-monthly
+
+Added version-history comment.
+
+------------------------------------------------------------------------
+r7979 | tewok | 2013-09-05 20:27:55 -0700 (Thu, 05 Sep 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/bin/owl-archold
+
+Added version-history comment.
+
+------------------------------------------------------------------------
+r7978 | tewok | 2013-09-05 20:27:11 -0700 (Thu, 05 Sep 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/bin/owl-transfer-mgr
+
+Added --recursive option to rsync call.
+Added version-history comment.
+
+------------------------------------------------------------------------
+r7977 | tewok | 2013-09-05 20:26:26 -0700 (Thu, 05 Sep 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/bin/owl-initsensor
+
+Added version-history comment.
+
+------------------------------------------------------------------------
+r7976 | tewok | 2013-09-05 20:25:25 -0700 (Thu, 05 Sep 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/bin/owl-needs
+
+Added version-history comment.
+
+------------------------------------------------------------------------
+r7975 | tewok | 2013-09-03 08:49:04 -0700 (Tue, 03 Sep 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-diskuse
+
+Added a comment about the 2.0 release.
+
+------------------------------------------------------------------------
+r7973 | tewok | 2013-08-28 09:06:45 -0700 (Wed, 28 Aug 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/nagiosgraph-files/ng-owl-map
+
+Added several Owl plugins.
+
+------------------------------------------------------------------------
+r7972 | tewok | 2013-08-28 08:59:28 -0700 (Wed, 28 Aug 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-manager-2-installation.html
+
+Reorganized the Owl plugin discussion.
+Fixed a grammo.
+
+------------------------------------------------------------------------
+r7970 | hserus | 2013-08-21 14:46:27 -0700 (Wed, 21 Aug 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/Validator.xs
+
+set correct type for rrsig in encoded structure
+
+------------------------------------------------------------------------
+r7968 | hserus | 2013-08-16 11:29:16 -0700 (Fri, 16 Aug 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_policy.c
+
+Actually read the dynamic policy for logging
+
+------------------------------------------------------------------------
+r7967 | hserus | 2013-08-16 11:27:33 -0700 (Fri, 16 Aug 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/Validator.xs
+
+Fix argument order mismatch between perl and C modules
+
+------------------------------------------------------------------------
+r7965 | tewok | 2013-08-05 14:57:26 -0700 (Mon, 05 Aug 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/rollrec.pm
+
+Fixed underscore in rndc_opts.
+
+------------------------------------------------------------------------
+r7964 | tewok | 2013-08-05 14:55:23 -0700 (Mon, 05 Aug 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollerd
+
+Added support for options to rndc.
+
+------------------------------------------------------------------------
+r7962 | tewok | 2013-08-05 14:35:51 -0700 (Mon, 05 Aug 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/rollrec.pm
+
+Added rndc-opts line to rollrecs.
+
+------------------------------------------------------------------------
+r7961 | tewok | 2013-08-05 14:31:41 -0700 (Mon, 05 Aug 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/rollmgr.pm
+
+Add support for rndc options.
+
+------------------------------------------------------------------------
+r7956 | hserus | 2013-08-04 16:37:02 -0700 (Sun, 04 Aug 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+Fix glue only when processing responses. 
+Ensure that fd_set is in scope when setting pending descriptors during val_async_check_wait()
+
+------------------------------------------------------------------------
+r7955 | hserus | 2013-08-04 16:34:58 -0700 (Sun, 04 Aug 2013) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_resquery.c
+
+Look at alternative NS information if the current async query results
+in an error condition. Also re-organize the alias processing code for
+readability.
+
+------------------------------------------------------------------------
+r7954 | tewok | 2013-08-02 16:55:01 -0700 (Fri, 02 Aug 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/defaults.pm
+
+Added default for rndc-opts.
+
+------------------------------------------------------------------------
+r7953 | tewok | 2013-08-02 16:52:12 -0700 (Fri, 02 Aug 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/etc/dnssec-tools/dnssec-tools.conf.pod
+
+Added rndc-opts.
+
+------------------------------------------------------------------------
+r7952 | tewok | 2013-07-31 14:21:24 -0700 (Wed, 31 Jul 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/nagios-files/owl-sensor-heartbeat.cgi
+
+Added version comment.
+
+------------------------------------------------------------------------
+r7951 | tewok | 2013-07-31 09:19:18 -0700 (Wed, 31 Jul 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-diskuse
+
+Added a missing historical comment.
+
+------------------------------------------------------------------------
+r7947 | tewok | 2013-07-26 12:19:11 -0700 (Fri, 26 Jul 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-rrsec
+
+Fixed a comparison operator.
+
+------------------------------------------------------------------------
+r7946 | tewok | 2013-07-26 11:02:15 -0700 (Fri, 26 Jul 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-rrdata
+
+Fixed a comparison-operator error (newbie mistake.)
+
+------------------------------------------------------------------------
+r7945 | tewok | 2013-07-23 10:01:16 -0700 (Tue, 23 Jul 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/bin/owl-needs
+
+Fixed pod formatting.
+
+------------------------------------------------------------------------
+r7944 | tewok | 2013-07-23 10:00:47 -0700 (Tue, 23 Jul 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/bin/owl-initsensor
+
+Fixed pod formatting.
+
+------------------------------------------------------------------------
+r7943 | tewok | 2013-07-23 10:00:30 -0700 (Tue, 23 Jul 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/bin/owl-monthly
+
+Fixed typo in pod.
+
+------------------------------------------------------------------------
+r7942 | tewok | 2013-07-23 09:03:33 -0700 (Tue, 23 Jul 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-rrecdata
+
+Modified return values so that changes would be more obvious in long-term
+graphs.
+
+------------------------------------------------------------------------
+r7938 | tewok | 2013-07-17 12:40:00 -0700 (Wed, 17 Jul 2013) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/common/manpages/owl-files.pod
+
+Track the filename extensions for Owl data files.
+
+------------------------------------------------------------------------
+r7937 | hserus | 2013-07-15 13:05:31 -0700 (Mon, 15 Jul 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_dane.c
+
+Skip PKI error for only certain error conditions. Differentiate between
+DANE-specific success and the general "no error" condition.
+
+------------------------------------------------------------------------
+r7935 | hserus | 2013-07-05 07:41:44 -0700 (Fri, 05 Jul 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_dane.c
+
+Don't double test if the record is an alias
+
+------------------------------------------------------------------------
+r7934 | hserus | 2013-07-05 07:35:47 -0700 (Fri, 05 Jul 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_dane.c
+
+Fix a couple of comments.
+
+------------------------------------------------------------------------
+r7933 | hardaker | 2013-07-05 05:59:39 -0700 (Fri, 05 Jul 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_dane.c
+
+document what the EE function does
+------------------------------------------------------------------------
+r7932 | hardaker | 2013-07-05 05:59:28 -0700 (Fri, 05 Jul 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_dane.c
+
+describe what val_dane_check_TA does
+------------------------------------------------------------------------
+r7931 | hardaker | 2013-07-05 05:59:15 -0700 (Fri, 05 Jul 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_dane.c
+
+Added a descriptive comment above a function
+------------------------------------------------------------------------
+r7930 | hserus | 2013-06-28 11:03:55 -0700 (Fri, 28 Jun 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/Validator.xs
+
+Use a new instance of the validator object each time "new" is invoked
+instead of re-using the default validator context.
+
+------------------------------------------------------------------------
+r7929 | hserus | 2013-06-28 11:02:34 -0700 (Fri, 28 Jun 2013) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/Validator.pm
+
+Minor changes to the pod. Use test cases from the dnssec-tools.org
+domain; also don't list the actual constants for differnt valStatus
+values since the application should not use these constants directly.
+
+------------------------------------------------------------------------
+r7928 | hserus | 2013-06-28 11:00:32 -0700 (Fri, 28 Jun 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/README
+
+Use test cases from the dnssec-tools.org domain
+
+------------------------------------------------------------------------
+r7927 | hserus | 2013-06-28 10:59:48 -0700 (Fri, 28 Jun 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/t/basic.t
+
+Use test cases from the dnssec-tools.org domain
+
+------------------------------------------------------------------------
+r7926 | hserus | 2013-06-28 10:58:50 -0700 (Fri, 28 Jun 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_context.c
+
+Properly update dynamic policies when they weren't set earlier in the default
+context. 
+
+------------------------------------------------------------------------
+r7925 | tewok | 2013-06-27 10:34:55 -0700 (Thu, 27 Jun 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-rrdata
+
+Added a pod line mentioning the file extension for data files.
+
+------------------------------------------------------------------------
+r7924 | tewok | 2013-06-26 16:45:47 -0700 (Wed, 26 Jun 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-dnstimer
+
+Prevent use of Validator.pm temporarily.  Validator seems to have problems
+on Linux when using multiple validator objects.
+
+------------------------------------------------------------------------
+r7923 | tewok | 2013-06-26 16:36:35 -0700 (Wed, 26 Jun 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-dnstimer
+
+Added specification of name server when using Validator.
+
+------------------------------------------------------------------------
+r7920 | hserus | 2013-06-20 08:34:03 -0700 (Thu, 20 Jun 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/doc/libval.pod
+
+Remove extraneous '=back'
+
+------------------------------------------------------------------------
+r7919 | tewok | 2013-06-19 17:10:00 -0700 (Wed, 19 Jun 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/doc/libval.pod
+
+Clean-up -- fixed typos, standardized formatting.
+
+------------------------------------------------------------------------
+r7918 | tewok | 2013-06-19 13:06:36 -0700 (Wed, 19 Jun 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/Validator.pm
+
+Provided extensive documentation for the validator constructor.
+
+------------------------------------------------------------------------
+r7917 | hserus | 2013-06-19 11:19:02 -0700 (Wed, 19 Jun 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_dane.c
+
+Correctly interpret return value of X509_verify_cert
+Update verbosity level for certain log messages
+
+------------------------------------------------------------------------
+r7916 | hserus | 2013-06-19 09:45:00 -0700 (Wed, 19 Jun 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_dane.c
+
+Undo code to auto-fetch TLSA records since there's no easy way to fetch
+dane parameters from SSL_CTX. 
+
+------------------------------------------------------------------------
+r7915 | hserus | 2013-06-19 08:11:18 -0700 (Wed, 19 Jun 2013) | 5 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dane_check.c
+   M /trunk/dnssec-tools/validator/include/validator/val_dane.h
+   M /trunk/dnssec-tools/validator/libval/val_dane.c
+
+In val_enable_dane_ssl() fetch the TLSA records if the caller does not
+provide a valid value in danestatus. Always keep a local copy of
+danestatus within the val_ssl_data structure and release it in
+val_free_dane_ssl()
+
+------------------------------------------------------------------------
+r7914 | tewok | 2013-06-19 07:48:54 -0700 (Wed, 19 Jun 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/bin/owl-newsensor
+
+Added owl-resources data files to the types of data being archived.
+
+------------------------------------------------------------------------
+r7913 | tewok | 2013-06-19 07:48:35 -0700 (Wed, 19 Jun 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/bin/owl-dataarch-mgr
+
+Added owl-resources data files to the types of data being archived.
+
+------------------------------------------------------------------------
+r7912 | hserus | 2013-06-18 19:49:04 -0700 (Tue, 18 Jun 2013) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dane_check.c
+   M /trunk/dnssec-tools/validator/include/validator/val_dane.h
+   M /trunk/dnssec-tools/validator/libval/val_dane.c
+
+Move incrementally towards better DANE support. Use the
+SSL_CTX_set_cert_verify_callback hook to check TLSA records against SSL
+certs. 
+
+------------------------------------------------------------------------
+r7911 | tewok | 2013-06-18 16:56:53 -0700 (Tue, 18 Jun 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/doc/dnsval.conf.pod
+
+Changed a couple HTML character macros to pod character macros.
+
+------------------------------------------------------------------------
+r7910 | tewok | 2013-06-18 16:54:24 -0700 (Tue, 18 Jun 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/doc/dnsval.conf.pod
+
+Use clearer spacing in the opening section.
+
+------------------------------------------------------------------------
+r7909 | tewok | 2013-06-17 14:57:12 -0700 (Mon, 17 Jun 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-dnstimer
+
+Added the -nodnssec option to allow use of Net::DNS::SEC::Validator.
+
+------------------------------------------------------------------------
+r7908 | tewok | 2013-06-17 09:11:12 -0700 (Mon, 17 Jun 2013) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/Validator.pm
+
+Added the VALIDATOR DATA FIELDS pod section to describe how query results
+may be interpreted.
+
+
+------------------------------------------------------------------------
+r7907 | tewok | 2013-06-17 08:04:30 -0700 (Mon, 17 Jun 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/Validator.pm
+
+Buncha clean-up in the pod -- typos, formatting, example spacing.
+
+------------------------------------------------------------------------
+r7905 | tewok | 2013-06-11 09:52:16 -0700 (Tue, 11 Jun 2013) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/common/perllib/owlutils.pm
+
+Added owl-resources as an Owl sensor daemon.
+Added resources-args as a config line for owl-resources.
+Allowed external use of several "constants".
+
+------------------------------------------------------------------------
+r7904 | tewok | 2013-06-11 09:47:42 -0700 (Tue, 11 Jun 2013) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-sensord
+
+Added starting of owl-resources.
+Added missing optoin descriptions.
+Deleted unused options.
+
+------------------------------------------------------------------------
+r7903 | tewok | 2013-06-11 09:46:00 -0700 (Tue, 11 Jun 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-status
+
+Added owl-resources.
+
+------------------------------------------------------------------------
+r7902 | tewok | 2013-06-11 09:44:31 -0700 (Tue, 11 Jun 2013) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-resources
+
+Monitors resources used by Owl sensor daemons.
+
+------------------------------------------------------------------------
+r7901 | tewok | 2013-06-11 09:43:25 -0700 (Tue, 11 Jun 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-archold
+
+Minor quote fixes.
+
+------------------------------------------------------------------------
+r7899 | hardaker | 2013-06-10 08:21:17 -0700 (Mon, 10 Jun 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/mainwindow.cpp
+
+use tolatin1 instead of toascii
+------------------------------------------------------------------------
+r7898 | hardaker | 2013-06-10 08:21:07 -0700 (Mon, 10 Jun 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec-check.pro
+
+mac osx build fixes
+------------------------------------------------------------------------
+r7897 | hardaker | 2013-06-10 08:20:49 -0700 (Mon, 10 Jun 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec_checks.cpp
+
+define RES_USE_DNSSEC if not defined elsewhere
+------------------------------------------------------------------------
+r7892 | tewok | 2013-06-04 12:18:04 -0700 (Tue, 04 Jun 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-dnstimer
+
+Fixed version number.
+
+------------------------------------------------------------------------
+r7891 | tewok | 2013-06-03 17:10:01 -0700 (Mon, 03 Jun 2013) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-diskuse
+
+Plugin to determine a sensor's disk use on manager.
+
+------------------------------------------------------------------------
+r7890 | hardaker | 2013-05-30 17:34:33 -0700 (Thu, 30 May 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/TestManager.cpp
+
+Properly wrap the windows function in #ifdefs
+------------------------------------------------------------------------
+r7889 | hardaker | 2013-05-30 17:29:37 -0700 (Thu, 30 May 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/TestManager.cpp
+
+Read the windows registry in order to determine local resolvers; caveat: assumes DHCP based interfaces
+------------------------------------------------------------------------
+r7888 | tewok | 2013-05-30 09:56:33 -0700 (Thu, 30 May 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-rrsec
+
+Added the -nolog option.
+Change from direct logging calls to owl_log() calls.
+
+------------------------------------------------------------------------
+r7887 | tewok | 2013-05-30 09:34:23 -0700 (Thu, 30 May 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-rrdata
+
+Added the -nolog option.
+Changed direct logging calls to owl_log() calls.
+
+------------------------------------------------------------------------
+r7886 | tewok | 2013-05-30 09:10:48 -0700 (Thu, 30 May 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-dnstimer
+
+Replaced logmsg() calls with owl_log() calls.
+
+------------------------------------------------------------------------
+r7885 | hardaker | 2013-05-29 20:57:56 -0700 (Wed, 29 May 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/DNSSECCheckThreadHandler.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/DNSSECCheckThreadHandler.h
+
+fixes for building on windows after the restructuring
+------------------------------------------------------------------------
+r7884 | hardaker | 2013-05-29 20:57:47 -0700 (Wed, 29 May 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec-check.pro
+
+check building rule fixes for win32
+------------------------------------------------------------------------
+r7883 | hardaker | 2013-05-29 20:57:37 -0700 (Wed, 29 May 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/TestManager.cpp
+
+v4 address printing for win32
+------------------------------------------------------------------------
+r7882 | hardaker | 2013-05-29 20:57:23 -0700 (Wed, 29 May 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/PcapWatcher.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/PcapWatcher.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/dnssec-nodes.pro
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/graphwidget.h
+
+Win32 fixes for building with headers, etc.
+------------------------------------------------------------------------
+r7881 | tewok | 2013-05-29 08:26:47 -0700 (Wed, 29 May 2013) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-dnstimer
+
+Added the -nolog flag.
+Moved logger() to owlutils.pm and renamed it to owl_log().
+Changed logger() calls to owl_log() calls.
+
+------------------------------------------------------------------------
+r7880 | tewok | 2013-05-29 08:24:13 -0700 (Wed, 29 May 2013) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/common/perllib/owlutils.pm
+
+Added $logflag so that logging can be globally (to the module) turned
+on and off.
+Added owl_log() to write log messages.
+
+------------------------------------------------------------------------
+r7879 | hardaker | 2013-05-28 15:57:24 -0700 (Tue, 28 May 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/DNSSECCheckThreadHandler.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/DNSSECCheckThreadHandler.h
+
+start sending queued messages after all the tests have been created (sort of) (again)
+------------------------------------------------------------------------
+r7878 | hardaker | 2013-05-28 15:57:14 -0700 (Tue, 28 May 2013) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DNSSECCheck.js
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/Grade.qml
+
+Added the ability to show a hex code when clicking on a grade This
+shows a bitmap breakdown of the grade, with 0 being no errors and any
+other number indicating (in hex) the bits from lowest bit to highest
+indicating the test that failed starting from the left most test.
+------------------------------------------------------------------------
+r7877 | hardaker | 2013-05-28 15:57:04 -0700 (Tue, 28 May 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/DNSSECCheckThreadHandler.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/TestManager.cpp
+
+Remember tests created before the handler so they can be added later
+(after the handler has been created in the other thread)
+------------------------------------------------------------------------
+r7876 | hardaker | 2013-05-28 15:56:54 -0700 (Tue, 28 May 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/DNSSECCheckThread.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/DNSSECCheckThreadHandler.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/DNSSECCheckThreadHandler.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/TestManager.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/TestManager.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DNSSECCheck.js
+
+Restructure classes to move more pkt handling into the worker thread
+------------------------------------------------------------------------
+r7875 | hardaker | 2013-05-28 15:56:41 -0700 (Tue, 28 May 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/DNSSECCheckThread.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/DNSSECCheckThread.h
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/DNSSECCheckThreadHandler.cpp (from /trunk/dnssec-tools/validator/apps/dnssec-check/DNSSECCheckThread.cpp:7874)
+   A /trunk/dnssec-tools/validator/apps/dnssec-check/DNSSECCheckThreadHandler.h (from /trunk/dnssec-tools/validator/apps/dnssec-check/DNSSECCheckThread.h:7874)
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec-check.pro
+
+Move the handler object to a separate file
+------------------------------------------------------------------------
+r7874 | tewok | 2013-05-28 15:24:58 -0700 (Tue, 28 May 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-rrdata
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-rrsec
+
+Fixed a couple pod punctuations.
+
+------------------------------------------------------------------------
+r7872 | hserus | 2013-05-28 08:27:45 -0700 (Tue, 28 May 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_support.c
+
+Remove unnecessary call to wire_name_length() 
+
+------------------------------------------------------------------------
+r7871 | tewok | 2013-05-24 09:33:49 -0700 (Fri, 24 May 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/demos/rollerd-basic/save-demo.rollrec
+
+Move test.com's rollrec back into the file.  Dunno why it was removed...
+
+------------------------------------------------------------------------
+r7870 | hardaker | 2013-05-23 15:16:24 -0700 (Thu, 23 May 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/ZoneFile-Fast/Fast.pm
+   M /trunk/dnssec-tools/tools/modules/ZoneFile-Fast/t/rr-dnssec.t
+   M /trunk/dnssec-tools/tools/modules/ZoneFile-Fast/t/rrs.t
+
+Allow for binary encoded octets to be passed in
+------------------------------------------------------------------------
+r7869 | hardaker | 2013-05-23 15:16:12 -0700 (Thu, 23 May 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/ZoneFile-Fast/Fast.pm
+   M /trunk/dnssec-tools/tools/modules/ZoneFile-Fast/t/rr-dnssec.t
+
+Modified patch from Glen Eustace for accepting NSEC3 records without type fields
+------------------------------------------------------------------------
+r7868 | hardaker | 2013-05-23 15:15:31 -0700 (Thu, 23 May 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/ZoneFile-Fast/Fast.pm
+
+Update Fast.pm Version Number: 1.21
+------------------------------------------------------------------------
+r7867 | hardaker | 2013-05-23 10:07:44 -0700 (Thu, 23 May 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/DNSSECTest.cpp
+
+remove debugging output
+------------------------------------------------------------------------
+r7866 | hardaker | 2013-05-23 10:07:34 -0700 (Thu, 23 May 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DnssecCheck.qml
+
+Better idle and other status messages
+------------------------------------------------------------------------
+r7865 | hardaker | 2013-05-23 10:07:24 -0700 (Thu, 23 May 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DNSSECCheck.js
+
+Use the new cancel_outstanding for better partial-send support
+------------------------------------------------------------------------
+r7864 | hardaker | 2013-05-23 10:07:13 -0700 (Thu, 23 May 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/TestManager.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/TestManager.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec_checks.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec_checks.h
+
+Add a async_cancel_outstanding() function and delete unused socket watchers
+------------------------------------------------------------------------
+r7863 | hardaker | 2013-05-23 10:07:01 -0700 (Thu, 23 May 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qml/DNSSECCheck.js
+
+use === for javascript comparisons
+------------------------------------------------------------------------
+r7861 | hardaker | 2013-05-22 09:21:37 -0700 (Wed, 22 May 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qmlapplicationviewer/qmlapplicationviewer.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qmlapplicationviewer/qmlapplicationviewer.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/qmlapplicationviewer/qmlapplicationviewer.pri
+
+new qtcreator auto-updates
+------------------------------------------------------------------------
+r7859 | tewok | 2013-05-13 10:09:36 -0700 (Mon, 13 May 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/bin/owl-newsensor
+
+Added .rrsec files to those to be backed up.
+
+------------------------------------------------------------------------
+r7858 | tewok | 2013-05-13 10:08:46 -0700 (Mon, 13 May 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/bin/owl-dataarch-mgr
+
+Added .rrsec files to those to be backed up.
+
+------------------------------------------------------------------------
+r7857 | tewok | 2013-05-08 11:02:45 -0700 (Wed, 08 May 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-status
+
+Added owl-rrdata and owl-rrsec to list of Owl daemons.
+
+------------------------------------------------------------------------
+r7856 | tewok | 2013-05-08 09:03:36 -0700 (Wed, 08 May 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-sensord
+
+Added support for starting owl-rrsec.
+
+------------------------------------------------------------------------
+r7855 | tewok | 2013-05-08 08:54:50 -0700 (Wed, 08 May 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/common/perllib/owlutils.pm
+
+Added arguments for owl-rrsec.
+
+------------------------------------------------------------------------
+r7854 | tewok | 2013-05-08 08:51:38 -0700 (Wed, 08 May 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/common/perllib/owlutils.pm
+
+Added arguments for owl-rrdata.
+Trying to get log files to rotate.
+
+------------------------------------------------------------------------
+r7853 | tewok | 2013-05-08 08:46:44 -0700 (Wed, 08 May 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-sensord
+
+Generalized sensor-execution code to make it easier to add additional sensors.
+
+------------------------------------------------------------------------
+r7852 | hardaker | 2013-05-07 15:29:31 -0700 (Tue, 07 May 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Rule.pm
+
+return values for config without a value to be set and return an empty array for help
+------------------------------------------------------------------------
+r7851 | hardaker | 2013-05-07 15:29:24 -0700 (Tue, 07 May 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/t/donuts-test-requires.txt
+   M /trunk/dnssec-tools/tools/donuts/t/lib/bogusmodule.pm
+
+check that exports work too
+------------------------------------------------------------------------
+r7850 | hardaker | 2013-05-07 15:29:17 -0700 (Tue, 07 May 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/t/40rulestest.t
+
+there are now only 2 rules again for the 40 test suite
+------------------------------------------------------------------------
+r7849 | hardaker | 2013-05-07 15:29:11 -0700 (Tue, 07 May 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Rule.pm
+   M /trunk/dnssec-tools/tools/donuts/t/10donuts.t
+   M /trunk/dnssec-tools/tools/donuts/t/40rulestest.t
+   A /trunk/dnssec-tools/tools/donuts/t/60requires.t
+   A /trunk/dnssec-tools/tools/donuts/t/donuts-test-requires.txt
+   A /trunk/dnssec-tools/tools/donuts/t/lib
+   A /trunk/dnssec-tools/tools/donuts/t/lib/bogusmodule.pm
+
+New feature to 'requires:' perl modules from a rule definition
+------------------------------------------------------------------------
+r7848 | hardaker | 2013-05-07 15:29:02 -0700 (Tue, 07 May 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Output.pm
+
+fix typo
+------------------------------------------------------------------------
+r7847 | hardaker | 2013-05-07 15:28:52 -0700 (Tue, 07 May 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/donuts
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts.pm
+
+Added a features_available function to the donuts class
+------------------------------------------------------------------------
+r7846 | tewok | 2013-05-06 15:59:55 -0700 (Mon, 06 May 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-rrdata
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-rrsec
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-status
+
+Minor pod fixes.
+
+------------------------------------------------------------------------
+r7845 | hardaker | 2013-05-06 12:50:59 -0700 (Mon, 06 May 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Output/Format/HTML.pm
+
+bold summary info
+------------------------------------------------------------------------
+r7844 | hardaker | 2013-05-06 12:50:38 -0700 (Mon, 06 May 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/donuts
+
+force Date::Parse
+------------------------------------------------------------------------
+r7843 | hardaker | 2013-05-06 12:50:20 -0700 (Mon, 06 May 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/rules/dnssec.rules.txt
+
+don't run a rule if there are no SOA records
+------------------------------------------------------------------------
+r7842 | hardaker | 2013-05-06 12:50:05 -0700 (Mon, 06 May 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/donuts
+
+document afxr:
+------------------------------------------------------------------------
+r7841 | hardaker | 2013-05-06 12:49:54 -0700 (Mon, 06 May 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts.pm
+
+allow for afxr: transfers
+------------------------------------------------------------------------
+r7840 | hardaker | 2013-05-06 12:49:40 -0700 (Mon, 06 May 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Output/Format/HTML.pm
+
+a number of markup changes for better visibility
+------------------------------------------------------------------------
+r7839 | hardaker | 2013-05-06 12:49:21 -0700 (Mon, 06 May 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Output.pm
+
+recognize the 'html' format
+------------------------------------------------------------------------
+r7838 | hardaker | 2013-05-06 12:48:59 -0700 (Mon, 06 May 2013) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Output/Format/HTML.pm
+
+beginnings of an html output
+------------------------------------------------------------------------
+r7837 | hardaker | 2013-05-06 12:48:13 -0700 (Mon, 06 May 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Output/Format/XML.pm
+
+use HTML::Entities for escaping rather than CGI
+------------------------------------------------------------------------
+r7836 | hardaker | 2013-05-06 12:47:44 -0700 (Mon, 06 May 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Rule.pm
+
+don't assume there is a line number (warning squash)
+------------------------------------------------------------------------
+r7835 | hardaker | 2013-05-06 12:47:23 -0700 (Mon, 06 May 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/t/10donuts.t
+   M /trunk/dnssec-tools/tools/donuts/t/20liveresolving.t
+   M /trunk/dnssec-tools/tools/donuts/t/40rulestest.t
+   M /trunk/dnssec-tools/tools/donuts/t/50data.t
+
+redirect output to /dev/null to not confuse test output
+------------------------------------------------------------------------
+r7834 | hardaker | 2013-05-06 12:46:59 -0700 (Mon, 06 May 2013) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Output/Format/JSON.pm
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Output/Format/Text.pm
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Output/Format/XML.pm
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Output/Format.pm
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Output.pm
+   M /trunk/dnssec-tools/tools/donuts/t/50data.t
+
+Allow configuration to be passed to the output formatters.
+  eg: text:indent=2,foo=bar
+  text now accepts a 'indent' config item for number of spaces
+  json and xml now accept allow-comments=0
+------------------------------------------------------------------------
+r7833 | hardaker | 2013-05-06 12:46:28 -0700 (Mon, 06 May 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Output/Format/Perl.pm
+   M /trunk/dnssec-tools/tools/donuts/t/50data.t
+   M /trunk/dnssec-tools/tools/donuts/t/91perlapi.t
+
+made perl output an array to match high level multiple-zone objects
+------------------------------------------------------------------------
+r7832 | hardaker | 2013-05-06 12:45:50 -0700 (Mon, 06 May 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Output.pm
+
+Added attempt of dynamic loading of unknown format modules
+------------------------------------------------------------------------
+r7831 | hardaker | 2013-05-06 12:45:17 -0700 (Mon, 06 May 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/rules/dnssec.rules.txt
+
+init zsk and ksk counts
+------------------------------------------------------------------------
+r7830 | hserus | 2013-05-03 17:13:27 -0700 (Fri, 03 May 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-rrdata
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-rrsec
+
+Account for the fact that the ns might be empty when trying to send a dig query to a particular nameserver.
+
+------------------------------------------------------------------------
+r7829 | hserus | 2013-05-03 15:39:23 -0700 (Fri, 03 May 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-rrdata
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-rrsec
+
+Allow queries to be sent to specific name servers
+
+------------------------------------------------------------------------
+r7828 | hserus | 2013-05-03 15:23:28 -0700 (Fri, 03 May 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-rrsec
+
+Add the +cd option to dig
+
+------------------------------------------------------------------------
+r7827 | hserus | 2013-05-03 15:07:34 -0700 (Fri, 03 May 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/common/perllib/owlutils.pm
+
+Add required hash item separator
+
+------------------------------------------------------------------------
+r7826 | hserus | 2013-05-03 14:34:11 -0700 (Fri, 03 May 2013) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/common/manpages/owl-config.pod
+   M /trunk/dnssec-tools/apps/owl-monitor/common/perllib/owlutils.pm
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-dnstimer
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-rrdata
+   A /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-rrsec
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-status
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/conf/owl.conf
+
+Add initial set of files to enable dig operations with the +dnssec
+option set. This is essentially a clone of owl-rrdata. This changeset
+should not affect any of owl-rrdata's functionality.
+
+------------------------------------------------------------------------
+r7825 | tewok | 2013-05-03 07:57:33 -0700 (Fri, 03 May 2013) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-anycaster
+
+Added plugin to handle anycast data.
+
+------------------------------------------------------------------------
+r7823 | hardaker | 2013-04-30 16:29:58 -0700 (Tue, 30 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Output/Format/JSON.pm
+
+make json output in an array set instead of a dict
+------------------------------------------------------------------------
+r7822 | hardaker | 2013-04-30 16:29:46 -0700 (Tue, 30 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/donuts
+
+added a separator between multi-zone outputs
+------------------------------------------------------------------------
+r7821 | hardaker | 2013-04-30 16:29:37 -0700 (Tue, 30 Apr 2013) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Output/Format/Perl.pm
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Output.pm
+   M /trunk/dnssec-tools/tools/donuts/t/50data.t
+   A /trunk/dnssec-tools/tools/donuts/t/91perlapi.t
+
+A module to generate perl data structures for storage of the output
+------------------------------------------------------------------------
+r7820 | hardaker | 2013-04-30 16:29:23 -0700 (Tue, 30 Apr 2013) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/tools/donuts/t/50data.t
+   D /trunk/dnssec-tools/tools/donuts/t/50json.t
+
+testing for XML output now too
+------------------------------------------------------------------------
+r7819 | hardaker | 2013-04-30 16:29:13 -0700 (Tue, 30 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Output/Format/JSON.pm
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Output/Format/Text.pm
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Output.pm
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts.pm
+   A /trunk/dnssec-tools/tools/donuts/t/50json.t
+
+Allow writing to strings and added a json test
+------------------------------------------------------------------------
+r7818 | hardaker | 2013-04-30 16:28:59 -0700 (Tue, 30 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Output/Format/JSON.pm
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Output/Format.pm
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Output.pm
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Rule.pm
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts.pm
+
+Added support for array objects within classes
+------------------------------------------------------------------------
+r7817 | hardaker | 2013-04-30 16:28:45 -0700 (Tue, 30 Apr 2013) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Output/Format/JSON.pm
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Output.pm
+
+Added a JSON output module
+------------------------------------------------------------------------
+r7816 | hardaker | 2013-04-30 16:28:33 -0700 (Tue, 30 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/donuts
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Output/Format/XML.pm
+
+XML fixes
+------------------------------------------------------------------------
+r7815 | hardaker | 2013-04-30 16:28:20 -0700 (Tue, 30 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/donuts
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Output/Format/Text/Wrapped.pm
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts.pm
+
+move the summary information in the main Donuts class
+------------------------------------------------------------------------
+r7814 | hardaker | 2013-04-30 16:28:07 -0700 (Tue, 30 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/donuts
+
+remove the global rule/etc counting
+------------------------------------------------------------------------
+r7813 | hardaker | 2013-04-30 16:27:58 -0700 (Tue, 30 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Output/Format/Text.pm
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Output/Format/XML.pm
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Rule.pm
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts.pm
+
+Don't make sections have a name; only a tag is required
+------------------------------------------------------------------------
+r7812 | hardaker | 2013-04-30 16:27:45 -0700 (Tue, 30 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Output/Format/XML.pm
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Output/Format.pm
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Output.pm
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts.pm
+
+created a StartOutput and EndOutput format function for outer wrappers
+------------------------------------------------------------------------
+r7811 | hardaker | 2013-04-30 16:27:32 -0700 (Tue, 30 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Output/Format/XML.pm
+
+Proper tag and content escaping and fixing
+------------------------------------------------------------------------
+r7810 | hardaker | 2013-04-30 16:27:20 -0700 (Tue, 30 Apr 2013) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Output/Format/XML.pm
+
+Added an XML output format
+------------------------------------------------------------------------
+r7809 | hardaker | 2013-04-30 16:27:07 -0700 (Tue, 30 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Output/Format/Text/Wrapped.pm
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Output/Format/Text.pm
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Output.pm
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Rule.pm
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts.pm
+
+more nested sections and added a comment output type
+------------------------------------------------------------------------
+r7808 | hardaker | 2013-04-30 16:26:53 -0700 (Tue, 30 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/donuts
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Output.pm
+
+support writing the output to a file
+------------------------------------------------------------------------
+r7807 | hardaker | 2013-04-30 16:26:42 -0700 (Tue, 30 Apr 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Output/Format/Text/Wrapped.pm
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Output/Format/Text.pm
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Output/Format.pm
+   A /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Output.pm
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts.pm
+
+Added output control using a Output class wrapped around IO::* classes
+(and the formatters)
+------------------------------------------------------------------------
+r7806 | hardaker | 2013-04-30 16:26:28 -0700 (Tue, 30 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts.pm
+
+allow a class to be passed as the formatter option
+------------------------------------------------------------------------
+r7805 | hardaker | 2013-04-30 16:26:17 -0700 (Tue, 30 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts.pm
+
+set the output format to the default if one hasn't been set yet
+------------------------------------------------------------------------
+r7804 | hardaker | 2013-04-30 16:26:06 -0700 (Tue, 30 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts.pm
+
+move all printing to an outputter class
+------------------------------------------------------------------------
+r7803 | hardaker | 2013-04-30 16:25:55 -0700 (Tue, 30 Apr 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Rule.pm
+
+use the output() routine of the donuts object to get the outputter.
+(that way it's easier to change the output without having to reset all
+the nodes)
+------------------------------------------------------------------------
+r7802 | hardaker | 2013-04-30 16:25:44 -0700 (Tue, 30 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Output/Format/Text/Wrapped.pm
+
+bug fixes (class name fixes)
+------------------------------------------------------------------------
+r7801 | hardaker | 2013-04-30 16:25:31 -0700 (Tue, 30 Apr 2013) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Output
+   A /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Output/Format
+   A /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Output/Format/Text
+   A /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Output/Format/Text/Wrapped.pm
+   A /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Output/Format/Text.pm
+   A /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Output/Format.pm
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Rule.pm
+   A /trunk/dnssec-tools/tools/donuts/t/00classloading.t
+   A /trunk/dnssec-tools/tools/drawvalmap/val_log_map.png
+
+use a new class structure for formatting output (still only stdout)
+------------------------------------------------------------------------
+r7800 | hardaker | 2013-04-30 16:25:14 -0700 (Tue, 30 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Rule.pm
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts.pm
+
+Major output restructuring; ready for a separate class split next
+------------------------------------------------------------------------
+r7799 | hardaker | 2013-04-30 16:25:01 -0700 (Tue, 30 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/donuts
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Rule.pm
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts.pm
+
+rework the output routine to begin respecting formatting requests
+------------------------------------------------------------------------
+r7798 | hardaker | 2013-04-30 16:24:49 -0700 (Tue, 30 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Rule.pm
+
+output cleanup
+------------------------------------------------------------------------
+r7797 | hardaker | 2013-04-30 16:24:38 -0700 (Tue, 30 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts.pm
+
+verbose config typo fixes
+------------------------------------------------------------------------
+r7796 | hardaker | 2013-04-30 16:24:27 -0700 (Tue, 30 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/donuts
+
+set the verbose options when -v+ is specified
+------------------------------------------------------------------------
+r7795 | hardaker | 2013-04-30 16:24:18 -0700 (Tue, 30 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts.pm
+
+output formatting and location containment
+------------------------------------------------------------------------
+r7794 | hserus | 2013-04-30 10:34:56 -0700 (Tue, 30 Apr 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+   M /trunk/dnssec-tools/validator/libval/val_resquery.c
+
+Fine-tune support for cache-only validation
+
+------------------------------------------------------------------------
+r7793 | hserus | 2013-04-30 10:27:52 -0700 (Tue, 30 Apr 2013) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator-internal.h
+
+Add new query state for missing answers (cache miss when
+VAL_QUERY_SKIP_RESOLVER is set)
+
+
+------------------------------------------------------------------------
+r7791 | hardaker | 2013-04-25 14:23:09 -0700 (Thu, 25 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Rule.pm
+
+fix multiple argument issues
+------------------------------------------------------------------------
+r7790 | hardaker | 2013-04-25 14:22:53 -0700 (Thu, 25 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Rule.pm
+
+Consolodate error/output generation
+------------------------------------------------------------------------
+r7789 | hardaker | 2013-04-25 14:22:39 -0700 (Thu, 25 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts.pm
+
+mark error parsing as something to do
+------------------------------------------------------------------------
+r7788 | hardaker | 2013-04-25 14:22:24 -0700 (Thu, 25 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/t/40rulestest.t
+
+test rule ignoring
+------------------------------------------------------------------------
+r7787 | hardaker | 2013-04-25 14:22:12 -0700 (Thu, 25 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts.pm
+
+move the rule ignoring to runtime
+------------------------------------------------------------------------
+r7786 | hardaker | 2013-04-25 14:21:58 -0700 (Thu, 25 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/t/40rulestest.t
+
+test various forms of rule selection
+------------------------------------------------------------------------
+r7785 | hardaker | 2013-04-25 14:21:46 -0700 (Thu, 25 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/t/donuts-test-rules.txt
+
+change the level of one of the rules
+------------------------------------------------------------------------
+r7784 | hardaker | 2013-04-25 14:21:35 -0700 (Thu, 25 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/t/10donuts.t
+
+fix the sub-rule extract test count
+------------------------------------------------------------------------
+r7783 | hardaker | 2013-04-25 14:21:23 -0700 (Thu, 25 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts.pm
+
+allow the rule function to return an array or a single rule
+------------------------------------------------------------------------
+r7782 | hardaker | 2013-04-25 14:21:08 -0700 (Thu, 25 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts.pm
+   M /trunk/dnssec-tools/tools/donuts/t/10donuts.t
+
+enable the name-based extraction of rules
+------------------------------------------------------------------------
+r7781 | hardaker | 2013-04-25 14:20:53 -0700 (Thu, 25 Apr 2013) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/tools/donuts/t/40rulestest.t
+
+analysis tests
+------------------------------------------------------------------------
+r7780 | hardaker | 2013-04-25 14:20:41 -0700 (Thu, 25 Apr 2013) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/tools/donuts/t/donuts-test-rules.txt
+
+test rules for the test suite
+------------------------------------------------------------------------
+r7779 | hardaker | 2013-04-25 14:20:29 -0700 (Thu, 25 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/t/donuts-test.conf
+
+make the default minttl very low to test warning squashing
+------------------------------------------------------------------------
+r7778 | hardaker | 2013-04-25 14:20:18 -0700 (Thu, 25 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/t/db.example.com
+
+deliberately remove an MX and use a low ttl for one record
+------------------------------------------------------------------------
+r7777 | hardaker | 2013-04-25 14:20:05 -0700 (Thu, 25 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/t/30zonetest.t
+
+better error counts in the output text when broken
+------------------------------------------------------------------------
+r7776 | hardaker | 2013-04-25 14:19:54 -0700 (Thu, 25 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/t/10donuts.t
+
+check exact number of rules loaded
+------------------------------------------------------------------------
+r7775 | hardaker | 2013-04-25 14:19:42 -0700 (Thu, 25 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Rule.pm
+
+various bug fixes, including setting current_domain
+------------------------------------------------------------------------
+r7774 | hardaker | 2013-04-25 14:19:26 -0700 (Thu, 25 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts.pm
+
+warning squash
+------------------------------------------------------------------------
+r7773 | hardaker | 2013-04-25 14:19:11 -0700 (Thu, 25 Apr 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/donuts
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts.pm
+
+added a function to create name/type caches and to return a name count
+(from the Donuts object)
+------------------------------------------------------------------------
+r7772 | hardaker | 2013-04-25 14:18:57 -0700 (Thu, 25 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/donuts
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts.pm
+
+use a new top level analyze() function to run through all tests
+------------------------------------------------------------------------
+r7771 | hardaker | 2013-04-25 14:18:38 -0700 (Thu, 25 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/donuts
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts.pm
+
+use the analyze_name function now in Donuts.pm
+------------------------------------------------------------------------
+r7770 | hardaker | 2013-04-25 14:18:23 -0700 (Thu, 25 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Rule.pm
+
+Added an analyze_name function
+------------------------------------------------------------------------
+r7769 | hardaker | 2013-04-25 14:18:07 -0700 (Thu, 25 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts.pm
+
+Added an Output() function which currently just prints
+------------------------------------------------------------------------
+r7768 | hardaker | 2013-04-25 14:17:52 -0700 (Thu, 25 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/t/30zonetest.t
+
+check that the correct number of RRs were found
+------------------------------------------------------------------------
+r7767 | hardaker | 2013-04-25 14:17:41 -0700 (Thu, 25 Apr 2013) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/tools/donuts/t/db.example.com
+
+added a test zone
+------------------------------------------------------------------------
+r7766 | hardaker | 2013-04-25 14:17:28 -0700 (Thu, 25 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts.pm
+
+better variable names
+------------------------------------------------------------------------
+r7765 | hardaker | 2013-04-25 14:17:14 -0700 (Thu, 25 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/donuts
+
+use the new analyze_records function
+------------------------------------------------------------------------
+r7764 | hardaker | 2013-04-25 14:17:03 -0700 (Thu, 25 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts.pm
+
+created an analyze_records function
+------------------------------------------------------------------------
+r7763 | hardaker | 2013-04-25 14:16:48 -0700 (Thu, 25 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/donuts
+
+use the new modularized resolver to load data
+------------------------------------------------------------------------
+r7762 | hardaker | 2013-04-25 14:16:37 -0700 (Thu, 25 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/t/20liveresolving.t
+
+test live queries
+------------------------------------------------------------------------
+r7761 | hardaker | 2013-04-25 14:16:26 -0700 (Thu, 25 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts.pm
+
+pass the self parameter when querying for live results
+------------------------------------------------------------------------
+r7760 | hardaker | 2013-04-25 14:16:11 -0700 (Thu, 25 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts.pm
+   A /trunk/dnssec-tools/tools/donuts/t/30zonetest.t
+
+saving and loading zone data from a file
+------------------------------------------------------------------------
+r7759 | hardaker | 2013-04-25 14:15:55 -0700 (Thu, 25 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts.pm
+   A /trunk/dnssec-tools/tools/donuts/t/20liveresolving.t
+
+infrastructure for performing live queries
+------------------------------------------------------------------------
+r7758 | hardaker | 2013-04-25 14:15:40 -0700 (Thu, 25 Apr 2013) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/tools/donuts/t/donuts-test.conf
+
+A minimal config file for testing purposes
+------------------------------------------------------------------------
+r7757 | hardaker | 2013-04-25 14:15:25 -0700 (Thu, 25 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/donuts
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Rule.pm
+
+routines for accessing features, help strings, and descriptions
+------------------------------------------------------------------------
+r7756 | hardaker | 2013-04-25 14:15:10 -0700 (Thu, 25 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/t/10donuts.t
+
+load rules files
+------------------------------------------------------------------------
+r7755 | hardaker | 2013-04-25 14:14:58 -0700 (Thu, 25 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Rule.pm
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts.pm
+
+warning squashing
+------------------------------------------------------------------------
+r7754 | hardaker | 2013-04-25 14:14:42 -0700 (Thu, 25 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts.pm
+   M /trunk/dnssec-tools/tools/donuts/t/10donuts.t
+
+have the Donuts class load and keep rules
+------------------------------------------------------------------------
+r7753 | hardaker | 2013-04-25 14:14:26 -0700 (Thu, 25 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts.pm
+   M /trunk/dnssec-tools/tools/donuts/t/10donuts.t
+
+added a config mechanism
+------------------------------------------------------------------------
+r7752 | hardaker | 2013-04-25 14:14:10 -0700 (Thu, 25 Apr 2013) | 1 line
+Changed paths:
+   D /trunk/dnssec-tools/tools/donuts/Rule.pm
+   A /trunk/dnssec-tools/tools/donuts/lib
+   A /trunk/dnssec-tools/tools/donuts/lib/Net
+   A /trunk/dnssec-tools/tools/donuts/lib/Net/DNS
+   A /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC
+   A /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools
+   A /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts
+   A /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts/Rule.pm (from /trunk/dnssec-tools/tools/donuts/Rule.pm:7751)
+   A /trunk/dnssec-tools/tools/donuts/lib/Net/DNS/SEC/Tools/Donuts.pm
+   A /trunk/dnssec-tools/tools/donuts/t
+   A /trunk/dnssec-tools/tools/donuts/t/10donuts.t
+
+Rearchitecture of the code to start moving app functionality into a base class
+------------------------------------------------------------------------
+r7751 | hardaker | 2013-04-25 14:13:44 -0700 (Thu, 25 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/config.guess
+   M /trunk/dnssec-tools/config.sub
+   M /trunk/dnssec-tools/configure
+   M /trunk/dnssec-tools/validator/config.guess
+   M /trunk/dnssec-tools/validator/config.sub
+
+update to a newer version of autoconf and config.guess/sub to work on aarch64
+------------------------------------------------------------------------
+r7750 | hardaker | 2013-04-18 12:22:06 -0700 (Thu, 18 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/ZoneFile-Fast/Fast.pm
+
+Update Fast.pm Version Number: 1.20
+------------------------------------------------------------------------
+r7749 | hardaker | 2013-04-18 12:19:42 -0700 (Thu, 18 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/ZoneFile-Fast/Fast.pm
+
+Patch from Glen Eustace to handle multi-line NSEC3 records
+------------------------------------------------------------------------
+r7748 | hardaker | 2013-04-18 12:19:24 -0700 (Thu, 18 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/ZoneFile-Fast/t/rr-dnssec.t
+
+New test to check for multi-line nsec3 records
+------------------------------------------------------------------------
+r7747 | tewok | 2013-04-16 15:56:40 -0700 (Tue, 16 Apr 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-rrecdata
+
+Fixed $NAME setting.
+
+------------------------------------------------------------------------
+r7743 | tewok | 2013-04-12 11:25:47 -0700 (Fri, 12 Apr 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-comp-dnswatch
+
+Changed a critical error to an unknown error.
+Minor cleanup of comments and code.
+
+------------------------------------------------------------------------
+r7742 | tewok | 2013-04-12 07:39:49 -0700 (Fri, 12 Apr 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-comp-dnswatch
+
+Added the -showmax and -showmin options to add the maximum response time and
+the minimum response time (and their respective tetrads) to the Nagios output.
+
+------------------------------------------------------------------------
+r7741 | hardaker | 2013-04-11 12:10:16 -0700 (Thu, 11 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/NEWS
+
+mention the new donuts -V switch
+------------------------------------------------------------------------
+r7740 | hardaker | 2013-04-11 12:10:08 -0700 (Thu, 11 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/NEWS
+
+mention the new donuts live features
+------------------------------------------------------------------------
+r7739 | hardaker | 2013-04-11 12:09:58 -0700 (Thu, 11 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/donuts
+
+set the CD bit and add a -V flag to print RR data
+------------------------------------------------------------------------
+r7738 | hardaker | 2013-04-11 12:09:48 -0700 (Thu, 11 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/donuts
+
+remove debugging output
+------------------------------------------------------------------------
+r7737 | hardaker | 2013-04-11 12:09:38 -0700 (Thu, 11 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/donuts
+
+support selecting the record type to be looked up for live records
+------------------------------------------------------------------------
+r7736 | tewok | 2013-04-11 09:02:19 -0700 (Thu, 11 Apr 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-dnswatch
+
+Expanded pod to better describe how the -rotate option should be used.
+
+------------------------------------------------------------------------
+r7735 | hardaker | 2013-04-10 22:15:33 -0700 (Wed, 10 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/main.cpp
+
+allow style selection
+------------------------------------------------------------------------
+r7734 | hardaker | 2013-04-10 22:15:23 -0700 (Wed, 10 Apr 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/donuts/donuts
+
+Add support for running donuts on live zones using a live: prefix
+------------------------------------------------------------------------
+r7733 | tewok | 2013-04-10 10:03:30 -0700 (Wed, 10 Apr 2013) | 3 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/manager/nagios-files/diff-status.c
+
+Mods for not displaying the Last Check, Duration, and Attempt columns in the
+Services display.
+
+------------------------------------------------------------------------
+r7732 | tewok | 2013-04-10 10:01:47 -0700 (Wed, 10 Apr 2013) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/manager/nagios-files/diff-side.php
+
+Differences for adding the "Services (Owl Display)" to sidebar.
+
+------------------------------------------------------------------------
+r7731 | tewok | 2013-04-10 10:00:39 -0700 (Wed, 10 Apr 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/nagios-files/README
+
+Added entries for diff-side.php and diff-status.cgi.
+
+------------------------------------------------------------------------
+r7730 | hserus | 2013-04-08 21:22:19 -0700 (Mon, 08 Apr 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/val_errors.h
+
+Mark VAL_AC_UNKNOWN_ALGORITHM_LINK as obsolete
+
+------------------------------------------------------------------------
+r7729 | hserus | 2013-04-08 21:20:28 -0700 (Mon, 08 Apr 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_verify.c
+
+Reorganize verify_next_assertion() so that it flows better
+
+------------------------------------------------------------------------
+r7728 | hserus | 2013-04-08 21:12:52 -0700 (Mon, 08 Apr 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+Check for unknown algorithms in proof of non-existence test
+
+------------------------------------------------------------------------
+r7727 | hserus | 2013-04-08 21:09:02 -0700 (Mon, 08 Apr 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator-internal.h
+
+Add macro to check for known DNSSEC algorithms
+
+------------------------------------------------------------------------
+r7726 | hserus | 2013-04-05 13:03:44 -0700 (Fri, 05 Apr 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_dane.c
+
+Continue to tweak usage 2 for DANE. Code still needs some work.
+
+------------------------------------------------------------------------
+r7725 | hserus | 2013-04-05 12:58:58 -0700 (Fri, 05 Apr 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dane_check.c
+
+Support TLS
+
+------------------------------------------------------------------------
+r7724 | tewok | 2013-04-05 11:57:14 -0700 (Fri, 05 Apr 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-rrecdata
+
+Added thresholds and the scaffolding for record-specific manipulations.
+
+------------------------------------------------------------------------
+r7723 | tewok | 2013-04-05 11:55:28 -0700 (Fri, 05 Apr 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-rrecdata
+
+Cleaned up prototype version to fit better into becoming a real Nagios plugin.
+
+------------------------------------------------------------------------
+r7722 | hserus | 2013-04-05 08:20:56 -0700 (Fri, 05 Apr 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/doc/dnsval.conf.3
+   M /trunk/dnssec-tools/validator/doc/dnsval.conf.pod
+
+Fix typo
+
+------------------------------------------------------------------------
+r7721 | tewok | 2013-04-04 20:40:39 -0700 (Thu, 04 Apr 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/nagios/README
+
+Added an entry for diff-side.php.
+
+------------------------------------------------------------------------
+r7720 | tewok | 2013-04-04 17:20:36 -0700 (Thu, 04 Apr 2013) | 5 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/nagios/diff-side.php
+
+This diff contains the mods for DNSSEC-Tools-enhanced version of side.php.
+The diff is required here, as opposed to the actual file, due to copyright
+considerations.
+
+
+------------------------------------------------------------------------
+r7719 | tewok | 2013-04-04 17:00:37 -0700 (Thu, 04 Apr 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/nagios/dt_zonetimer
+
+Removed use of critical return so as not to alarm users.
+
+------------------------------------------------------------------------
+r7717 | tewok | 2013-04-01 08:21:55 -0700 (Mon, 01 Apr 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-rrecdata
+
+Fixed version in file header.
+
+------------------------------------------------------------------------
+r7716 | hserus | 2013-03-29 00:16:37 -0700 (Fri, 29 Mar 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/doc/libval.3
+   M /trunk/dnssec-tools/validator/doc/libval.pod
+
+Add some documentation on the libval dynamic policy options within
+libval.
+
+------------------------------------------------------------------------
+r7715 | hserus | 2013-03-28 23:19:06 -0700 (Thu, 28 Mar 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/examples.pl
+
+change do-while to a while loop
+
+------------------------------------------------------------------------
+r7714 | hserus | 2013-03-28 23:18:44 -0700 (Thu, 28 Mar 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/README
+
+Update structure descriptions in README
+
+------------------------------------------------------------------------
+r7713 | hserus | 2013-03-28 23:06:11 -0700 (Thu, 28 Mar 2013) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/examples.pl
+
+Add examples for res_query and resolve_and_check
+
+------------------------------------------------------------------------
+r7712 | hserus | 2013-03-28 23:05:05 -0700 (Thu, 28 Mar 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/Validator.xs
+
+Add status information for signature portion of rrdata too.
+
+------------------------------------------------------------------------
+r7711 | hserus | 2013-03-28 22:42:05 -0700 (Thu, 28 Mar 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/Validator.xs
+
+Retain the individual rr_data status values within the result chain structure
+
+------------------------------------------------------------------------
+r7710 | hserus | 2013-03-28 20:38:38 -0700 (Thu, 28 Mar 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/Validator.xs
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/const-c.inc
+
+Global options were moved into the main option structure for the context.
+
+------------------------------------------------------------------------
+r7708 | hserus | 2013-03-28 10:53:02 -0700 (Thu, 28 Mar 2013) | 5 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/validator.h
+   M /trunk/dnssec-tools/validator/libval/val_context.c
+   M /trunk/dnssec-tools/validator/libval/val_context.h
+   M /trunk/dnssec-tools/validator/libval/val_policy.c
+
+Some more fine-tuning of dynamically supplied global options. Move
+global options to the val_context_opt_t structure. Support env_policy
+and app_policy fields since we also allow dnsval.conf files to be
+specified dynamically.
+
+------------------------------------------------------------------------
+r7707 | tewok | 2013-03-27 09:59:53 -0700 (Wed, 27 Mar 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-rrdata
+
+Pod and comment fixes.
+
+------------------------------------------------------------------------
+r7706 | hserus | 2013-03-27 09:56:06 -0700 (Wed, 27 Mar 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/Validator.xs
+
+Initialize env_policy and app_policy fields of global options
+
+------------------------------------------------------------------------
+r7705 | hserus | 2013-03-27 09:55:07 -0700 (Wed, 27 Mar 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_policy.c
+
+Initialize log_target to NULL.
+
+------------------------------------------------------------------------
+r7704 | hserus | 2013-03-27 09:31:31 -0700 (Wed, 27 Mar 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/Validator.xs
+
+Don't allow the application to specify the env_policy and env_policy
+global options.
+
+------------------------------------------------------------------------
+r7703 | hserus | 2013-03-27 09:29:14 -0700 (Wed, 27 Mar 2013) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_context.c
+   M /trunk/dnssec-tools/validator/libval/val_policy.c
+   M /trunk/dnssec-tools/validator/libval/val_policy.h
+
+Rename update_global_options() to update_dynamic_gopt(). Don't replace
+the env_policy, app_policy and log_target fields, since we don't want
+the application to override system behavior.
+
+------------------------------------------------------------------------
+r7702 | tewok | 2013-03-27 09:09:36 -0700 (Wed, 27 Mar 2013) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-comp-dnswatch
+
+Compares data from owl-dnswatch sensors.
+
+------------------------------------------------------------------------
+r7701 | tewok | 2013-03-27 08:16:33 -0700 (Wed, 27 Mar 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-rrecdata
+
+Pod and comment fixes.
+
+------------------------------------------------------------------------
+r7700 | hserus | 2013-03-27 08:11:50 -0700 (Wed, 27 Mar 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/Validator.pm
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/Validator.xs
+   M /trunk/dnssec-tools/tools/modules/Net-DNS-SEC-Validator/const-c.inc
+
+Update Validator.pm to support dynamic policies
+
+------------------------------------------------------------------------
+r7699 | hserus | 2013-03-27 07:50:37 -0700 (Wed, 27 Mar 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/validator.h
+   M /trunk/dnssec-tools/validator/include/validator-internal.h
+   M /trunk/dnssec-tools/validator/libval/val_context.c
+   M /trunk/dnssec-tools/validator/libval/val_context.h
+   M /trunk/dnssec-tools/validator/libval/val_policy.c
+   M /trunk/dnssec-tools/validator/libval/val_policy.h
+
+Allow dynamically supplied global policies to be merged with the options
+already stored in the context. This is somewhat hackish but works.
+
+------------------------------------------------------------------------
+r7698 | hserus | 2013-03-22 15:05:41 -0700 (Fri, 22 Mar 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/include/validator/validator.h
+   M /trunk/dnssec-tools/validator/include/validator-internal.h
+   M /trunk/dnssec-tools/validator/libval/val_context.c
+   M /trunk/dnssec-tools/validator/libval/val_policy.c
+   M /trunk/dnssec-tools/validator/libval/val_policy.h
+
+Add the capability to dynamically create a validator context with given
+validation policy and nameserver information
+
+------------------------------------------------------------------------
+r7697 | hserus | 2013-03-22 15:00:03 -0700 (Fri, 22 Mar 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/ValidateViewWidget.cpp
+   M /trunk/dnssec-tools/validator/doc/libval.3
+   M /trunk/dnssec-tools/validator/doc/libval.pod
+   M /trunk/dnssec-tools/validator/doc/validator_api.xml
+   M /trunk/dnssec-tools/validator/include/validator/validator.h
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+   M /trunk/dnssec-tools/validator/libval/val_resquery.c
+
+Rename VAL_QUERY_RECURSE to VAL_QUERY_ITERATE
+
+------------------------------------------------------------------------
+r7696 | tewok | 2013-03-21 15:46:43 -0700 (Thu, 21 Mar 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/nagios-objects/owl-commands.cfg
+
+Added commands for handling DNS resource-record data and for rotating
+DNS timer data.
+
+------------------------------------------------------------------------
+r7695 | tewok | 2013-03-21 15:34:00 -0700 (Thu, 21 Mar 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-dnswatch
+
+Fixed a podo.
+
+------------------------------------------------------------------------
+r7694 | tewok | 2013-03-21 14:28:02 -0700 (Thu, 21 Mar 2013) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-rrdata
+
+Queries DNS resource-record data for sensor.
+
+------------------------------------------------------------------------
+r7693 | tewok | 2013-03-21 08:01:52 -0700 (Thu, 21 Mar 2013) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-rrecdata
+
+Prepare sensor data (collected by owl-rrdata) for use by Nagios.
+
+------------------------------------------------------------------------
+r7692 | tewok | 2013-03-20 14:08:10 -0700 (Wed, 20 Mar 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/manager/libexec/owl-dnswatch
+
+Added the -rotate option to prevent updating of the history file and the
+graphing databases.
+
+------------------------------------------------------------------------
+r7691 | tewok | 2013-03-19 12:36:50 -0700 (Tue, 19 Mar 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/conf/owl.conf
+
+Updated revision history and format of query lines.
+
+------------------------------------------------------------------------
+r7690 | tewok | 2013-03-19 12:29:46 -0700 (Tue, 19 Mar 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-dataarch
+
+Updated revision history.
+
+------------------------------------------------------------------------
+r7689 | tewok | 2013-03-19 12:29:14 -0700 (Tue, 19 Mar 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-status
+
+Modified to recognize that config query line has  multiple types of queries.
+
+------------------------------------------------------------------------
+r7688 | tewok | 2013-03-19 12:28:19 -0700 (Tue, 19 Mar 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-dnstimer
+
+Modified to recognize that config query line has  multiple types of queries.
+
+------------------------------------------------------------------------
+r7687 | tewok | 2013-03-19 12:27:13 -0700 (Tue, 19 Mar 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-sensord
+
+Updated revision history.
+
+------------------------------------------------------------------------
+r7686 | tewok | 2013-03-19 12:26:51 -0700 (Tue, 19 Mar 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-heartbeat
+
+Updated revision history.
+
+------------------------------------------------------------------------
+r7685 | tewok | 2013-03-19 12:26:32 -0700 (Tue, 19 Mar 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-needs
+
+Updated revision history.
+
+------------------------------------------------------------------------
+r7684 | tewok | 2013-03-19 12:26:08 -0700 (Tue, 19 Mar 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-transfer
+
+Updated revision history.
+
+------------------------------------------------------------------------
+r7683 | tewok | 2013-03-19 12:25:34 -0700 (Tue, 19 Mar 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-archold
+
+Updated revision history.
+
+------------------------------------------------------------------------
+r7682 | tewok | 2013-03-19 11:56:08 -0700 (Tue, 19 Mar 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/common/manpages/owl-config.pod
+
+Added info on new query record fields.
+
+------------------------------------------------------------------------
+r7681 | tewok | 2013-03-19 11:45:50 -0700 (Tue, 19 Mar 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/common/perllib/owlutils.pm
+
+Modified to allow multiple types of queries.
+
+------------------------------------------------------------------------
+r7680 | tewok | 2013-03-19 08:40:03 -0700 (Tue, 19 Mar 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-dnstimer
+
+Clarified some pod.
+
+------------------------------------------------------------------------
+r7675 | hserus | 2013-03-15 12:43:23 -0700 (Fri, 15 Mar 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_x_query.c
+
+Encode proof components in the response when available. Use the correct
+rrset ownername.
+
+------------------------------------------------------------------------
+r7674 | hserus | 2013-03-15 11:41:00 -0700 (Fri, 15 Mar 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libval/val_assertion.c
+
+Fix proof of non-existence checks associated with aliased wildcards.
+
+------------------------------------------------------------------------
+r7673 | tewok | 2013-03-14 09:30:23 -0700 (Thu, 14 Mar 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollinit
+
+Documented multiple zonegroups and add the -zonegroup synonym for -zg.
+
+------------------------------------------------------------------------
+r7672 | tewok | 2013-03-14 09:20:59 -0700 (Thu, 14 Mar 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollinit
+
+Remove leading and trailing whitespace in zonegroups.
+
+------------------------------------------------------------------------
+r7671 | tewok | 2013-03-14 08:56:36 -0700 (Thu, 14 Mar 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/lsroll
+
+Remove leading and trailing whitespace from zonegroups.
+
+------------------------------------------------------------------------
+r7670 | tewok | 2013-03-14 08:52:55 -0700 (Thu, 14 Mar 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollset
+
+Adjust the version number.
+
+------------------------------------------------------------------------
+r7669 | tewok | 2013-03-12 18:10:55 -0700 (Tue, 12 Mar 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollset
+
+Ensure the zonegroup name (given with -zg) isn't all whitespace.
+
+------------------------------------------------------------------------
+r7668 | tewok | 2013-03-12 18:02:19 -0700 (Tue, 12 Mar 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollset
+
+Added -del-zg option for deleting zonegroups.
+
+------------------------------------------------------------------------
+r7667 | tewok | 2013-03-12 17:36:03 -0700 (Tue, 12 Mar 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/tools/scripts/rollset
+
+rollset now ensures that names given with -name are valid rollrec names.
+
+------------------------------------------------------------------------
+r7666 | tewok | 2013-03-12 11:15:21 -0700 (Tue, 12 Mar 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/common/manpages/owl-config.pod
+
+Fixed the name of a previously renamed field.
+
+------------------------------------------------------------------------
+r7665 | hardaker | 2013-03-12 10:08:41 -0700 (Tue, 12 Mar 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/doc/dnsval.conf.3
+   M /trunk/dnssec-tools/validator/doc/dt-getaddr.1
+   M /trunk/dnssec-tools/validator/doc/dt-gethost.1
+   M /trunk/dnssec-tools/validator/doc/dt-getname.1
+   M /trunk/dnssec-tools/validator/doc/dt-getquery.1
+   M /trunk/dnssec-tools/validator/doc/dt-getrrset.1
+   M /trunk/dnssec-tools/validator/doc/dt-libval_check_conf.1
+   M /trunk/dnssec-tools/validator/doc/dt-validate.1
+   M /trunk/dnssec-tools/validator/doc/libsres.3
+   M /trunk/dnssec-tools/validator/doc/libval.3
+   M /trunk/dnssec-tools/validator/doc/libval_shim.3
+   M /trunk/dnssec-tools/validator/doc/val_gethostbyname.3
+   M /trunk/dnssec-tools/validator/libval/Makefile.in
+
+make libval link against the libsres .la
+------------------------------------------------------------------------
+r7664 | hardaker | 2013-03-12 05:05:51 -0700 (Tue, 12 Mar 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/dist/makerelease.xml
+
+copy in the COPYING file into the dnsval tar-ball
+------------------------------------------------------------------------
+r7662 | hserus | 2013-03-11 19:09:04 -0700 (Mon, 11 Mar 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/doc/libval_async.3
+   M /trunk/dnssec-tools/validator/doc/libval_async.pod
+
+Specify correct function names.
+
+------------------------------------------------------------------------
+r7660 | hserus | 2013-03-11 18:48:59 -0700 (Mon, 11 Mar 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/doc/Makefile.in
+   A /trunk/dnssec-tools/validator/doc/libval_async.3
+   A /trunk/dnssec-tools/validator/doc/libval_async.pod
+
+Add man pages for asynchronous functions
+
+------------------------------------------------------------------------
+r7659 | tewok | 2013-03-08 13:24:59 -0800 (Fri, 08 Mar 2013) | 3 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/docs/README
+
+Describe the contents of this directory and how to build
+full-install-guide.html.
+
+------------------------------------------------------------------------
+r7658 | tewok | 2013-03-08 13:18:06 -0800 (Fri, 08 Mar 2013) | 3 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/docs/docula
+
+Plops a bunch of HTML files into a single file, but does so with precision
+and finesse.
+
+------------------------------------------------------------------------
+r7657 | tewok | 2013-03-08 13:14:11 -0800 (Fri, 08 Mar 2013) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/docs/full-install-guide.html
+
+Monolithic version of the Owl Installation Manual -- built by docula.
+
+------------------------------------------------------------------------
+r7656 | tewok | 2013-03-08 13:12:42 -0800 (Fri, 08 Mar 2013) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/docs/guide-docula.html
+
+Docula config file to build a monolithic Owl Installation Manual.
+
+------------------------------------------------------------------------
+r7655 | tewok | 2013-03-08 13:11:30 -0800 (Fri, 08 Mar 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor.html
+
+Added a name tag for the whole document.
+
+------------------------------------------------------------------------
+r7654 | tewok | 2013-03-08 13:11:01 -0800 (Fri, 08 Mar 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-manager.html
+
+Added a name tag for the whole document.
+
+------------------------------------------------------------------------
+r7653 | tewok | 2013-03-08 12:26:49 -0800 (Fri, 08 Mar 2013) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-manager-6-mod-queries.html
+
+
+Added comment tags for docula.
+Adjusted anchor names to be more specific.
+
+------------------------------------------------------------------------
+r7652 | tewok | 2013-03-08 12:25:33 -0800 (Fri, 08 Mar 2013) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-manager-5-define-graphs.html
+
+
+Added comment tags for docula.
+Adjusted anchor names to be more specific.
+
+------------------------------------------------------------------------
+r7651 | tewok | 2013-03-08 12:24:52 -0800 (Fri, 08 Mar 2013) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-manager-4-adding-sensor.html
+
+
+Added comment tags for docula.
+Adjusted anchor names to be more specific.
+
+------------------------------------------------------------------------
+r7650 | tewok | 2013-03-08 12:23:53 -0800 (Fri, 08 Mar 2013) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-manager-3-about-queries.html
+
+
+Added comment tags for docula.
+Adjusted anchor names to be more specific.
+
+------------------------------------------------------------------------
+r7649 | tewok | 2013-03-08 12:23:26 -0800 (Fri, 08 Mar 2013) | 5 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-manager-2-installation.html
+
+
+Added comment tags for docula.
+Adjusted anchor names to be more specific.
+Hand-split a line that was wider than the average window.
+
+------------------------------------------------------------------------
+r7648 | tewok | 2013-03-08 12:21:48 -0800 (Fri, 08 Mar 2013) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-manager-1-overview.html
+
+
+Added comment tags for docula.
+Adjusted anchor names to be more specific.
+
+------------------------------------------------------------------------
+r7647 | tewok | 2013-03-08 12:20:37 -0800 (Fri, 08 Mar 2013) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-4-adding-sensor.html
+
+
+Added comment tags for docula.
+Adjusted anchor names to be more specific.
+
+------------------------------------------------------------------------
+r7646 | tewok | 2013-03-08 12:19:39 -0800 (Fri, 08 Mar 2013) | 5 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-2-installation.html
+
+
+Added comment tags for docula.
+Adjusted anchor names to be more specific.
+Minor formatting adjustments.
+
+------------------------------------------------------------------------
+r7645 | tewok | 2013-03-08 12:17:15 -0800 (Fri, 08 Mar 2013) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-1-overview.html
+
+
+Added comment tags for docula.
+Adjusted anchor names to be more specific.
+
+------------------------------------------------------------------------
+r7644 | tewok | 2013-03-08 12:12:41 -0800 (Fri, 08 Mar 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-full-toc.html
+
+
+Adjusted anchor names to be more specific.
+
+------------------------------------------------------------------------
+r7643 | tewok | 2013-03-08 12:12:27 -0800 (Fri, 08 Mar 2013) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-6-commands.html
+
+
+Added comment tags for docula.
+Adjusted anchor names to be more specific.
+
+------------------------------------------------------------------------
+r7642 | tewok | 2013-03-08 12:12:19 -0800 (Fri, 08 Mar 2013) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-5-adding-queries.html
+
+
+Added comment tags for docula.
+Adjusted anchor names to be more specific.
+
+------------------------------------------------------------------------
+r7641 | tewok | 2013-03-08 12:12:11 -0800 (Fri, 08 Mar 2013) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-3-about-queries.html
+
+
+Added comment tags for docula.
+Adjusted anchor names to be more specific.
+
+------------------------------------------------------------------------
+r7640 | tewok | 2013-03-08 12:12:02 -0800 (Fri, 08 Mar 2013) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor.html
+
+
+Added comment tags for docula.
+Adjusted anchor names to be more specific.
+
+------------------------------------------------------------------------
+r7639 | tewok | 2013-03-08 12:11:52 -0800 (Fri, 08 Mar 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-manager-full-toc.html
+
+Adjusted anchor names to be more specific.
+
+------------------------------------------------------------------------
+r7638 | tewok | 2013-03-08 12:11:32 -0800 (Fri, 08 Mar 2013) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-manager-7-commands.html
+
+
+Added comment tags for docula.
+Adjusted anchor names to be more specific.
+
+------------------------------------------------------------------------
+r7637 | tewok | 2013-03-08 12:11:10 -0800 (Fri, 08 Mar 2013) | 4 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-manager.html
+
+
+Added comment tags for docula.
+Adjusted anchor names to be more specific.
+
+------------------------------------------------------------------------
+r7634 | hserus | 2013-03-08 08:24:10 -0800 (Fri, 08 Mar 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/doc/Makefile.in
+
+Generate DANE-related man pages. Avoid circular loop in man page symlink
+construction.
+
+------------------------------------------------------------------------
+r7633 | hserus | 2013-03-08 08:23:03 -0800 (Fri, 08 Mar 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/doc/val_get_rrset.3
+   M /trunk/dnssec-tools/validator/doc/val_get_rrset.pod
+   M /trunk/dnssec-tools/validator/doc/val_getaddrinfo.3
+   M /trunk/dnssec-tools/validator/doc/val_getaddrinfo.pod
+   M /trunk/dnssec-tools/validator/doc/val_gethostbyname.3
+   M /trunk/dnssec-tools/validator/doc/val_gethostbyname.pod
+   M /trunk/dnssec-tools/validator/doc/val_res_query.3
+   M /trunk/dnssec-tools/validator/doc/val_res_query.pod
+
+Include validator/validator.h instead of validator.h 
+
+------------------------------------------------------------------------
+r7632 | hserus | 2013-03-08 08:21:51 -0800 (Fri, 08 Mar 2013) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/validator/doc/val_getdaneinfo.3
+   A /trunk/dnssec-tools/validator/doc/val_getdaneinfo.pod
+
+Add documentation for DANE related functions
+
+------------------------------------------------------------------------
+r7631 | hserus | 2013-03-07 10:41:02 -0800 (Thu, 07 Mar 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/libsres/res_io_manager.c
+
+Set the correct value for max iterations while processing the edns0_fallback array.
+
+------------------------------------------------------------------------
+r7630 | hserus | 2013-03-07 10:34:14 -0800 (Thu, 07 Mar 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/doc/Makefile.in
+
+Generate man page for dt-danechk from pod.
+
+------------------------------------------------------------------------
+r7629 | hserus | 2013-03-07 10:33:15 -0800 (Thu, 07 Mar 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/Makefile.in
+
+Rename libval_check_conf binary to dt-libval_check_conf to keep
+consistent with other binary names. 
+
+------------------------------------------------------------------------
+r7628 | hserus | 2013-03-07 10:23:38 -0800 (Thu, 07 Mar 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dane_check.c
+
+Fix command line option descriptions.
+
+------------------------------------------------------------------------
+r7627 | hserus | 2013-03-07 10:22:00 -0800 (Thu, 07 Mar 2013) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/validator/doc/dt-danechk.1
+   A /trunk/dnssec-tools/validator/doc/dt-danechk.pod
+
+Add man page for dt-danechk
+
+------------------------------------------------------------------------
+r7626 | hserus | 2013-03-07 09:30:57 -0800 (Thu, 07 Mar 2013) | 3 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/curl/README.curl
+
+redirect output to file so that there is no confusion about where the
+DANE message comes from.
+
+------------------------------------------------------------------------
+r7625 | hserus | 2013-03-07 09:18:31 -0800 (Thu, 07 Mar 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/curl/README.curl
+
+Mention need to run autoconf and autoheader
+
+------------------------------------------------------------------------
+r7624 | hserus | 2013-03-07 09:05:26 -0800 (Thu, 07 Mar 2013) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/curl/curl-7.29.0.patch
+
+Update curl patch for 7.29.0
+
+------------------------------------------------------------------------
+r7617 | tewok | 2013-02-27 15:11:51 -0800 (Wed, 27 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/bin/owl-sensord
+
+Obey the dictates of "host execute".
+
+------------------------------------------------------------------------
+r7616 | tewok | 2013-02-27 15:09:37 -0800 (Wed, 27 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/common/perllib/owlutils.pm
+
+List the programs to be executed by the various daemons.
+
+------------------------------------------------------------------------
+r7615 | tewok | 2013-02-27 07:36:02 -0800 (Wed, 27 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/common/perllib/owlutils.pm
+
+Fixed sensor/manager indicators for %owldaemons.
+
+------------------------------------------------------------------------
+r7613 | tewok | 2013-02-25 08:05:25 -0800 (Mon, 25 Feb 2013) | 2 lines
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/sensor/startups/owl_sensor.freebsd
+
+Added note about installation.
+
+------------------------------------------------------------------------
+r7606 | tewok | 2013-02-22 17:18:41 -0800 (Fri, 22 Feb 2013) | 2 lines
+Changed paths:
+   D /trunk/dnssec-tools/apps/owl-monitor/sensor/startups/owl_sensor
+   A /trunk/dnssec-tools/apps/owl-monitor/sensor/startups/owl_sensor.freebsd (from /trunk/dnssec-tools/apps/owl-monitor/sensor/startups/owl_sensor:7605)
+
+Renamed the FreeBSD rc script.
+
+------------------------------------------------------------------------
+r7605 | tewok | 2013-02-22 17:16:50 -0800 (Fri, 22 Feb 2013) | 2 lines
+Changed paths:
+   A /trunk/dnssec-tools/apps/owl-monitor/sensor/startups
+   A /trunk/dnssec-tools/apps/owl-monitor/sensor/startups/owl_sensor
+
+rc script for the Owl sensor.
+
+------------------------------------------------------------------------
+r7604 | hardaker | 2013-02-22 16:14:24 -0800 (Fri, 22 Feb 2013) | 1 line
+Changed paths:
+   A /trunk/dnssec-tools/validator/apps/dnssec-nodes/dnssec-nodes.desktop
+
+desktop file
+------------------------------------------------------------------------
+r7603 | hardaker | 2013-02-22 16:14:10 -0800 (Fri, 22 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/DnssecCheckVersion.h
+
+2.0 version number fix
+------------------------------------------------------------------------
+r7599 | hardaker | 2013-02-20 15:10:38 -0800 (Wed, 20 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/dnssec-check.pro
+
+2.0 needs to link against -lssl
+------------------------------------------------------------------------
+r7598 | hardaker | 2013-02-20 14:32:28 -0800 (Wed, 20 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/apps/lookup/src/src.pro
+
+lookup .pro qmake patch to add -lssl
+------------------------------------------------------------------------
+r7597 | hardaker | 2013-02-20 10:42:36 -0800 (Wed, 20 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/validator/Makefile.top
+
+libtool version number
+------------------------------------------------------------------------
+r7593 | hardaker | 2013-02-20 08:09:22 -0800 (Wed, 20 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/ChangeLog
+
+Update for verison 2.0
+------------------------------------------------------------------------
+r7592 | hardaker | 2013-02-20 07:59:02 -0800 (Wed, 20 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/modules/ZoneFile-Fast/Fast.pm
+
+Update Fast.pm Version Number: 1.19
+------------------------------------------------------------------------
+r7591 | hardaker | 2013-02-20 07:43:17 -0800 (Wed, 20 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/tools/convertar/convertar
+   M /trunk/dnssec-tools/tools/dnspktflow/dnspktflow
+   M /trunk/dnssec-tools/tools/donuts/donuts
+   M /trunk/dnssec-tools/tools/drawvalmap/drawvalmap
+   M /trunk/dnssec-tools/tools/maketestzone/maketestzone
+   M /trunk/dnssec-tools/tools/mapper/mapper
+   M /trunk/dnssec-tools/validator/apps/dnssec-check/DnssecCheckVersion.h
+   M /trunk/dnssec-tools/validator/apps/dnssec-nodes/graphwidget.cpp
+   M /trunk/dnssec-tools/validator/apps/dnssec-system-tray/dnssec-system-tray.cpp
+
+Update Version Number: 2.0
+------------------------------------------------------------------------
+r7590 | hardaker | 2013-02-20 07:38:47 -0800 (Wed, 20 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/dist/makerelease.xml
+
+updated to package the OWL components
+------------------------------------------------------------------------
+r7589 | hardaker | 2013-02-20 07:34:08 -0800 (Wed, 20 Feb 2013) | 1 line
+Changed paths:
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-manager-2-installation.html
+   M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-2-installation.html
+
+added the z option to untar .gz files
+------------------------------------------------------------------------
 r7588 | tewok | 2013-02-19 15:36:05 -0800 (Tue, 19 Feb 2013) | 2 lines
 Changed paths:
    M /trunk/dnssec-tools/apps/owl-monitor/docs/install-sensor-2-installation.html
