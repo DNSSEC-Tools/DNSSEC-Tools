@@ -456,13 +456,13 @@ get_nslist_from_cache(val_context_t *ctx,
      * Check mapping table between zone and nameserver to see if 
      * NS information is available here 
      */
-    if (VAL_NO_ERROR != (retval = get_mapped_ns(ctx, qname_n, qtype, zonecut_n, ref_ns_list)))
+    if (VAL_NO_ERROR != (retval = val_get_mapped_ns(ctx, qname_n, qtype, zonecut_n, ref_ns_list)))
         return retval;
 
     /*
      * check if we found a mapped NS
      */
-    if (ref_ns_list != NULL)
+    if (*ref_ns_list != NULL)
         return VAL_NO_ERROR;
 
     tmp_zonecut_n = NULL;
