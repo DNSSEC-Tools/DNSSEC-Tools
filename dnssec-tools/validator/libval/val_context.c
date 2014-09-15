@@ -907,7 +907,7 @@ _val_store_ns_in_map(u_char * zonecut_n, struct name_server *ns,
 {
     struct zone_ns_map_t *map_e;
 
-    if (!zonecut_n || !ns || !map_e)
+    if (!zonecut_n || !ns || !zone_ns_map)
         return VAL_BAD_ARGUMENT;
 
     for (map_e = *zone_ns_map; map_e; map_e = map_e->next) {
@@ -960,14 +960,13 @@ val_store_ns_for_zone(val_context_t *context, char * zone, char *resp_server)
         return VAL_INTERNAL_ERROR;
     }
 
-    if (!resp_server || !zone)
-        return VAL_BAD_ARGUMENT;
-
-    if ((-1 != ns_name_pton(zone, zone_n, sizeof(zone_n))) && 
+    if (resp_server && zone&& 
+        (-1 != ns_name_pton(zone, zone_n, sizeof(zone_n))) && 
         (NULL != (ns = parse_name_server(resp_server, NULL, 
                                          SR_QUERY_NOREC)))) {
-    
         retval = _val_store_ns_in_map(zone_n, ns, &ctx->zone_ns_map);
+    } else {
+        retval = VAL_BAD_ARGUMENT;
     }
 
     CTX_UNLOCK_POL(ctx);
