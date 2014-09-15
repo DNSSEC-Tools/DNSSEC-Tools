@@ -437,7 +437,6 @@ get_nslist_from_cache(val_context_t *ctx,
     u_char       *qname_n;
     u_char       *tmp_zonecut_n = NULL;
     struct timeval  tv;
-    int retval;
 
     if (matched_qfq == NULL || queries == NULL || ref_ns_list == NULL || ns_cred == NULL)
         return VAL_BAD_ARGUMENT;
