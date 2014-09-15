@@ -975,7 +975,13 @@ pval_ns_mapto_zone(self,zone,addr)
 	char * addr
 	CODE:
 	{
-	  RETVAL = val_store_ns_for_zone(self, zone, addr); 
+	  ValContext *		ctx;
+	  SV **			ctx_ref;
+	
+      ctx_ref = hv_fetch((HV*)SvRV(self), "_ctx_ptr", 8, 1);
+	  ctx = (ValContext *)SvIV((SV*)SvRV(*ctx_ref));
+
+	  RETVAL = val_store_ns_for_zone(ctx, zone, addr); 
 	}
 	OUTPUT:
 	RETVAL
