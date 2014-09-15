@@ -531,6 +531,8 @@ val_create_context_internal( const char *label,
 
     (*newcontext)->root_ns = NULL; 
     (*newcontext)->nslist = NULL; 
+    (*newcontext)->search = NULL; 
+    (*newcontext)->zone_ns_map = NULL; 
     (*newcontext)->dyn_polflags = polflags;
 
     (*newcontext)->dyn_valpolopt = dyn_valpolopt;
@@ -769,6 +771,9 @@ val_free_context(val_context_t * context)
     if (context->search)
         FREE(context->search);
 
+    if (context->zone_ns_map)
+        val_free_zone_nslist(context->zone_ns_map);
+
     if (context->resolv_conf)
         FREE(context->resolv_conf);
 
@@ -872,32 +877,73 @@ val_context_setqflags(val_context_t *context,
 
     return VAL_NO_ERROR;
 }  
-
+/*
+ * Maintain a mapping between the zone and the name server that answered 
+ * data for it 
+ */
 int
-val_context_ip4(val_context_t * context)
+val_store_ns_for_zone(val_context_t *context, u_char * zonecut_n, char *resp_server)
 {
-    if (context) {
-        /* No IPv4 if we're only configured to use IPv6 */
-        if (context->g_opt && 
-            context->g_opt->proto == VAL_POL_GOPT_PROTO_IPV6)
-            return 0;
-        return context->have_ipv4;
+    struct zone_ns_map_t *map_e;
+    struct name_server *ns;
+
+    if (!zonecut_n || !resp_server)
+        return VAL_NO_ERROR;
+
+    ctx = val_create_or_refresh_context(context); /* does CTX_LOCK_POL_SH */
+    if (ctx == NULL) { 
+        return VAL_INTERNAL_ERROR;
     }
 
-    return 0;
+    ns = parse_name_server(resp_server, NULL, SR_QUERY_NOREC);
+
+    for (map_e = ctx->zone_ns_map; map_e; map_e = map_e->next) {
+
+        if (!namecmp(map_e->zone_n, zonecut_n)) {
+            struct name_server *nslist = NULL;
+            /*
+             * add blindly to the list 
+             */
+            clone_ns_list(&nslist, resp_server);
+            nslist->ns_next = map_e->nslist;
+            map_e->nslist = nslist;
+            break;
+        }
+    }
+
+    if (!map_e) {
+        map_e =
+            (struct zone_ns_map_t *) MALLOC(sizeof(struct zone_ns_map_t));
+        if (map_e == NULL) {
+            return VAL_OUT_OF_MEMORY;
+        }
+
+        clone_ns_list(&map_e->nslist, resp_server);
+        memcpy(map_e->zone_n, zonecut_n, wire_name_length(zonecut_n));
+        map_e->next = NULL;
+
+        if (ctx->zone_ns_map != NULL)
+            map_e->next = ctx->zone_ns_map;
+        ctx->zone_ns_map = map_e;
+    }
+
+    CTX_UNLOCK_POL(ctx);
+    return VAL_NO_ERROR;
 }
 
 int
-val_context_ip6(val_context_t * context)
+val_free_zone_nslist(struct zone_ns_map_t *zone_ns_map)
 {
-    if (context) {
-        /* No IPv6 if we're only configured to use IPv4 */
-        if (context->g_opt &&
-            context->g_opt->proto == VAL_POL_GOPT_PROTO_IPV4)
-            return 0;
-        return context->have_ipv6;
+    struct zone_ns_map_t *map_e;
+
+    while (zone_ns_map) {
+        map_e = zone_ns_map;
+        zone_ns_map = zone_ns_map->next;
+
+        if (map_e->nslist)
+            free_name_servers(&map_e->nslist);
+        FREE(map_e);
     }
 
-    return 0;
+    return VAL_NO_ERROR;
 }
-

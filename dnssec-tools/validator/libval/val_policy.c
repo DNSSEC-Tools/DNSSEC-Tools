@@ -2405,7 +2405,9 @@ read_res_config_file(val_context_t * ctx)
                            ALL_COMMENTS, ZONE_END_STMT, 0)) &&
                 (ns_name_pton(token, zone_n, sizeof(zone_n)) != -1)) {
 
-                store_ns_for_zone(zone_n, ns);
+                ### SURESH THIS NEEDS TO BE FIXED SINCE IT WILL ATTEMPT
+                ### TO CREATE AND REFRESH THE CONTEXT
+                val_store_ns_for_zone(ctx, zone_n, ns);
 
                 free_name_servers(&ns);
                 ns = NULL;
@@ -3151,4 +3153,100 @@ val_is_local_trusted(val_context_t *context, int *trusted)
     return VAL_NO_ERROR;    
 }
     
+
+int
+val_context_ip4(val_context_t * context)
+{
+    int retval;
+    val_context_t *ctx = val_create_or_refresh_context(context); /* does CTX_LOCK_POL_SH */
+
+    if (ctx == NULL)
+        return 0;
+
+    /* No IPv4 if we're only configured to use IPv6 */
+    if (ctx->g_opt && 
+        ctx->g_opt->proto == VAL_POL_GOPT_PROTO_IPV6) {
+        retval = 0;
+    }
+    retval = ctx->have_ipv4;
+
+    CTX_UNLOCK_POL(ctx);
+
+    return retval;
+}
+
+int
+val_context_ip6(val_context_t * context)
+{
+    int retval;
+    val_context_t *ctx = val_create_or_refresh_context(context); /* does CTX_LOCK_POL_SH */
+
+    if (ctx == NULL)
+        return 0;
+
+    /* No IPv6 if we're only configured to use IPv4 */
+    if (ctx->g_opt && 
+        ctx->g_opt->proto == VAL_POL_GOPT_PROTO_IPV4) {
+        retval = 0;
+    }
+    retval = ctx->have_ipv6;
+
+    CTX_UNLOCK_POL(ctx);
+
+    return retval;
+}
+
+int get_mapped_ns(val_context_t *context, 
+                  u_char *qname_n,
+                  u_int16_t qtype,
+                  u_char **zonecut_n,
+                  struct name_server **ref_ns_list) 
+{
+    struct zone_ns_map_t *map_e, *saved_map;
+
+    if (qname == NULL || zonecut_n == NULL || ref_ns_list == NULL)
+        return VAL_BAD_ARGUMENT;
+
+    val_context_t *ctx = val_create_or_refresh_context(context); /* does CTX_LOCK_POL_SH */
+    if (ctx == NULL)
+        return 0;
+
+    *zonecut_n = NULL;
+    *ref_ns_list = NULL;
+    saved_map = NULL;
+
+    for (map_e = ctx->zone_ns_map; map_e; map_e = map_e->next) {
+
+        /*
+         * check if zone is within query 
+         */
+        if (NULL != (p = namename(qname_n, map_e->zone_n))) {
+            if (p == qname && qtype == ns_t_ds) {
+                /* 
+                 * If we're looking for the DS, we shouldn't return an
+                 * exact match 
+                 */
+                continue;
+
+            }
+            if (!saved_map || (namecmp(p, saved_map->zone_n) > 0)) {
+                saved_map = map_e;
+            }
+        }
+    }
+
+    if (saved_map) {
+        *zonecut_n = (u_char *) MALLOC (wire_name_length(saved_map->zone_n) *
+                sizeof (u_char));
+        if (*zonecut_n == NULL) {
+            CTX_UNLOCK_POL(ctx);
+            return VAL_OUT_OF_MEMORY;
+        } 
+        clone_ns_list(ref_ns_list, saved_map->nslist);
+        memcpy(*zonecut_n, saved_map->zone_n, wire_name_length(saved_map->zone_n));
+    }
+
+    CTX_UNLOCK_POL(ctx);
+    return VAL_NO_ERROR;
+}
 

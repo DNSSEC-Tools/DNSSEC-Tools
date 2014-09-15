@@ -30,23 +30,12 @@
 #include "val_resquery.h"
 #include "val_cache.h"
 
-struct zone_ns_map_t {
-    u_char        zone_n[NS_MAXCDNAME];
-    struct name_server *nslist;
-    struct zone_ns_map_t *next;
-};
-
 /*
  * we have caches for DNSKEY, DS, NS/glue, answers, and proofs
  * XXX negative cache functionality is currently unimplemented
  */
 static struct rrset_rec *unchecked_hints = NULL;
 static struct rrset_rec *unchecked_answers = NULL;
-
-/*
- * Also maintain mapping between zone and name server, 
- */
-static struct zone_ns_map_t *zone_ns_map = NULL;
 
 #ifndef VAL_NO_THREADS
 
@@ -58,8 +47,6 @@ static pthread_rwlock_t ns_rwlock;
 static int ns_rwlock_init = 0;
 static pthread_rwlock_t ans_rwlock;
 static int ans_rwlock_init = 0;
-static pthread_rwlock_t map_rwlock;
-static int map_rwlock_init = 0;
 
 #define VAL_CACHE_LOCK_INIT(lk, initvar) \
     ((initvar != 0) || \
@@ -81,8 +68,6 @@ static int ns_rwlock = -1;
 static int ns_rwlock_init = -1;
 static int ans_rwlock = -1;
 static int ans_rwlock_init = -1;
-static int map_rwlock = -1;
-static int map_rwlock_init = -1;
 
 #define VAL_CACHE_LOCK_INIT(lk, initvar)
 #define VAL_CACHE_LOCK_SH(lk)
@@ -428,76 +413,6 @@ stow_answers(struct rrset_rec **new_info, struct val_query_chain *matched_q)
     return rc;
 }
 
-/*
- * Maintain a mapping between the zone and the name server that answered 
- * data for it 
- */
-int
-store_ns_for_zone(u_char * zonecut_n, struct name_server *resp_server)
-{
-    struct zone_ns_map_t *map_e;
-
-    if (!zonecut_n || !resp_server)
-        return VAL_NO_ERROR;
-
-    VAL_CACHE_LOCK_INIT(&map_rwlock, map_rwlock_init);
-    VAL_CACHE_LOCK_EX(&map_rwlock);
-
-    for (map_e = zone_ns_map; map_e; map_e = map_e->next) {
-
-        if (!namecmp(map_e->zone_n, zonecut_n)) {
-            struct name_server *nslist = NULL;
-            /*
-             * add blindly to the list 
-             */
-            clone_ns_list(&nslist, resp_server);
-            nslist->ns_next = map_e->nslist;
-            map_e->nslist = nslist;
-            break;
-        }
-    }
-
-    if (!map_e) {
-        map_e =
-            (struct zone_ns_map_t *) MALLOC(sizeof(struct zone_ns_map_t));
-        if (map_e == NULL) {
-            VAL_CACHE_UNLOCK(&map_rwlock);
-            return VAL_OUT_OF_MEMORY;
-        }
-
-        clone_ns_list(&map_e->nslist, resp_server);
-        memcpy(map_e->zone_n, zonecut_n, wire_name_length(zonecut_n));
-        map_e->next = NULL;
-
-        if (zone_ns_map != NULL)
-            map_e->next = zone_ns_map;
-        zone_ns_map = map_e;
-    }
-
-    VAL_CACHE_UNLOCK(&map_rwlock);
-
-    return VAL_NO_ERROR;
-}
-
-static int
-free_zone_nslist(void)
-{
-    struct zone_ns_map_t *map_e;
-
-    VAL_CACHE_LOCK_INIT(&map_rwlock, map_rwlock_init);
-    VAL_CACHE_LOCK_EX(&map_rwlock);
-    while (zone_ns_map) {
-        map_e = zone_ns_map;
-        zone_ns_map = zone_ns_map->next;
-
-        if (map_e->nslist)
-            free_name_servers(&map_e->nslist);
-        FREE(map_e);
-    }
-    VAL_CACHE_UNLOCK(&map_rwlock);
-
-    return VAL_NO_ERROR;
-}
 
 /*
  * Get zone information: this could either be from 
@@ -520,9 +435,9 @@ get_nslist_from_cache(val_context_t *ctx,
     u_char       *p;
     u_int16_t     qtype;
     u_char       *qname_n;
-    struct zone_ns_map_t *map_e, *saved_map;
     u_char       *tmp_zonecut_n = NULL;
     struct timeval  tv;
+    int retval;
 
     if (matched_qfq == NULL || queries == NULL || ref_ns_list == NULL || ns_cred == NULL)
         return VAL_BAD_ARGUMENT;
@@ -537,40 +452,18 @@ get_nslist_from_cache(val_context_t *ctx,
     *zonecut_n = NULL;
     gettimeofday(&tv, NULL);
     
-    VAL_CACHE_LOCK_INIT(&map_rwlock, map_rwlock_init);
-    VAL_CACHE_LOCK_SH(&map_rwlock);
-
     /*
      * Check mapping table between zone and nameserver to see if 
      * NS information is available here 
      */
-    saved_map = NULL;
-    for (map_e = zone_ns_map; map_e; map_e = map_e->next) {
+    if (VAL_NO_ERROR != (retval = get_mapped_ns(ctx, qname_n, qtype, zonecut_n, ref_ns_list)))
+        return retval;
 
-        /*
-         * check if zone is within query 
-         */
-        if (NULL != (p = namename(qname_n, map_e->zone_n))) {
-            if (!saved_map || (namecmp(p, saved_map->zone_n) > 0)) {
-                saved_map = map_e;
-            }
-        }
-    }
-
-    if (saved_map) {
-        *zonecut_n = (u_char *) MALLOC (wire_name_length(saved_map->zone_n) *
-                sizeof (u_char));
-        if (*zonecut_n == NULL) {
-            VAL_CACHE_UNLOCK(&map_rwlock);
-            return VAL_OUT_OF_MEMORY;
-        } 
-        clone_ns_list(ref_ns_list, saved_map->nslist);
-        memcpy(*zonecut_n, saved_map->zone_n, wire_name_length(saved_map->zone_n));
-        VAL_CACHE_UNLOCK(&map_rwlock);
+    /*
+     * check if we found a mapped NS
+     */
+    if (ref_ns_list != NULL)
         return VAL_NO_ERROR;
-    }
-
-    VAL_CACHE_UNLOCK(&map_rwlock);
 
     tmp_zonecut_n = NULL;
 

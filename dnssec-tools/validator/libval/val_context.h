@@ -85,6 +85,9 @@ int             val_context_setqflags(val_context_t *context,
                                       unsigned int flags);
 int             val_context_ip4(val_context_t * context);
 int             val_context_ip6(val_context_t * context);
+int             val_store_ns_for_zone(u_char * zonecut_n, 
+                                  struct name_server *resp_server);
+int             val_free_zone_nslist(struct zone_ns_map_t *zone_ns_map);
 
 #ifndef VAL_NO_ASYNC
 /* remove asynchronous status from context async queries list */

@@ -390,6 +390,7 @@ extern          "C" {
         time_t r_timestamp;
         struct name_server *nslist;
         char   *search;
+        struct zone_ns_map_t *zone_ns_map;
         
         /*
          * validator policy 

@@ -115,8 +115,12 @@ int             val_get_token(char **buf_ptr,
                               int conf_limit, int *endst, 
                               const char *comment_c, char endstmt_c,
                               int ignore_space);
-int free_policy_entry(policy_entry_t *pol_entry, int index);
-
+int             free_policy_entry(policy_entry_t *pol_entry, int index);
+int             get_mapped_ns(val_context_t *context,
+                              u_char *qname_n,
+                              u_int16_t qtype,
+                              u_char **zonecut_n,
+                              struct name_server **ref_ns_list);
 
 /*
  * fragment of the configuration file containing 
