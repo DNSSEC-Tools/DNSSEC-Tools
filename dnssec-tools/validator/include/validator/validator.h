@@ -498,6 +498,8 @@ typedef struct val_context_opt {
                                           unsigned char action,
                                           unsigned int flags);
 
+    int             val_store_ns_for_zone(val_context_t *context, 
+                                    char * zone, char *resp_server);
     /*
      * from val_policy.h 
      */
