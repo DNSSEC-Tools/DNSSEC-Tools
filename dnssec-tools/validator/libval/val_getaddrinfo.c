@@ -766,8 +766,8 @@ get_addrinfo_from_dns(val_context_t * ctx,
 
 #ifdef AI_ADDRCONFIG
     if (hints->ai_flags & AI_ADDRCONFIG) {
-        have4 = val_context_ip4(ctx);
-        have6 = val_context_ip6(ctx);
+        have4 = _val_context_ip4(ctx);
+        have6 = _val_context_ip6(ctx);
     }
 #endif
     
@@ -1753,8 +1753,8 @@ val_getaddrinfo_submit(val_context_t * context, const char *nodename,
 
 #ifdef AI_ADDRCONFIG
     if (hints->ai_flags & AI_ADDRCONFIG) {
-        have4 = val_context_ip4(ctx);
-        have6 = val_context_ip6(ctx);
+        have4 = _val_context_ip4(ctx);
+        have6 = _val_context_ip6(ctx);
     }
 #endif
 

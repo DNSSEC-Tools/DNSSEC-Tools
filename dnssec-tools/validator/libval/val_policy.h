@@ -81,7 +81,7 @@
     }\
 } while(0)
     
-
+int             free_policy_entry(policy_entry_t *pol_entry, int index);
 int             read_root_hints_file(val_context_t * ctx);
 int             read_res_config_file(val_context_t * ctx);
 int             read_val_config_file(val_context_t * ctx, const char *scope);
@@ -107,7 +107,6 @@ int             free_dlv_trust_points(policy_entry_t *);
 #endif
 int             check_relevance(const char *label, const char *scope,
                                 int *label_count, int *relevant);
-int             val_is_local_trusted(val_context_t *context, int *trusted);
 int             val_get_token(char **buf_ptr,
                               char *end_ptr,
                               int *line_number,

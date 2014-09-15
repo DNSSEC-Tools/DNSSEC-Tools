@@ -2152,9 +2152,9 @@ read_res_config_file(val_context_t * ctx)
     struct name_server *ns = NULL;
     unsigned long ns_options = SR_QUERY_RECURSE;
 
-    if (val_context_ip4(ctx) && !val_context_ip6(ctx)) {
+    if (_val_context_ip4(ctx) && !_val_context_ip6(ctx)) {
         ns_options |= SR_QUERY_IPV4_ONLY;
-    } else if (!val_context_ip4(ctx) && val_context_ip6(ctx)) {
+    } else if (!_val_context_ip4(ctx) && _val_context_ip6(ctx)) {
         ns_options |= SR_QUERY_IPV6_ONLY;
     }
 
@@ -2233,9 +2233,9 @@ read_res_config_file(val_context_t * ctx)
     if (ctx == NULL)
         return VAL_BAD_ARGUMENT;
 
-    if (val_context_ip4(ctx) && !val_context_ip6(ctx)) {
+    if (_val_context_ip4(ctx) && !_val_context_ip6(ctx)) {
         ns_options |= SR_QUERY_IPV4_ONLY;
-    } else if (!val_context_ip4(ctx) && val_context_ip6(ctx)) {
+    } else if (!_val_context_ip4(ctx) && _val_context_ip6(ctx)) {
         ns_options |= SR_QUERY_IPV6_ONLY;
     }
     
@@ -2526,9 +2526,9 @@ read_root_hints_file(val_context_t * ctx)
     if (ctx == NULL)
         return VAL_BAD_ARGUMENT;
    
-   if (val_context_ip4(ctx) && !val_context_ip6(ctx)) {
+   if (_val_context_ip4(ctx) && !_val_context_ip6(ctx)) {
        ipv4_only = 1;
-   } else if (!val_context_ip4(ctx) && val_context_ip6(ctx)) {
+   } else if (!_val_context_ip4(ctx) && _val_context_ip6(ctx)) {
        ipv6_only = 1;
    }
 

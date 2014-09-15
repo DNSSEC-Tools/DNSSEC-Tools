@@ -772,7 +772,7 @@ val_free_context(val_context_t * context)
         FREE(context->search);
 
     if (context->zone_ns_map)
-        val_free_zone_nslist(context->zone_ns_map);
+        _val_free_zone_nslist(context->zone_ns_map);
 
     if (context->resolv_conf)
         FREE(context->resolv_conf);
@@ -877,6 +877,29 @@ val_context_setqflags(val_context_t *context,
 
     return VAL_NO_ERROR;
 }  
+
+int
+val_is_local_trusted(val_context_t *context, int *trusted)
+{
+    val_context_t *ctx = NULL;
+
+    if (trusted == NULL)
+        return VAL_BAD_ARGUMENT;
+
+    ctx = val_create_or_refresh_context(context); /* does CTX_LOCK_POL_SH */
+    if (ctx == NULL)
+        return VAL_INTERNAL_ERROR;
+
+    if (ctx && ctx->g_opt && ctx->g_opt->local_is_trusted)
+        *trusted = 1;
+    else
+        *trusted = 0;
+
+    CTX_UNLOCK_POL(ctx);
+
+    return VAL_NO_ERROR;    
+}
+
 /*
  * Maintain a mapping between the zone and the name server that answered 
  * data for it 
@@ -932,7 +955,7 @@ val_store_ns_for_zone(val_context_t *context, u_char * zonecut_n, char *resp_ser
 }
 
 int
-val_free_zone_nslist(struct zone_ns_map_t *zone_ns_map)
+_val_free_zone_nslist(struct zone_ns_map_t *zone_ns_map)
 {
     struct zone_ns_map_t *map_e;
 
@@ -948,20 +971,17 @@ val_free_zone_nslist(struct zone_ns_map_t *zone_ns_map)
     return VAL_NO_ERROR;
 }
 
-int val_get_mapped_ns(val_context_t *context, 
-                      u_char *qname_n,
-                      u_int16_t qtype,
-                      u_char **zonecut_n,
-                      struct name_server **ref_ns_list) 
+int 
+_val_get_mapped_ns(val_context_t *ctx, 
+                   u_char *qname_n,
+                   u_int16_t qtype,
+                   u_char **zonecut_n,
+                   struct name_server **ref_ns_list) 
 {
     struct zone_ns_map_t *map_e, *saved_map;
 
-    if (qname == NULL || zonecut_n == NULL || ref_ns_list == NULL)
+    if (ctx == NULL || qname == NULL || zonecut_n == NULL || ref_ns_list == NULL)
         return VAL_BAD_ARGUMENT;
-
-    val_context_t *ctx = val_create_or_refresh_context(context); /* does CTX_LOCK_POL_SH */
-    if (ctx == NULL)
-        return 0;
 
     *zonecut_n = NULL;
     *ref_ns_list = NULL;
@@ -991,46 +1011,19 @@ int val_get_mapped_ns(val_context_t *context,
         *zonecut_n = (u_char *) MALLOC (wire_name_length(saved_map->zone_n) *
                 sizeof (u_char));
         if (*zonecut_n == NULL) {
-            CTX_UNLOCK_POL(ctx);
             return VAL_OUT_OF_MEMORY;
         } 
         clone_ns_list(ref_ns_list, saved_map->nslist);
         memcpy(*zonecut_n, saved_map->zone_n, wire_name_length(saved_map->zone_n));
     }
 
-    CTX_UNLOCK_POL(ctx);
     return VAL_NO_ERROR;
 }
 
-
 int
-val_is_local_trusted(val_context_t *context, int *trusted)
-{
-    val_context_t *ctx = NULL;
-
-    if (trusted == NULL)
-        return VAL_BAD_ARGUMENT;
-
-    ctx = val_create_or_refresh_context(context); /* does CTX_LOCK_POL_SH */
-    if (ctx == NULL)
-        return VAL_INTERNAL_ERROR;
-
-    if (ctx && ctx->g_opt && ctx->g_opt->local_is_trusted)
-        *trusted = 1;
-    else
-        *trusted = 0;
-
-    CTX_UNLOCK_POL(ctx);
-
-    return VAL_NO_ERROR;    
-}
-    
-
-int
-val_context_ip4(val_context_t * context)
+_val_context_ip4(val_context_t *ctx)
 {
     int retval;
-    val_context_t *ctx = val_create_or_refresh_context(context); /* does CTX_LOCK_POL_SH */
 
     if (ctx == NULL)
         return 0;
@@ -1042,16 +1035,13 @@ val_context_ip4(val_context_t * context)
     }
     retval = ctx->have_ipv4;
 
-    CTX_UNLOCK_POL(ctx);
-
     return retval;
 }
 
 int
-val_context_ip6(val_context_t * context)
+_val_context_ip6(val_context_t *ctx)
 {
     int retval;
-    val_context_t *ctx = val_create_or_refresh_context(context); /* does CTX_LOCK_POL_SH */
 
     if (ctx == NULL)
         return 0;
@@ -1062,8 +1052,6 @@ val_context_ip6(val_context_t * context)
         retval = 0;
     }
     retval = ctx->have_ipv6;
-
-    CTX_UNLOCK_POL(ctx);
 
     return retval;
 }
