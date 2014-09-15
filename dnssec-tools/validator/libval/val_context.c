@@ -948,22 +948,27 @@ _val_store_ns_in_map(u_char * zonecut_n, struct name_server *ns,
  * data for it 
  */
 int
-val_store_ns_for_zone(val_context_t *context, u_char * zonecut_n, char *resp_server)
+val_store_ns_for_zone(val_context_t *context, char * zone, char *resp_server)
 {
     struct name_server *ns;
     int retval;
     val_context_t *ctx;
+    u_char zone_n[NS_MAXCDNAME];
 
     ctx = val_create_or_refresh_context(context); /* does CTX_LOCK_POL_SH */
     if (ctx == NULL) { 
         return VAL_INTERNAL_ERROR;
     }
 
-    if (!resp_server || !zonecut_n)
+    if (!resp_server || !zone)
         return VAL_BAD_ARGUMENT;
 
-    ns = parse_name_server(resp_server, NULL, SR_QUERY_NOREC);
-    retval = _val_store_ns_in_map(zonecut_n, ns, &ctx->zone_ns_map);
+    if ((-1 != ns_name_pton(zone, zone_n, sizeof(zone_n))) && 
+        (NULL != (ns = parse_name_server(resp_server, NULL, 
+                                         SR_QUERY_NOREC)))) {
+    
+        retval = _val_store_ns_in_map(zone_n, ns, &ctx->zone_ns_map);
+    }
 
     CTX_UNLOCK_POL(ctx);
     return retval;
