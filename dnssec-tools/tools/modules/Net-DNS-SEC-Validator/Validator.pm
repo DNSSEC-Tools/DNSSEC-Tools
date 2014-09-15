@@ -427,6 +427,16 @@ sub resolv_conf {
     return $old;
 }
 
+sub map_ns {
+    my $self = shift;
+    my $zone = shift;
+    my $addr = shift;
+    
+    my $result = Net::DNS::SEC::Validator::_ns_mapto_zone($self, $zone, $addr);
+
+    return $result;
+}
+
 sub valStatusStr {
     my $self = shift;
     my $status = shift;

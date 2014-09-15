@@ -968,6 +968,18 @@ pval_dnsval_conf_set(file)
 	OUTPUT:
 	RETVAL
 
+int
+pval_ns_mapto_zone(self,zone,addr)
+	SV * self
+	char * zone
+	char * addr
+	CODE:
+	{
+	  RETVAL = val_store_ns_for_zone(self, zone, addr); 
+	}
+	OUTPUT:
+	RETVAL
+
 SV * 
 pval_async_submit(self,domain,class,type,flags, cbref, cbparam)
     SV * self
