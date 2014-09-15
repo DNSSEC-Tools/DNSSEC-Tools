@@ -900,34 +900,24 @@ val_is_local_trusted(val_context_t *context, int *trusted)
     return VAL_NO_ERROR;    
 }
 
-/*
- * Maintain a mapping between the zone and the name server that answered 
- * data for it 
- */
+
 int
-val_store_ns_for_zone(val_context_t *context, u_char * zonecut_n, char *resp_server)
+_val_store_ns_in_map(u_char * zonecut_n, struct name_server *ns, 
+                     struct zone_ns_map_t **zone_ns_map)
 {
     struct zone_ns_map_t *map_e;
-    struct name_server *ns;
 
-    if (!zonecut_n || !resp_server)
-        return VAL_NO_ERROR;
+    if (!zonecut_n || !ns || !map_e)
+        return VAL_BAD_ARGUMENT;
 
-    ctx = val_create_or_refresh_context(context); /* does CTX_LOCK_POL_SH */
-    if (ctx == NULL) { 
-        return VAL_INTERNAL_ERROR;
-    }
-
-    ns = parse_name_server(resp_server, NULL, SR_QUERY_NOREC);
-
-    for (map_e = ctx->zone_ns_map; map_e; map_e = map_e->next) {
+    for (map_e = *zone_ns_map; map_e; map_e = map_e->next) {
 
         if (!namecmp(map_e->zone_n, zonecut_n)) {
             struct name_server *nslist = NULL;
             /*
              * add blindly to the list 
              */
-            clone_ns_list(&nslist, resp_server);
+            clone_ns_list(&nslist, ns);
             nslist->ns_next = map_e->nslist;
             map_e->nslist = nslist;
             break;
@@ -941,17 +931,41 @@ val_store_ns_for_zone(val_context_t *context, u_char * zonecut_n, char *resp_ser
             return VAL_OUT_OF_MEMORY;
         }
 
-        clone_ns_list(&map_e->nslist, resp_server);
+        clone_ns_list(&map_e->nslist, ns);
         memcpy(map_e->zone_n, zonecut_n, wire_name_length(zonecut_n));
         map_e->next = NULL;
 
-        if (ctx->zone_ns_map != NULL)
-            map_e->next = ctx->zone_ns_map;
-        ctx->zone_ns_map = map_e;
+        if (*zone_ns_map != NULL)
+            map_e->next = *zone_ns_map;
+        *zone_ns_map = map_e;
     }
 
-    CTX_UNLOCK_POL(ctx);
     return VAL_NO_ERROR;
+}
+
+/*
+ * Maintain a mapping between the zone and the name server that answered 
+ * data for it 
+ */
+int
+val_store_ns_for_zone(val_context_t *context, u_char * zonecut_n, char *resp_server)
+{
+    struct name_server *ns;
+    int retval;
+
+    ctx = val_create_or_refresh_context(context); /* does CTX_LOCK_POL_SH */
+    if (ctx == NULL) { 
+        return VAL_INTERNAL_ERROR;
+    }
+
+    if (!resp_server || !zonecut_n)
+        return VAL_BAD_ARGUMENT;
+
+    ns = parse_name_server(resp_server, NULL, SR_QUERY_NOREC);
+    retval = _val_store_ns_in_map(zonecut_n, ns, &ctx->zone_ns_map);
+
+    CTX_UNLOCK_POL(ctx);
+    return retval;
 }
 
 int

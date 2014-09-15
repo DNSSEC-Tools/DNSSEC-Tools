@@ -2405,9 +2405,7 @@ read_res_config_file(val_context_t * ctx)
                            ALL_COMMENTS, ZONE_END_STMT, 0)) &&
                 (ns_name_pton(token, zone_n, sizeof(zone_n)) != -1)) {
 
-                ### SURESH THIS NEEDS TO BE FIXED SINCE IT WILL ATTEMPT
-                ### TO CREATE AND REFRESH THE CONTEXT
-                val_store_ns_for_zone(ctx, zone_n, ns);
+                retval = _val_store_ns_in_map(zone_n, ns, &ctx->zone_ns_map);
 
                 free_name_servers(&ns);
                 ns = NULL;
