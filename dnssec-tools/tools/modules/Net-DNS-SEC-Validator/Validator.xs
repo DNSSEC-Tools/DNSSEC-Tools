@@ -971,8 +971,8 @@ pval_dnsval_conf_set(file)
 int
 pval_ns_mapto_zone(self,zone,addr)
 	SV * self
-	char * zone
-	char * addr
+	char * zone = (SvOK($arg) ? (char *)SvPV_nolen($arg) : NULL);
+	char * addr = (SvOK($arg) ? (char *)SvPV_nolen($arg) : NULL);
 	CODE:
 	{
 	  ValContext *		ctx;
