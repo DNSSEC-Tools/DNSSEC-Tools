@@ -719,45 +719,58 @@ find_nslist_for_query(val_context_t * context,
         FREE(next_q->qc_zonecut_n);
     next_q->qc_zonecut_n = NULL;
 
+    /*
+     * Check mapping table between zone and nameserver to see if 
+     * NS information is available here 
+     */
+    if (VAL_NO_ERROR != (retval = _val_get_mapped_ns(ctx, qname_n,
+                                        qtype, &next_q->qc_zonecut_n, &ref_ns_list)))
+        return retval;
+
+    if (ref_ns_list != NULL) {
+        next_q->qc_ns_list = ref_ns_list;
+        val_log(context, LOG_DEBUG, 
+                "find_nslist_for_query(): Found mapped ns for query");
+        goto done;
+    }
+
+    /* 
+     * if we have a default name server in our resolv.conf file, send
+     * to that name server, but only if we are not forcing recursion
+     */
     if (!(next_q->qc_flags & VAL_QUERY_ITERATE) &&
          context->nslist != NULL) {
-        /* 
-         * if we have a default name server in our resolv.conf file, send
-         * to that name server, but only if we are not forcing recursion
-         */
         clone_ns_list(&(next_q->qc_ns_list), context->nslist);
 
         goto done;
     } 
 
-    ret_val = get_nslist_from_cache(context, next_qfq, queries, &ref_ns_list, &next_q->qc_zonecut_n, &ns_cred);
-    
-    if (ret_val == VAL_NO_ERROR) {
-        /* if any one is NULL, get rid of both */
-        if (next_q->qc_zonecut_n == NULL) {
-            free_name_servers(&ref_ns_list);
-            ref_ns_list = NULL;
-        } else if (ref_ns_list == NULL) {
-            if (next_q->qc_zonecut_n)
-                FREE(next_q->qc_zonecut_n);
-            next_q->qc_zonecut_n = NULL;
-        } else {
-            next_q->qc_ns_list = ref_ns_list;
-            val_log(context, LOG_DEBUG, 
+    /*
+     * Next look in our cache
+     */
+    if (VAL_NO_ERROR != (ret_val = get_nslist_from_cache(context,
+                    next_qfq, queries, &ref_ns_list,
+                    &next_q->qc_zonecut_n, &ns_cred))) {
+
+        return retval;
+    }
+    if (ref_ns_list != NULL) {
+        next_q->qc_ns_list = ref_ns_list;
+        val_log(context, LOG_DEBUG, 
                 "find_nslist_for_query(): Found cached ns_list with cred = %d.", ns_cred);
-            /* 
-             * If our answer was from an authoritative server, we
-             * also set the flag to denote that we are doing an
-             * iterative lookup
-             */
-            if (ns_cred < SR_CRED_NONAUTH)
-                next_q->qc_flags |= VAL_QUERY_ITERATE;
-            goto done; 
-        } 
+        /* 
+         * If our answer was from an authoritative server, we
+         * also set the flag to denote that we are doing an
+         * iterative lookup
+         */
+        if (ns_cred < SR_CRED_NONAUTH)
+            next_q->qc_flags |= VAL_QUERY_ITERATE;
+
+        goto done; 
     } 
 
     /*
-     * work downward from root 
+     * if all fails, work downward from root 
      */
     if (context->root_ns == NULL) {
         /*

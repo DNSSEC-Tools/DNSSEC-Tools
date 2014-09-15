@@ -452,19 +452,6 @@ get_nslist_from_cache(val_context_t *ctx,
     *zonecut_n = NULL;
     gettimeofday(&tv, NULL);
     
-    /*
-     * Check mapping table between zone and nameserver to see if 
-     * NS information is available here 
-     */
-    if (VAL_NO_ERROR != (retval = _val_get_mapped_ns(ctx, qname_n, qtype, zonecut_n, ref_ns_list)))
-        return retval;
-
-    /*
-     * check if we found a mapped NS
-     */
-    if (*ref_ns_list != NULL)
-        return VAL_NO_ERROR;
-
     tmp_zonecut_n = NULL;
 
 
@@ -510,21 +497,22 @@ get_nslist_from_cache(val_context_t *ctx,
     }
 
 
-    if (name_n) {
+    if (name_n && tmp_zonecut_n) {
+
         bootstrap_referral(ctx, name_n, unchecked_hints, matched_qfq, queries,
                            ref_ns_list);
-    }
 
-    if (*ref_ns_list && tmp_zonecut_n) {
-        *zonecut_n = (u_char *) MALLOC (wire_name_length(tmp_zonecut_n) *
-                sizeof (u_char));
-        if (*zonecut_n == NULL) {
-            VAL_CACHE_UNLOCK(&ns_rwlock);
-            free_name_servers(ref_ns_list);
-            *ref_ns_list = NULL;
-            return VAL_OUT_OF_MEMORY;
-        } 
-        memcpy(*zonecut_n, tmp_zonecut_n, wire_name_length(tmp_zonecut_n));
+        if (*ref_ns_list) {
+            *zonecut_n = (u_char *) MALLOC (wire_name_length(tmp_zonecut_n) *
+                    sizeof (u_char));
+            if (*zonecut_n == NULL) {
+                VAL_CACHE_UNLOCK(&ns_rwlock);
+                free_name_servers(ref_ns_list);
+                *ref_ns_list = NULL;
+                return VAL_OUT_OF_MEMORY;
+            } 
+            memcpy(*zonecut_n, tmp_zonecut_n, wire_name_length(tmp_zonecut_n));
+        }
     }
     
     VAL_CACHE_UNLOCK(&ns_rwlock);
