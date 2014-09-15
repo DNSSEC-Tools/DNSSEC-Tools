@@ -535,8 +535,6 @@ free_validator_cache(void)
     unchecked_answers = NULL;
     VAL_CACHE_UNLOCK(&ans_rwlock);
     
-    free_zone_nslist();
-
     return VAL_NO_ERROR;
 }
 

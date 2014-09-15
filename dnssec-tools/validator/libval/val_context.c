@@ -952,6 +952,7 @@ val_store_ns_for_zone(val_context_t *context, u_char * zonecut_n, char *resp_ser
 {
     struct name_server *ns;
     int retval;
+    val_context_t *ctx;
 
     ctx = val_create_or_refresh_context(context); /* does CTX_LOCK_POL_SH */
     if (ctx == NULL) { 
@@ -993,8 +994,9 @@ _val_get_mapped_ns(val_context_t *ctx,
                    struct name_server **ref_ns_list) 
 {
     struct zone_ns_map_t *map_e, *saved_map;
+    u_char *p = NULL;
 
-    if (ctx == NULL || qname == NULL || zonecut_n == NULL || ref_ns_list == NULL)
+    if (ctx == NULL || qname_n == NULL || zonecut_n == NULL || ref_ns_list == NULL)
         return VAL_BAD_ARGUMENT;
 
     *zonecut_n = NULL;
@@ -1007,7 +1009,7 @@ _val_get_mapped_ns(val_context_t *ctx,
          * check if zone is within query 
          */
         if (NULL != (p = namename(qname_n, map_e->zone_n))) {
-            if (p == qname && qtype == ns_t_ds) {
+            if (p == qname_n && qtype == ns_t_ds) {
                 /* 
                  * If we're looking for the DS, we shouldn't return an
                  * exact match 

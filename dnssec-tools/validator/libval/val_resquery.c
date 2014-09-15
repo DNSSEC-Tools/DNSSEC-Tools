@@ -723,9 +723,10 @@ find_nslist_for_query(val_context_t * context,
      * Check mapping table between zone and nameserver to see if 
      * NS information is available here 
      */
-    if (VAL_NO_ERROR != (retval = _val_get_mapped_ns(ctx, qname_n,
-                                        qtype, &next_q->qc_zonecut_n, &ref_ns_list)))
-        return retval;
+    if (VAL_NO_ERROR != (ret_val = _val_get_mapped_ns(context, next_q->qc_name_n,
+                                        next_q->qc_type_h, &next_q->qc_zonecut_n, 
+                                        &ref_ns_list)))
+        return ret_val;
 
     if (ref_ns_list != NULL) {
         next_q->qc_ns_list = ref_ns_list;
@@ -752,7 +753,7 @@ find_nslist_for_query(val_context_t * context,
                     next_qfq, queries, &ref_ns_list,
                     &next_q->qc_zonecut_n, &ns_cred))) {
 
-        return retval;
+        return ret_val;
     }
     if (ref_ns_list != NULL) {
         next_q->qc_ns_list = ref_ns_list;

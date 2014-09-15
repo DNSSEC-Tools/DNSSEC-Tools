@@ -84,9 +84,11 @@ int             val_context_setqflags(val_context_t *context,
                                       unsigned char action,
                                       unsigned int flags);
 int             val_is_local_trusted(val_context_t *context, int *trusted);
-int             val_store_ns_for_zone(u_char * zonecut_n, 
-                                  struct name_server *resp_server);
+int             val_store_ns_for_zone(val_context_t *context, 
+                                    u_char * zonecut_n, char *resp_server);
 int             _val_free_zone_nslist(struct zone_ns_map_t *zone_ns_map);
+int             _val_store_ns_in_map(u_char * zonecut_n, struct name_server *ns, 
+                                     struct zone_ns_map_t **zone_ns_map);
 int             _val_get_mapped_ns(val_context_t *context,
                               u_char *qname_n,
                               u_int16_t qtype,
