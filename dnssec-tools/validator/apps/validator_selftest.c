@@ -532,6 +532,88 @@ run_suite(val_context_t *context, testcase *curr_test, int tcs, int tce,
     return run;
 }
 
+void
+print_full_rr(const char *indent, struct val_rr_rec *rr)
+{
+    struct val_rr_rec *t_rr = rr;
+    char buf[1024];
+
+    while (t_rr) {
+        printf("\n");
+        printf("%srr_status = %s\n", indent, p_ac_status(t_rr->rr_status));
+        printf("%srr_data_length = %d\n", indent, (int)t_rr->rr_rdata_length);
+        get_hex_string(t_rr->rr_rdata, t_rr->rr_rdata_length, buf, sizeof(buf));
+        printf("%srr_data = %s\n", indent, buf);
+        t_rr = t_rr->rr_next;
+    }
+}
+
+
+void
+print_full_rrec(const char *indent, struct val_rrset_rec *rrec)
+{
+    char name_buf[INET6_ADDRSTRLEN + 1];
+    const char *serv;
+    struct val_rr_rec *rr;
+
+    if (rrec) {
+        printf("%sval_rrset_rcode = %d\n", indent, rrec->val_rrset_rcode);
+        printf("%sval_rrset_name = %s\n", indent, rrec->val_rrset_name);
+        printf("%sval_rrset_class = %d\n", indent, rrec->val_rrset_class);
+        printf("%sval_rrset_type = %d\n", indent, rrec->val_rrset_type);
+        printf("%sval_rrset_ttl = %ld\n", indent, rrec->val_rrset_ttl);
+        printf("%sval_rrset_section = %d\n", indent, rrec->val_rrset_section);
+
+        serv = val_get_ns_string(rrec->val_rrset_server, name_buf, sizeof(name_buf));
+        if (serv == NULL)
+            serv = "NULL";
+        printf("%sval_rrset_server = %s\n", indent, serv);
+
+        print_full_rr(indent, rrec->val_rrset_data);
+        print_full_rr(indent, rrec->val_rrset_sig);
+    }
+}
+
+void
+print_full_ac(const char *indent, struct val_authentication_chain *ac)
+{
+    char curin[1024];
+    struct val_authentication_chain *t_ac = ac;
+    char *cp = curin;
+
+    strncpy(curin, indent, sizeof(curin));
+    while (t_ac) {
+        printf("\n");
+        strncat(curin, "\t", sizeof(curin)-(cp++ - curin));
+        printf("%sval_rc_status = %s\n", curin, p_ac_status(t_ac->val_ac_status));        
+        print_full_rrec(curin, t_ac->val_ac_rrset);
+        t_ac = t_ac->val_ac_trust;
+    }
+}
+
+void
+print_full_result(struct val_result_chain *results)
+{
+    int i;
+    struct val_result_chain *res = results;
+
+    while (res) {
+
+        printf("\tval_rc_status = %s\n", p_val_status(res->val_rc_status));        
+        printf("\val_rc_alias = %s\n", res->val_rc_alias);
+
+        print_full_rrec("\t\t", res->val_rc_rrset);
+        print_full_ac("\t\t", res->val_rc_answer);
+        for (i = 0; i < res->val_rc_proof_count; i++) {
+            print_full_ac("\t\t", res->val_rc_proofs[i]);
+            printf("\n");
+        }
+
+        res = res->val_rc_next;
+    }
+}
+
+
 #ifndef VAL_NO_ASYNC
 int
 suite_async_callback(val_async_status *as, int event,
@@ -577,6 +659,8 @@ suite_async_callback(val_async_status *as, int event,
             if (0 != ret_val) {
                 ++acbd->ss->failed;
             }
+
+//            print_full_result(cbp->results);
         }
 
         val_free_result_chain(cbp->results);
@@ -613,11 +697,13 @@ run_suite_async(val_context_t *context, testsuite *suite, testcase *start_test,
         return 0;
     }
 
-    memset(sstats, 0x00, sizeof(*sstats));
+    memset(sstats, 0x00, sizeof(suite_stats));
     i = tcs;
     sstats->remaining = tce - tcs + 1;
     sstats->in_flight = 0;
     sstats->failed = 0;
+    timeout.tv_sec = 60; /* 1 min */
+    timeout.tv_usec = 0;
 
     while (sstats->remaining) {
         /** send up to burst queries */
@@ -639,8 +725,8 @@ run_suite_async(val_context_t *context, testsuite *suite, testcase *start_test,
                                   curr_test->qt, flags, &suite_async_callback,
                                   acbd, &curr_test->as);
             if ((rc != VAL_NO_ERROR) || (!curr_test->as)) {
-                val_log(context, LOG_ERR, "FAILED: error sending test %i: %s",
-                         i, curr_test->desc);
+                val_log(context, LOG_ERR, "FAILED: error sending test %i: %s (%d)",
+                         i, curr_test->desc, rc);
                 ++sstats->failed;
                 --sstats->remaining;
                 continue;
