@@ -423,12 +423,15 @@ configuration file.
 =item B<VAL_BOGUS>
 
 Response could not be validated due to signature verification failures or the
-inability to verify proofs for an indeterminate number of components in the
-authentication chain.
+inability to verify proofs in the authentication chain.
 
 =item B<VAL_DNS_ERROR>
 
 Some error was encountered during DNS processing.
+
+=item B<VAL_INDETERMINATE>
+
+Response could not be validated due to missing DNSSEC meta-data. 
 
 =item B<VAL_NOTRUST>
 

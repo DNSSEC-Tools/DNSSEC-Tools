@@ -1344,7 +1344,12 @@ failures or the inability to verify proofs of non-existence for one or more
 components in the authentication chain.  </t>
 <t> </t>
 <t hangText="VAL_DNS_ERROR:">
-Returned if a DNS error was encountered during the query resolution process.  </t>
+Returned if a DNS error was encountered during the resolution process
+for the main query.  </t>
+<t> </t>
+<t hangText="VAL_INDETERMINATE:">
+Returned if any DNSSEC metadata was found to be be missing during
+construction of the authentication chain. </t>
 <t> </t>
 <t hangText="VAL_NOTRUST:">
 The authentication chain does not lead up to a configured DNSSEC trust anchor. </t> 

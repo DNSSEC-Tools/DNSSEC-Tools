@@ -523,12 +523,12 @@ where:
               +====================+
                       |---> VAL_AC_RRSIG_MISSING 
                       |---> VAL_AC_DNSKEY_MISSING 
+                      |---> VAL_AC_DATA_MISSING 
                       +---> VAL_AC_DS_MISSING
                       
               +====================+
               |        BAD         | 
               +====================+
-                      |---> VAL_AC_DATA_MISSING 
                       +---> VAL_AC_DNS_ERROR
                       
               +====================+
@@ -593,7 +593,9 @@ status                 status
 <=LAST_FAILURE   
 
 VAL_AC_DNS_ERROR            VAL_DNS_ERROR 
-VAL_AC_DATA_MISSING         VAL_DNS_ERROR 
+
+> ERROR_BASE,               VAL_INDETERMINATE
+<=LAST_ERROR   
 
 VAL_AC_BARE_RRSIG           VAL_BARE_RRSIG
 VAL_AC_IGNORE_VALIDATION    VAL_IGNORE_VALIDATION
