@@ -5969,7 +5969,7 @@ check_alias_sanity(val_context_t * context,
                         rrs_data->rr_rdata;
                 } else {
                     qname_n = NULL;
-                    res->val_rc_status = VAL_INDETERMINATE;
+                    res->val_rc_status = VAL_BOGUS;
                 }
             } else
                 if ((res->val_rc_rrset->val_ac_rrset.ac_data->rrs_ans_kind ==
@@ -6004,7 +6004,7 @@ check_alias_sanity(val_context_t * context,
                     }
                 } else {
                     qname_n = NULL;
-                    res->val_rc_status = VAL_INDETERMINATE;
+                    res->val_rc_status = VAL_BOGUS;
                 }
 
             } else if (!is_same_name ||
