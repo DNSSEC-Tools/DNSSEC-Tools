@@ -763,7 +763,7 @@ constant_17 (pTHX_ const char *name, IV *iv_return) {
      SR_INTERNAL_ERROR VAL_AC_BARE_RRSIG VAL_AC_CAN_VERIFY VAL_AC_DS_MISSING
      VAL_AC_DS_NOMATCH VAL_AC_ERROR_BASE VAL_AC_INVALID_DS VAL_AC_LAST_ERROR
      VAL_AC_LAST_STATE VAL_AS_NO_ANSWERS VAL_NO_PERMISSION VAL_OUT_OF_MEMORY
-     VAL_QUERY_RECURSE VAL_QUERY_ITERATE */
+     VAL_QUERY_RECURSE VAL_QUERY_ITERATE VAL_INDETERMINATE */
   /* Offset 7 gives the best switch position.  */
   switch (name[7]) {
   case 'B':
@@ -813,6 +813,14 @@ constant_17 (pTHX_ const char *name, IV *iv_return) {
     /*                      ^                */
 #ifdef VAL_AC_ERROR_BASE
       *iv_return = VAL_AC_ERROR_BASE;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    } else if (memEQ(name, "VAL_INDETERMINATE", 17)) {
+    /*                             ^                */
+#ifdef VAL_INDETERMINATE
+      *iv_return = VAL_INDETERMINATE;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
@@ -922,7 +930,7 @@ constant_18 (pTHX_ const char *name, IV *iv_return) {
      here.  However, subsequent manual editing may have added or removed some.
      LIBSRES_NS_STAGGER SR_ZI_STATUS_UNSET VAL_AC_INVALID_KEY
      VAL_AC_SIGNING_KEY VAL_AC_TRUST_NOCHK VAL_AC_TRUST_POINT
-     VAL_BARE_TRUST_KEY VAL_BOGUS_PROVABLE VAL_CONF_NOT_FOUND
+     VAL_BOGUS_PROVABLE VAL_CONF_NOT_FOUND
      VAL_FROM_AUTHORITY VAL_INTERNAL_ERROR 
      VAL_TRUSTED_ANSWER VAL_UNTRUSTED_ZONE */
   /* Offset 13 gives the best switch position.  */
@@ -1018,17 +1026,6 @@ constant_18 (pTHX_ const char *name, IV *iv_return) {
     /*                            ^           */
 #ifdef VAL_AC_TRUST_POINT
       *iv_return = VAL_AC_TRUST_POINT;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    break;
-  case 'T':
-    if (memEQ(name, "VAL_BARE_TRUST_KEY", 18)) {
-    /*                            ^           */
-#ifdef VAL_BARE_TRUST_KEY
-      *iv_return = VAL_BARE_TRUST_KEY;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
@@ -2019,7 +2016,7 @@ my @names = (qw(LIBSRES_NS_STAGGER LOG_ALERT LOG_CRIT LOG_DEBUG LOG_EMERG
 	       VAL_AC_WRONG_LABEL_COUNT VAL_AS_CB_COMPLETED
 	       VAL_AS_CTX_USER_SUPPLIED VAL_AS_DONE VAL_AS_IGNORE_CACHE
 	       VAL_AS_NO_ANSWERS VAL_AS_NO_CALLBACKS VAL_AS_NO_NEW_QUERIES
-	       VAL_BAD_ARGUMENT VAL_BARE_RRSIG VAL_BARE_TRUST_KEY VAL_BOGUS
+	       VAL_BAD_ARGUMENT VAL_BARE_RRSIG VAL_INDETERMINATE VAL_BOGUS
 	       VAL_BOGUS_PROOF VAL_BOGUS_PROVABLE VAL_CONF_NOT_FOUND
 	       VAL_CONF_PARSE_ERROR VAL_DNS_ERROR VAL_DONT_KNOW VAL_EACCESS
 	       VAL_EINVAL VAL_ENOENT VAL_ENOMEM VAL_ENOSYS

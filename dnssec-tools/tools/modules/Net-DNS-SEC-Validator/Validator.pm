@@ -144,7 +144,7 @@ our @EXPORT = qw(
 	VAL_AS_NO_NEW_QUERIES
 	VAL_BAD_ARGUMENT
 	VAL_BARE_RRSIG
-	VAL_BARE_TRUST_KEY
+	VAL_INDETERMINATE
 	VAL_BOGUS
 	VAL_BOGUS_PROOF
 	VAL_BOGUS_PROVABLE
@@ -880,6 +880,7 @@ values' constants.  The different possible values for I<valStatus> are
 listed below, and further details are provided in B<libval(3)>:
 
     VAL_BARE_RRSIG
+    VAL_INDETERMINATE
     VAL_BOGUS
     VAL_DNS_ERROR
     VAL_IGNORE_VALIDATION
