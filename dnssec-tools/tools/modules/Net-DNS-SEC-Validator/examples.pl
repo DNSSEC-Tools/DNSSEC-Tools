@@ -105,10 +105,13 @@ print_result("Test case sync 2", 0, $a);
 
 my $val3 = new Net::DNS::SEC::Validator(
     nslist => "8.8.8.8",
-#    log_target => "7:stderr",
+#   log_target => "7:stderr",
     rec_fallback => 0,
     policy => ":",
+    edns0_size => 1492,
 );
+
+#$val3->map_ns("dnssec-tools.org", "168.150.236.43");
 
 $val3->async_submit("good-a.test.dnssec-tools.org", "IN", "A", $flags, \&print_result, "async 1 ");
 $val3->async_submit("badsign-a.test.dnssec-tools.org", "IN", "A", $flags, \&print_result, "async 2");
