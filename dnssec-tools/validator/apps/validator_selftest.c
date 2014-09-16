@@ -184,6 +184,7 @@ vtc_parse_result(const char *result)
         {"INCOMPLETE_PROOF", VAL_BOGUS},
         {"IRRELEVANT_PROOF", VAL_BOGUS},
         {"DNS_ERROR", VAL_DNS_ERROR},
+        {"INDETERMINATE", VAL_INDETERMINATE},
         {"NOTRUST", VAL_NOTRUST},
         {"SUCCESS", VAL_SUCCESS},
         {"NONEXISTENT_NAME", VAL_NONEXISTENT_NAME},
