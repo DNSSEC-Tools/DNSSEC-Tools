@@ -660,7 +660,9 @@ suite_async_callback(val_async_status *as, int event,
                 ++acbd->ss->failed;
             }
 
-//            print_full_result(cbp->results);
+            /*
+             * print_full_result(cbp->results);
+             */
         }
 
         val_free_result_chain(cbp->results);
