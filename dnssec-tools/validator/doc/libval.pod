@@ -40,6 +40,10 @@ I<val_log_add_optarg> - control log message verbosity and output location
                             unsigned char action, 
                             unsigned int flags);
 
+  int val_store_ns_for_zone(val_context_t *context, 
+                            char * zone, 
+                            char *resp_server)
+
   int val_resolve_and_check(val_context_t *context,
                          const char *domain_name,
                          int class,
@@ -141,7 +145,7 @@ bootstrapping information for the validator when it functions as a full
 resolver (see B<dnsval.conf(3)>). These defaults may be different if 
 any other value was specified at library configure time.  If the default 
 resolver configuration file is not found at the specified location, B<libval>
-will also try to fall back to B</etc/resolv.conf> as a last resort.
+will also try to fall back to B</etc/resolv.conf> as a last resort. 
 
 Applications may also create a validator context with a custom policy 
 using the I<val_create_context_ex()> function. 
@@ -178,6 +182,9 @@ list of recursive name servers to send queries to, in addition (or in
 place of) the list of name servers specified in the B<resolv.conf> file.
 The list of name servers in I<vc_res_conf> must be specified as a
 white-space delimited list of IP or IPv6 addresses.
+
+A custom mapping between a zone and a name server may be created
+using the B<val_store_ns_for_zone()> function.
 
 I<vc_polflags> can be configured with the following values:
 

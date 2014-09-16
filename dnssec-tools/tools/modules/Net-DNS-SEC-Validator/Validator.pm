@@ -529,6 +529,7 @@ B<Net::DNS::SEC::Validator> - interface to B<libval(3)> and related constants, s
   }
 
   my $validator = new Net::DNS::SEC::Validator(policy => ":");
+  $validator.map_ns("dnssec-tools.org", "127.0.0.1");
   my (@r) = $validator->getaddrinfo("good-A.test.dnssec-tools.org");
   my $r = $validator->res_query("dnssec-tools.org", "IN", "MX");
   my $h = $validator->gethostbyname("good-AAAA.test.dnssec-tools.org",
@@ -550,7 +551,6 @@ B<Net::DNS::SEC::Validator> - interface to B<libval(3)> and related constants, s
     $ret = $validator->async_check(\@readyarr);
 
   } while(1);   
-
 
 =head1 DESCRIPTION
 
@@ -859,6 +859,20 @@ Values for these fields are described in the next section.
 
     A string representation of the given <val_status>.
                   
+=head2 $validator->map_ns(<zone>, <ipaddr>)
+
+=head3   where:
+
+    <zone> => string value for zone
+    <ipaddr> => The IP address to which all queries associated with the
+                above 'zone' should be directed.
+
+=head3   returns:
+
+    0 if the association between the zone and the IP address could be
+    made successfully; some other value if the association could not be
+    created.
+    
 
 =head1 VALIDATOR DATA FIELDS
 

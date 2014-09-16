@@ -176,6 +176,10 @@ val_log_add_optarg \- control log message verbosity and output location
 \&                            unsigned char action, 
 \&                            unsigned int flags);
 \&
+\&  int val_store_ns_for_zone(val_context_t *context, 
+\&                            char * zone, 
+\&                            char *resp_server)
+\&
 \&  int val_resolve_and_check(val_context_t *context,
 \&                         const char *domain_name,
 \&                         int class,
@@ -301,6 +305,9 @@ list of recursive name servers to send queries to, in addition (or in
 place of) the list of name servers specified in the \fBresolv.conf\fR file.
 The list of name servers in \fIvc_res_conf\fR must be specified as a
 white-space delimited list of \s-1IP\s0 or IPv6 addresses.
+.PP
+A custom mapping between a zone and a name server may be created
+using the \fB\f(BIval_store_ns_for_zone()\fB\fR function.
 .PP
 \&\fIvc_polflags\fR can be configured with the following values:
 .IP "\fB\s-1CTX_DYN_POL_VAL_OVR\s0\fR" 4
