@@ -400,7 +400,7 @@ val_create_context_internal( const char *label,
             if (polflags & CTX_DYN_POL_RES_NRD) {
                 ns_options = SR_QUERY_NOREC;
             }
-            ns = parse_name_server(resptr, NULL, SR_QUERY_NOREC);
+            ns = parse_name_server(resptr, NULL, ns_options);
 
             /* Ignore name servers that we don't understand */
             if (ns != NULL) {
