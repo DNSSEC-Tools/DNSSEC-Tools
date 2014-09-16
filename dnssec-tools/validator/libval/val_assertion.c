@@ -4972,7 +4972,7 @@ restart_query:
                     ds_proof = get_ac_trust(context, next_as, queries, flags, 1); 
 
                     if (ds_proof == NULL) {
-                        res->val_rc_status = VAL_BOGUS_PROOF;
+                        res->val_rc_status = VAL_INDETERMINATE;
                         val_log(context, LOG_INFO, 
                             "verify_and_validate(): trust point "
                             "for {%s %s %s} contains an empty proof of non-existence",
@@ -5174,8 +5174,7 @@ restart_query:
                             res->val_rc_status = VAL_PINSECURE_UNTRUSTED;
                         SET_MIN_TTL(next_as->val_ac_query->qc_ttl_x, ttl_x);
                     } else {
-                        if (next_as->val_ac_status <= VAL_AC_LAST_ERROR || 
-                            (next_as->val_ac_status == VAL_AC_DATA_MISSING && is_proof)) {
+                        if (next_as->val_ac_status <= VAL_AC_LAST_ERROR) {
                             val_log(context, LOG_INFO, 
                                     "verify_and_validate(): Setting authentication chain status for {%s %s(%d) %s(%d)} to Bogus",
                                     name_p, 
@@ -5183,7 +5182,7 @@ restart_query:
                                     next_as->val_ac_rrset.ac_data->rrs_class_h,
                                     p_type(next_as->val_ac_rrset.ac_data->rrs_type_h),
                                     next_as->val_ac_rrset.ac_data->rrs_type_h);
-                            res->val_rc_status = VAL_BOGUS;
+                            res->val_rc_status = VAL_INDETERMINATE;
                         } else if (next_as->val_ac_status <= VAL_AC_LAST_BAD) {
                             val_log(context, LOG_INFO, 
                                     "verify_and_validate(): Marking authentication chain status for {%s %s(%d) %s(%d)} as bad",
@@ -5219,9 +5218,6 @@ restart_query:
             if (res->val_rc_rrset == NULL && res->val_rc_status == VAL_DONT_KNOW)
                 res->val_rc_status = VAL_DNS_ERROR;
 
-            /* If all we have is a trust key then this is a success state */
-            if (res->val_rc_status == VAL_BARE_TRUST_KEY)
-                res->val_rc_status = VAL_SUCCESS;
         }
 
 #ifdef LIBVAL_DLV
@@ -5863,7 +5859,7 @@ check_wildcard_sanity(val_context_t * context,
                  */
                 val_log(context, LOG_INFO,
                             "check_wildcard_sanity(): Missing data for proving non-existence of name that was wildcard expanded");
-                target_res->val_rc_status = VAL_BOGUS;
+                target_res->val_rc_status = VAL_INDETERMINATE;
             }
         }
     }
@@ -5973,7 +5969,7 @@ check_alias_sanity(val_context_t * context,
                         rrs_data->rr_rdata;
                 } else {
                     qname_n = NULL;
-                    res->val_rc_status = VAL_BOGUS;
+                    res->val_rc_status = VAL_INDETERMINATE;
                 }
             } else
                 if ((res->val_rc_rrset->val_ac_rrset.ac_data->rrs_ans_kind ==
@@ -6008,7 +6004,7 @@ check_alias_sanity(val_context_t * context,
                     }
                 } else {
                     qname_n = NULL;
-                    res->val_rc_status = VAL_BOGUS;
+                    res->val_rc_status = VAL_INDETERMINATE;
                 }
 
             } else if (!is_same_name ||
@@ -6291,7 +6287,8 @@ construct_authentication_chain(val_context_t * context,
          */
         /* if any of the results are bad try re-querying from root */
         for (res=*results; res; res=res->val_rc_next) {
-            if (res->val_rc_status == VAL_BOGUS) {
+            if (res->val_rc_status == VAL_BOGUS || 
+                res->val_rc_status == VAL_INDETERMINATE) {
                 break;
             }
         }

@@ -602,6 +602,9 @@ p_val_status(val_status_t err)
     case VAL_DNS_ERROR:
         return "VAL_DNS_ERROR";
         break;
+    case VAL_INDETERMINATE:
+        return "VAL_INDETERMINATE";
+        break;
     case VAL_NOTRUST:
         return "VAL_NOTRUST";
         break;

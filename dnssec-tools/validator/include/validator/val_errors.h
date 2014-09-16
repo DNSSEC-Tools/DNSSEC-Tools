@@ -81,20 +81,21 @@ extern          "C" {
 
 /*
  * Cannot do anything further, but should check proof of non existence 
+ * Missing DNSSEC meta-data results in the VAL_INDETERMINATE state
  */
 #define VAL_AC_ERROR_BASE VAL_AC_LAST_STATE     /* 12 */
 #define VAL_AC_RRSIG_MISSING (VAL_AC_ERROR_BASE+1)
 #define VAL_AC_DNSKEY_MISSING (VAL_AC_ERROR_BASE+2)
 #define VAL_AC_DS_MISSING (VAL_AC_ERROR_BASE+3)
-#define VAL_AC_LAST_ERROR VAL_AC_DS_MISSING
+#define VAL_AC_DATA_MISSING (VAL_AC_ERROR_BASE+4)
+#define VAL_AC_LAST_ERROR VAL_AC_DATA_MISSING
 
 
 /*
  * Cannot do anything further and should not check proof of non existence 
  */
-#define VAL_AC_BAD_BASE VAL_AC_LAST_ERROR       /* 15 */
-#define VAL_AC_DATA_MISSING (VAL_AC_BAD_BASE+1)
-#define VAL_AC_DNS_ERROR (VAL_AC_BAD_BASE+2)
+#define VAL_AC_BAD_BASE VAL_AC_LAST_ERROR       /* 16 */
+#define VAL_AC_DNS_ERROR (VAL_AC_BAD_BASE+1)
 #define VAL_AC_LAST_BAD VAL_AC_DNS_ERROR 
 
 
@@ -157,9 +158,6 @@ extern          "C" {
 
 #define VAL_DONT_KNOW	0
 
-/* This is a transient state. It will settle at VAL_SUCCESS. */
-#define VAL_BARE_TRUST_KEY   (VAL_DONT_KNOW | VAL_FLAG_CHAIN_COMPLETE)
-
 #define VAL_BOGUS 1
 #define VAL_BOGUS_PROOF VAL_BOGUS  
 #define VAL_INCOMPLETE_PROOF VAL_BOGUS
@@ -175,23 +173,26 @@ extern          "C" {
 
 #define VAL_DNS_ERROR 2 
 
-#define VAL_NOTRUST 3
+#define VAL_INDETERMINATE 3 
+
+#define VAL_NOTRUST 4
 
 #define VAL_SUCCESS                     VAL_FLAG_CHAIN_COMPLETE
-#define VAL_NONEXISTENT_NAME            ((4) | VAL_FLAG_CHAIN_COMPLETE)
-#define VAL_NONEXISTENT_TYPE            ((5) | VAL_FLAG_CHAIN_COMPLETE)
-#define VAL_NONEXISTENT_NAME_NOCHAIN    ((6)  | VAL_FLAG_CHAIN_COMPLETE)
-#define VAL_NONEXISTENT_TYPE_NOCHAIN    ((7) | VAL_FLAG_CHAIN_COMPLETE)
-#define VAL_PINSECURE                   ((8) | VAL_FLAG_CHAIN_COMPLETE)
-#define VAL_PINSECURE_UNTRUSTED         ((9) | VAL_FLAG_CHAIN_COMPLETE)
-#define VAL_BARE_RRSIG                  ((10) | VAL_FLAG_CHAIN_COMPLETE)
-#define VAL_IGNORE_VALIDATION           ((11) | VAL_FLAG_CHAIN_COMPLETE)
-#define VAL_UNTRUSTED_ZONE              ((12) | VAL_FLAG_CHAIN_COMPLETE)
-#define VAL_OOB_ANSWER                  ((13) | VAL_FLAG_CHAIN_COMPLETE)
+#define VAL_NONEXISTENT_NAME            ((5) | VAL_FLAG_CHAIN_COMPLETE)
+#define VAL_NONEXISTENT_TYPE            ((6) | VAL_FLAG_CHAIN_COMPLETE)
+#define VAL_NONEXISTENT_NAME_NOCHAIN    ((7)  | VAL_FLAG_CHAIN_COMPLETE)
+#define VAL_NONEXISTENT_TYPE_NOCHAIN    ((8) | VAL_FLAG_CHAIN_COMPLETE)
+#define VAL_PINSECURE                   ((9) | VAL_FLAG_CHAIN_COMPLETE)
+#define VAL_PINSECURE_UNTRUSTED         ((10) | VAL_FLAG_CHAIN_COMPLETE)
+#define VAL_BARE_RRSIG                  ((11) | VAL_FLAG_CHAIN_COMPLETE)
+#define VAL_IGNORE_VALIDATION           ((12) | VAL_FLAG_CHAIN_COMPLETE)
+#define VAL_UNTRUSTED_ZONE              ((13) | VAL_FLAG_CHAIN_COMPLETE)
+#define VAL_OOB_ANSWER                  ((14) | VAL_FLAG_CHAIN_COMPLETE)
 
-#define VAL_TRUSTED_ANSWER              ((14) | VAL_FLAG_CHAIN_COMPLETE)
-#define VAL_VALIDATED_ANSWER            ((15) | VAL_FLAG_CHAIN_COMPLETE)
-#define VAL_UNTRUSTED_ANSWER            ((16) | VAL_FLAG_CHAIN_COMPLETE)
+#define VAL_TRUSTED_ANSWER              ((15) | VAL_FLAG_CHAIN_COMPLETE)
+#define VAL_VALIDATED_ANSWER            ((16) | VAL_FLAG_CHAIN_COMPLETE)
+#define VAL_UNTRUSTED_ANSWER            ((17) | VAL_FLAG_CHAIN_COMPLETE)
+
 
 #ifdef __cplusplus
 }                               /* extern "C" */
