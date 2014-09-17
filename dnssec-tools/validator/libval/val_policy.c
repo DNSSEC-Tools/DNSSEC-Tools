@@ -2048,6 +2048,16 @@ skipfileread:
         }
     }
 
+    /* if there are no global options defined set defaults here */
+    if (g_opt == NULL) {
+        g_opt = (val_global_opt_t *) MALLOC (sizeof (val_global_opt_t));
+        if (g_opt == NULL) {
+            retval = VAL_OUT_OF_MEMORY;
+            goto err;
+        }
+        set_global_opt_defaults(g_opt);
+    }
+
     /* Process Global options */
     ctx->g_opt = g_opt;
 
