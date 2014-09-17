@@ -2486,6 +2486,7 @@ val_resquery_async_send(val_context_t * context,
     char            name_p[NS_MAXDNAME];
     char            name_buf[INET6_ADDRSTRLEN + 1];
     struct val_query_chain *matched_q;
+    struct timeval now;
 
     if ((matched_qfq == NULL) || (matched_qfq->qfq_query->qc_ns_list == NULL))
         return VAL_BAD_ARGUMENT;
@@ -2512,6 +2513,12 @@ val_resquery_async_send(val_context_t * context,
                                       name_buf, sizeof(name_buf)));
         }
     }
+
+    /*
+     * Update the qc_last_sent timestamp
+     */
+    gettimeofday(&now, NULL);
+    matched_q->qc_last_sent = now.tv_sec;
 
     matched_q->qc_ea = res_async_query_send(name_p, matched_q->qc_type_h,
                                             matched_q->qc_class_h, 
