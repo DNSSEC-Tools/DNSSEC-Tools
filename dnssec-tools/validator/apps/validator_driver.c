@@ -718,8 +718,9 @@ main(int argc, char *argv[])
     int             num_threads = 0;
     int             max_in_flight = 1;
     int             daemon = 0;
-    //u_int32_t       flags = VAL_QUERY_AC_DETAIL|VAL_QUERY_NO_EDNS0_FALLBACK;
-    u_int32_t       flags = VAL_QUERY_AC_DETAIL, nodnssec_flag = 0;
+    //u_int32_t       flags = VAL_QUERY_AC_DETAIL|VAL_QUERY_NO_EDNS0_FALLBACK|VAL_QUERY_SKIP_CACHE;
+    u_int32_t       flags = VAL_QUERY_AC_DETAIL;
+    u_int32_t       nodnssec_flag = 0;
     int             retvals[] = { 0 };
     int             tcs = 0, tce = -1;
     int             wait = 0;
