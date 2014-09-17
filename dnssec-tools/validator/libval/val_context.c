@@ -873,6 +873,7 @@ val_context_setqflags(val_context_t *context,
     }
     
     CTX_UNLOCK_ACACHE(ctx);
+
     CTX_UNLOCK_POL(ctx);
 
     return VAL_NO_ERROR;
@@ -948,17 +949,21 @@ _val_store_ns_in_map(u_char * zonecut_n, struct name_server *ns,
  * data for it 
  */
 int
-val_store_ns_for_zone(val_context_t *context, char * zone, char *resp_server)
+val_context_store_ns_for_zone(val_context_t *context, char * zone, char *resp_server)
 {
     struct name_server *ns;
     int retval;
     val_context_t *ctx;
+    struct val_query_chain *q;
     u_char zone_n[NS_MAXCDNAME];
 
     ctx = val_create_or_refresh_context(context); /* does CTX_LOCK_POL_SH */
     if (ctx == NULL) { 
         return VAL_INTERNAL_ERROR;
     }
+
+    /* Lock exclusively */
+    CTX_LOCK_ACACHE(ctx);
 
     if (resp_server && zone&& 
         (-1 != ns_name_pton(zone, zone_n, sizeof(zone_n))) && 
@@ -969,7 +974,17 @@ val_store_ns_for_zone(val_context_t *context, char * zone, char *resp_server)
         retval = VAL_BAD_ARGUMENT;
     }
 
+    /* Flush queries that match this name */
+    for(q=ctx->q_list; q; q=q->qc_next) {
+        if (NULL != namename(q->qc_name_n, zone_n)) {
+            q->qc_flags |= VAL_QUERY_MARK_FOR_DELETION;
+        }
+    }
+
+    CTX_UNLOCK_ACACHE(ctx);
+
     CTX_UNLOCK_POL(ctx);
+
     return retval;
 }
 
