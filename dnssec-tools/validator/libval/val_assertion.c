@@ -480,9 +480,10 @@ add_to_query_chain(val_context_t *context, u_char * name_n,
                   * max_refresh threshold
                   */
                  ((temp->qc_flags & VAL_QUERY_SKIP_CACHE) &&
-                   temp->qc_last_sent != -1 && 
-                   context->g_opt && context->g_opt->max_refresh >= 0 && 
-                   context->g_opt->max_refresh < (tv.tv_sec - temp->qc_last_sent)))) { 
+                   temp->qc_last_sent != -1 && /* we have sent this query before */
+                   context->g_opt &&  /* we haven't sent our query within the threshold */
+                    context->g_opt->max_refresh >= 0 &&
+                    context->g_opt->max_refresh < (tv.tv_sec - temp->qc_last_sent)))) { 
 
                 /* Remove this data at the next safe opportunity */ 
                 val_log(context, LOG_DEBUG,
