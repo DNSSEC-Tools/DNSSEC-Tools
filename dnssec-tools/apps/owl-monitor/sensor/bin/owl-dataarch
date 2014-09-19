@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Copyright 2012-2013 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2012-2014 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details.
 #
 # owl-dataarch						Owl Monitoring System
@@ -9,11 +9,12 @@
 #	It is a modified version of the dataarch command.
 #
 # Revision History:
-#	1.0	Initial version.				121201
+#	1.0	Initial version.					121201
 #			This was adapted from the dataarch script from
 #			the original UEM system.
 #
-#	2.0	Released as part of DNSSEC-Tools 2.0.		130301
+#	2.0	Released as part of DNSSEC-Tools 2.0.			130301
+#	2.1.1	Support data subdirectories.				140908
 #
 
 use strict;
@@ -32,8 +33,8 @@ use Time::Local;
 # Version information.
 #
 my $NAME   = "owl-dataarch";
-my $VERS   = "$NAME version: 2.0.0";
-my $DTVERS = "DNSSEC-Tools version: 2.0";
+my $VERS   = "$NAME version: 2.1.1";
+my $DTVERS = "DNSSEC-Tools version: 2.1";
 
 ###################################################
 
@@ -78,6 +79,8 @@ my $basedir  = ".";				# Base directory we'll look in.
 my $confdir  = $DEF_CONFDIR;			# Configuration directory.
 my $conffile = "$DEF_CONFDIR/$DEF_CONFIG";	# Default config file path.
 my $datadir  = '';				# Top-level data directory.
+
+my @subdirs = ();				# Data subdirectories.
 
 ###################################################
 
@@ -136,9 +139,21 @@ sub main
 	@keepdate = getkeepdate();
 
 	#
-	# Archive the specified data files.
+	# Ensure the subdirectories exist in the archive directory.
 	#
-	archer(@keepdate);
+	for(my $ind = 0; $ind < @subdirs; $ind++)
+	{
+		my $sdir;				# Archive subdirectory.
+
+#		$sdir = "$archdir/$subdirs[$ind]";
+		$sdir = $subdirs[$ind];
+
+		#
+		# Archive the specified data files.
+		#
+		archer($sdir,@keepdate);
+	}
+
 }
 
 #-----------------------------------------------------------------------------
@@ -190,6 +205,24 @@ sub setup
 	#
 	$archdir = dodir('archive',$archdir,1);
 	$datadir = dodir('data',$datadir,0);
+
+	#
+	# Get a list of data subdirectories.
+	#
+	@subdirs = glob("$datadir/*");
+	if(@subdirs == 0)
+	{
+		print "nothing to archive\n";
+		exit(0);
+	}
+
+	#
+	# Remove the data-directory portion of the data subdirectory names.
+	#
+	for(my $ind = 0; $ind < @subdirs; $ind++)
+	{
+		$subdirs[$ind] =~ s/^$datadir\///;
+	}
 
 	#
 	# Don't proceed on errors.
@@ -342,16 +375,23 @@ sub getkeepdate
 #
 sub archer
 {
+	my $sdir = shift;			# Subdirectory name.
 	my @keepdate = @_;			# Earliest date info.
 	my @files = ();				# Files in data directory.
 	my $lastind;				# Last file in @files to save.
+	my $dsdir;				# Data subdirectory.
+
+	#
+	# Build the data subdirectory name.
+	#
+	$dsdir = "$datadir/$sdir";
 
 	#
 	# Move into the data directory.
 	#
-	if(chdir($datadir) == 0)
+	if(chdir($dsdir) == 0)
 	{
-		print STDERR "unable to move to directory \"$datadir\"\n";
+		print STDERR "unable to move to directory \"$dsdir\"\n";
 		return;
 	}
 
@@ -390,8 +430,8 @@ sub archer
 	#
 	# Archive the files.
 	#
-	print "archiving $datadir\n";
-	filesaver(\@files);
+	print "archiving $dsdir\n";
+	filesaver($sdir,\@files);
 
 	#
 	# Return to the starting directory.
@@ -436,6 +476,7 @@ sub firstfile
 #
 sub filesaver
 {
+	my $sdir = shift;			# Subdirectory name.
 	my $fileref = shift;			# Reference to file list.
 	my @files;				# List of files to archive.
 	my $first;				# First file's timestamp.
@@ -464,6 +505,11 @@ sub filesaver
 
 		vprint("checking data archive $datatop\n");
 		dodir("data archive",$datatop,1);
+
+		#
+		# Ensure the subdirectory exists in the archive directory.
+		#
+		dodir("archive subdirectory $sdir","$datatop/$sdir",1);
 	}
 
 	for(my $ind=0; $ind < @files; $ind++)
@@ -484,7 +530,7 @@ sub filesaver
 		#
 		# Build the destination directory.
 		#
-		$ddir = "$archdir/data-$yymm/";
+		$ddir = "$archdir/data-$yymm/$sdir";
 		dodir("data archive destination",$ddir,1);
 
 		$cmd = "$MV $fn $ddir";
@@ -527,7 +573,7 @@ sub version
 #
 sub usage
 {
-	print "owl-dataarch [options[\n";
+	print "owl-dataarch [options]\n";
 	print "\toptions:\n";
 	print "\t\t-archdir directory\n";
 	print "\t\t-datadir directory\n";
@@ -611,7 +657,7 @@ B<owl-config(5)>
 
 =head1 COPYRIGHT
 
-Copyright 2012-2013 SPARTA, Inc.  All rights reserved.
+Copyright 2012-2014 SPARTA, Inc.  All rights reserved.
 
 =head1 AUTHOR
 
