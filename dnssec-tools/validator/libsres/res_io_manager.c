@@ -599,15 +599,12 @@ res_nsfallback_ea(struct expected_arrival *ea, struct timeval *closest_event,
     long             i, old_size;
     struct expected_arrival *temp = ea;
 
-    if (!temp || !name)
+    if (!temp || !temp->ea_ns || !name)
         return -1;
 
-    if (!server && temp->ea_next) {
-        res_log(NULL, LOG_DEBUG,
-                "libsres: ""no server specified and more than one ea");
-        return -1;
-    }
-
+    /*
+     * If we're given a server try to find an exact match
+     */
     if (server) {
         for(;temp;temp=temp->ea_next) {
             //res_print_ea(temp);
@@ -619,21 +616,11 @@ res_nsfallback_ea(struct expected_arrival *ea, struct timeval *closest_event,
                        sizeof(*server->ns_address[0])) == 0)
                 break;
         }
-    }
-
-    if (!temp || !temp->ea_ns) {
-        res_log(NULL, LOG_DEBUG, "libsres: "
-                "no matching server found for fallback");
-        return -1;
-    }
-
-    /** even if there is a smaller size to fall back to, no attempts left */
-    if (temp->ea_remaining_attempts < 0) {
-        res_log(NULL, LOG_DEBUG, "libsres: "
-                "ea %p no remaining attempts for fallback", temp);
-        if (res_io_are_all_finished(ea))
+        if (!temp) {
+            res_log(NULL, LOG_DEBUG, "libsres: "
+                    "no matching server found for fallback");
             return -1;
-        return 0;
+        }
     }
 
     res_log(NULL, LOG_DEBUG, "libsres: ""ea %p attempting ns fallback", temp);
@@ -651,14 +638,20 @@ res_nsfallback_ea(struct expected_arrival *ea, struct timeval *closest_event,
                             "fallback disabling edns0");
                     temp->ea_ns->ns_options ^= SR_QUERY_VALIDATING_STUB_FLAGS;
                 }
-                temp->ea_remaining_attempts++;
+                if (temp->ea_remaining_attempts < 0) {
+                    /* give a last shot attempt with a reduced EDNS */
+                    temp->ea_remaining_attempts = 1;
+                }
+                else {
+                    temp->ea_remaining_attempts++;
+                }
                 break;
             }
         }
     }
 
     /** didn't find a smaller size to try and were already on last attempt */
-    if (temp->ea_remaining_attempts == 0) {
+    if (temp->ea_remaining_attempts <= 0) {
         res_log(NULL, LOG_DEBUG, "libsres: "
                 "fallback already exhausted edns retries");
         res_io_reset_source(temp);
