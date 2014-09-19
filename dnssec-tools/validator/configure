@@ -11364,7 +11364,7 @@ CFLAGS="$CFLAGS $PARTIALTARGETFLAGS"
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for developer gcc flags" >&5
 $as_echo_n "checking for developer gcc flags... " >&6; }
 DEVFLAGS=""
-if test -d $srcdir/.svn; then
+if test -d $srcdir/.git -o -d $srcdir/.svn; then
   # disable --enable-shared by default in cvs/developer cases.
   # don't do anything if option set via cmdline
   if test "${enable_shared+set}" != set; then
