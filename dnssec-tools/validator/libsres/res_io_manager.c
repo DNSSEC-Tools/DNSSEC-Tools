@@ -264,8 +264,9 @@ set_alarms(struct expected_arrival *ea, long next, long cancel)
     ea->ea_cancel_time.tv_usec = ea->ea_next_try.tv_usec;
 }
 
-struct expected_arrival *
-res_ea_init(u_char * signed_query, size_t signed_length,
+static struct expected_arrival *
+res_ea_init(const char *name, const u_int16_t type_h, const u_int16_t class_h,
+            u_char * signed_query, size_t signed_length,
             struct name_server *ns, long delay)
 {
     struct expected_arrival *temp;
@@ -279,6 +280,13 @@ res_ea_init(u_char * signed_query, size_t signed_length,
 
     memset(temp, 0x0, sizeof(struct expected_arrival));
     temp->ea_socket = INVALID_SOCKET;
+    temp->ea_name = strdup(name);
+    if (temp->ea_name == NULL) {
+        FREE(temp);
+        return NULL;
+    }
+    temp->ea_type_h = type_h;
+    temp->ea_class_h = class_h;
     temp->ea_ns = ns;
     temp->ea_which_address = 0;
     temp->ea_using_stream = FALSE;
@@ -945,22 +953,6 @@ res_io_check(int transaction_id, struct timeval *next_evt)
 }
 
 int
-res_io_deliver(int *transaction_id, u_char * signed_query,
-               size_t signed_length, struct name_server *ns, long delay)
-{
-    struct timeval  next_event;
-    int             rc;
-
-    rc = res_io_queue(transaction_id, signed_query, signed_length, ns, delay);
-    res_log(NULL, LOG_DEBUG, "libsres: "" res_io_queue rc %d", rc);
-
-    /*
-     * Call the res_io_check routine 
-     */
-    return res_io_check(*transaction_id, &next_event);
-}
-
-int
 res_io_queue_ea(int *transaction_id, struct expected_arrival *new_ea)
 {
     int             try_index;
@@ -1013,26 +1005,6 @@ res_io_queue_ea(int *transaction_id, struct expected_arrival *new_ea)
     }
 
     pthread_mutex_unlock(&mutex);
-
-    return SR_IO_UNSET;
-}
-
-int
-res_io_queue(int *transaction_id, u_char * signed_query,
-             size_t signed_length, struct name_server *ns, long delay)
-{
-    struct expected_arrival *new_ea;
-    int                      ret_val;
-
-    new_ea = res_ea_init(signed_query, signed_length, ns, delay);
-    if (new_ea == NULL)
-        return SR_IO_MEMORY_ERROR;
-
-    ret_val = res_io_queue_ea(transaction_id, new_ea);
-    if (ret_val != SR_IO_UNSET) {
-        res_free_ea_list(new_ea);
-        return ret_val;
-    }
 
     return SR_IO_UNSET;
 }
@@ -1676,8 +1648,6 @@ res_io_accept(int transaction_id, fd_set *pending_desc,
      * See what needs to be sent.  A return code of 0 means that there
      * is nothing more to be sent and there is also nothing to wait for.
      * 
-     * All is not hopeless though - more sources may still waiting to be
-     * added via res_io_deliver().
      */
     if (res_io_check(transaction_id, &next_event) == 0) {
         res_log(NULL, LOG_DEBUG, "libsres: "" tid %d: no active queries",
@@ -1981,20 +1951,13 @@ res_async_query_create(const char *name, const u_int16_t type_h,
             break; /* fatal, bail */
 
         /** create expected arrival struct */
-        new_ea = res_ea_init(signed_query, signed_length, ns, delay);
+        new_ea = res_ea_init(name, type_h, class_h,
+                             signed_query, signed_length, ns, delay);
         if (NULL == new_ea) {
             FREE(signed_query);
             ret_val = SR_IO_MEMORY_ERROR;
             break; /* fatal, bail */
         }
-        new_ea->ea_name = strdup(name);
-        if (new_ea->ea_name == NULL) {
-            res_free_ea_list(new_ea);
-            ret_val = SR_IO_MEMORY_ERROR;
-            break; /* fatal, bail */
-        }
-        new_ea->ea_type_h = type_h;
-        new_ea->ea_class_h = class_h;
 
         /** add to list */
         if (NULL != head) {

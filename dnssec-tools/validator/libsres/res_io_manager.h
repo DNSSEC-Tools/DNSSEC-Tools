@@ -35,68 +35,6 @@
 #define SR_IO_NOFILE_UNKNOWN_SIZE  256
 
 /*
- * res_io_deliver
- * 
- * Enters a query for submission.  After entering the query,
- * a routine is called to check the outgoing data needs which
- * may result in some network traffic being generated.
- *
- * See Also res_io_queue
- * 
- * Parameters
- * 
- * transaction_id is either the id for an existing transaction to which the
- * query should be added, or -1 to begin a new transaction. The new
- * transaction id will be set before returning.
- * 
- * signed_query is a pointer to a query which becomes "owned" by the
- * io manger. signed_length is the length of the query.  The
- * query is sent as it is passed, i.e., it should be TSIG'd
- * before hand.
- * 
- * ns is a structure indicating which name server(s) to use.
- * 
- * Return values
- * 
- * >= 0                 Number of remaining sources pending
- * SR_IO_MEMORY_ERROR   Not enough memory
- * SR_IO_TOO_MANY_TRANS Too many current requests
- */
-int             res_io_deliver(int *transaction_id,
-                               u_char * signed_query, size_t signed_length,
-                               struct name_server *ns, long delay);
-
-/*
- * res_io_queue
- * 
- *   Enters a query for submission, like res_io_deliver, but does not
- *   immediately send them. After queueing queries, call res_io_check
- *   to send them.
- * 
- * Parameters
- * 
- * transaction_id is either the id for an existing transaction to which the
- * query should be added, or -1 to begin a new transaction. The new
- * transaction id will be set before returning.
- * 
- * signed_query is a pointer to a query which becomes "owned" by the
- * io manger. signed_length is the length of the query.  The
- * query is sent as it is passed, i.e., it should be TSIG'd
- * before hand.
- * 
- * ns is a structure indicating which name server(s) to use.
- * 
- * Return values
- * 
- * >= 0                 Number of remaining sources pending
- * SR_IO_MEMORY_ERROR   Not enough memory
- * SR_IO_TOO_MANY_TRANS Too many current requests
- */
-int             res_io_queue(int *transaction_id, u_char * signed_query,
-                             size_t signed_length, struct name_server *ns,
-                             long delay);
-
-/*
  * res_io_queue_ea
  * 
  *   Enters an existing query for submission
