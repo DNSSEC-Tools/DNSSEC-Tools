@@ -210,10 +210,8 @@ res_sq_free_expected_arrival(struct expected_arrival **ea)
                 *ea, (*ea)->ea_socket);
     if ((*ea)->ea_ns != NULL)
         free_name_server(&((*ea)->ea_ns));
-#ifdef EA_EXTRA_DEBUG
-    if ((*ea)->name != NULL)
-        free((*ea)->name);
-#endif
+    if ((*ea)->ea_name != NULL)
+        free((*ea)->ea_name);
     if ((*ea)->ea_socket != INVALID_SOCKET) {
         CLOSESOCK((*ea)->ea_socket);
         --_open_sockets;
@@ -536,8 +534,7 @@ res_io_send(struct expected_arrival *shipit)
  */
 int 
 res_nsfallback(int transaction_id, struct timeval *closest_event, 
-               struct name_server *server, const char *name,
-               const u_int16_t class_h, const u_int16_t type_h)
+               struct name_server *server)
 {
     struct expected_arrival *temp;
     int ret_val = -1;
@@ -548,8 +545,7 @@ res_nsfallback(int transaction_id, struct timeval *closest_event,
     pthread_mutex_lock(&mutex);
     temp = transactions[transaction_id];
     if (temp != NULL)
-        ret_val = res_nsfallback_ea(temp, closest_event, server, name, class_h,
-                                    type_h);
+        ret_val = res_nsfallback_ea(temp, closest_event, server);
     pthread_mutex_unlock(&mutex);
     return ret_val;
 }
@@ -590,8 +586,7 @@ _reset_timeouts(struct expected_arrival *temp)
  */
 int 
 res_nsfallback_ea(struct expected_arrival *ea, struct timeval *closest_event, 
-                  struct name_server *server, const char *name,
-                  const u_int16_t class_h, const u_int16_t type_h)
+                  struct name_server *server)
 {
     const static int edns0_fallback[] = { 4096, 1492, 512, 0 };
     int fallback_max_index = 3; /* This must match the array above */
@@ -599,8 +594,10 @@ res_nsfallback_ea(struct expected_arrival *ea, struct timeval *closest_event,
     long             i, old_size;
     struct expected_arrival *temp = ea;
 
-    if (!temp || !temp->ea_ns || !name)
+    if (!temp || !temp->ea_ns) {
+        res_log(NULL, LOG_DEBUG, "libsres: no server provided");
         return -1;
+    }
 
     /*
      * If we're given a server try to find an exact match
@@ -638,8 +635,8 @@ res_nsfallback_ea(struct expected_arrival *ea, struct timeval *closest_event,
                             "fallback disabling edns0");
                     temp->ea_ns->ns_options ^= SR_QUERY_VALIDATING_STUB_FLAGS;
                 }
-                if (temp->ea_remaining_attempts < 0) {
-                    /* give a last shot attempt with a reduced EDNS */
+                if (temp->ea_remaining_attempts <= 0) {
+                    /* give another attempt with a reduced EDNS */
                     temp->ea_remaining_attempts = 1;
                 }
                 else {
@@ -675,7 +672,7 @@ res_nsfallback_ea(struct expected_arrival *ea, struct timeval *closest_event,
     temp->ea_signed_length = 0;
 
     if (res_create_query_payload(temp->ea_ns,
-                name, class_h, type_h,
+                temp->ea_name, temp->ea_class_h, temp->ea_type_h,
                 &temp->ea_signed,
                 &temp->ea_signed_length) < 0) {
         res_log(NULL, LOG_DEBUG, "libsres: ""could not create query payload");
@@ -691,7 +688,8 @@ res_nsfallback_ea(struct expected_arrival *ea, struct timeval *closest_event,
 
     res_log(NULL, LOG_INFO, "libsres: "
             "ns fallback for {%s %s(%d) %s(%d)}, edns0 size %d > %d",
-            name, p_class(class_h), class_h, p_type(type_h), type_h,
+            temp->ea_name, p_class(temp->ea_class_h), temp->ea_class_h, 
+            p_type(temp->ea_type_h), temp->ea_type_h,
             old_size, temp->ea_ns->ns_edns0_size);
 
     return 1;
@@ -788,7 +786,8 @@ res_io_check_ea_list(struct expected_arrival *ea, struct timeval *next_evt,
              ((0 == ea->ea_remaining_attempts) && LTEQ(ea->ea_next_try, (*now)))) {
             if (net_change && ea->ea_socket != INVALID_SOCKET)
                 --(*net_change);
-            res_io_next_address(ea, "TIMEOUTS", "TIMEOUT - CANCELING");
+            if (1 != res_nsfallback_ea(ea, next_evt, NULL))
+                res_io_next_address(ea, "TIMEOUTS", "TIMEOUT - CANCELING");
         }
 
         /*
@@ -799,8 +798,9 @@ res_io_check_ea_list(struct expected_arrival *ea, struct timeval *next_evt,
             res_log(NULL, LOG_DEBUG, "libsres: "" retry");
             while (ea->ea_remaining_attempts != -1) {
                 if (res_io_send(ea) == SR_IO_SOCKET_ERROR) {
-                    res_io_next_address(ea, "ERROR",
-                                        "CANCELING DUE TO SENDING ERROR");
+                    if (1 != res_nsfallback_ea(ea, next_evt, NULL))
+                        res_io_next_address(ea, "ERROR",
+                                            "CANCELING DUE TO SENDING ERROR");
                 }
                 else {
                     if (needed_new_socket) {
@@ -1832,24 +1832,16 @@ res_print_ea(struct expected_arrival *ea)
 
         if (ea->ea_remaining_attempts < 0) { 
             res_log(NULL, LOG_DEBUG, "libsres: ""  ea %p "
-#ifdef EA_EXTRA_DEBUG
                     "%s "
-#endif
                     "Socket: %d, Nameserver: %s:%d, no more retries", ea,
-#ifdef EA_EXTRA_DEBUG
-                    ea->name,
-#endif
+                    ea->ea_name,
                     ea->ea_socket, addr ? addr : "", ntohs(port));
         } else {
             res_log(NULL, LOG_DEBUG, "libsres: " "  ea %p "
-#ifdef EA_EXTRA_DEBUG
                     "{%s %s(%d) %s(%d)} "
-#endif
                     "Socket: %d, Stream: %d, Nameserver: %s:%d", ea,
-#ifdef EA_EXTRA_DEBUG
-                    ea->name, p_class(ea->ea_class_h), ea->ea_class_h,
+                    ea->ea_name, p_class(ea->ea_class_h), ea->ea_class_h,
                     p_type(ea->ea_type_h), ea->ea_type_h,
-#endif
                     ea->ea_socket, ea->ea_using_stream, addr ? addr : "",
                     ntohs(port));
             res_log(NULL, LOG_DEBUG, "libsres: "
@@ -1995,11 +1987,14 @@ res_async_query_create(const char *name, const u_int16_t type_h,
             ret_val = SR_IO_MEMORY_ERROR;
             break; /* fatal, bail */
         }
-#ifdef EA_EXTRA_DEBUG
-        new_ea->name = strdup(name);
+        new_ea->ea_name = strdup(name);
+        if (new_ea->ea_name == NULL) {
+            res_free_ea_list(new_ea);
+            ret_val = SR_IO_MEMORY_ERROR;
+            break; /* fatal, bail */
+        }
         new_ea->ea_type_h = type_h;
         new_ea->ea_class_h = class_h;
-#endif
 
         /** add to list */
         if (NULL != head) {

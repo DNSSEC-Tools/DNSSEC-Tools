@@ -2313,7 +2313,7 @@ val_resquery_rcv(val_context_t * context,
 
     /** if there was no answer, try smaller edns0 size */
     if (ret_val == SR_NO_ANSWER) {
-        val_res_nsfallback(context, matched_q, server, name_p, closest_event);
+        val_res_nsfallback(context, matched_q, server, closest_event);
         if (response_data)
             FREE(response_data);
         if (server)
@@ -2346,7 +2346,7 @@ val_res_cancel(struct val_query_chain *matched_q)
 
 void
 val_res_nsfallback(val_context_t *context, struct val_query_chain *matched_q,
-                   struct name_server *server, const char *name_p,
+                   struct name_server *server, 
                    struct timeval *closest_event)
 {
     int ret_val;
@@ -2365,14 +2365,10 @@ val_res_nsfallback(val_context_t *context, struct val_query_chain *matched_q,
 
 #ifndef VAL_NO_ASYNC
     if (matched_q->qc_ea)
-        ret_val = res_nsfallback_ea(matched_q->qc_ea, closest_event, server,
-                                    name_p, matched_q->qc_class_h, 
-                                    matched_q->qc_type_h);
+        ret_val = res_nsfallback_ea(matched_q->qc_ea, closest_event, server);
     else
 #endif
-        ret_val = res_nsfallback(matched_q->qc_trans_id, closest_event, server,
-                                 name_p, matched_q->qc_class_h, 
-                                 matched_q->qc_type_h);
+        ret_val = res_nsfallback(matched_q->qc_trans_id, closest_event, server);
     if (ret_val < 0) {
         matched_q->qc_state = Q_RESPONSE_ERROR;
         val_res_cancel(matched_q);
@@ -2445,7 +2441,7 @@ _process_rcvd_response(val_context_t * context,
         free_domain_info_ptrs(*response);
         FREE(*response);
         *response = NULL;
-        val_res_nsfallback(context, matched_q, server, name_p, closest_event);
+        val_res_nsfallback(context, matched_q, server, closest_event);
         if (matched_q->qc_state != Q_RESPONSE_ERROR)
             matched_q->qc_state = Q_SENT;
     }
@@ -2578,7 +2574,7 @@ val_resquery_async_rcv(val_context_t * context,
 
     /** if there was no answer, try smaller edns0 size */
     if (ret_val == SR_NO_ANSWER) {
-        val_res_nsfallback(context, matched_q, server, name_p, closest_event);
+        val_res_nsfallback(context, matched_q, server, closest_event);
         if (response_data)
             FREE(response_data);
         if (server)
