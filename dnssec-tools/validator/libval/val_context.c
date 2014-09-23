@@ -398,7 +398,9 @@ val_create_context_internal( const char *label,
             rescur++;
  
             /* Set RD unless we're asked to disable recursion */
-            if (!(polflags & CTX_DYN_POL_RES_NRD)) {
+            if (polflags & CTX_DYN_POL_RES_NRD) {
+                ns_options = SR_QUERY_NOREC;
+            } else {
                 ns_options = SR_QUERY_RECURSE;
             }
             ns = parse_name_server(resptr, NULL, ns_options);
