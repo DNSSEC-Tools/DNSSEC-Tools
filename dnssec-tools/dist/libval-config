@@ -1,0 +1,51 @@
+#!/bin/sh
+#
+# libval-config
+#
+# this shell script is designed to merely dump the configuration
+# information about how the libval package was compiled.  The
+# information is particularily useful for applications that need to
+# link against the libval libraries and hence must know about any
+# other libraries that must be linked in as well.
+
+# this particular shell script calls arch specific script to avoid
+# multilib conflicts
+
+# Supported arches ix86 ia64 ppc ppc64 s390 s390x x86_64 alpha
+
+arch=`arch`
+echo $arch | grep -q i.86
+if [ $? -eq 0 ] ; then
+    libval-config-i386 $*
+    exit 0
+fi
+if [ "$arch" = "ia64" ] ; then
+    libval-config-ia64 $*
+    exit 0
+fi
+if [ "$arch" = "ppc" ] ; then
+    libval-config-ppc $*
+    exit 0
+fi
+if [ "$arch" = "ppc64" ] ; then
+    libval-config-ppc64 $*
+    exit 0
+fi
+if [ "$arch" = "s390" ] ; then
+    libval-config-s390 $*
+    exit 0
+fi
+if [ "$arch" = "s390x" ] ; then
+    libval-config-s390x $*
+    exit 0
+fi
+if [ "$arch" = "x86_64" ] ; then
+    libval-config-x86_64 $*
+    exit 0
+fi
+if [ "$arch" = "alpha" ] ; then
+    libval-config-alpha $*
+    exit 0
+fi
+
+echo "Cannot determine architecture"
