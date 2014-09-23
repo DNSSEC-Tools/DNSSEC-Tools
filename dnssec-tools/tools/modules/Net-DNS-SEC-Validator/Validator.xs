@@ -973,7 +973,7 @@ pval_ns_mapto_zone(self,zone,addr,recursive)
 	SV * self
 	char * zone = (SvOK($arg) ? (char *)SvPV_nolen($arg) : NULL);
 	char * addr = (SvOK($arg) ? (char *)SvPV_nolen($arg) : NULL);
-	int recursive = (SvOK($arg) ? (long)SvIV($arg) : 0);
+	int recursive = (SvOK($arg) ? SvIV($arg) : 0);
 	CODE:
 	{
 	  ValContext *		ctx;
