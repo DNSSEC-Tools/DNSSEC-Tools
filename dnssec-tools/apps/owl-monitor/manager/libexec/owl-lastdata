@@ -19,6 +19,7 @@
 #	1.0	Initial version.				140608
 #	2.1.1	Use data subdirectories.			140922
 #	2.1.2	Fix data format for rrec files.			140923
+#	2.1.3	Fix "all" processing.				140923
 #
 
 use strict;
@@ -30,7 +31,7 @@ use Getopt::Long qw(:config no_ignore_case_always);
 # Version information.
 #
 my $NAME   = "owl-lastdata";
-my $VERS   = "$NAME version: 2.1.2";
+my $VERS   = "$NAME version: 2.1.3";
 my $DTVERS = "DNSSEC-Tools version: 2.1";
 
 #######################################################################
@@ -118,8 +119,9 @@ exit($rc);
 #
 sub main
 {
-	my $retcode = 0;			# Service's return code.
-	my $kronos;				# Timestamp of last entry.
+	my $retcode = 0;		# Service's return code.
+	my @qtypes = ();		# Types of queries we're checking.
+	my $latest = 0;			# Timestamp of lastest entry.
 
 	#
 	# Check our options.
@@ -132,19 +134,69 @@ sub main
 	getdatadir();
 
 	#
-	# Get the names of the files to check for data.
+	# Build the list of queries we'll check.
 	#
-	getfiles();
+	if($querytype eq 'all')
+	{
+		push @qtypes, keys(%queries);
+	}
+	else
+	{
+		push @qtypes, $querytype;
+	}
 
 	#
-	# Get timestamp of the most recent entry for this sensor/query pair.
+	# Go through the requested queries and find the one with the
+	# most recent datum.
 	#
-	$kronos = getlast();
+	foreach my $qt (@qtypes)
+	{
+		my $kronos;		# Timestamp of query's last entry.
+
+		#
+		# Get the names of the files to check for data.
+		#
+		getfiles($qt);
+
+		#
+		# Skip this query type if it has no data files.
+		#
+		next if(@datafiles == 0);
+
+		#
+		# Get timestamp of the most recent entry for this
+		# sensor/query pair.
+		#
+		$kronos = getlast($qt);
+
+		#
+		# Save the timestamp this query's most recent entry if
+		# it's more recent than the last we've seen.
+		#
+		$latest = $kronos if($kronos > $latest);
+
+	}
+
+	#
+	# Ensure we had some data files to check.
+	#
+	if($latest == 0)
+	{
+		if($query eq '*')
+		{
+			print "no query results available for $sensor\n";
+		}
+		else
+		{
+			print "no $querytype query results available for $sensor\n";
+		}
+		exit($RC_UNKNOWN);
+	}
 
 	#
 	# Figure out what to tell Nagios about the most recent entry.
 	#
-	$retcode = checktime($kronos);
+	$retcode = checktime($latest);
 
 	#
 	# Exit with the command's return code.
@@ -227,22 +279,19 @@ sub getdatadir
 #
 sub getfiles
 {
+	my $qt = shift;				# Query type to check.
 	my $globstr;				# Path string to glob().
 
 	#
 	# Build the glob string we'll use for finding files.
 	#
-	if($querytype eq 'all')
-	{
-		$globstr = "$datadir/*/*";
-	}
-	elsif($querytype eq 'anycast')
+	if($qt eq 'anycast')
 	{
 		$globstr = "$datadir/dns/*";
 	}
 	else
 	{
-		$globstr = "$datadir/$querytype/$query";
+		$globstr = "$datadir/$qt/$query";
 	}
 
 	#
@@ -252,19 +301,8 @@ sub getfiles
 	if(@datafiles == 0)
 	{
 		@datafiles = sort(glob("$datadir/$querytype/$query"));
-		if(@datafiles == 0)
-		{
-			if($query eq '*')
-			{
-				print "no query results available for $sensor\n";
-			}
-			else
-			{
-				print "no $querytype query results available for $sensor\n";
-			}
-			exit($RC_UNKNOWN);
-		}
 	}
+
 }
 
 #-----------------------------------------------------------------------------
@@ -496,26 +534,32 @@ sub nagiout
 
 	if($tdiff < 60)
 	{
-		$tempus = sprintf("%5.1f %s", $tdiff, ($tdiff == 1) ? "second" : "seconds");
+		$tempus = sprintf("%1.1f %s", $tdiff, ($tdiff == 1) ? "second" : "seconds");
 	}
 	elsif($tdiff < 3600)
 	{
 		$adj = $tdiff / 60;
-		$tempus = sprintf("%5.1f %s", $adj, ($adj == 1) ? "minute" : "minutes");
+		$tempus = sprintf("%1.1f %s", $adj, ($adj == 1) ? "minute" : "minutes");
 	}
 	elsif($tdiff < 86400)
 	{
 		$adj = $tdiff / 3600;
-		$tempus = sprintf("%5.1f %s", $adj, ($adj == 1) ? "hour" : "hours");
+		$tempus = sprintf("%1.1f %s", $adj, ($adj == 1) ? "hour" : "hours");
 	}
 	else
 	{
 		$adj = $tdiff / 86400;
-#		$tempus = "$adj " . (($adj == 1) ? "day" : "days");
-		$tempus = sprintf("%5.1f %s", $adj, ($adj == 1) ? "day" : "days");
+		$tempus = sprintf("%1.1f %s", $adj, ($adj == 1) ? "day" : "days");
 	}
 
-	$outstr = "last entry is $tempus old";
+	if($querytype eq 'all')
+	{
+		$outstr = "last query entry is $tempus old";
+	}
+	else
+	{
+		$outstr = "last $querytype query entry is $tempus old";
+	}
 
 	print "$outstr\n";
 }
