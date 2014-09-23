@@ -17,6 +17,7 @@
 #
 # Revision History
 #	1.0	Initial version.				140608
+#	1.1	Use data subdirectories.			140922
 #
 
 use strict;
@@ -28,8 +29,8 @@ use Getopt::Long qw(:config no_ignore_case_always);
 # Version information.
 #
 my $NAME   = "owl-lastdata";
-my $VERS   = "$NAME version: 1.0.0";
-my $DTVERS = "DNSSEC-Tools version: 2.0";
+my $VERS   = "$NAME version: 1.1";
+my $DTVERS = "DNSSEC-Tools version: 2.1";
 
 #######################################################################
 #
@@ -225,7 +226,28 @@ sub getdatadir
 #
 sub getfiles
 {
-	@datafiles = sort(glob("$datadir/$query"));
+	my $globstr;				# Path string to glob().
+
+	#
+	# Build the glob string we'll use for finding files.
+	#
+	if($querytype eq 'all')
+	{
+		$globstr = "$datadir/*/*";
+	}
+	elsif($querytype eq 'anycast')
+	{
+		$globstr = "$datadir/dns/*";
+	}
+	else
+	{
+		$globstr = "$datadir/$querytype/$query";
+	}
+
+	#
+	# Get the files for the query.
+	#
+	@datafiles = sort(glob($globstr));
 	if(@datafiles == 0)
 	{
 		@datafiles = sort(glob("$datadir/$querytype/$query"));
