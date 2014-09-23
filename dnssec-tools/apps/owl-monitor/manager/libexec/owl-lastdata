@@ -17,7 +17,8 @@
 #
 # Revision History
 #	1.0	Initial version.				140608
-#	1.1	Use data subdirectories.			140922
+#	2.1.1	Use data subdirectories.			140922
+#	2.1.2	Fix data format for rrec files.			140923
 #
 
 use strict;
@@ -29,7 +30,7 @@ use Getopt::Long qw(:config no_ignore_case_always);
 # Version information.
 #
 my $NAME   = "owl-lastdata";
-my $VERS   = "$NAME version: 1.1";
+my $VERS   = "$NAME version: 2.1.2";
 my $DTVERS = "DNSSEC-Tools version: 2.1";
 
 #######################################################################
@@ -417,7 +418,7 @@ sub parseline
 	}
 	elsif($qtype eq 'rrec')
 	{
-		$line =~ /^([0-9]+).[0-9]+\s+\S+\s+\S+\s+\S+\s+\S+\s+(\d+)$/;
+		$line =~ /^([0-9]+).[0-9]+\s+\S+\s+\S+\s+\S+\s+\S+\s+\d+\s+(\d+)$/;
 		$kronos	 = $1;
 		$datalen = $2;
 	}
