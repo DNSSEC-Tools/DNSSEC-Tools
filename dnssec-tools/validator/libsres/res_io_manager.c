@@ -806,9 +806,8 @@ res_io_check_ea_list(struct expected_arrival *ea, struct timeval *next_evt,
             res_log(NULL, LOG_DEBUG, "libsres: "" retry");
             while (ea->ea_remaining_attempts != -1) {
                 if (res_io_send(ea) == SR_IO_SOCKET_ERROR) {
-                    if (1 != res_nsfallback_ea(ea, next_evt, NULL))
-                        res_io_next_address(ea, "ERROR",
-                                            "CANCELING DUE TO SENDING ERROR");
+                    res_io_next_address(ea, "ERROR",
+                                        "CANCELING DUE TO SENDING ERROR");
                 }
                 else {
                     if (needed_new_socket) {
