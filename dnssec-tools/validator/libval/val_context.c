@@ -397,8 +397,9 @@ val_create_context_internal( const char *label,
             *rescur = '\0';
             rescur++;
  
-            if (polflags & CTX_DYN_POL_RES_NRD) {
-                ns_options = SR_QUERY_NOREC;
+            /* Set RD unless we're asked to disable recursion */
+            if (!(polflags & CTX_DYN_POL_RES_NRD)) {
+                ns_options = SR_QUERY_RECURSE;
             }
             ns = parse_name_server(resptr, NULL, ns_options);
 
@@ -949,13 +950,15 @@ _val_store_ns_in_map(u_char * zonecut_n, struct name_server *ns,
  * data for it 
  */
 int
-val_context_store_ns_for_zone(val_context_t *context, char * zone, char *resp_server)
+val_context_store_ns_for_zone(val_context_t *context, char * zone, 
+                              char *resp_server, int recursive)
 {
     struct name_server *ns;
     int retval;
     val_context_t *ctx;
     struct val_query_chain *q;
     u_char zone_n[NS_MAXCDNAME];
+    unsigned long options = SR_QUERY_RECURSE;
 
     ctx = val_create_or_refresh_context(context); /* does CTX_LOCK_POL_SH */
     if (ctx == NULL) { 
@@ -965,10 +968,14 @@ val_context_store_ns_for_zone(val_context_t *context, char * zone, char *resp_se
     /* Lock exclusively */
     CTX_LOCK_ACACHE(ctx);
 
+    if (!recursive) {
+        options |= SR_QUERY_NOREC;
+    }
+
     if (resp_server && zone&& 
         (-1 != ns_name_pton(zone, zone_n, sizeof(zone_n))) && 
         (NULL != (ns = parse_name_server(resp_server, NULL, 
-                                         SR_QUERY_NOREC)))) {
+                                         options)))) {
         retval = _val_store_ns_in_map(zone_n, ns, &ctx->zone_ns_map);
     } else {
         retval = VAL_BAD_ARGUMENT;
