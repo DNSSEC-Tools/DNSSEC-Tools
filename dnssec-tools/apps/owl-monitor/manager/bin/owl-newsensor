@@ -24,6 +24,11 @@ use lib "$FindBin::Bin/../../common/perllib";
 
 use Cwd;
 use Getopt::Long qw(:config no_ignore_case_always);
+
+use FindBin;
+use lib "$FindBin::Bin";
+use lib "$FindBin::Bin/../perllib";
+use lib "$FindBin::Bin/../../common/perllib";
 use owlutils;
 
 #
