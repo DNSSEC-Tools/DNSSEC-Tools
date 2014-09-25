@@ -1,38 +1,48 @@
-<h2>News: 2.0 Released</h2>
+<h2>News: 2.1 Released</h2>
 <h3>New Features</h3>
-<h4>Bloodhound</h4>
-<p> <a href="http://www.dnssec-tools.org/download/#gotoBloodhound">A mozilla-based DNSSEC-enabled browser</a> with DANE support
-                    - Added support for validation of SSL certificates
-                      using the DANE protocol.
-<h4>Owl</h4>
-<p>The Owl Monitoring System uses timed DNS queries
-   to monitor basic network functionality.  The system
-   consists of a manager host and a set of sensor hosts.
-   The Owl sensors perform periodic DNS queries and
-   report to the Owl manager the time taken for each
-   query.  Over time, this shows the responsiveness of
-   the DNS infrastructure.
-<h4>curl</h4>
-<p> Added support for validation of SSL certificates
-                      using the DANE protocol.
-<h4>Qt5</h4>
-<p> A patch to support DNSSEC checks in Qt5 DNS lookups
-<h4>dnssec-nodes</h4>
-<p> Many new features have been added:
-    - The validation tree now supports clicking on
-    boxes to highlight it and the arrows that derive
-    from it.  Great for use when teaching about
-    DNSSEC.
-    - An extensive filter/effect editor now lets you
-    tailor the look of a graph to color-code, set
-    the alpha levels, etc of nodes based on their
-    names, status, data types, etc.
-    - Right clicking on a node lets you center the
-    graph on that node.
-    - More data types are collected and shown in the
-    data view.
-    - Support for arguments on the command line for
-    parsing log files, pcap files and domain names.
-    - The validation view has received a visual clean-up
-    - Many other bug fixes
+<pre>
+    - donuts:       - Added the ability to summarize information
+                      about a zone in the output, such as the upcoming
+                      entire zone expiry time, etc
+                    - Added the ability to query live zones for
+                      records to analyze.  EG:
+                      donuts live:good-a,badsign-a test.dnssec-tools.org
+                    - Added a -V switch to dump records analyzed
+    - libval:       - Add support for conditionally checking all RRSIGs
+                      on an assertion even if one that validates is
+                      already found.
+                    - Look for zonecuts based on NS records, not SOA
+                    - Added initial support for TSIG in order to enable
+                      libval to query recursive name servers that
+                      authorized recursive lookup for only those hosts
+                      that used a particular TSIG key.
+    - Validator.pm  - Store respondent name server information in result
+                      structure.
+    - Owl           - additional sensor modules
+                    - additional data analysis on manager
+                    - logging to the Owl sensors modules
+                    - optimized sensor data organization
+                     (requires software upgrades on both sensor and
+                      manager at the same time)
+                    - added -restart option to owl-sensord for
+                      restarting sensor modules
+                    - improvements to the installation guide
+    - rollerd       - generalized zonegroup entry in rollecs to be lists of tags
+                    - rndc option support added
+    - dnssec-check  - Ported to Qt5
+    - dnssec-nodes  - Ported to Qt5
+    - lookup        - Ported to Qt5
+    - dnssec-system-tray
+                    - Ported to Qt5
+</pre>
 <h4>... and more.</h4>
+<h3>Bug Fixes</h3>
+<pre>
+                    - Fixed bugs in libval, rollerd, blinkenlights, Owl
+                      sensor modules, and Owl manager
+                    - Use rlimits to try and limit file descriptor use in
+                      libsres so we don't run out of available sockets.
+                    - Eliminate a few hardcoded paths in various perl modules
+                    - Fix various compiler warnings
+                    - Update autoconf and related files
+</pre>
