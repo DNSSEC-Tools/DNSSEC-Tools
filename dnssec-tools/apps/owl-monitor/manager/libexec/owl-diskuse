@@ -14,6 +14,7 @@
 #	2.0	Released as part of DNSSEC-Tools 2.0.			130301
 #	2.0.1	Better handling for unknown sensors.			140512
 #	2.0.2	Even better handling for unknown sensors.		140512
+#	2.0.3	Stop adding disk usage for obsolete sensors.		140918
 #
 
 use strict;
@@ -26,7 +27,7 @@ use File::Spec;
 # Version information.
 #
 my $NAME   = "owl-diskuse";
-my $VERS   = "$NAME version: 2.0.2";
+my $VERS   = "$NAME version: 2.0.3";
 my $DTVERS = "DNSSEC-Tools version: 2.0";
 
 #######################################################################
@@ -124,6 +125,11 @@ sub main
 		{
 			my $dum;				# Dummy field.
 			my $sensor;				# Sensor name.
+
+			#
+			# Skip our obsolete sensors.
+			#
+			next if($sensor =~ /^obs\./);
 
 			#
 			# Get this sensor's name.
@@ -470,6 +476,9 @@ They are assumed to be in these locations:
     /owl/data/<sensor>          Data directory
     /owl/old.data/<sensor>      Data archive
     /owl/nagiosgraph/var/rrd    Data archive
+
+Sensors whose names start with "obs." are considered to be obsolete sensors.
+Their disk usage statistics are not included when calculating usage totals.
 
 The usage statistics are given in megabytes.
 
