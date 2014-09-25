@@ -719,31 +719,36 @@ find_nslist_for_query(val_context_t * context,
         FREE(next_q->qc_zonecut_n);
     next_q->qc_zonecut_n = NULL;
 
-    /*
-     * Check mapping table between zone and nameserver to see if 
-     * NS information is available here 
+    /* 
+     * Don't check for mapped NS and default recursive name server if
+     * we're in iterative mode
      */
-    if (VAL_NO_ERROR != (ret_val = _val_get_mapped_ns(context, next_q->qc_name_n,
+    if (!(next_q->qc_flags & VAL_QUERY_ITERATE)) {
+        /*
+         * Check mapping table between zone and nameserver to see if 
+         * NS information is available here 
+         */
+        if (VAL_NO_ERROR != (ret_val = _val_get_mapped_ns(context, next_q->qc_name_n,
                                         next_q->qc_type_h, &next_q->qc_zonecut_n, 
                                         &ref_ns_list)))
-        return ret_val;
+            return ret_val;
 
-    if (ref_ns_list != NULL) {
-        next_q->qc_ns_list = ref_ns_list;
-        val_log(context, LOG_DEBUG, 
-                "find_nslist_for_query(): Found mapped ns for query");
-        goto done;
-    }
+        if (ref_ns_list != NULL) {
+            next_q->qc_ns_list = ref_ns_list;
+            val_log(context, LOG_DEBUG, 
+                    "find_nslist_for_query(): Found mapped ns for query");
+            goto done;
+        }
 
-    /* 
-     * if we have a default name server in our resolv.conf file, send
-     * to that name server, but only if we are not forcing recursion
-     */
-    if (!(next_q->qc_flags & VAL_QUERY_ITERATE) &&
-         context->nslist != NULL) {
-        clone_ns_list(&(next_q->qc_ns_list), context->nslist);
+        /* 
+         * if we have a default name server in our resolv.conf file, send
+         * to that name server, but only if we are not forcing recursion
+         */
+        if (context->nslist != NULL) {
+            clone_ns_list(&(next_q->qc_ns_list), context->nslist);
 
-        goto done;
+            goto done;
+        }
     } 
 
     /*
