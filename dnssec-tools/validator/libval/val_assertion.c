@@ -5177,7 +5177,7 @@ restart_query:
                     } else {
                         if (next_as->val_ac_status <= VAL_AC_LAST_ERROR) {
                             val_log(context, LOG_INFO, 
-                                    "verify_and_validate(): Setting authentication chain status for {%s %s(%d) %s(%d)} to Bogus",
+                                    "verify_and_validate(): Setting authentication chain status for {%s %s(%d) %s(%d)} to Indeterminate",
                                     name_p, 
                                     p_class(next_as->val_ac_rrset.ac_data->rrs_class_h),
                                     next_as->val_ac_rrset.ac_data->rrs_class_h,

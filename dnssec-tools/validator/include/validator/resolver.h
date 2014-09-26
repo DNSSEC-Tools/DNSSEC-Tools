@@ -168,11 +168,9 @@ struct name_server {
 
 struct expected_arrival {
     SOCKET          ea_socket;
-#ifdef EA_EXTRA_DEBUG
-    char           *name;
+    char           *ea_name;
     u_int16_t       ea_type_h;
     u_int16_t       ea_class_h;
-#endif
     struct name_server *ea_ns;
     int             ea_which_address;
     int             ea_using_stream;
@@ -208,9 +206,7 @@ int             res_response_checks(u_char ** answer, size_t * answer_length,
 void            res_cancel(int *transaction_id);
 int             res_nsfallback(int transaction_id,
                                struct timeval *closest_event,
-                               struct name_server *server,
-                               const char *name, const unsigned short class_h,
-                               const unsigned short type_h);
+                               struct name_server *server);
 
 void            wait_for_res_data(fd_set * pending_desc,
                                   struct timeval *closest_event);
@@ -265,9 +261,7 @@ int res_io_check_one(struct expected_arrival *ea, struct timeval *next_evt,
  */
 
 int res_nsfallback_ea(struct expected_arrival *temp,
-                      struct timeval *closest_event, struct name_server *server,
-                      const char *name, const unsigned short class_h,
-                      const unsigned short type_h);
+                      struct timeval *closest_event, struct name_server *server);
 
 struct expected_arrival *
 res_async_query_create(const char *name, const unsigned short type_h,

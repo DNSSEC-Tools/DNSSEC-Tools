@@ -17,7 +17,7 @@ require Net::hostent;			# return type from gethost*
 use Net::DNS;				# to interpret DNS classes and types
 use Carp;
 
-our $VERSION = '1.12';   # current release version number
+our $VERSION = '1.13';   # current release version number
 our $DNSSECTOOLSVERSION = "DNSSEC-Tools Version: 2.0";
 
 use Exporter;
@@ -431,8 +431,10 @@ sub map_ns {
     my $self = shift;
     my $zone = shift;
     my $addr = shift;
+    my $recursive = shift;
     
-    my $result = Net::DNS::SEC::Validator::_ns_mapto_zone($self, $zone, $addr);
+    my $result = Net::DNS::SEC::Validator::_ns_mapto_zone($self, $zone, 
+                                                          $addr, $recursive);
 
     return $result;
 }
@@ -859,13 +861,16 @@ Values for these fields are described in the next section.
 
     A string representation of the given <val_status>.
                   
-=head2 $validator->map_ns(<zone>, <ipaddr>)
+=head2 $validator->map_ns(<zone>, <ipaddr>, <recursive>)
 
 =head3   where:
 
     <zone> => string value for zone
     <ipaddr> => The IP address to which all queries associated with the
                 above 'zone' should be directed.
+    <recursive> => if set to 1, this name server is considered to
+    recursive (queries are sent with the RD bit set). The default value
+    is to consder the name server to be authoritative.
 
 =head3   returns:
 

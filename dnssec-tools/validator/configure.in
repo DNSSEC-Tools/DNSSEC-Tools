@@ -69,7 +69,7 @@ CFLAGS="$CFLAGS $PARTIALTARGETFLAGS"
 dnl ----------------------------------------------------------------------
 AC_MSG_CHECKING([for developer gcc flags])
 DEVFLAGS=""
-if test -d $srcdir/.svn; then
+if test -d $srcdir/.git -o -d $srcdir/.svn; then
   # disable --enable-shared by default in cvs/developer cases.
   # don't do anything if option set via cmdline
   if test "${enable_shared+set}" != set; then

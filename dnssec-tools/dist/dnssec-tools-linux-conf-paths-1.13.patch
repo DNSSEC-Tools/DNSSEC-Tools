@@ -1,0 +1,35 @@
+--- tools/etc/dnssec-tools/dnssec-tools.conf.orig	2012-06-21 13:30:52.067526055 -0700
++++ tools/etc/dnssec-tools/dnssec-tools.conf	2012-06-21 13:29:53.703908561 -0700
+@@ -19,10 +19,10 @@
+ rollctl		/usr/bin/rollctl
+ zonesigner	/usr/bin/zonesigner
+ 
+-keygen		/usr/local/sbin/dnssec-keygen
+-rndc		/usr/local/sbin/rndc
+-zonecheck	/usr/local/sbin/named-checkzone
+-zonesign	/usr/local/sbin/dnssec-signzone
++keygen		/usr//sbin/dnssec-keygen
++rndc		/usr//sbin/rndc
++zonecheck	/usr//sbin/named-checkzone
++zonesign	/usr//sbin/dnssec-signzone
+ 
+ zonecheck-opts	-i local
+ 
+@@ -64,7 +64,7 @@
+ # Settings that will be noticed by zonesigner.
+ #
+ # default_keyrec        output.krf
+-archivedir      /usr/local/etc/dnssec-tools/KEY-SAFE
++archivedir      /var/dnssec-tools/KEY-SAFE
+ entropy_msg	1
+ savekeys        1
+ kskcount	1
+@@ -75,7 +75,7 @@
+ #
+ autosign	1
+ roll_loadzone	1
+-roll_logfile	/usr/local/etc/dnssec-tools/log-rollerd
++roll_logfile	/var/log/dnssec-tools/log-rollerd
+ roll_loglevel	info
+ roll_phasemsg	long
+ roll_sleeptime	60

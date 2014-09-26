@@ -55,7 +55,6 @@ void            val_res_cancel(struct val_query_chain *matched_q);
 void            val_res_nsfallback(val_context_t *context, 
                                    struct val_query_chain *matched_q,
                                    struct name_server *server,
-                                   const char *name_p,
                                    struct timeval *closest_event);
 
 #ifndef VAL_NO_ASYNC

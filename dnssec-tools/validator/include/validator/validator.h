@@ -119,12 +119,6 @@ typedef struct val_log val_log_t;
 struct queries_for_query;
 
 
-struct zone_ns_map_t {
-    u_char        zone_n[NS_MAXCDNAME];
-    struct name_server *nslist;
-    struct zone_ns_map_t *next;
-};
-
 /* validator context options */
 typedef struct val_global_opt {
     int local_is_trusted;
@@ -499,7 +493,8 @@ typedef struct val_context_opt {
                                           unsigned int flags);
 
     int             val_context_store_ns_for_zone(val_context_t *context, 
-                                                  char * zone, char *resp_server);
+                                                  char * zone, char *resp_server,
+                                                  int recursive);
     /*
      * from val_policy.h 
      */

@@ -338,6 +338,12 @@ extern          "C" {
         struct val_log *next;
     };
 
+    struct zone_ns_map_t {
+        u_char        zone_n[NS_MAXCDNAME];
+        struct name_server *nslist;
+        struct zone_ns_map_t *next;
+    };
+
 
     struct libval_context {
 

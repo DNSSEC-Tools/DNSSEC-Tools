@@ -42,7 +42,8 @@ I<val_log_add_optarg> - control log message verbosity and output location
 
   int val_context_store_ns_for_zone(val_context_t *context, 
                                     char * zone, 
-                                    char *resp_server)
+                                    char *resp_server,
+                                    int recursive)
 
   int val_resolve_and_check(val_context_t *context,
                          const char *domain_name,
