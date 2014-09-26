@@ -2,7 +2,7 @@ name:  	  DNS_SOA_STATUS
 level: 	  2
 ruletype: name
 class: 	  Status
-desc:  	  Outputs details found in the status report
+desc:  	  Outputs information from the SOA to the status report
 <test>
   if ($recordname eq $current_domain && $#{$records->{'SOA'}} == 0) {
      domain_status("Zone Serial Number", $records->{'SOA'}[0]->serial); 
@@ -12,6 +12,23 @@ desc:  	  Outputs details found in the status report
          $rname =~ s/\./\@/;
      }
      domain_status("SOA Contact Address", $rname); 
+  }
+
+  return;
+</test>
+
+name:  	  DNS_NS_STATUS
+level: 	  2
+ruletype: name
+class: 	  Status
+desc:  	  Outputs information about the name servers to the status report
+<test>
+  if ($recordname eq $current_domain && $#{$records->{'NS'}} > -1) {
+     my @ns;
+     foreach my $ns (@{$records->{'NS'}}) {
+       push @ns, $ns->nsdname;
+     }
+     domain_status("Nameservers", join(", ", @ns));
   }
 
   return;
