@@ -3,6 +3,54 @@ This file contains a list of major changes per release.  See the
 ChangeLog file for a complete set of changes and their details
 details.
 
+<h2>2.1</h2>
+<h3>New Features</h3>
+<pre>
+    - donuts:       - Added the ability to summarize information
+                      about a zone in the output, such as the upcoming
+                      entire zone expiry time, etc
+                    - Added the ability to query live zones for
+                      records to analyze.  EG:
+                      donuts live:good-a,badsign-a test.dnssec-tools.org
+                    - Added a -V switch to dump records analyzed
+    - libval:       - Add support for conditionally checking all RRSIGs
+                      on an assertion even if one that validates is
+                      already found.
+                    - Look for zonecuts based on NS records, not SOA
+                    - Added initial support for TSIG in order to enable
+                      libval to query recursive name servers that
+                      authorized recursive lookup for only those hosts
+                      that used a particular TSIG key.
+    - Validator.pm  - Store respondent name server information in result
+                      structure.
+    - Owl           - additional sensor modules
+                    - additional data analysis on manager
+                    - logging to the Owl sensors modules
+                    - optimized sensor data organization
+                     (requires software upgrades on both sensor and
+                      manager at the same time)
+                    - added -restart option to owl-sensord for
+                      restarting sensor modules
+                    - improvements to the installation guide
+    - rollerd       - generalized zonegroup entry in rollecs to be lists of tags
+                    - rndc option support added
+    - dnssec-check  - Ported to Qt5
+    - dnssec-nodes  - Ported to Qt5
+    - lookup        - Ported to Qt5
+    - dnssec-system-tray
+                    - Ported to Qt5
+</pre>
+<h3>Bug Fixes</h3>
+<pre>
+                    - Fixed bugs in libval, rollerd, blinkenlights, Owl
+                      sensor modules, and Owl manager
+                    - Use rlimits to try and limit file descriptor use in
+                      libsres so we don't run out of available sockets.
+                    - Eliminate a few hardcoded paths in various perl modules
+                    - Fix various compiler warnings
+                    - Update autoconf and related files
+</pre>
+
 <h2>2.0</h2>
 <h3>New Features</h3>
 <h4>Bloodhound</h4>
