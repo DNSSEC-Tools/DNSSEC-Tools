@@ -70,6 +70,7 @@ struct timeval;
 #define VAL_QFLAGS_CACHE_PREF_MASK  0x00ff0000
 #define VAL_QUERY_ITERATE           0x00010000
 #define VAL_QUERY_SKIP_CACHE        0x00020000
+#define VAL_QUERY_SKIP_ANS_CACHE    0x00040000
 /* for backwards compatibility */
 #define VAL_QUERY_RECURSE VAL_QUERY_ITERATE 
 
@@ -93,6 +94,7 @@ struct timeval;
                              VAL_QUERY_IGNORE_SKEW|\
                              VAL_QUERY_ITERATE |\
                              VAL_QUERY_SKIP_CACHE |\
+                             VAL_QUERY_SKIP_ANS_CACHE |\
                              VAL_QUERY_CHECK_ALL_RRSIGS)
 
 #define VAL_LOG_EMERG 0

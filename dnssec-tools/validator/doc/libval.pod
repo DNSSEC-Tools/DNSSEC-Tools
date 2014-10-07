@@ -116,10 +116,11 @@ This flag causes B<libval> to disable EDNS0 fallback for the query.
 
 =item B<VAL_QUERY_ITERATE>
 
-This flag forces B<libval> to iteratively answer the query by querying
+This flag forces B<libval> to iteratively lookup the query by querying
 various name servers in the delegation hierarchy, instead of
 requesting this information from
-any caching name server that may be configured in B<dnsval.conf>.
+any caching name server that may be configured in B<dnsval.conf> when
+the answer does not exist in its local cache.
 
 =item B<VAL_QUERY_SKIP_RESOLVER>
 
@@ -128,8 +129,19 @@ name.
 
 =item B<VAL_QUERY_SKIP_CACHE>
 
-This flag forces B<libval> to ignore cached data while trying to resolve a
-name.
+There are two levels of caching that happen within libval: at the
+assertion level and at the answer level. This flag forces B<libval> to
+ignore data in both caches while trying to resolve a name.
+
+=item B<VAL_QUERY_SKIP_ANS_CACHE>
+
+There are two levels of caching that happen within libval: at the
+assertion level and at the answer level. This flag forces B<libval> to
+ignore data in the answer cache while trying to resolve a name.
+If an assertion already exists for the given name,class and type that
+assertion is re-used till it expires. Once it expires the name is looked
+up via a query even if an newer record (fetched by another assertion in
+the same or different context) is available in its answer cache.
 
 =back
 

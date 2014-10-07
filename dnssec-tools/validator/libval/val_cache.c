@@ -187,7 +187,8 @@ stow_info(struct rrset_rec **unchecked_info, struct rrset_rec **new_info, struct
 static int
 lookup_store(u_char *name_n, u_int16_t class_h, u_int16_t type_h,
              struct rrset_rec *answer_head, 
-             struct rrset_rec **new_answer)
+             struct rrset_rec **new_answer,
+             unsigned long ns_options)
 {
 
     struct rrset_rec *next_answer;
@@ -220,7 +221,13 @@ lookup_store(u_char *name_n, u_int16_t class_h, u_int16_t type_h,
                 (NULL != (u_char *) namename(name_n, 
                                     next_answer->rrs_name_n)))) {
 
-                if (next_answer->rrs_data != NULL) {
+                /* 
+                 * if we want to match particular options, make sure
+                 * they actually match
+                 */
+                if((ns_options == 0 || 
+                    ns_options == next_answer->rrs_ns_options) &&
+                   (next_answer->rrs_data != NULL)) {
                     *new_answer = copy_rrset_rec(next_answer);
                     if (*new_answer) {
                         /* Adjust the TTL */
@@ -249,6 +256,7 @@ get_cached_rrset(struct val_query_chain *matched_q,
     u_char *name_n;
     u_int16_t class_h;
     u_int16_t type_h;
+    unsigned long ns_options;
 
     int retval;
 
@@ -258,6 +266,8 @@ get_cached_rrset(struct val_query_chain *matched_q,
     name_n = matched_q->qc_name_n;
     class_h = matched_q->qc_class_h;
     type_h = matched_q->qc_type_h;
+    ns_options = (matched_q->qc_flags & VAL_QUERY_DONT_VALIDATE) ?
+        SR_QUERY_VALIDATING_STUB_FLAGS : 0;
 
     new_answer = NULL;
     *response = NULL;
@@ -266,7 +276,7 @@ get_cached_rrset(struct val_query_chain *matched_q,
     VAL_CACHE_LOCK_SH(&ans_rwlock);
 
     if (VAL_NO_ERROR != (retval = lookup_store(name_n, class_h, type_h,
-                            unchecked_answers, &new_answer))) {
+                            unchecked_answers, &new_answer, ns_options))) {
         VAL_CACHE_UNLOCK(&ans_rwlock);
         return retval;
     }
@@ -284,7 +294,7 @@ get_cached_rrset(struct val_query_chain *matched_q,
         VAL_CACHE_LOCK_SH(&ns_rwlock);
 
         if (VAL_NO_ERROR != (retval = lookup_store(name_n, class_h, type_h,
-                            unchecked_hints, &new_answer))) {
+                            unchecked_hints, &new_answer, 0))) {
             VAL_CACHE_UNLOCK(&ns_rwlock);
             return retval;
         }
