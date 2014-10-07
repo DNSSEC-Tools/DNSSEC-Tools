@@ -245,8 +245,7 @@ This flag causes \fBlibval\fR to disable \s-1EDNS0\s0 fallback for the query.
 This flag forces \fBlibval\fR to iteratively lookup the query by querying
 various name servers in the delegation hierarchy, instead of
 requesting this information from
-any caching name server that may be configured in \fBdnsval.conf\fR when
-the answer does not exist in its local cache.
+any caching name server that may be configured in \fBdnsval.conf\fR.
 .IP "\fB\s-1VAL_QUERY_SKIP_RESOLVER\s0\fR" 4
 .IX Item "VAL_QUERY_SKIP_RESOLVER"
 This flag forces \fBlibval\fR to only look at its cache while trying to resolve a

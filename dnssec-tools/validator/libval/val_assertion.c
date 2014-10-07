@@ -5398,11 +5398,12 @@ _ask_cache_one(val_context_t * context, struct queries_for_query **queries,
         snprintf(name_p, sizeof(name_p), "unknown/error");
 
     if ((next_q->qfq_query->qc_flags & VAL_QUERY_SKIP_ANS_CACHE)||
-        (next_q->qfq_query->qc_flags & VAL_QUERY_SKIP_CACHE)) {
+        (next_q->qfq_query->qc_flags & VAL_QUERY_SKIP_CACHE)||
+        (next_q->qfq_query->qc_flags & VAL_QUERY_ITERATE)) {
 
         /* don't look at the cache for this query */
         val_log(context, LOG_DEBUG,
-                "ask_cache(): skipping cache for iterative mode {%s %s(%d) %s(%d)}, flags=%x",
+                "ask_cache(): skipping cache {%s %s(%d) %s(%d)}, flags=%x",
                 name_p, p_class(next_q->qfq_query->qc_class_h),
                 next_q->qfq_query->qc_class_h,
                 p_type(next_q->qfq_query->qc_type_h),

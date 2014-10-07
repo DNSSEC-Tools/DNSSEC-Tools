@@ -119,8 +119,7 @@ This flag causes B<libval> to disable EDNS0 fallback for the query.
 This flag forces B<libval> to iteratively lookup the query by querying
 various name servers in the delegation hierarchy, instead of
 requesting this information from
-any caching name server that may be configured in B<dnsval.conf> when
-the answer does not exist in its local cache.
+any caching name server that may be configured in B<dnsval.conf>.
 
 =item B<VAL_QUERY_SKIP_RESOLVER>
 
