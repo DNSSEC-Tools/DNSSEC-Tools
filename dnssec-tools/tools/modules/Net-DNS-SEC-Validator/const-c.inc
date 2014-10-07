@@ -1762,7 +1762,7 @@ constant_24 (pTHX_ const char *name, IV *iv_return) {
   /* When generated this function returned values for the list of names given
      here.  However, subsequent manual editing may have added or removed some.
      VAL_AC_IGNORE_VALIDATION VAL_AC_WRONG_LABEL_COUNT VAL_AS_CTX_USER_SUPPLIED
-     VAL_QUERY_EDNS0_FALLBACK VAL_RESOURCE_UNAVAILABLE
+     VAL_QUERY_EDNS0_FALLBACK VAL_RESOURCE_UNAVAILABLE VAL_QUERY_SKIP_ANS_CACHE
      */
   /* Offset 22 gives the best switch position.  */
   switch (name[22]) {
@@ -1782,6 +1782,17 @@ constant_24 (pTHX_ const char *name, IV *iv_return) {
     /*                                     ^        */
 #ifdef VAL_AS_CTX_USER_SUPPLIED
       *iv_return = VAL_AS_CTX_USER_SUPPLIED;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
+  case 'H':
+    if (memEQ(name, "VAL_QUERY_SKIP_ANS_CACHE", 24)) {
+    /*                                     ^        */
+#ifdef VAL_QUERY_SKIP_ANS_CACHE
+      *iv_return = VAL_QUERY_SKIP_ANS_CACHE;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
