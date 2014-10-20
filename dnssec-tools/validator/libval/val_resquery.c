@@ -721,7 +721,10 @@ find_nslist_for_query(val_context_t * context,
 
     /* 
      * Don't check for mapped NS and default recursive name server if
-     * we're in iterative mode
+     * we're in iterative mode. We need this check for mapped NS since
+     * otherwise we'd be stuck in a loop if we ever tried looking for
+     * names that are delegated under the mapped zone. We need to be
+     * able to follow referrals in such cases
      */
     if (!(next_q->qc_flags & VAL_QUERY_ITERATE)) {
         /*

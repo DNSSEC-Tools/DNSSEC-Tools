@@ -133,7 +133,7 @@
 .\" ========================================================================
 .\"
 .IX Title "libval 3"
-.TH libval 3 "2014-09-22" "perl v5.12.4" "Programmer's Manual"
+.TH libval 3 "2014-10-07" "perl v5.12.4" "Programmer's Manual"
 .\" For nroff, turn off justification.  Always turn off hyphenation; it makes
 .\" way too many mistakes in technical documents.
 .if n .ad l
@@ -242,7 +242,7 @@ In querying various name servers, \fB\f(BIlibsres\fB\|(3)\fR will also attempt m
 This flag causes \fBlibval\fR to disable \s-1EDNS0\s0 fallback for the query.
 .IP "\fB\s-1VAL_QUERY_ITERATE\s0\fR" 4
 .IX Item "VAL_QUERY_ITERATE"
-This flag forces \fBlibval\fR to iteratively answer the query by querying
+This flag forces \fBlibval\fR to iteratively lookup the query by querying
 various name servers in the delegation hierarchy, instead of
 requesting this information from
 any caching name server that may be configured in \fBdnsval.conf\fR.
@@ -252,8 +252,18 @@ This flag forces \fBlibval\fR to only look at its cache while trying to resolve 
 name.
 .IP "\fB\s-1VAL_QUERY_SKIP_CACHE\s0\fR" 4
 .IX Item "VAL_QUERY_SKIP_CACHE"
-This flag forces \fBlibval\fR to ignore cached data while trying to resolve a
-name.
+There are two levels of caching that happen within libval: at the
+assertion level and at the answer level. This flag forces \fBlibval\fR to
+ignore data in both caches while trying to resolve a name.
+.IP "\fB\s-1VAL_QUERY_SKIP_ANS_CACHE\s0\fR" 4
+.IX Item "VAL_QUERY_SKIP_ANS_CACHE"
+There are two levels of caching that happen within libval: at the
+assertion level and at the answer level. This flag forces \fBlibval\fR to
+ignore data in the answer cache while trying to resolve a name.
+If an assertion already exists for the given name,class and type that
+assertion is re-used till it expires. Once it expires the name is looked
+up via a query even if an newer record (fetched by another assertion in
+the same or different context) is available in its answer cache.
 .PP
 The first parameter to \fI\fIval_resolve_and_check()\fI\fR is the validator context.
 Applications can create a new validator context using the

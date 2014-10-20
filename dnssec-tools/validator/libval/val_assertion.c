@@ -395,6 +395,7 @@ add_to_query_chain(val_context_t *context, u_char * name_n,
     struct val_query_chain *temp, *prev, *old;
     struct timeval  tv;
     char name_p[NS_MAXDNAME];
+    u_int32_t sticky_flags = 0;
     
     /*
      * sanity checks 
@@ -487,10 +488,14 @@ add_to_query_chain(val_context_t *context, u_char * name_n,
 
                 /* Remove this data at the next safe opportunity */ 
                 val_log(context, LOG_DEBUG,
-                        "ask_cache(): Forcing expiry of {%s %s(%d) %s(%d)}, flags=%x",
+                        "ask_cache(): Forcing expiry of {%s %s(%d) %s(%d)}, flags=%x, now=%ld exp=%ld",
                         name_p, p_class(temp->qc_class_h),
                         temp->qc_class_h, p_type(temp->qc_type_h),
-                        temp->qc_type_h, temp->qc_flags);
+                        temp->qc_type_h, temp->qc_flags, tv.tv_sec,
+                        temp->qc_ttl_x);
+
+                /* Save flags since they might convey useful information */
+                sticky_flags = temp->qc_flags;
 
                 temp->qc_flags |= VAL_QUERY_MARK_FOR_DELETION;
 
@@ -500,7 +505,7 @@ add_to_query_chain(val_context_t *context, u_char * name_n,
                         name_p, p_class(temp->qc_class_h),
                         temp->qc_class_h, p_type(temp->qc_type_h),
                         temp->qc_type_h, temp->qc_state, temp->qc_flags,
-                        temp->qc_ttl_x - tv.tv_sec);
+                        temp->qc_ttl_x > tv.tv_sec ? (temp->qc_ttl_x - tv.tv_sec) : -1);
                 /* return this cached record */
                 *added_q = temp;
                 return VAL_NO_ERROR;
@@ -519,7 +524,7 @@ add_to_query_chain(val_context_t *context, u_char * name_n,
     memcpy(temp->qc_original_name, name_n, wire_name_length(name_n));
     temp->qc_type_h = type_h;
     temp->qc_class_h = class_h;
-    temp->qc_flags = flags;
+    temp->qc_flags = flags | sticky_flags;
     temp->qc_last_sent = -1;
 
     init_query_chain_node(temp);
@@ -5397,12 +5402,14 @@ _ask_cache_one(val_context_t * context, struct queries_for_query **queries,
     if (-1 == ns_name_ntop(next_q->qfq_query->qc_name_n, name_p, sizeof(name_p)))
         snprintf(name_p, sizeof(name_p), "unknown/error");
 
-    if ((next_q->qfq_query->qc_flags & VAL_QUERY_ITERATE)||
-        (next_q->qfq_query->qc_flags & VAL_QUERY_SKIP_CACHE)) {
+    if ((next_q->qfq_query->qc_flags & VAL_QUERY_SKIP_ANS_CACHE)||
+        (next_q->qfq_query->qc_flags & VAL_QUERY_SKIP_CACHE)||
+        (next_q->qfq_query->qc_flags & VAL_QUERY_ITERATE) || 
+        (next_q->qfq_query->qc_flags & VAL_QUERY_NEEDS_REFRESH)) {
 
         /* don't look at the cache for this query */
         val_log(context, LOG_DEBUG,
-                "ask_cache(): skipping cache for iterative mode {%s %s(%d) %s(%d)}, flags=%x",
+                "ask_cache(): skipping cache {%s %s(%d) %s(%d)}, flags=%x",
                 name_p, p_class(next_q->qfq_query->qc_class_h),
                 next_q->qfq_query->qc_class_h,
                 p_type(next_q->qfq_query->qc_type_h),
@@ -5849,6 +5856,12 @@ check_wildcard_sanity(val_context_t * context,
                      * Change from VAL_AC_WCARD_VERIFIED to VAL_AC_VERIFIED 
                      */
                     target_res->val_rc_answer->val_ac_status = VAL_AC_VERIFIED;
+                    /*
+                     * Since we are not caching the wildcard proof,
+                     * don't pick up answers from our answer cache
+                     * when this assertion expires
+                     */
+                    top_q->qc_flags |= VAL_QUERY_NEEDS_REFRESH;
                 } else {
                     val_log(context, LOG_INFO,
                             "check_wildcard_sanity(): Could not prove non-existence of name that was wildcard expanded");

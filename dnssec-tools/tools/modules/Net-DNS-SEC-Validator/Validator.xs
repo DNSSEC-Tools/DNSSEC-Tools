@@ -181,6 +181,7 @@ SV *rr_c2sv(char *name, int type, int class, long ttl, size_t len, u_char *data)
   XPUSHs(sv_2mortal(newSVnv(ttl))) ;
   XPUSHs(sv_2mortal(newSViv(len))) ;
   XPUSHs(sv_2mortal(newRV(sv_2mortal(newSVpvn((char*)data, len))))) ;
+  XPUSHs(sv_2mortal(newSViv(0))) ;
   PUTBACK;
 
   call_method("new_from_data", G_SCALAR|G_EVAL);
