@@ -366,7 +366,8 @@ ruletype: name
        }
     }
     if (!$dhkey) {
-      donuts_error("Can not find a matching DNSKEY for a RRSIG for $recordname");
+      donuts_error("Cannot find a matching DNSKEY (tag:" .
+      $sig->keytag. ") for an RRSIG for $recordname/" . $sig->typecovered);
       next;
     }
     if (! $sig->verify($records->{$sig->typecovered}, $dhkey)) {
