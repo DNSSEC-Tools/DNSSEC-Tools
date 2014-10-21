@@ -15,6 +15,11 @@
 #include <ifaddrs.h>
 #endif
 
+#include <openssl/conf.h>
+#include <openssl/evp.h>
+#include <openssl/engine.h>
+#include <openssl/err.h>
+
 #include "val_support.h"
 #include "val_policy.h"
 #include "val_cache.h"
@@ -844,6 +849,14 @@ val_free_validator_state()
 #ifdef WIN32
     WSACleanup();
 #endif
+
+    /* Whole bunch of openssl cleanup routines */
+    CONF_modules_unload(1); 
+    EVP_cleanup(); 
+    ENGINE_cleanup(); 
+    CRYPTO_cleanup_all_ex_data(); 
+    ERR_remove_state(0); 
+    ERR_free_strings(); 
 
     return VAL_NO_ERROR;
 }
