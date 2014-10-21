@@ -897,6 +897,11 @@ bootstrap_referral(val_context_t *context,
         matched_q->qc_referral->cur_pending_glue_ns = NULL;
         matched_q->qc_referral->pending_glue_ns = NULL;
 
+        if (matched_q->qc_referral->saved_zonecut_n) {
+            FREE(matched_q->qc_referral->saved_zonecut_n);
+            matched_q->qc_referral->saved_zonecut_n = NULL;
+        }
+
         /* save a copy of the current zonecut in the delegation info */
         if(referral_zone_n) {
             size_t len = wire_name_length(referral_zone_n); 
@@ -912,7 +917,6 @@ bootstrap_referral(val_context_t *context,
                     referral_zone_n,
                     len);
         }
-
 
         if (*ref_ns_list != NULL) {
 
