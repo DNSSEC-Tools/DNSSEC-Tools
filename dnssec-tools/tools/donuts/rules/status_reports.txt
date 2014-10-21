@@ -50,6 +50,8 @@ desc: Reports the signature lifetimes
   $donuts::parentexpiration = undef;
   $donuts::parentinception = undef;
 
+  $donuts::foundAlignmentProblem = undef;
+
   package main;
   sub rrsig_date_to_epoch {
     my ($incoming) = @_;
@@ -79,7 +81,7 @@ desc: Reports the signature lifetimes
   if (!defined($donuts::sigexpiration)) {
     $donuts::sigexpiration = $newtime
   } elsif ($donuts::sigexpiration != $newtime) {
-    donuts_error("warning: signatures in this zone are not time aligned");
+    $donuts::foundAlignmentProblem = 1;
     
     # remember the soonest time that the zone might expire
     $donuts::sigexpiration = $donuts::sigexpiration < $newtime
@@ -92,7 +94,7 @@ desc: Reports the signature lifetimes
   if (!defined($donuts::siginception)) {
     $donuts::siginception = $newtime;
   } elsif ($donuts::siginception != $newtime) {
-    donuts_error("warning: signatures in this zone are not time aligned");
+    $donuts::foundAlignmentProblem = 1;
     
     # remember the latest time that the zone might be valid from
     $donuts::siginception = $donuts::siginception > $newtime
@@ -119,6 +121,10 @@ desc: Reports the signature lifetimes
 
   if (defined($donuts::parentexpiration)) {
     domain_status("Parent zone validity until", scalar localtime($donuts::parentexpiration));
+  }
+
+  if (defined($donuts::foundAlignmentProblem)) {
+    donuts_error("warning: signatures in this zone are not time aligned");
   }
 
   # clean up for the next run
