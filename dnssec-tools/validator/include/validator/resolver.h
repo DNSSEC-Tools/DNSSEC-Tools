@@ -85,7 +85,7 @@ struct timeval;
 #define SOCKET int
 #endif
 
-#define LIBSRES_NS_STAGGER 5 /* how far apart should we stagger queries to
+#define LIBSRES_NS_STAGGER 1 /* how far apart should we stagger queries to
                                 different authoritative name servers */
 
 
