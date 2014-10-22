@@ -181,7 +181,7 @@ res_io_get_open_sockets(void) {
     return _open_sockets;
 }
 
-long
+static long
 res_get_timeout(struct name_server *ns)
 {
     int             i;
@@ -527,8 +527,9 @@ res_io_send(struct expected_arrival *shipit)
         return SR_IO_SOCKET_ERROR;
     }
 
-    delay = shipit->ea_ns->ns_retrans
-        << (shipit->ea_ns->ns_retry + 1 - shipit->ea_remaining_attempts--);
+    //delay = shipit->ea_ns->ns_retrans
+    //    << (shipit->ea_ns->ns_retry + 1 - shipit->ea_remaining_attempts--);
+    delay = shipit->ea_ns->ns_retrans;
     res_log(NULL, LOG_DEBUG, "libsres: ""next try delay %d", delay);
     set_alarms(shipit, delay, res_get_timeout(shipit->ea_ns));
     res_print_ea(shipit);
