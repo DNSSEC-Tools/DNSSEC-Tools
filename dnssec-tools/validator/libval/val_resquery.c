@@ -702,6 +702,8 @@ find_nslist_for_query(val_context_t * context,
     struct name_server *ns;
     u_char ns_cred = SR_CRED_UNSET;
     long edns0_size;
+    int timeout;
+    int retry;
 
     if (next_qfq == NULL)
         return VAL_BAD_ARGUMENT;
@@ -809,9 +811,15 @@ done:
                     context->g_opt->edns0_size : RES_EDNS0_DEFAULT;
     val_log(context, LOG_DEBUG,
             "find_nslist_for_query(): Enabling DNSSEC for query (EDNS0 = %ld).", edns0_size);
+    timeout = (context && context->g_opt)?
+                    context->g_opt->timeout : RES_TIMEOUT;
+    retry = (context && context->g_opt)?
+                    context->g_opt->retry : RES_RETRY;
     for (ns = next_q->qc_ns_list; ns; ns = ns->ns_next) {
         ns->ns_edns0_size = edns0_size;
         ns->ns_options |= SR_QUERY_VALIDATING_STUB_FLAGS;
+        ns->ns_retrans = timeout;
+        ns->ns_retry = retry;
     }
 
     return VAL_NO_ERROR;
