@@ -187,8 +187,10 @@ res_get_timeout(struct name_server *ns)
     int             i;
     long            cancel_delay = 0;
 
-    for (i = 0; i <= ns->ns_retry; i++)
-        cancel_delay += ns->ns_retrans << i;
+    for (i = 0; i <= ns->ns_retry; i++) {
+        cancel_delay += ns->ns_retrans;
+        //cancel_delay += ns->ns_retrans << i;
+    }
 
     return cancel_delay;
 }
