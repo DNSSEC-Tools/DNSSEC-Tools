@@ -133,6 +133,8 @@ typedef struct val_global_opt {
     int rec_fallback;
     long max_refresh;
     int proto;
+    int timeout;
+    int retry;
 } val_global_opt_t;
 
 /*
@@ -174,6 +176,8 @@ typedef struct val_context_opt {
 #define GOPT_REC_FALLBACK "rec-fallback"
 #define GOPT_MAX_REFRESH_STR "max-refresh"
 #define GOPT_PROTO "proto"
+#define GOPT_TIMEOUT "timeout"
+#define GOPT_RETRY "retry"
 /* 
  * The following policies are deprecated. 
  * They are defined here for backwards compatibility

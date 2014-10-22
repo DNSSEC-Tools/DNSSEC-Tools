@@ -245,6 +245,8 @@ set_global_opt_defaults(val_global_opt_t *gopt)
     gopt->rec_fallback = 1;
     gopt->max_refresh = VAL_POL_GOPT_MAXREFRESH;
     gopt->proto = VAL_POL_GOPT_PROTO_ANY;
+    gopt->timeout = RES_TIMEOUT;
+    gopt->retry = RES_RETRY;
 }
 
 int 
@@ -1104,6 +1106,62 @@ parse_proto(char **buf_ptr, char *end_ptr, int *line_number,
 }
 
 static int
+parse_timeout(char **buf_ptr, char *end_ptr, int *line_number,
+            int *endst, val_global_opt_t *g_opt)
+{
+    char            token[TOKEN_MAX];
+    int retval;
+
+    if ((buf_ptr == NULL) || (*buf_ptr == NULL) || (end_ptr == NULL) || 
+        (g_opt == NULL) || (endst == NULL) || (line_number == NULL))
+        return VAL_BAD_ARGUMENT;
+
+    /* read the next token */
+    if (VAL_NO_ERROR != (retval = 
+        val_get_token(buf_ptr, end_ptr, line_number, 
+                      token, sizeof(token), endst,
+                      CONF_COMMENT, CONF_END_STMT, 0))) {
+        return retval;
+    }
+    if ((endst && (strlen(token) == 0)) ||
+        (*buf_ptr >= end_ptr)) { 
+        return VAL_CONF_PARSE_ERROR;
+    }
+
+    g_opt->timeout = strtol(token, (char **)NULL, 10);
+
+    return VAL_NO_ERROR;
+}
+
+static int
+parse_retry(char **buf_ptr, char *end_ptr, int *line_number,
+            int *endst, val_global_opt_t *g_opt)
+{
+    char            token[TOKEN_MAX];
+    int retval;
+
+    if ((buf_ptr == NULL) || (*buf_ptr == NULL) || (end_ptr == NULL) || 
+        (g_opt == NULL) || (endst == NULL) || (line_number == NULL))
+        return VAL_BAD_ARGUMENT;
+
+    /* read the next token */
+    if (VAL_NO_ERROR != (retval = 
+        val_get_token(buf_ptr, end_ptr, line_number, 
+                      token, sizeof(token), endst,
+                      CONF_COMMENT, CONF_END_STMT, 0))) {
+        return retval;
+    }
+    if ((endst && (strlen(token) == 0)) ||
+        (*buf_ptr >= end_ptr)) { 
+        return VAL_CONF_PARSE_ERROR;
+    }
+
+    g_opt->retry = strtol(token, (char **)NULL, 10);
+
+    return VAL_NO_ERROR;
+}
+
+static int
 get_global_options(char **buf_ptr, char *end_ptr, 
                    int *line_number, val_global_opt_t **g_opt) 
 {
@@ -1193,6 +1251,20 @@ get_global_options(char **buf_ptr, char *end_ptr,
         } else if (!strcmp(token, GOPT_PROTO)) {
             if (VAL_NO_ERROR != 
                     (retval = parse_proto(buf_ptr, end_ptr,
+                                          line_number, &endst, *g_opt))) {
+                goto err;
+            }
+
+        } else if (!strcmp(token, GOPT_TIMEOUT)) {
+            if (VAL_NO_ERROR != 
+                    (retval = parse_timeout(buf_ptr, end_ptr,
+                                          line_number, &endst, *g_opt))) {
+                goto err;
+            }
+
+        } else if (!strcmp(token, GOPT_RETRY)) {
+            if (VAL_NO_ERROR != 
+                    (retval = parse_retry(buf_ptr, end_ptr,
                                           line_number, &endst, *g_opt))) {
                 goto err;
             }

@@ -133,7 +133,7 @@
 .\" ========================================================================
 .\"
 .IX Title "dnsval.conf 3"
-.TH dnsval.conf 3 "2014-08-06" "perl v5.12.4" "Programmer's Manual"
+.TH dnsval.conf 3 "2014-10-21" "perl v5.12.4" "Programmer's Manual"
 .\" For nroff, turn off justification.  Always turn off hyphenation; it makes
 .\" way too many mistakes in technical documents.
 .if n .ad l
@@ -492,6 +492,14 @@ send queries out to various name servers. If the value is set to
 \&\fBipv6\fR, libval uses only IPv6; if it is set to \fBipv4\fR libval uses only
 IPv4. The default is \fBany\fR, which causes libval to send over any of the
 available protocols for the given name server.
+.IP "timeout" 4
+.IX Item "timeout"
+This option overrides the default resolver timeout value with the value
+provided.
+.IP "retry" 4
+.IX Item "retry"
+This option overrides the default resolver retry value with the value
+provided.
 .IP "log" 4
 .IX Item "log"
 This option controls the level of logging and the log target for libval. 

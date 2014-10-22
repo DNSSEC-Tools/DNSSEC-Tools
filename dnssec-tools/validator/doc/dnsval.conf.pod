@@ -357,6 +357,16 @@ B<ipv6>, libval uses only IPv6; if it is set to B<ipv4> libval uses only
 IPv4. The default is B<any>, which causes libval to send over any of the
 available protocols for the given name server.
 
+=item timeout
+
+This option overrides the default resolver timeout value with the value
+provided.
+
+=item retry
+
+This option overrides the default resolver retry value with the value
+provided.
+
 =item log
 
 This option controls the level of logging and the log target for libval. 
