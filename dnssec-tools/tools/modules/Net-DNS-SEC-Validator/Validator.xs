@@ -613,6 +613,10 @@ pval_create_context_ex(optref)
     SV **proto_svp = hv_fetch((HV*)SvRV(optref), "proto", 5, 1);
     gopt.proto = (SvOK(*proto_svp) ?
             SvIV(*proto_svp) : VAL_POL_GOPT_UNSET);
+    SV **timeout_svp = hv_fetch((HV*)SvRV(optref), "timeout", 7, 1);
+    gopt.timeout = (SvOK(*timeout_svp) ? SvIV(*timeout_svp) : VAL_POL_GOPT_UNSET);
+    SV **retry_svp = hv_fetch((HV*)SvRV(optref), "retry", 5, 1);
+    gopt.retry = (SvOK(*retry_svp) ? SvIV(*retry_svp) : VAL_POL_GOPT_UNSET);
 
     opt.vc_gopt = &gopt;
 

@@ -766,6 +766,22 @@ file. Setting this value to 1 is equivalent to setting I<proto> to
 "any". 
 
 I<val_global_opt> field:  I<gopt.proto>
+
+=item I<timeout>
+
+This field is equivalent to the I<timeout> option in a B<dnsval.conf>
+file.  
+
+I<val_global_opt> field:  I<gopt.timeout>
+
+=item I<retry>
+
+This field is equivalent to the I<retry> option in a B<dnsval.conf>
+file.  
+
+I<val_global_opt> field:  I<gopt.retry>
+
+
 =back
 
 =head3 Validator Result Fields
