@@ -4770,7 +4770,7 @@ int switch_to_root(val_context_t * context,
         snprintf(name_p, sizeof(name_p), "unknown/error");
     }
 
-    if ((matched_q->qc_flags & VAL_QUERY_ITERATE) ||
+    if ((matched_q->qc_flags & VAL_QUERY_IS_ITERATING) ||
         (context->root_ns == NULL)) {
         /*
          * No root hints configured or 
@@ -4790,12 +4790,12 @@ int switch_to_root(val_context_t * context,
 
     /* reset the flags that are not in the user mask */
     matched_q->qc_flags &= VAL_QFLAGS_USERMASK;
-    matched_q->qc_flags |= VAL_QUERY_ITERATE;
+    matched_q->qc_flags |= VAL_QUERY_IS_ITERATING;
     /*
      * Iteratively lookup from root for all additional queries sent in
      * in relation to this query; e.g. queries for DNSKEYs, DS etc 
      */
-    matched_qfq->qfq_flags |= VAL_QUERY_ITERATE;
+    matched_qfq->qfq_flags |= VAL_QUERY_IS_ITERATING;
     val_log(context, LOG_INFO,
             "switch_to_root(): Re-initiating query from root for {%s %s %s}",
             name_p,

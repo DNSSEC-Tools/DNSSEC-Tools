@@ -728,7 +728,8 @@ find_nslist_for_query(val_context_t * context,
      * names that are delegated under the mapped zone. We need to be
      * able to follow referrals in such cases
      */
-    if (!(next_q->qc_flags & VAL_QUERY_ITERATE)) {
+    if (!(next_q->qc_flags & VAL_QUERY_ITERATE) &&
+        !(next_q->qc_flags & VAL_QUERY_IS_ITERATING)) {
         /*
          * Check mapping table between zone and nameserver to see if 
          * NS information is available here 
@@ -775,7 +776,7 @@ find_nslist_for_query(val_context_t * context,
          * iterative lookup
          */
         if (ns_cred < SR_CRED_NONAUTH)
-            next_q->qc_flags |= VAL_QUERY_ITERATE;
+            next_q->qc_flags |= VAL_QUERY_IS_ITERATING;
 
         goto done; 
     } 
@@ -791,7 +792,7 @@ find_nslist_for_query(val_context_t * context,
                 "find_nslist_for_query(): Trying to answer query recursively, but no root hints file found.");
         return VAL_CONF_NOT_FOUND;
     }
-    next_q->qc_flags |= VAL_QUERY_ITERATE;
+    next_q->qc_flags |= VAL_QUERY_IS_ITERATING;
     clone_ns_list(&next_q->qc_ns_list, context->root_ns);
     next_q->qc_zonecut_n = (u_char *) MALLOC(sizeof(u_char));
     if (next_q->qc_zonecut_n == NULL) {
@@ -866,7 +867,7 @@ bootstrap_referral(val_context_t *context,
         }
         clone_ns_list(ref_ns_list, context->root_ns);
         matched_q->qc_state = Q_INIT;
-        matched_q->qc_flags |= VAL_QUERY_ITERATE;
+        matched_q->qc_flags |= VAL_QUERY_IS_ITERATING;
         return VAL_NO_ERROR;
     }
     
@@ -942,7 +943,7 @@ bootstrap_referral(val_context_t *context,
             free_name_servers(&pending_glue);
             if (context->root_ns != NULL) {
                 clone_ns_list(ref_ns_list, context->root_ns);
-                matched_q->qc_flags |= VAL_QUERY_ITERATE;
+                matched_q->qc_flags |= VAL_QUERY_IS_ITERATING;
                 matched_q->qc_state = Q_INIT;
             }
 
@@ -1118,7 +1119,7 @@ follow_referral_or_alias_link(val_context_t * context,
         return VAL_NO_ERROR;
     } 
 
-    matched_q->qc_flags |= VAL_QUERY_ITERATE;
+    matched_q->qc_flags |= VAL_QUERY_IS_ITERATING;
 
     res_sq_free_rrset_recs(proofs);
     *proofs = NULL;
@@ -1797,10 +1798,10 @@ digest_response(val_context_t * context,
             isrelv = 0;
         }
 
-        authoritive = (matched_q->qc_flags & VAL_QUERY_ITERATE) &&
+        authoritive = (matched_q->qc_flags & VAL_QUERY_IS_ITERATING) &&
                       (header->aa == 1);
 
-        iterative = matched_q->qc_flags & VAL_QUERY_ITERATE;
+        iterative = matched_q->qc_flags & VAL_QUERY_IS_ITERATING;
         /*
          * If it is from the answer section, it may be an alias 
          * If it is from the authority section, it may be a proof or a referral 
@@ -2168,6 +2169,10 @@ digest_response(val_context_t * context,
         if (matched_q->qc_referral != NULL) {
             consume_referral_data(&matched_q->qc_referral, di_response, qnames);
         } 
+
+        /* reset the iterating flag if set */
+        if (matched_q->qc_flags & VAL_QUERY_IS_ITERATING)
+            matched_q->qc_flags ^= VAL_QUERY_IS_ITERATING;
 
         matched_q->qc_state = Q_ANSWERED;
         ret_val = VAL_NO_ERROR;
