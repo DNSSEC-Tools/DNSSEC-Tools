@@ -281,6 +281,10 @@ update_dynamic_gopt(val_global_opt_t **g_new, val_global_opt_t *g)
         (*g_new)->max_refresh = g->max_refresh;        
     if (g->proto != VAL_POL_GOPT_UNSET)
         (*g_new)->proto = g->proto;        
+    if (g->timeout != VAL_POL_GOPT_UNSET)
+        (*g_new)->timeout = g->timeout;        
+    if (g->retry != VAL_POL_GOPT_UNSET)
+        (*g_new)->retry = g->retry;        
 
     return VAL_NO_ERROR;
 }
