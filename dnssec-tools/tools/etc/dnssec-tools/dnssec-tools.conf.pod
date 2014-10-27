@@ -255,7 +255,10 @@ in a zone's entry in a I<rollrec> file.
 
 The name of the Perl module that will be used to parse zone files.
 This should be set without the B<.pm> suffix.
-The default parser is B<Net::DNS::ZoneFile::Fast.pm>.
+The default parser is B<Net::DNS::ZoneFile.pm>.
+
+Older versions of B<Net::DNS::ZoneFile::Fast.pm> may be used, but more
+recent versions have problems with DNSSEC records.
 
 =item zonesign
 
