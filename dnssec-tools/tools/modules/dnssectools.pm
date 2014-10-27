@@ -17,6 +17,8 @@ use strict;
 
 use Mail::Send;
 
+use Net::DNS::SEC;
+
 use Net::DNS::SEC::Tools::conf;
 use Net::DNS::SEC::Tools::defaults;
 use Net::DNS::SEC::Tools::keyrec;
@@ -345,15 +347,27 @@ sub _normalize_rrtype
 # Purpose:	This routine parses a given zone file using the configured
 #		zone-file parser and returns an array reference containing
 # 		the RRs.
+#		Currently supported parsers:
+#			Net::DNS::ZoneFile		(default)
+#			Net::DNS::ZoneFile::Fast	("old" versions only)
 #
 sub dt_parse_zonefile
 {
-	my %options = @_;
-	my $ret;
+	my %options = @_;			# Parsing options.
+	my $ret;				# Return value.
+	my $default_parser;			# Default zonefile parser.
 
+	#
+	# Get the default zonefile parser.
+	#
+	$default_parser = dnssec_tools_default("zonefile-parser");
+
+	#
+	# On first call, we'll set up the zonefile-parser object.
+	# We'll ensure the parser exists and maybe die if it doesn't.
+	#
 	if(!defined($ZONEFILE_PARSER))
 	{
-		my $default_parser = dnssec_tools_default("zonefile-parser");
 		my %conf = parseconfig();
 		my $parser = $conf{"zonefile-parser"} || $default_parser;
 
@@ -379,11 +393,14 @@ sub dt_parse_zonefile
 		}
 	}
 
+	#
+	# Parse the zonefile as required by the various parsers.
+	#
 	if($ZONEFILE_PARSER->isa("Net::DNS::ZoneFile::Fast"))
 	{
 		$ret = Net::DNS::ZoneFile::Fast::parse(%options);
 	}
-	else
+	elsif($ZONEFILE_PARSER->isa("Net::DNS::ZoneFile"))
 	{
 		#
 		# Assume Net::DNS::ZoneFile calling convention.
@@ -415,7 +432,15 @@ sub dt_parse_zonefile
 			return;
 		}
 	}
+	else
+	{
+		warn "unrecognized zonefile parser\n" unless $options{quiet};
+		return;
+	}
 
+	#
+	# Normalize any resource records that were found.
+	#
 	if($ret && (ref($ret) eq "ARRAY"))
 	{
 		#
