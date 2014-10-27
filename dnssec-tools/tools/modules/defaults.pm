@@ -409,7 +409,7 @@ improve the amount of time it takes B<named-checkzone> to run.
 =item B<zonefile-parser>
 
 This default specifies the parser that will be used to parse zone files.
-The default value is to use the B<Net::DNS::ZoneFile::Fast> module.
+The default value is to use the B<Net::DNS::ZoneFile> module.
 
 =item B<zonesign>
 
