@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# Copyright 2005-2013 SPARTA, Inc.  All rights reserved.
+# Copyright 2005-2014 SPARTA, Inc.  All rights reserved.
 # See the COPYING file distributed with this software for details.
 
 use ExtUtils::MakeMaker;
