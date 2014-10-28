@@ -1,5 +1,5 @@
 #
-# Copyright 2005-2013 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2005-2014 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details
 #
 # DNSSEC-Tools
@@ -2914,7 +2914,7 @@ I<keyrec> file.
 
 =head1 COPYRIGHT
 
-Copyright 2005-2013 SPARTA, Inc.  All rights reserved.
+Copyright 2005-2014 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
