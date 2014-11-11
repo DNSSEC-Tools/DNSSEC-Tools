@@ -291,6 +291,7 @@ init_query_chain_node(struct val_query_chain *q)
     q->qc_state = Q_INIT;
     q->qc_ttl_x = 0; 
     q->qc_bad = 0;
+    q->qc_fallback = 0;
     q->qc_zonecut_n = NULL;
     q->qc_referral = NULL;
     q->qc_ns_list = NULL;
@@ -4770,7 +4771,8 @@ int switch_to_root(val_context_t * context,
         snprintf(name_p, sizeof(name_p), "unknown/error");
     }
 
-    if ((matched_q->qc_flags & VAL_QUERY_IS_ITERATING) ||
+    if ((matched_q->qc_flags & VAL_QUERY_ITERATE) ||
+        (matched_q->qc_fallback == 1) ||
         (context->root_ns == NULL)) {
         /*
          * No root hints configured or 
@@ -4791,6 +4793,8 @@ int switch_to_root(val_context_t * context,
     /* reset the flags that are not in the user mask */
     matched_q->qc_flags &= VAL_QFLAGS_USERMASK;
     matched_q->qc_flags |= VAL_QUERY_IS_ITERATING;
+    matched_q->qc_fallback = 1;
+
     /*
      * Iteratively lookup from root for all additional queries sent in
      * in relation to this query; e.g. queries for DNSKEYs, DS etc 

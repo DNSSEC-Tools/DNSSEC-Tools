@@ -210,7 +210,6 @@ extern          "C" {
         ((type == ns_t_rrsig || type == ns_t_dnskey || type == ns_t_ds))
 #endif
 
-
     struct query_list {
         u_char        ql_name_n[NS_MAXCDNAME];
         u_char        ql_zone_n[NS_MAXCDNAME];
@@ -249,6 +248,7 @@ extern          "C" {
 
         u_int16_t       qc_state;       /* DOS, TIMED_OUT, etc */
         u_int32_t       qc_flags;
+        u_int32_t       qc_fallback;
         u_int32_t       qc_ttl_x;    /* ttl expiry time */
         int             qc_bad; /* contains "bad" data */
         u_char         *qc_zonecut_n;
