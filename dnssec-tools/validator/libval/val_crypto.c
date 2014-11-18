@@ -29,6 +29,7 @@
 #include <openssl/evp.h>
 #include <openssl/objects.h>    /* For NID_sha1 */
 
+
 #ifdef HAVE_SHA_2
 #ifdef HAVE_OPENSSL_ECDSA_H
 #include <openssl/ecdsa.h>
@@ -38,6 +39,50 @@
 
 #include "val_crypto.h"
 #include "val_support.h"
+
+#define VAL_EVP_DGST_SHA1    1
+#define VAL_EVP_DGST_SHA256  2
+#define VAL_EVP_DGST_SHA384  3
+#define VAL_EVP_DGST_SHA512  4
+
+static unsigned int 
+gen_evp_hash(const int hashtype, const u_char *data, size_t data_len, 
+             u_char *outbuf, size_t outsize)
+{
+    const EVP_MD *md = NULL;
+    unsigned int calcsize = -1;
+
+    if (outbuf && outsize > 0) {
+        memset(outbuf, 0, outsize);
+    }
+
+    switch (hashtype) {
+        case VAL_EVP_DGST_SHA1:
+            md = EVP_sha1();
+            break;
+        case VAL_EVP_DGST_SHA256:
+            md = EVP_sha256();
+            break;
+        case VAL_EVP_DGST_SHA384:
+            md = EVP_sha384();
+            break;
+        case VAL_EVP_DGST_SHA512:
+            md = EVP_sha512();
+            break;
+        default:
+            break;
+    }
+
+    if (md != NULL) {
+        EVP_MD_CTX md_ctx;
+        EVP_MD_CTX_init(&md_ctx);
+        EVP_DigestInit_ex(&md_ctx, md, NULL);
+        EVP_DigestUpdate(&md_ctx, data, data_len);
+        EVP_DigestFinal_ex(&md_ctx, outbuf, &calcsize);
+        EVP_MD_CTX_cleanup(&md_ctx);
+    }
+    return calcsize;
+}
 
 
 /*
@@ -118,8 +163,7 @@ dsasha1_sigverify(val_context_t * ctx,
         return;
     }
 
-    memset(sha1_hash, 0, SHA_DIGEST_LENGTH);
-    SHA1(data, data_len, sha1_hash);
+    gen_evp_hash(VAL_EVP_DGST_SHA1, data, data_len, sha1_hash, SHA_DIGEST_LENGTH); 
     val_log(ctx, LOG_DEBUG, "dsasha1_sigverify(): SHA-1 hash = %s",
             get_hex_string(sha1_hash, SHA_DIGEST_LENGTH, buf, buflen));
 
@@ -407,16 +451,16 @@ rsasha_sigverify(val_context_t * ctx,
         || rrsig->algorithm == ALG_NSEC3_RSASHA1
 #endif
        ) {
-        SHA1(data, data_len, sha_hash);
         hashlen = SHA_DIGEST_LENGTH; 
+        gen_evp_hash(VAL_EVP_DGST_SHA1, data, data_len, sha_hash, hashlen); 
         nid = NID_sha1; 
     } else if (rrsig->algorithm == ALG_RSASHA256) {
-        SHA256(data, data_len, sha_hash);
         hashlen = SHA256_DIGEST_LENGTH; 
+        gen_evp_hash(VAL_EVP_DGST_SHA256, data, data_len, sha_hash, hashlen); 
         nid = NID_sha256; 
     } else if (rrsig->algorithm == ALG_RSASHA512) {
-        SHA512(data, data_len, sha_hash);
         hashlen = SHA512_DIGEST_LENGTH; 
+        gen_evp_hash(VAL_EVP_DGST_SHA512, data, data_len, sha_hash, hashlen); 
         nid = NID_sha512; 
     } else {
         val_log(ctx, LOG_INFO,
@@ -472,11 +516,11 @@ ecdsa_sigverify(val_context_t * ctx,
 
     if (rrsig->algorithm == ALG_ECDSAP256SHA256) {
         hashlen = SHA256_DIGEST_LENGTH; 
-        SHA256(data, data_len, sha_hash);
+        gen_evp_hash(VAL_EVP_DGST_SHA256, data, data_len, sha_hash, hashlen); 
         eckey = EC_KEY_new_by_curve_name(NID_X9_62_prime256v1); /* P-256 */
     } else if (rrsig->algorithm == ALG_ECDSAP384SHA384) {
         hashlen = SHA384_DIGEST_LENGTH; 
-        SHA384(data, data_len, sha_hash);
+        gen_evp_hash(VAL_EVP_DGST_SHA384, data, data_len, sha_hash, hashlen); 
         eckey = EC_KEY_new_by_curve_name(NID_secp384r1); /* P-384 */
     } 
 
