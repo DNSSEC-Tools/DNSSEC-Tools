@@ -10,9 +10,9 @@
 #include "dnssec_checks.h"
 #include "TestManager.h"
 
-#include <QtGui/QMenuBar>
-#include <QtGui/QMenu>
-#include <QtGui/QMessageBox>
+#include <QtWidgets/QMenuBar>
+#include <QtWidgets/QMenu>
+#include <QtWidgets/QMessageBox>
 #include <QMessageBox>
 #include <QtNetwork/QNetworkRequest>
 #include <QtNetwork/QNetworkReply>

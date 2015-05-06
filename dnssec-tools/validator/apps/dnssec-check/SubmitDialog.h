@@ -2,8 +2,8 @@
 #define SUBMITDIALOG_H
 
 #include <QDialog>
-#include <QtGui/QVBoxLayout>
-#include <QtGui/QLineEdit>
+#include <QtWidgets/QVBoxLayout>
+#include <QtWidgets/QLineEdit>
 
 class SubmitDialog : public QDialog
 {

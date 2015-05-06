@@ -1,7 +1,7 @@
 #include "SubmitDialog.h"
 
-#include <QtGui/QLabel>
-#include <QtGui/QDialogButtonBox>
+#include <QtWidgets/QLabel>
+#include <QtWidgets/QDialogButtonBox>
 
 SubmitDialog::SubmitDialog(QWidget *parent) :
     QDialog(parent)
