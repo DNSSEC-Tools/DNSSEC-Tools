@@ -610,7 +610,7 @@ val_res_search(val_context_t * context, const char *dname, int class_h,
             dname, p_class(class_h), p_type(type), p_val_err(VAL_BAD_ARGUMENT));
         errno = EINVAL;
         retval = -1;
-        goto err;
+        goto done;
     }
 
     /*
@@ -636,11 +636,17 @@ val_res_search(val_context_t * context, const char *dname, int class_h,
             snprintf(buf, sizeof(buf), "%s.%s", dname, search);
             retval = val_res_query(ctx, buf, class_h, type, answer, anslen,
                                    val_status);
-            if ((retval >0) ||
-                ((retval == -1) && (GET_LAST_ERR() != HOST_NOT_FOUND))) {
+            /*
+             * Continue looping if we don't have a valid result
+             * and we haven't run into any hard error.
+             */
+            if ((retval >0) || /* success */
+                ((retval == -1) &&
+                 (GET_LAST_ERR() != HOST_NOT_FOUND) && /* name does not exist */
+                 (GET_LAST_ERR() != TRY_AGAIN))) { /* DNS error */
                 if (save)
                     free(save);
-                goto err;
+                goto done;
             }
 
             if (*pos)
@@ -656,7 +662,7 @@ val_res_search(val_context_t * context, const char *dname, int class_h,
     retval = val_res_query(ctx, dname, class_h, type, answer, anslen,
                            val_status);
 
-err:
+done:
     CTX_UNLOCK_POL(ctx);
 
     return retval;
