@@ -2507,7 +2507,7 @@ read_res_config_file(val_context_t * ctx)
             if (VAL_NO_ERROR !=
                 (retval =
                 val_get_token(&buf_ptr, end_ptr, &line_number, token, sizeof(token), &endst,
-                           ALL_COMMENTS, ZONE_END_STMT, 0))) {
+                           ALL_COMMENTS, ZONE_END_STMT, 1))) {
                 goto err;
             }
             if (ctx->search)
