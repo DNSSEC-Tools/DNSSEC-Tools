@@ -591,6 +591,7 @@ val_res_search(val_context_t * context, const char *dname, int class_h,
     int             retval = -1;
     char           *dot, *search, *pos;
     char            buf[NS_MAXDNAME];
+    int             last_err;
     val_context_t *ctx = NULL;
     SET_LAST_ERR(NO_RECOVERY);
     //SET_LAST_ERR(NETDB_INTERNAL);
@@ -640,10 +641,17 @@ val_res_search(val_context_t * context, const char *dname, int class_h,
              * Continue looping if we don't have a valid result
              * and we haven't run into any hard error.
              */
-            if ((retval >0) || /* success */
-                ((retval == -1) &&
-                 (GET_LAST_ERR() != HOST_NOT_FOUND) && /* name does not exist */
-                 (GET_LAST_ERR() != TRY_AGAIN))) { /* DNS error */
+            if (retval < 0) {
+                last_err = GET_LAST_ERR();
+                if (last_err != HOST_NOT_FOUND &&/* name does not exist */
+                    last_err != TRY_AGAIN) {/* DNS error */
+                    if (save)
+                        free(save);
+                    goto done;
+                }
+                /* need to re-try */
+            } else {
+                /* success */
                 if (save)
                     free(save);
                 goto done;
