@@ -16,8 +16,6 @@
 
 package Net::DNS::SEC::Tools::tooloptions;
 
-use UNIVERSAL qw (can);
-
 use Net::DNS::SEC::Tools::QWPrimitives;
 use Net::DNS::SEC::Tools::defaults;
 
@@ -836,7 +834,7 @@ sub localgetoptions
 	#
 	if(!$ret && $errexit)
 	{
-		main::usage() if(can('main','usage'));
+		main::usage() if(UNIVERSAL::can('main','usage'));
 		exit(1);
 	}
 
