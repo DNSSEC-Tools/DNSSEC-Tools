@@ -323,19 +323,30 @@ sub _normalize_rrtype
 	$new = join(" ", map
 			{
 				my $type = $_;
-				eval { Net::DNS::typesbyname($type) };
+				
+				# determine if we have Net::DNS::Parameters
+				my $haveParameters = eval { require Net::DNS::Parameters; };
 
-				if($@)
-				{		# unknown
-					eval
-					{
-						require Net::DNS::Parameters;
-						$type = "TYPE".Net::DNS::Parameters::typebyname($type);
-					};
-
-					warn "$@ - things may not validate correctly" if($@);
+				# determine if that module has the typesbyname() function
+				my $parametersHasTypeByName = 0;
+				if ($haveParameters) {
+					$parametersHasTypeByName = Net::DNS::Parameters->can('typebyname');
 				}
-				$type
+				                             
+				# Now, we should know what we have to call
+
+				if ($parametersHasTypeByName) {
+					$type = "TYPE".Net::DNS::Parameters::typebyname($type);
+				} else {
+					eval { Net::DNS::typesbyname($type) };
+
+					if($@)
+					  {
+						  warn "$@ - things may not validate correctly" if($@);
+					  }
+					$type
+				}
+
 			} split(/\s+/, $new));
 
 	&$attr($new) if($new ne $old);
@@ -456,7 +467,7 @@ sub dt_parse_zonefile
 				if($rr->can($attr))
 				{
 					_normalize_rrtype(sub{
-								$rr->$attr(@_) ;
+								$rr->$attr() ;
 							     });
 				}
 			}
