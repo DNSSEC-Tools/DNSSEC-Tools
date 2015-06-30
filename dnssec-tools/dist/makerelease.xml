@@ -165,7 +165,8 @@
 
     <step type="system" title="export the release">
       <commands>
-        <command>git clone dt-git:git.dnssec-tools.org/dnssec-tools dnssec-tools-{VERSION}</command>
+        <command>git clone dt-git:git.dnssec-tools.org/dnssec-tools dnssec-tools.makerelease</command>
+        <command>mv dnssec-tools.makerelease/dnssec-tools dnssec-tools-{VERSION}</command>
         <command>rm -rf dnssec-tools-{VERSION}/.git</command>
 	<command>cp -pr dnssec-tools-{VERSION}/validator dnsval-{VERSION}</command>
 	<command>cp -pr dnssec-tools-{VERSION}/validator/apps/dnssec-check dnssec-check-{VERSION}</command>
