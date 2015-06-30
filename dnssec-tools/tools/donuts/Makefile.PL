@@ -181,8 +181,7 @@ MOD_STD =						\\
 	-M Text::Wrap
 
 MOD_NET =						\\
-	-M Net::DNS					\\
-	-M Net::DNS::ZoneFile::Fast
+	-M Net::DNS					
 
 MOD_DT =						\\
 	-M Net::DNS::SEC::Tools::BootStrap		\\
