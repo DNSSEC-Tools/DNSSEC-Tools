@@ -834,7 +834,7 @@ sub localgetoptions
 	#
 	if(!$ret && $errexit)
 	{
-		main::usage() if(UNIVERSAL::can('main','usage'));
+		main::usage() if(main->can('usage'));
 		exit(1);
 	}
 
