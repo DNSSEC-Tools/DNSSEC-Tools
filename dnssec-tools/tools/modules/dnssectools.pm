@@ -348,7 +348,7 @@ sub _normalize_rrtype
 #		zone-file parser and returns an array reference containing
 # 		the RRs.
 #		Currently supported parsers:
-#			Net::DNS::ZoneFile		(default)
+#			Net::DNS::ZoneFile		    (default)
 #			Net::DNS::ZoneFile::Fast	("old" versions only)
 #
 sub dt_parse_zonefile
