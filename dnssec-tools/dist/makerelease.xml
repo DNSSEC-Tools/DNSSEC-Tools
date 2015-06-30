@@ -14,7 +14,7 @@
 	The VERSION grep should show the last release version number created.
       </text>
       <commands>
-	<command>svn status -q</command>
+	<command>git status -uno</command>
 	<command>grep 'DNSSEC-Tools Version:' tools/scripts/zonesigner</command>
       </commands>
     </step>
@@ -63,14 +63,14 @@
 
     <step type="system" title="Check the version number changes">
       <commands>
-	<command ignoreerror="1">svn diff | egrep '^[-\+]'</command>
+	<command ignoreerror="1">git diff | egrep '^[-\+]'</command>
       </commands>
     </step>
 
     <step type="system" title="SVN Commit the changes"
     interactive="1">
       <commands>
-	<command>svn commit -m "Update Version Number: {VERSION}"</command>
+	<command>git commit -a -m "Update Version Number: {VERSION}"</command>
       </commands>
     </step>
 
@@ -106,13 +106,13 @@
 
 	<step type="system" title="Check the version number changes">
 	  <commands>
-	    <command ignoreerror="1">svn diff tools/modules/ZoneFile-Fast/Fast.pm</command>
+	    <command ignoreerror="1">git diff tools/modules/ZoneFile-Fast/Fast.pm</command>
 	  </commands>
 	</step>
 
 	<step type="system" title="SVN Commit the changes" interactive="1">
 	  <commands>
-	    <command>svn commit -m "Update Fast.pm Version Number: {FASTVERSION}" tools/modules/ZoneFile-Fast/Fast.pm</command>
+	    <command>git commit -m "Update Fast.pm Version Number: {FASTVERSION}" tools/modules/ZoneFile-Fast/Fast.pm</command>
 	  </commands>
 	</step>
 
@@ -139,45 +139,47 @@
 
     <step type="system" title="Create the ChangeLog">
       <commands>
-	<command>svn log -v > ChangeLog</command>
+	<command>git log -v > ChangeLog</command>
       </commands>
     </step>
 
     <step type="system" title="Commit the ChangeLog">
       <commands>
-	<command>svn commit -m "Update for verison {VERSION}" ChangeLog</command>
+	<command>git commit -m "Update for verison {VERSION}" ChangeLog</command>
       </commands>
     </step>
 
     <step type="system" title="Update the NEWS file" interactive="1">
       <text>Please update the NEWS file with new details and we'll commit it</text>
       <commands>
-	<command>svn commit -m "Update for verison {VERSION}" NEWS</command>
+	<command>git commit -m "Update for verison {VERSION}" NEWS</command>
       </commands>
     </step>
 
 
-    <step type="system" title="svn tag the release">
+    <step type="system" title="git tag the release">
       <commands>
-	<command>svn copy -m "tag of version {VERSION}" https://www.dnssec-tools.org/svn/dnssec-tools/trunk/dnssec-tools https://www.dnssec-tools.org/svn/dnssec-tools/tags/dnssec-tools-{VERSION}</command>
+	<command>git tag -a dnssec-tools-{VERSION}</command>
       </commands>
     </step>
 
     <step type="system" title="export the release">
       <commands>
-	<command>svn export https://www.dnssec-tools.org/svn/dnssec-tools/tags/dnssec-tools-{VERSION} dnssec-tools-{VERSION}</command>
-	<command>svn export https://www.dnssec-tools.org/svn/dnssec-tools/tags/dnssec-tools-{VERSION}/validator dnsval-{VERSION}</command>
-	<command>svn export https://www.dnssec-tools.org/svn/dnssec-tools/tags/dnssec-tools-{VERSION}/validator/apps/dnssec-check dnssec-check-{VERSION}</command>
-	<command>svn export https://www.dnssec-tools.org/svn/dnssec-tools/tags/dnssec-tools-{VERSION}/validator/apps/dnssec-nodes dnssec-nodes-{VERSION}</command>
-	<command>svn export https://www.dnssec-tools.org/svn/dnssec-tools/tags/dnssec-tools-{VERSION}/validator/apps/dnssec-system-tray dnssec-system-tray-{VERSION}</command>
-	<command>svn export https://www.dnssec-tools.org/svn/dnssec-tools/tags/dnssec-tools-{VERSION}/validator/apps/lookup lookup-{VERSION}</command>
+        <command>git clone dt-git:git.dnssec-tools.org/dnssec-tools dnssec-tools-{VERSION}</command>
+        <command>rm -rf dnssec-tools-{VERSION}/.git</command>
+	<command>cp -pr dnssec-tools-{VERSION}/validator dnsval-{VERSION}</command>
+	<command>cp -pr dnssec-tools-{VERSION}/validator/apps/dnssec-check dnssec-check-{VERSION}</command>
+	<command>cp -pr dnssec-tools-{VERSION}/validator/apps/dnssec-nodes dnssec-nodes-{VERSION}</command>
+	<command>cp -pr dnssec-tools-{VERSION}/validator/apps/dnssec-system-tray dnssec-system-tray-{VERSION}</command>
+	<command>cp -pr dnssec-tools-{VERSION}/validator/apps/lookup lookup-{VERSION}</command>
 
-	<command>svn export https://www.dnssec-tools.org/svn/dnssec-tools/tags/dnssec-tools-{VERSION}/apps/owl-monitor owl-monitor-{VERSION}</command>
-	<command>svn export https://www.dnssec-tools.org/svn/dnssec-tools/tags/dnssec-tools-{VERSION}/apps/owl-monitor owl-sensor-{VERSION}</command>
+	<command>cp -pr dnssec-tools-{VERSION}/apps/owl-monitor owl-monitor-{VERSION}</command>
+
+	<command>cp -pr dnssec-tools-{VERSION}/apps/owl-monitor owl-sensor-{VERSION}</command>
 	<command>rm -rf owl-sensor-{VERSION}/manager</command>
-	<command>svn export https://www.dnssec-tools.org/svn/dnssec-tools/tags/dnssec-tools-{VERSION}/apps/owl-monitor owl-manager-{VERSION}</command>
-	<command>rm -rf owl-manager-{VERSION}/sensor</command>
 
+	<command>cp -pr dnssec-tools-{VERSION}/apps/owl-monitor owl-manager-{VERSION}</command>
+	<command>rm -rf owl-manager-{VERSION}/sensor</command>
       </commands>
     </step>
 
@@ -223,9 +225,9 @@
 
     <step type="system" title="create the html docs" interactive="1">
       <commands>
-	<command>cd ../htdocs &amp;&amp; svn update</command>
+	<command>cd ../htdocs &amp;&amp; git pull</command>
 	<command>dist/update-web-docs</command>
-	<command>cd ../htdocs &amp;&amp; svn commit -m "Updated online docs from latest release"</command>
+	<command>cd ../htdocs &amp;&amp; git commit -m "Updated online docs from latest release" .</command>
       </commands>
     </step>
 
