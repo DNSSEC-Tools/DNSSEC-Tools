@@ -2,6 +2,14 @@ This file contains a list of major changes per release.  See the
 ChangeLog file for a complete set of changes and their details
 details.
 
+2.2
+ - Various bug fixes in multiple scripts and in the validation library
+ - Note: The default zone file parser has switched to the
+   Net::DNS::ZoneFile based parser, as the Net::DNS software is
+   changing in non compatible ways and the Net::DNS::ZoneFile parser
+   has caught up in speed to the Net::DNS::ZoneFile::Fast parser
+   anyway.
+
 2.1
  - New Features:
     - donuts:       - Added the ability to summarize information
