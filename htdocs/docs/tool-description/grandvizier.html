@@ -2,7 +2,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>grandvizier - DNSSEC-Tools dtrealms GUI</title>
+<title></title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
@@ -10,366 +10,307 @@
 <body style="background-color: white">
 
 
-<!-- INDEX BEGIN -->
-<div name="index">
-<p><a name="__index__"></a></p>
 
-<ul>
-
-	<li><a href="#name">NAME</a></li>
-	<li><a href="#synopsis">SYNOPSIS</a></li>
-	<li><a href="#description">DESCRIPTION</a></li>
-	<li><a href="#options">OPTIONS</a></li>
-	<li><a href="#screen_layout">SCREEN LAYOUT</a></li>
-	<li><a href="#row_colors">ROW COLORS</a></li>
-	<li><a href="#menu_commands">MENU COMMANDS</a></li>
-	<ul>
-
-		<li><a href="#file_menu">File Menu</a></li>
-		<li><a href="#options_menu">Options Menu</a></li>
-		<li><a href="#general_control_menu">General Control Menu</a></li>
-		<li><a href="#display_menu">Display Menu</a></li>
-		<li><a href="#help_menu">Help Menu</a></li>
-	</ul>
-
-	<li><a href="#configuration_file">CONFIGURATION FILE</a></li>
-	<li><a href="#requirements">REQUIREMENTS</a></li>
-	<li><a href="#warnings">WARNINGS</a></li>
-	<li><a href="#copyright">COPYRIGHT</a></li>
-	<li><a href="#author">AUTHOR</a></li>
-	<li><a href="#see_also">SEE ALSO</a></li>
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
+  <li><a href="#OPTIONS">OPTIONS</a></li>
+  <li><a href="#SCREEN-LAYOUT">SCREEN LAYOUT</a></li>
+  <li><a href="#ROW-COLORS">ROW COLORS</a></li>
+  <li><a href="#MENU-COMMANDS">MENU COMMANDS</a>
+    <ul>
+      <li><a href="#File-Menu">File Menu</a></li>
+      <li><a href="#Options-Menu">Options Menu</a></li>
+      <li><a href="#General-Control-Menu">General Control Menu</a></li>
+      <li><a href="#Display-Menu">Display Menu</a></li>
+      <li><a href="#Help-Menu">Help Menu</a></li>
+    </ul>
+  </li>
+  <li><a href="#CONFIGURATION-FILE">CONFIGURATION FILE</a></li>
+  <li><a href="#REQUIREMENTS">REQUIREMENTS</a></li>
+  <li><a href="#WARNINGS">WARNINGS</a></li>
+  <li><a href="#COPYRIGHT">COPYRIGHT</a></li>
+  <li><a href="#AUTHOR">AUTHOR</a></li>
+  <li><a href="#SEE-ALSO">SEE ALSO</a></li>
 </ul>
 
-<hr name="index" />
-</div>
-<!-- INDEX END -->
+<h1 id="NAME">NAME</h1>
 
-<p>
-</p>
-<hr />
-<h1><a name="name">NAME</a></h1>
 <p>grandvizier - DNSSEC-Tools dtrealms GUI</p>
-<p>
-</p>
-<hr />
-<h1><a name="synopsis">SYNOPSIS</a></h1>
-<pre>
-  grandvizier &lt;realms-file&gt;</pre>
-<p>
-</p>
-<hr />
-<h1><a name="description">DESCRIPTION</a></h1>
-<p><strong>THIS NEEDS MAJOR EDITTING!!!</strong></p>
-<p><strong>Warning:</strong>  This is an early prototype.  Consider it to be beta quality, if 
-not alpha.</p>
-<p><strong>grandvizier</strong> is a GUI tool for use with monitoring and controlling the
-DNSSEC-Tools <strong>dtrealms</strong> program.  It displays information on the current state
-of the realms <strong>dtrealms</strong> is managing.  The user may control some aspects of
-<strong>dtrealms</strong>'s execution using <strong>grandvizier</strong> menu commands.</p>
-<p><strong>grandvizier</strong> creates a window in which to display information about each
-realms.  (These realms are those in <strong>dtrealms</strong>'s current <em>realms</em> file.) For
-each realm, it displays the realm name and the count of zones in each of these
-four states:  normal, ZSK rollover, KSK rollover, and KSK phase 6 wait state.
-As the rollover status of the zones in each realm changes, <strong>grandvizier</strong> will
-update its display for that realm.  Inactive realms, realms listed in the
-<em>realms</em> file but which are not in currently being run, are displayed but
-have no useful information to display.</p>
-<p>The user may also hide realms from the display.  These realms, if in the
-active state, will continue to execute; however, their information will not be
-displayed.  Display state for each realm will persist across <strong>grandvizier</strong>
-executions.</p>
-<p>Menu commands are available for some control over <strong>dtrealms</strong>.  Display and
-execution options for <strong>grandvizier</strong> are also available through menu commands.
-More information about the menu commands is available in the MENU COMMANDS
-section.</p>
-<p><strong>grandvizier</strong> is only intended to be started by <strong>dtrealms</strong>, not directly by
-a user.  There are two ways to have <strong>dtrealms</strong> start <strong>grandvizier</strong>.  First,
-<strong>realmctl</strong> may be given the <strong>-display</strong> option.  Second, the <strong>-display</strong>
-option may be given on <strong>dtrealms</strong>' command line.</p>
-<p>
-</p>
-<hr />
-<h1><a name="options">OPTIONS</a></h1>
-<p><strong>grandvizier</strong> takes the following options:</p>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<pre><code>  grandvizier &lt;realms-file&gt;</code></pre>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p><b>THIS NEEDS MAJOR EDITTING!!!</b></p>
+
+<p><b>Warning:</b> This is an early prototype. Consider it to be beta quality, if not alpha.</p>
+
+<p><b>grandvizier</b> is a GUI tool for use with monitoring and controlling the DNSSEC-Tools <b>dtrealms</b> program. It displays information on the current state of the realms <b>dtrealms</b> is managing. The user may control some aspects of <b>dtrealms</b>&#39;s execution using <b>grandvizier</b> menu commands.</p>
+
+<p><b>grandvizier</b> creates a window in which to display information about each realms. (These realms are those in <b>dtrealms</b>&#39;s current <i>realms</i> file.) For each realm, it displays the realm name and the count of zones in each of these four states: normal, ZSK rollover, KSK rollover, and KSK phase 6 wait state. As the rollover status of the zones in each realm changes, <b>grandvizier</b> will update its display for that realm. Inactive realms, realms listed in the <i>realms</i> file but which are not in currently being run, are displayed but have no useful information to display.</p>
+
+<p>The user may also hide realms from the display. These realms, if in the active state, will continue to execute; however, their information will not be displayed. Display state for each realm will persist across <b>grandvizier</b> executions.</p>
+
+<p>Menu commands are available for some control over <b>dtrealms</b>. Display and execution options for <b>grandvizier</b> are also available through menu commands. More information about the menu commands is available in the MENU COMMANDS section.</p>
+
+<p><b>grandvizier</b> is only intended to be started by <b>dtrealms</b>, not directly by a user. There are two ways to have <b>dtrealms</b> start <b>grandvizier</b>. First, <b>realmctl</b> may be given the <b>-display</b> option. Second, the <b>-display</b> option may be given on <b>dtrealms</b>&#39; command line.</p>
+
+<h1 id="OPTIONS">OPTIONS</h1>
+
+<p><b>grandvizier</b> takes the following options:</p>
+
 <dl>
-<dt><strong><a name="display" class="item"><strong>-display</strong></a></strong></dt>
 
+<dt id="display"><b>-display</b></dt>
 <dd>
-<p>Tells <strong>dtrealms</strong> to execute <strong>grandvizier</strong> as a child process.</p>
+
+<p>Tells <b>dtrealms</b> to execute <b>grandvizier</b> as a child process.</p>
+
 </dd>
-<dt><strong><a name="maxrealms" class="item"><strong>-maxrealms</strong></a></strong></dt>
-
+<dt id="maxrealms"><b>-maxrealms</b></dt>
 <dd>
-<p>Tells <strong>grandvizier</strong> how many realms to display.</p>
+
+<p>Tells <b>grandvizier</b> how many realms to display.</p>
+
 </dd>
-<dt><strong><a name="version" class="item"><strong>-Version</strong></a></strong></dt>
-
+<dt id="Version"><b>-Version</b></dt>
 <dd>
-<p>Displays the version information for <strong>grandvizier</strong> and the DNSSEC-Tools
-package.</p>
+
+<p>Displays the version information for <b>grandvizier</b> and the DNSSEC-Tools package.</p>
+
 </dd>
-<dt><strong><a name="help" class="item"><strong>-help</strong></a></strong></dt>
-
+<dt id="help"><b>-help</b></dt>
 <dd>
+
 <p>Displays a usage message and exits.</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<hr />
-<h1><a name="screen_layout">SCREEN LAYOUT</a></h1>
-<p>The <strong>grandvizier</strong> window is laid out as a series of &quot;stripes&quot;.  The top
-stripe contains status information about <strong>dtrealms</strong>, the second stripe
-contains column headers, and the bulk of the window consists of realm stripes.
-The list below provides more detail on the contents of each stripe.</p>
-<p>See the ROW COLORS section for a discussion of the colors used for the
-zone stripes.</p>
+
+<h1 id="SCREEN-LAYOUT">SCREEN LAYOUT</h1>
+
+<p>The <b>grandvizier</b> window is laid out as a series of &quot;stripes&quot;. The top stripe contains status information about <b>dtrealms</b>, the second stripe contains column headers, and the bulk of the window consists of realm stripes. The list below provides more detail on the contents of each stripe.</p>
+
+<p>See the ROW COLORS section for a discussion of the colors used for the zone stripes.</p>
+
 <ul>
-<li>
-<p><strong>dtrealms</strong> information stripe</p>
-<p>The information stripe contains five pieces of information:  <strong>dtrealms</strong>'s
-current <em>realms</em> file, the count of rolling zones, the count of stopped
-zones, the count of zones to be displayed, and the amount of time <strong>dtrealms</strong>
-waits between processing its queue.  Coincidentally, that last datum is also
-the amount of time between <strong>grandvizier</strong> screen updates.</p>
+
+<li><p><b>dtrealms</b> information stripe</p>
+
+<p>The information stripe contains five pieces of information: <b>dtrealms</b>&#39;s current <i>realms</i> file, the count of rolling zones, the count of stopped zones, the count of zones to be displayed, and the amount of time <b>dtrealms</b> waits between processing its queue. Coincidentally, that last datum is also the amount of time between <b>grandvizier</b> screen updates.</p>
+
 </li>
-<li>
-<p>column headers stripe</p>
+<li><p>column headers stripe</p>
+
 <p>This stripe contains the column headers for the columns of each realm stripe.</p>
+
 </li>
-<li>
-<p>realm stripes</p>
-<p>Each realm managed by <strong>dtrealms</strong> (i.e., every realm in the current <em>realms</em>
-file) will have a realm stripe which describes that realm's current state.
-The stripe is divided into two sections:  realm identification and the realm's
-zone counts.</p>
-<p>The realm identification section contains the name of the realm and the
-realm's <strong>rollrec</strong> file.</p>
-<p>The realm's zone counts section contains the number of zones in normal state,
-ZSK rollover, KSK rollover, and KSK phase 6 wait state.</p>
-<p>See the ROW COLORS section for a discussion of the colors used for the
-realm stripes.</p>
+<li><p>realm stripes</p>
+
+<p>Each realm managed by <b>dtrealms</b> (i.e., every realm in the current <i>realms</i> file) will have a realm stripe which describes that realm&#39;s current state. The stripe is divided into two sections: realm identification and the realm&#39;s zone counts.</p>
+
+<p>The realm identification section contains the name of the realm and the realm&#39;s <b>rollrec</b> file.</p>
+
+<p>The realm&#39;s zone counts section contains the number of zones in normal state, ZSK rollover, KSK rollover, and KSK phase 6 wait state.</p>
+
+<p>See the ROW COLORS section for a discussion of the colors used for the realm stripes.</p>
+
 </li>
 </ul>
-<p>
-</p>
-<hr />
-<h1><a name="row_colors">ROW COLORS</a></h1>
-<p>The default <strong>grandvizier</strong> configuration displays each realm in its own row
-with a rotating set of colors.  The rows alternate with blue, red, and green,
-as defined in the X11 <strong>rgb.txt</strong> file.  Row coloring can be turned off (and
-on) with configuration options and menu commands.</p>
-<p>
-</p>
-<hr />
-<h1><a name="menu_commands">MENU COMMANDS</a></h1>
-<p>A number of menu commands are available to control the behavior of
-<strong>grandvizier</strong> and to send commands to <strong>dtrealms</strong>.  These commands
-are discusses in this section.</p>
-<p>
-</p>
-<h2><a name="file_menu">File Menu</a></h2>
+
+<h1 id="ROW-COLORS">ROW COLORS</h1>
+
+<p>The default <b>grandvizier</b> configuration displays each realm in its own row with a rotating set of colors. The rows alternate with blue, red, and green, as defined in the X11 <b>rgb.txt</b> file. Row coloring can be turned off (and on) with configuration options and menu commands.</p>
+
+<h1 id="MENU-COMMANDS">MENU COMMANDS</h1>
+
+<p>A number of menu commands are available to control the behavior of <b>grandvizier</b> and to send commands to <b>dtrealms</b>. These commands are discusses in this section.</p>
+
+<h2 id="File-Menu">File Menu</h2>
+
 <p>The commands in this menu are basic GUI commands.</p>
+
 <ul>
-<li>
-<p>Halt Dtrealms</p>
-<p><strong>dtrealms</strong>'s execution is halted immediately.  As a result, <strong>grandvizier</strong>'s
-execution will also be halted.</p>
+
+<li><p>Halt Dtrealms</p>
+
+<p><b>dtrealms</b>&#39;s execution is halted immediately. As a result, <b>grandvizier</b>&#39;s execution will also be halted.</p>
+
 </li>
-<li>
-<p>Quit</p>
-<p><strong>grandvizier</strong> will stop execution.</p>
+<li><p>Quit</p>
+
+<p><b>grandvizier</b> will stop execution.</p>
+
 </li>
 </ul>
-<p>
-</p>
-<h2><a name="options_menu">Options Menu</a></h2>
-<p>The commands in this menu control the appearance and behavior of
-<strong>grandvizier</strong>.</p>
+
+<h2 id="Options-Menu">Options Menu</h2>
+
+<p>The commands in this menu control the appearance and behavior of <b>grandvizier</b>.</p>
+
 <ul>
-<li>
-<p>Row Colors (toggle)</p>
-<p>This menu item is a toggle to turn on or off the coloring of realm stripes.
-If row coloring is turned off, realm stripes will all be the same color.
-If row coloring is turned on, realm stripes will be displayed in varying
-colors.  See the ROW COLORS section for a discussion of row coloring.</p>
+
+<li><p>Row Colors (toggle)</p>
+
+<p>This menu item is a toggle to turn on or off the coloring of realm stripes. If row coloring is turned off, realm stripes will all be the same color. If row coloring is turned on, realm stripes will be displayed in varying colors. See the ROW COLORS section for a discussion of row coloring.</p>
+
 </li>
-<li>
-<p>Inactive Realms Display (toggle)</p>
-<p>This menu item is a toggle to turn on or off the display of inactive realms.
-If display is turned off, realm stripes for inactive realms will not be
-displayed.  If display is turned on, realm stripes for all realms will be
-displayed.</p>
+<li><p>Inactive Realms Display (toggle)</p>
+
+<p>This menu item is a toggle to turn on or off the display of inactive realms. If display is turned off, realm stripes for inactive realms will not be displayed. If display is turned on, realm stripes for all realms will be displayed.</p>
+
 </li>
-<li>
-<p>Modification Commands (toggle)</p>
-<p>In some situations, it may be desirable to turn off <strong>grandvizier</strong>' ability
-to send commands to <strong>dtrealms</strong>.  This menu item is a toggle to turn on or
-off this ability.</p>
+<li><p>Modification Commands (toggle)</p>
+
+<p>In some situations, it may be desirable to turn off <b>grandvizier</b>&#39; ability to send commands to <b>dtrealms</b>. This menu item is a toggle to turn on or off this ability.</p>
+
 </li>
-<li>
-<p>Font Size</p>
-<p>This menu item allows selection of font size of text displayed in the main
-window.</p>
-<p>Normally, changing the font size causes the window to grow and shrink as
-required.  However, on Mac OS X there seems to be a problem when the size
-selected increases the window size to be greater than will fit on the screen.
-If the font size is subsequently reduced, the window size does not shrink in
-response.</p>
+<li><p>Font Size</p>
+
+<p>This menu item allows selection of font size of text displayed in the main window.</p>
+
+<p>Normally, changing the font size causes the window to grow and shrink as required. However, on Mac OS X there seems to be a problem when the size selected increases the window size to be greater than will fit on the screen. If the font size is subsequently reduced, the window size does not shrink in response.</p>
+
 </li>
-<li>
-<p>Realms to Display</p>
-<p>This menu item allows selection of the number of realms to be displayed in
-the main window.</p>
+<li><p>Realms to Display</p>
+
+<p>This menu item allows selection of the number of realms to be displayed in the main window.</p>
+
 </li>
 </ul>
-<p>
-</p>
-<h2><a name="general_control_menu">General Control Menu</a></h2>
-<p>The commands in this menu are GUI interfaces for the <strong>realmctl</strong> commands
-related to <em>general</em> realm management.</p>
+
+<h2 id="General-Control-Menu">General Control Menu</h2>
+
+<p>The commands in this menu are GUI interfaces for the <b>realmctl</b> commands related to <i>general</i> realm management.</p>
+
 <ul>
-<li>
-<p>Stop Selected Realm</p>
-<p>The selected realm will be moved to the inactive state.  This only has an
-effect on active realms.</p>
-<p>A realm may be selected by clicking on its realm stripe.  If this command is
-selected without a realm having been selected, a dialog box is displayed from
-which a currently active realm may be chosen.</p>
+
+<li><p>Stop Selected Realm</p>
+
+<p>The selected realm will be moved to the inactive state. This only has an effect on active realms.</p>
+
+<p>A realm may be selected by clicking on its realm stripe. If this command is selected without a realm having been selected, a dialog box is displayed from which a currently active realm may be chosen.</p>
+
 </li>
-<li>
-<p>Stop All Realms</p>
-<p>All realms will be moved to the inactive state.  This has no effect on
-currently inactive realms.</p>
+<li><p>Stop All Realms</p>
+
+<p>All realms will be moved to the inactive state. This has no effect on currently inactive realms.</p>
+
 </li>
-<li>
-<p>Restart Selected Inactive Realm</p>
-<p>The selected realm will be moved from the inactive state to the active state.
-The realm will enter the active state at the same point from which it entered
-the inactive state.  This only has an effect on inactive realms.</p>
-<p>A realm may be selected by clicking on its realm stripe.  If this command is
-selected without a realm having been selected, a dialog box is displayed from
-which a currently inactive realm may be chosen.</p>
+<li><p>Restart Selected Inactive Realm</p>
+
+<p>The selected realm will be moved from the inactive state to the active state. The realm will enter the active state at the same point from which it entered the inactive state. This only has an effect on inactive realms.</p>
+
+<p>A realm may be selected by clicking on its realm stripe. If this command is selected without a realm having been selected, a dialog box is displayed from which a currently inactive realm may be chosen.</p>
+
 </li>
-<li>
-<p>Restart All Stopped Realms</p>
-<p>All realms will be moved from the inactive state to the roll state.  The
-realms will enter the roll state at the same point from which they entered
-the inactive state.  This has no effect on currently active realms.</p>
+<li><p>Restart All Stopped Realms</p>
+
+<p>All realms will be moved from the inactive state to the roll state. The realms will enter the roll state at the same point from which they entered the inactive state. This has no effect on currently active realms.</p>
+
 </li>
-<li>
-<p>DS Published for All Zones in Selected Realm</p>
-<p>This command is used to indicate that all the zones in KSK rollover phase 6
-in the selected realm have new DS records published by their parents.  It
-moves all these realms from KSK phase 6 to KSK phase 7.  There is no effect
-on realms not in KSK rollover phase 6.</p>
+<li><p>DS Published for All Zones in Selected Realm</p>
+
+<p>This command is used to indicate that all the zones in KSK rollover phase 6 in the selected realm have new DS records published by their parents. It moves all these realms from KSK phase 6 to KSK phase 7. There is no effect on realms not in KSK rollover phase 6.</p>
+
 </li>
 </ul>
-<p>
-</p>
-<h2><a name="display_menu">Display Menu</a></h2>
+
+<h2 id="Display-Menu">Display Menu</h2>
+
 <p>The commands in this menu provide control over what is being displayed.</p>
-<p>The realmstripe commands allow all, some, or none of the realm stripes to be
-displayed.  Undisplayed active realms will continue to be active, but they will
-do so without the <strong>grandvizier</strong> window indicating this.</p>
+
+<p>The realmstripe commands allow all, some, or none of the realm stripes to be displayed. Undisplayed active realms will continue to be active, but they will do so without the <b>grandvizier</b> window indicating this.</p>
+
 <ul>
-<li>
-<p>Realm Selection</p>
-<p>A dialog box is displayed that holds a list of the realms currently managed by
-<strong>dtrealms</strong>.  The user may select which realms should be displayed by clicking
-on the realm's checkbox.  Realms with a selected checkbox will be displayed;
-realms without a selected checkbox will not be displayed.</p>
+
+<li><p>Realm Selection</p>
+
+<p>A dialog box is displayed that holds a list of the realms currently managed by <b>dtrealms</b>. The user may select which realms should be displayed by clicking on the realm&#39;s checkbox. Realms with a selected checkbox will be displayed; realms without a selected checkbox will not be displayed.</p>
+
 </li>
-<li>
-<p>Refresh Display</p>
-<p>Refresh the <strong>grandvizier</strong> display.  The display will automatically refresh
-after a certain number of updates; this command forces it to happen immediately
-upon invocation.</p>
+<li><p>Refresh Display</p>
+
+<p>Refresh the <b>grandvizier</b> display. The display will automatically refresh after a certain number of updates; this command forces it to happen immediately upon invocation.</p>
+
 </li>
 </ul>
-<p>
-</p>
-<h2><a name="help_menu">Help Menu</a></h2>
+
+<h2 id="Help-Menu">Help Menu</h2>
+
 <p>The commands in this menu provide assistance to the user.</p>
+
 <ul>
-<li>
-<p>Help</p>
+
+<li><p>Help</p>
+
 <p>Display a window containing help information.</p>
+
 </li>
 </ul>
-<p>
-</p>
-<hr />
-<h1><a name="configuration_file">CONFIGURATION FILE</a></h1>
-<p>Several aspects of <strong>grandvizier</strong>' behavior may be controlled from
-configuration files.  Configuration value may be specified in the DNSSEC Tools
-configuration file or in a more specific <strong>rc.grandvizier</strong>.  The system-wide
-<strong>grandvizier</strong> configuration file is in the DNSSEC-Tools configuration
-directory and is named <strong>grandvizier.conf</strong>.  Multiple <strong>rc.grandvizier</strong>
-files may exist on a system, but only the one in the directory in which
-<strong>grandvizier</strong> is executed is used.</p>
+
+<h1 id="CONFIGURATION-FILE">CONFIGURATION FILE</h1>
+
+<p>Several aspects of <b>grandvizier</b>&#39; behavior may be controlled from configuration files. Configuration value may be specified in the DNSSEC Tools configuration file or in a more specific <b>rc.grandvizier</b>. The system-wide <b>grandvizier</b> configuration file is in the DNSSEC-Tools configuration directory and is named <b>grandvizier.conf</b>. Multiple <b>rc.grandvizier</b> files may exist on a system, but only the one in the directory in which <b>grandvizier</b> is executed is used.</p>
+
 <p>The following are the available configuration values:</p>
-<pre>
-    colors              Turn on/off use of colors on realm stripes.
+
+<pre><code>    colors              Turn on/off use of colors on realm stripes.
     fontsize            The size of the font in the output window.
     inactivecolor       The background color used for inactive zones.
     maxrealms           The number of realms to display.
     modify              Turn on/off execution of dtrealms modification commands.
-    showinactive        Turn on/off display of inactive zones.</pre>
-<p>The <strong>rc.grandvizier</strong> file is <strong>only</strong> searched for in the directory in
-which <strong>grandvizier</strong> is executed.  The potential problems inherent in
-this may cause these <strong>grandvizier</strong>-specific configuration files to be
-removed in the future.</p>
-<p>This file is in the &quot;field value&quot; format, where <em>field</em> specifies the output
-aspect and <em>value</em> defines the value for that field.  The following are the
-recognized fields:</p>
-<p>Empty lines and comments are ignored.  Comment lines are lines that start
-with an octothorpe ('#').</p>
-<p>Spaces are not allowed in the configuration values.</p>
-<p>Choose your inactivecolors carefully.  The only foreground color used is
-black, so your background colors must work well with black.</p>
-<p>
-</p>
-<hr />
-<h1><a name="requirements">REQUIREMENTS</a></h1>
-<p><strong>grandvizier</strong> is implemented in Perl/Tk, so both Perl and Perl/Tk must be
-installed on your system.</p>
-<p>
-</p>
-<hr />
-<h1><a name="warnings">WARNINGS</a></h1>
-<p><strong>grandvizier</strong> has several potential problems that must be taken into
-account.</p>
-<dl>
-<dt><strong><a name="development_environment" class="item">development environment</a></strong></dt>
+    showinactive        Turn on/off display of inactive zones.</code></pre>
 
+<p>The <b>rc.grandvizier</b> file is <b>only</b> searched for in the directory in which <b>grandvizier</b> is executed. The potential problems inherent in this may cause these <b>grandvizier</b>-specific configuration files to be removed in the future.</p>
+
+<p>This file is in the &quot;field value&quot; format, where <i>field</i> specifies the output aspect and <i>value</i> defines the value for that field. The following are the recognized fields:</p>
+
+<p>Empty lines and comments are ignored. Comment lines are lines that start with an octothorpe (&#39;#&#39;).</p>
+
+<p>Spaces are not allowed in the configuration values.</p>
+
+<p>Choose your inactivecolors carefully. The only foreground color used is black, so your background colors must work well with black.</p>
+
+<h1 id="REQUIREMENTS">REQUIREMENTS</h1>
+
+<p><b>grandvizier</b> is implemented in Perl/Tk, so both Perl and Perl/Tk must be installed on your system.</p>
+
+<h1 id="WARNINGS">WARNINGS</h1>
+
+<p><b>grandvizier</b> has several potential problems that must be taken into account.</p>
+
+<dl>
+
+<dt id="development-environment">development environment</dt>
 <dd>
-<p><strong>grandvizier</strong> was developed and tested on a single-user system running X11
-using a relatively small number of zones.  While it works fine in this
-environment, it has not been run on a system with many users or in a situation
-where the system console hasn't been in use by the <strong>grandvizier</strong> user.</p>
+
+<p><b>grandvizier</b> was developed and tested on a single-user system running X11 using a relatively small number of zones. While it works fine in this environment, it has not been run on a system with many users or in a situation where the system console hasn&#39;t been in use by the <b>grandvizier</b> user.</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<hr />
-<h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2012-2013 SPARTA, Inc.  All rights reserved.
-See the COPYING file included with the DNSSEC-Tools package for details.</p>
-<p>
-</p>
-<hr />
-<h1><a name="author">AUTHOR</a></h1>
-<p>Wayne Morrison, <a href="mailto:tewok@tislabs.com">tewok@tislabs.com</a></p>
-<p>
-</p>
-<hr />
-<h1><a name="see_also">SEE ALSO</a></h1>
-<p><strong>dtrealms(8)</strong>,
-<strong>realmctl(8)</strong>,
-<strong>rollerd(8)</strong></p>
-<p><strong>Net::DNS::SEC::Tools::realm(5)</strong></p>
+
+<h1 id="COPYRIGHT">COPYRIGHT</h1>
+
+<p>Copyright 2012-2013 SPARTA, Inc. All rights reserved. See the COPYING file included with the DNSSEC-Tools package for details.</p>
+
+<h1 id="AUTHOR">AUTHOR</h1>
+
+<p>Wayne Morrison, tewok@tislabs.com</p>
+
+<h1 id="SEE-ALSO">SEE ALSO</h1>
+
+<p><b>dtrealms(8)</b>, <b>realmctl(8)</b>, <b>rollerd(8)</b></p>
+
+<p><b>Net::DNS::SEC::Tools::realm(5)</b></p>
+
 
 </body>
 
 </html>
+
+

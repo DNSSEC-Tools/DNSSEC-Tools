@@ -2,228 +2,289 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>I&lt;val_free_context&gt; - manage validator context</title>
+<title></title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-<link rev="made" href="mailto:assp@beta.macosforge.org" />
+<link rev="made" href="mailto:root@localhost" />
 </head>
 
 <body style="background-color: white">
 
 
-<!-- INDEX BEGIN -->
-<div name="index">
-<p><a name="__index__"></a></p>
 
-<ul>
-
-	<li><a href="#name">NAME</a></li>
-	<li><a href="#synopsis">SYNOPSIS</a></li>
-	<li><a href="#description">DESCRIPTION</a></li>
-	<li><a href="#data_structures">DATA STRUCTURES</a></li>
-	<li><a href="#logging">LOGGING</a></li>
-	<li><a href="#files">FILES</a></li>
-	<li><a href="#copyright">COPYRIGHT</a></li>
-	<li><a href="#authors">AUTHORS</a></li>
-	<li><a href="#see_also">SEE ALSO</a></li>
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
+  <li><a href="#DATA-STRUCTURES">DATA STRUCTURES</a></li>
+  <li><a href="#LOGGING">LOGGING</a></li>
+  <li><a href="#RETURN-VALUES">RETURN VALUES</a></li>
+  <li><a href="#FILES">FILES</a></li>
+  <li><a href="#COPYRIGHT">COPYRIGHT</a></li>
+  <li><a href="#AUTHORS">AUTHORS</a></li>
+  <li><a href="#SEE-ALSO">SEE ALSO</a></li>
 </ul>
 
-<hr name="index" />
-</div>
-<!-- INDEX END -->
+<h1 id="NAME">NAME</h1>
 
-<p>
-</p>
-<hr />
-<h1><a name="name">NAME</a></h1>
-<p><em>val_create_context()</em>
-<em>val_free_context()</em> - manage validator context</p>
-<p><em>val_context_setqflags()</em> - manage validator context flags</p>
-<p><em>val_resolve_and_check()</em>, <em>val_free_result_chain()</em> - query and validate
-answers from a DNS name server</p>
-<p><em>val_istrusted()</em> - check if status value corresponds to that of a
-trustworthy answer</p>
-<p><em>val_isvalidated()</em> - check if status value represents an
-answer that cryptographically chains down from a configured
-trust anchor</p>
-<p><em>val_does_not_exist()</em> - check if status value represents
-one of the non-existence types</p>
-<p><em>p_val_status()</em>, <em>p_ac_status()</em>, <em>p_val_error()</em> - display validation status,
-authentication chain status and error information</p>
-<p><em>val_log_add_optarg</em> - control log message verbosity and output location</p>
-<p>
-</p>
-<hr />
-<h1><a name="synopsis">SYNOPSIS</a></h1>
-<pre>
-  #include &lt;validator.h&gt;</pre>
-<pre>
-  int val_create_context(const char *label, val_context_t **newcontext);</pre>
-<pre>
+<p><i>val_create_context()</i> <i>val_free_context()</i> - manage validator context</p>
+
+<p><i>val_context_setqflags()</i> - manage validator context flags</p>
+
+<p><i>val_resolve_and_check()</i>, <i>val_free_result_chain()</i> - query and validate answers from a DNS name server</p>
+
+<p><i>val_istrusted()</i> - check if status value corresponds to that of a trustworthy answer</p>
+
+<p><i>val_isvalidated()</i> - check if status value represents an answer that cryptographically chains down from a configured trust anchor</p>
+
+<p><i>val_does_not_exist()</i> - check if status value represents one of the non-existence types</p>
+
+<p><i>p_val_status()</i>, <i>p_ac_status()</i>, <i>p_val_error()</i> - display validation status, authentication chain status and error information</p>
+
+<p><i>val_log_add_optarg</i> - control log message verbosity and output location</p>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<pre><code>  #include &lt;validator.h&gt;
+
+  int val_create_context(const char *label, val_context_t **newcontext);
+
+  int val_create_context_ex(char *label, 
+                            val_context_opt_t *opt, 
+                            val_context_t ** newcontext);
+
   int val_context_setqflags(val_context_t *context, 
                             unsigned char action, 
-                            unsigned int flags);</pre>
-<pre>
+                            unsigned int flags);
+
+  int val_context_store_ns_for_zone(val_context_t *context, 
+                                    char * zone, 
+                                    char *resp_server,
+                                    int recursive)
+
   int val_resolve_and_check(val_context_t *context,
                          const char *domain_name,
                          int class,
                          int type,
                          unsigned int  flags,
-                         struct val_result_chain  **results);</pre>
-<pre>
-  char *p_val_status(val_status_t valerrno);</pre>
-<pre>
-  char *p_ac_status(val_astatus_t auth_chain_status);</pre>
-<pre>
-  char *p_val_error(int err);</pre>
-<pre>
-  int val_istrusted(val_status_t val_status);</pre>
-<pre>
-  int val_isvalidated(val_status_t val_status);</pre>
-<pre>
-  int val_does_not_exist(val_status_t status);</pre>
-<pre>
-  val_log_t *val_log_add_optarg(const char *args, int use_stderr);</pre>
-<pre>
-  void val_free_result_chain(struct val_result_chain *results);</pre>
-<pre>
-  void val_free_context(val_context_t *context);</pre>
-<p>
-</p>
-<hr />
-<h1><a name="description">DESCRIPTION</a></h1>
-<p>The <em>val_resolve_and_check()</em> function queries a set of name servers for
-the <em>&lt;domain_name, type, class</em>&gt; tuple and to verifies and validates the
-response.  Verification involves checking the RRSIGs, and validation is
-verification of an authentication chain from a configured trust anchor.</p>
-<p>The <em>flags</em> parameter can be used to control the results of validation.
-The following values, which may be ORed together, are currently defined 
-for this field:</p>
+                         struct val_result_chain  **results);
+
+  char *p_val_status(val_status_t valerrno);
+
+  char *p_ac_status(val_astatus_t auth_chain_status);
+
+  char *p_val_error(int err);
+
+  int val_istrusted(val_status_t val_status);
+
+  int val_isvalidated(val_status_t val_status);
+
+  int val_does_not_exist(val_status_t status);
+
+  val_log_t *val_log_add_optarg(const char *args, int use_stderr);
+
+  void val_free_result_chain(struct val_result_chain *results);
+
+  void val_free_context(val_context_t *context);</code></pre>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p>The <i>val_resolve_and_check()</i> function queries a set of name servers for the <i>&lt;domain_name, type, class</i>&gt; tuple and verifies and validates the response. Verification involves checking the RRSIGs, and validation is verification of an authentication chain from a configured trust anchor.</p>
+
+<p>The <i>flags</i> parameter can be used to control the results of validation. The following values, which may be ORed together, are currently defined for this field:</p>
+
 <dl>
-<dt><strong><a name="val_query_dont_validate" class="item"><strong>VAL_QUERY_DONT_VALIDATE</strong></a></strong></dt>
 
+<dt id="VAL_QUERY_DONT_VALIDATE"><b>VAL_QUERY_DONT_VALIDATE</b></dt>
 <dd>
-<p>causes the validator to disable validation for this query.</p>
+
+<p>This flag causes the validator to disable validation for this query.</p>
+
 </dd>
-<dt><strong><a name="val_query_ignore_skew" class="item"><strong>VAL_QUERY_IGNORE_SKEW</strong></a></strong></dt>
-
+<dt id="VAL_QUERY_IGNORE_SKEW"><b>VAL_QUERY_IGNORE_SKEW</b></dt>
 <dd>
-<p>causes the validator to disable checking signature inception and
-expiration times on RRSIGs.</p>
+
+<p>This flag causes the validator to disable checking signature inception and expiration times on RRSIGs.</p>
+
 </dd>
-<dt><strong><a name="val_query_ac_detail" class="item"><strong>VAL_QUERY_AC_DETAIL</strong></a></strong></dt>
-
+<dt id="VAL_QUERY_AC_DETAIL"><b>VAL_QUERY_AC_DETAIL</b></dt>
 <dd>
-<p>causes the validator to copy the authentication chain details into the 
-val_rc_answer member within the returned val_result_chain structure.</p>
+
+<p>This flag causes the validator to copy the authentication chain details into the <i>val_rc_answer</i> member within the returned <i>val_result_chain</i> structure.</p>
+
 </dd>
-<dt><strong><a name="val_query_async" class="item"><strong>VAL_QUERY_ASYNC</strong></a></strong></dt>
-
+<dt id="VAL_QUERY_ASYNC"><b>VAL_QUERY_ASYNC</b></dt>
 <dd>
-<p>enables asynchronous query resolution for that lookup.</p>
+
+<p>This flag enables asynchronous query resolution for that lookup.</p>
+
 </dd>
-<dt><strong><a name="val_query_no_dlv" class="item"><strong>VAL_QUERY_NO_DLV</strong></a></strong></dt>
-
+<dt id="VAL_QUERY_NO_DLV"><b>VAL_QUERY_NO_DLV</b></dt>
 <dd>
-<p>causes the validator to disable DLV processing for this query.  
-This is only available if the <em>libval(3)</em> library has
-been compiled with DLV support.</p>
+
+<p>This flag causes the validator to disable DLV processing for this query. This is only available if the <b>libval(3)</b> library has been compiled with DLV support.</p>
+
 </dd>
-<dt><strong><a name="val_query_no_edns0_fallback" class="item"><strong>VAL_QUERY_NO_EDNS0_FALLBACK</strong></a></strong></dt>
-
+<dt id="VAL_QUERY_NO_EDNS0_FALLBACK"><b>VAL_QUERY_NO_EDNS0_FALLBACK</b></dt>
 <dd>
-<p>In querying various name servers, libsres will also attempt multiple EDNS0
-sizes, ending with a query that has EDNS0 disabled (i.e. no CD bit set).
-This option causes libval to disable EDNS0 fallback for the query.</p>
+
+<p>In querying various name servers, <b>libsres(3)</b> will also attempt multiple EDNS0 sizes, ending with a query that has EDNS0 disabled (i.e. no CD bit set). This flag causes <b>libval</b> to disable EDNS0 fallback for the query.</p>
+
 </dd>
-<dt><strong><a name="val_query_recurse" class="item"><strong>VAL_QUERY_RECURSE</strong></a></strong></dt>
-
+<dt id="VAL_QUERY_ITERATE"><b>VAL_QUERY_ITERATE</b></dt>
 <dd>
-<p>forces libval to recursively answer the query by iteratively querying
-various name servers in the delegation hierarchy, instead of
-requesting this information from
-any caching name server that may be configured in <strong>dnsval.conf</strong></p>
+
+<p>This flag forces <b>libval</b> to iteratively lookup the query by querying various name servers in the delegation hierarchy, instead of requesting this information from any caching name server that may be configured in <b>dnsval.conf</b>.</p>
+
 </dd>
-<dt><strong><a name="val_query_skip_resolver" class="item"><strong>VAL_QUERY_SKIP_RESOLVER</strong></a></strong></dt>
-
+<dt id="VAL_QUERY_SKIP_RESOLVER"><b>VAL_QUERY_SKIP_RESOLVER</b></dt>
 <dd>
-<p>forces libval to only look at its cache while trying to resolve a name.</p>
+
+<p>This flag forces <b>libval</b> to only look at its cache while trying to resolve a name.</p>
+
 </dd>
-<dt><strong><a name="val_query_skip_cache" class="item"><strong>VAL_QUERY_SKIP_CACHE</strong></a></strong></dt>
-
+<dt id="VAL_QUERY_SKIP_CACHE"><b>VAL_QUERY_SKIP_CACHE</b></dt>
 <dd>
-<p>forces libval to ignore cached data while trying to resolve a name.</p>
+
+<p>There are two levels of caching that happen within libval: at the assertion level and at the answer level. This flag forces <b>libval</b> to ignore data in both caches while trying to resolve a name.</p>
+
+</dd>
+<dt id="VAL_QUERY_SKIP_ANS_CACHE"><b>VAL_QUERY_SKIP_ANS_CACHE</b></dt>
+<dd>
+
+<p>There are two levels of caching that happen within libval: at the assertion level and at the answer level. This flag forces <b>libval</b> to ignore data in the answer cache while trying to resolve a name. If an assertion already exists for the given name,class and type that assertion is re-used till it expires. Once it expires the name is looked up via a query even if an newer record (fetched by another assertion in the same or different context) is available in its answer cache.</p>
+
 </dd>
 </dl>
-<p>The first parameter to <em>val_resolve_and_check()</em> is the validator context.
-Applications can create a new validator context using the
-<em>val_create_context()</em> function.  This function parses the resolver and
-validator configuration files and creates the handle <em>newcontext</em> to this
-parsed information.  Information stored as part of validator context includes
-the validation policy and resolver policy.</p>
-<p>Validator and resolver policies are read from the <strong>/etc/dnsval.conf</strong> and
-<strong>/etc/resolv.conf</strong> files by default.  <strong>/etc/root.hints</strong> provides
-bootstrapping information for the validator when it functions as a full
-resolver (see <em>dnsval.conf(3)</em>). These defaults may be different if 
-any other value was specified at library configure time. If the default 
-resolver configuration file is not found at the specified location, libval
-will also try to fallback to /etc/resolv.conf as a last resort.</p>
-<p>Default query flags can be set and unset for a given context using 
-<em>val_context_setqflags()</em>. This allows an application to alter the 
-DNSSEC validator processing, while still having most of the more 
-granular default configuration specified in its configuration file.  
-The <em>action</em> parameter can be set to one of the following.</p>
+
+<p>The first parameter to <i>val_resolve_and_check()</i> is the validator context. Applications can create a new validator context using the <i>val_create_context()</i> function. This function parses the resolver and validator configuration files and creates the <i>newcontext</i> handle for this parsed information. Information stored as part of the validator context includes the validation policy the and resolver policy.</p>
+
+<p>Validator and resolver policies are read from the <b>/etc/dnsval.conf</b> and <b>/etc/resolv.conf</b> files by default. <b>/etc/root.hints</b> provides bootstrapping information for the validator when it functions as a full resolver (see <b>dnsval.conf(3)</b>). These defaults may be different if any other value was specified at library configure time. If the default resolver configuration file is not found at the specified location, <b>libval</b> will also try to fall back to <b>/etc/resolv.conf</b> as a last resort.</p>
+
+<p>Applications may also create a validator context with a custom policy using the <i>val_create_context_ex()</i> function.</p>
+
+<p>The <i>opt</i> argument in <i>val_create_context_ex()</i> points to the following structure:</p>
+
+<pre><code>    typedef struct val_context_opt {
+        unsigned int vc_qflags;
+        unsigned int vc_polflags;
+        char *vc_valpol;
+        char *vc_nslist;
+        char *vc_val_conf;
+        char *vc_res_conf;
+        char *vc_root_conf;
+        val_global_opt_t *gopt, 
+    } val_context_opt_t;</code></pre>
+
+<p><i>vc_qflags</i> specify the default query flags for queries associated with the context. This field is identical to the <i>flags</i> argument in the <i>val_resolve_and_check()</i> function.</p>
+
+<p>The <i>vc_val_conf</i>, <i>vc_res_conf</i>, and <i>vc_root_conf</i> fields can be used to specify alternative configuration files in place of the default files used for the validator, resolver, and root hints configuration information.</p>
+
+<p>The <i>vc_valpol</i> field can be used to supply a custom validator configuration &quot;snippet&quot; to the validator. The validator parses this information and applies it to the default validator configuration either as an extension or as an override, as specified by the <i>vc_polflags</i> field. The <i>vc_nslist</i> field, similarly, can be used to supply a custom list of recursive name servers to send queries to, in addition (or in place of) the list of name servers specified in the <b>resolv.conf</b> file. The list of name servers in <i>vc_res_conf</i> must be specified as a white-space delimited list of IP or IPv6 addresses.</p>
+
+<p>A custom mapping between a zone and a name server may be created using the <b>val_context_store_ns_for_zone()</b> function.</p>
+
+<p><i>vc_polflags</i> can be configured with the following values:</p>
+
 <dl>
-<dt><strong><a name="val_ctx_flag_set" class="item"><strong>VAL_CTX_FLAG_SET</strong></a></strong></dt>
 
+<dt id="CTX_DYN_POL_VAL_OVR"><b>CTX_DYN_POL_VAL_OVR</b></dt>
 <dd>
-<p>causes the validator to set the given flag as one of the default 
-query flags.</p>
+
+<p>When this flag is set only the validator configuration specified in the <i>vc_valpol</i> field is used for the validator configuration. Options specified in the <b>dnsval.conf</b> file are ignored.</p>
+
 </dd>
-<dt><strong><a name="val_ctx_flag_reset" class="item"><strong>VAL_CTX_FLAG_RESET</strong></a></strong></dt>
-
+<dt id="CTX_DYN_POL_RES_OVR"><b>CTX_DYN_POL_RES_OVR</b></dt>
 <dd>
-<p>causes the validator to reset the given flag if it was set as one 
-of the default query flags for the context.</p>
+
+<p>When this flag is set only the name servers specified in the <i>vc_nslist</i> field is used for the resolver configuration. Options specified in the <b>resolv.conf</b> file are ignored.</p>
+
+</dd>
+<dt id="CTX_DYN_POL_GLO_OVR"><b>CTX_DYN_POL_GLO_OVR</b></dt>
+<dd>
+
+<p>When this flag is set only the global options set in <i>gopt</i> field are used. Global options specified in the <b>dnsval.conf</b> file are ignored.</p>
+
+</dd>
+<dt id="CTX_DYN_POL_RES_NRD"><b>CTX_DYN_POL_RES_NRD</b></dt>
+<dd>
+
+<p>When this flag is set outgoing queries have the Recursion Desired (RD) bit set to 0. This is useful if queries need to be sent to an authoritative-only name server.</p>
+
 </dd>
 </dl>
-<p>Answers returned by <em>val_resolve_and_check()</em> are made available in the
-<em>*results</em> linked list.  Each answer corresponds to a distinct RRset; multiple
-RRs within the RRset are part of the same answer.  Multiple answers are possible when
-<em>type</em> is <em>ns_t_any</em> or <em>ns_t_rrsig</em>.</p>
-<p>Individual elements in <em>*results</em> point to <em>val_authentication_chain</em> linked
-lists.  The authentication chain elements in <em>val_authentication_chain</em> contain
-the actual RRsets returned by  the name server in response to the query.</p>
-<p>Validation result values returned in <em>val_result_chain</em> and
-authentication chain status values returned in each element of the
-<em>val_authentication_chain</em> linked list can be can be converted into ASCII
-format using the <em>p_val_status()</em> and <em>p_ac_status()</em> functions respectively.</p>
-<p>While some applications such as DNSSEC troubleshooting utilities and packet
-inspection tools may look at individual authentication
-chain elements to identify the actual reasons for validation error,
-most applications will only be interested in a single error code for determining
-the authenticity of data.</p>
-<p><em>val_isvalidated()</em> identifies if a given
-validation result status value corresponds to an answer that was
-cryptographically verified and validated using a locally configured
-trust anchor.</p>
-<p><em>val_istrusted()</em> identifies if a given
-validator status value is trusted.  An answer may be locally trusted
-without being validated.</p>
-<p><em>val_does_not_exist()</em> identifies if a given
-validator status value corresponds to one of the non-existence types.</p>
-<p>The <em>libval</em> library internally allocates memory for <em>*results</em> and this
-must be freed by the invoking application using the <em>free_result_chain()</em>
-interface.</p>
-<p>
-</p>
-<hr />
-<h1><a name="data_structures">DATA STRUCTURES</a></h1>
-<dl>
-<dt><strong><a name="struct_val_result_chain" class="item"><em>struct val_result_chain</em></a></strong></dt>
 
+<p>The <i>gopt</i> field points to the following structure:</p>
+
+<pre><code>    typedef struct val_global_opt {
+        int local_is_trusted;
+        long edns0_size;
+        int env_policy;
+        int app_policy;
+        char *log_target;
+        int closest_ta_only;
+        int rec_fallback;
+        long max_refresh;
+        int proto;
+    } val_global_opt_t;</code></pre>
+
+<p>Setting a value of 1 for <i>local_is_trusted</i> is equivalent to specifying the <i>trust-oob-answers</i> option in the <b>dnsval.conf</b> file to <b>yes</b>. Similarly, setting the <i>closest_ta_only</i> and <i>rec_fallback</i> members to 1 is equivalent to setting the <i>closest-ta-only</i> and <i>rec-fallback</i> options to <b>yes</b> in the <b>dnsval.conf</b> file. A value of 0 is equivalent to the <b>no</b> setting for these option.</p>
+
+<p>Setting the <i>edns0_size</i> member to a particular value has the same effect setting the <i>edns0-size</i> option in the <b>dnsval.conf</b> file.</p>
+
+<p>Setting the <i>max_refresh</i> member to a particular value has the same effect setting the <i>max-refresh</i> option in the <b>dnsval.conf</b> file.</p>
+
+<p>Setting the <i>proto</i> member to a particular value has the same effect setting the <i>proto</i> option in the <b>dnsval.conf</b> file.</p>
+
+<p><i>env_policy</i> and <i>app_policy</i> can be set to one of <b>VAL_POL_GOPT_DISABLE</b>, <b>VAL_POL_GOPT_ENABLE</b>, or <b>VAL_POL_GOPT_OVERRIDE</b>. These values correspond directly to the <i>disable</i>, <i>enable</i> and <i>override</i> options for the <i>env-policy</i> and <i>app-policy</i> settings in the <b>dnsval.conf</b> file.</p>
+
+<p>Values of -1 for the above fields are treated as &quot;ignore&quot; conditions in that the validator will not include dynamically supplied global options with a value of -1 when creating its context. This allows an application to overriding a subset of global options while using the global options supplied in the <b>dnsval.conf</b> file by default.</p>
+
+<p>The log_target field enables the application to supply log targets <i>in addition</i> to the ones configured in the configuration file.</p>
+
+<p>See <b>dnsval.conf(3)</b> for more details on specifying validator policy.</p>
+
+<p>Default query flags can be set and unset for a given context using <i>val_context_setqflags()</i>. This allows an application to alter the DNSSEC validator processing, while still having most of the more granular default configuration specified in its configuration file. The <i>action</i> parameter can be set to one of the following.</p>
+
+<dl>
+
+<dt id="VAL_CTX_FLAG_SET"><b>VAL_CTX_FLAG_SET</b></dt>
 <dd>
-<pre>
-  struct val_result_chain
+
+<p>This option causes the validator to set the given flag as one of the default query flags.</p>
+
+</dd>
+<dt id="VAL_CTX_FLAG_RESET"><b>VAL_CTX_FLAG_RESET</b></dt>
+<dd>
+
+<p>This option causes the validator to reset the given flag if it was set as one of the default query flags for the context.</p>
+
+</dd>
+</dl>
+
+<p>Answers returned by <i>val_resolve_and_check()</i> are made available in the <i>*results</i> linked list. Each answer corresponds to a distinct RRset; multiple RRs within the RRset are part of the same answer. Multiple answers are possible when <i>type</i> is <i>ns_t_any</i> or <i>ns_t_rrsig</i>.</p>
+
+<p>Individual elements in <i>*results</i> point to <i>val_authentication_chain</i> linked lists. The authentication chain elements in <i>val_authentication_chain</i> contain the actual RRsets returned by the name server in response to the query.</p>
+
+<p>Validation result values returned in <i>val_result_chain</i> can be can be converted into ASCII format using the <i>p_val_status()</i>. Authentication chain status values returned in each element of the <i>val_authentication_chain</i> linked list can be can be converted into ASCII format using the <i>p_ac_status()</i> functions.</p>
+
+<p>While some applications such as DNSSEC troubleshooting utilities and packet inspection tools may look at individual authentication chain elements to identify the actual reasons for validation error, most applications will only be interested in a single error code for determining the authenticity of data.</p>
+
+<p><i>val_isvalidated()</i> identifies if a given validation result status value corresponds to an answer that was cryptographically verified and validated using a locally configured trust anchor.</p>
+
+<p><i>val_istrusted()</i> identifies if a given validator status value is trusted. An answer may be locally trusted without being validated.</p>
+
+<p><i>val_does_not_exist()</i> identifies if a given validator status value corresponds to one of the non-existence types.</p>
+
+<p>The <i>libval</i> library internally allocates memory for <i>*results</i> and this must be freed by the invoking application using the <i>free_result_chain()</i> interface.</p>
+
+<h1 id="DATA-STRUCTURES">DATA STRUCTURES</h1>
+
+<dl>
+
+<dt id="struct-val_result_chain"><i>struct val_result_chain</i></dt>
+<dd>
+
+<pre><code>  struct val_result_chain
   {
       val_status_t                     val_rc_status;
       char                            *val_rc_alias;
@@ -232,282 +293,284 @@ interface.</p>
       int                              val_rc_proof_count;
       struct val_authentication_chain *val_rc_proofs[MAX_PROOFS];
       struct val_result_chain         *val_rc_next;
-  };</pre>
-<dl>
-<dt><strong><a name="val_rc_answer" class="item"><em>val_rc_answer</em></a></strong></dt>
+  };</code></pre>
 
+<dl>
+
+<dt id="val_rc_answer"><i>val_rc_answer</i></dt>
 <dd>
+
 <p>Authentication chain for a given RRset.</p>
-</dd>
-<dt><strong><a name="val_rc_next" class="item"><em>val_rc_next</em></a></strong></dt>
 
+</dd>
+<dt id="val_rc_next"><i>val_rc_next</i></dt>
 <dd>
+
 <p>Pointer to the next RRset in the set of answers returned for a query.</p>
-</dd>
-<dt><strong><a name="val_rc_proofs" class="item"><em>val_rc_proofs</em></a></strong></dt>
 
-<dd>
-<p>Pointer to authentication chains for any proof of non-existence that were
-returned for the query.</p>
 </dd>
-<dt><strong><a name="val_rc_proof_count" class="item"><em>val_rc_proof_count</em></a></strong></dt>
-
+<dt id="val_rc_proofs"><i>val_rc_proofs</i></dt>
 <dd>
-<p>Number of proof elements stored in <em>val_rc_proofs</em>. The number cannot exceed
-<strong>MAX_PROOFS</strong>.</p>
+
+<p>Pointer to authentication chains for any proof of non-existence that were returned for the query.</p>
+
 </dd>
-<dt><strong><a name="val_rc_alias" class="item"><em>val_rc_alias</em></a></strong></dt>
-
+<dt id="val_rc_proof_count"><i>val_rc_proof_count</i></dt>
 <dd>
+
+<p>Number of proof elements stored in <i>val_rc_proofs</i>. The number cannot exceed <b>MAX_PROOFS</b>.</p>
+
+</dd>
+<dt id="val_rc_alias"><i>val_rc_alias</i></dt>
+<dd>
+
 <p>For an val_result_chain element that points to a name alias, this field contains the target value.</p>
-</dd>
-<dt><strong><a name="val_rc_rrset" class="item"><em>val_rc_rrset</em></a></strong></dt>
 
-<dd>
-<p>For an val_result_chain element that contains a valid (not NULL) val_rc_answer field, 
-the val_rc_rrset field points to the top-most val_rrset_rec element in the val_rc_answer 
-authentication chain.</p>
 </dd>
-<dt><strong><a name="val_rc_status" class="item"><em>val_rc_status</em></a></strong></dt>
-
+<dt id="val_rc_rrset"><i>val_rc_rrset</i></dt>
 <dd>
-<p>Validation status for a given RRset.  This can be one of the following:</p>
+
+<p>For a <i>val_result_chain</i> element that contains a valid (not NULL) <i>val_rc_answer</i> field, the <i>val_rc_rrset</i> field points to the top-most <i>val_rrset_rec</i> element in the <i>val_rc_answer</i> authentication chain.</p>
+
+</dd>
+<dt id="val_rc_status"><i>val_rc_status</i></dt>
+<dd>
+
+<p>Validation status for a given RRset. This can be one of the following:</p>
+
 <dl>
-<dt><strong><a name="val_success" class="item">VAL_SUCCESS</a></strong></dt>
 
+<dt id="VAL_SUCCESS"><b>VAL_SUCCESS</b></dt>
 <dd>
+
 <p>Answer received and validated successfully.</p>
-</dd>
-<dt><strong><a name="val_nonexistent_name" class="item">VAL_NONEXISTENT_NAME</a></strong></dt>
 
-<dd>
-<p>No name was present and a valid proof of non-
-existence confirming the missing name (NSEC or
-NSEC3 span) was returned. The components of
-the proof were also individually validated.</p>
 </dd>
-<dt><strong><a name="val_nonexistent_type" class="item">VAL_NONEXISTENT_TYPE</a></strong></dt>
-
+<dt id="VAL_NONEXISTENT_NAME"><b>VAL_NONEXISTENT_NAME</b></dt>
 <dd>
-<p>No type exists for the name and a valid proof
-of non-existence confirming the missing name
-was returned.  The components of the proof
-were also individually validated.</p>
+
+<p>No name was present and a valid proof of non-existence confirming the missing name (NSEC or NSEC3 span) was returned. The components of the proof were also individually validated.</p>
+
 </dd>
-<dt><strong><a name="val_nonexistent_name_nochain" class="item">VAL_NONEXISTENT_NAME_NOCHAIN</a></strong></dt>
-
+<dt id="VAL_NONEXISTENT_TYPE"><b>VAL_NONEXISTENT_TYPE</b></dt>
 <dd>
-<p>No name was present and a valid proof of non-
-existence confirming the missing name was
-returned. The components of the proof were also
-identified to be trustworthy, but they were
-not individually validated.</p>
+
+<p>No type exists for the name and a valid proof of non-existence confirming the missing name was returned. The components of the proof were also individually validated.</p>
+
 </dd>
-<dt><strong><a name="val_nonexistent_type_nochain" class="item">VAL_NONEXISTENT_TYPE_NOCHAIN</a></strong></dt>
-
+<dt id="VAL_NONEXISTENT_NAME_NOCHAIN"><b>VAL_NONEXISTENT_NAME_NOCHAIN</b></dt>
 <dd>
-<p>No type exists for the name and a valid proof
-of non-existence confirming the missing name
-(NSEC or NSEC3 span) was returned.  The
-components of the proof were also identified
-to be trustworthy, but they were not
-individually validated.</p>
+
+<p>No name was present and a valid proof of non-existence confirming the missing name was returned. The components of the proof were also identified to be trustworthy, but they were not individually validated.</p>
+
 </dd>
-<dt><strong><a name="val_pinsecure" class="item">VAL_PINSECURE</a></strong></dt>
-
+<dt id="VAL_NONEXISTENT_TYPE_NOCHAIN"><b>VAL_NONEXISTENT_TYPE_NOCHAIN</b></dt>
 <dd>
-<p>The record or some ancestor of the record in
-the authentication chain towards the trust
-anchor was known to be provably insecure.</p>
+
+<p>No type exists for the name and a valid proof of non-existence confirming the missing name (NSEC or NSEC3 span) was returned. The components of the proof were also identified to be trustworthy, but they were not individually validated.</p>
+
 </dd>
-<dt><strong><a name="val_pinsecure_untrusted" class="item">VAL_PINSECURE_UNTRUSTED</a></strong></dt>
-
+<dt id="VAL_PINSECURE"><b>VAL_PINSECURE</b></dt>
 <dd>
-<p>The record or some ancestor of the record in the
-authentication chain towards the trust anchor was
-known to be provably insecure. But the provably
-insecure condition was configured as untrustworthy.</p>
+
+<p>The record or some ancestor of the record in the authentication chain towards the trust anchor was known to be provably insecure.</p>
+
 </dd>
-<dt><strong><a name="val_bare_rrsig" class="item">VAL_BARE_RRSIG</a></strong></dt>
-
+<dt id="VAL_PINSECURE_UNTRUSTED"><b>VAL_PINSECURE_UNTRUSTED</b></dt>
 <dd>
-<p>No DNSSEC validation possible, query was
-for an RRSIG.</p>
+
+<p>The record or some ancestor of the record in the authentication chain towards the trust anchor was known to be provably insecure. But the provably insecure condition was configured as untrustworthy.</p>
+
 </dd>
-<dt><strong><a name="val_ignore_validation" class="item">VAL_IGNORE_VALIDATION</a></strong></dt>
-
+<dt id="VAL_BARE_RRSIG"><b>VAL_BARE_RRSIG</b></dt>
 <dd>
-<p>Local policy was configured to ignore validation
-for the zone from which this data was received.</p>
+
+<p>No DNSSEC validation possible, query was for an RRSIG.</p>
+
 </dd>
-<dt><strong><a name="val_untrusted_zone" class="item">VAL_UNTRUSTED_ZONE</a></strong></dt>
-
+<dt id="VAL_IGNORE_VALIDATION"><b>VAL_IGNORE_VALIDATION</b></dt>
 <dd>
-<p>Local policy was configured to reject
-any data received from the given zone.</p>
+
+<p>Local policy was configured to ignore validation for the zone from which this data was received.</p>
+
 </dd>
-<dt><strong><a name="val_oob_answer" class="item">VAL_OOB_ANSWER</a></strong></dt>
-
+<dt id="VAL_UNTRUSTED_ZONE"><b>VAL_UNTRUSTED_ZONE</b></dt>
 <dd>
-<p>Answer was obtained using some Out of Band 
-method, such as a local configuration file.</p>
+
+<p>Local policy was configured to reject any data received from the given zone.</p>
+
 </dd>
-<dt><strong><a name="val_bogus" class="item">VAL_BOGUS</a></strong></dt>
-
+<dt id="VAL_OOB_ANSWER"><b>VAL_OOB_ANSWER</b></dt>
 <dd>
-<p>Response could not be validated due to signature
-verification failures or the inability to verify
-proofs for an indeterminate number of components
-in the authentication chain.</p>
+
+<p>Answer was obtained using some Out Of Band method, such as a local configuration file.</p>
+
 </dd>
-<dt><strong><a name="val_dns_error" class="item">VAL_DNS_ERROR</a></strong></dt>
-
+<dt id="VAL_BOGUS"><b>VAL_BOGUS</b></dt>
 <dd>
+
+<p>Response could not be validated due to signature verification failures or the inability to verify proofs in the authentication chain.</p>
+
+</dd>
+<dt id="VAL_DNS_ERROR"><b>VAL_DNS_ERROR</b></dt>
+<dd>
+
 <p>Some error was encountered during DNS processing.</p>
-</dd>
-<dt><strong><a name="val_notrust" class="item">VAL_NOTRUST</a></strong></dt>
 
+</dd>
+<dt id="VAL_INDETERMINATE"><b>VAL_INDETERMINATE</b></dt>
 <dd>
-<p>All available components in the authentication
-chain verified properly, but there was no trust
-anchor available.</p>
+
+<p>Response could not be validated due to missing DNSSEC meta-data.</p>
+
+</dd>
+<dt id="VAL_NOTRUST"><b>VAL_NOTRUST</b></dt>
+<dd>
+
+<p>All available components in the authentication chain verified properly, but there was no trust anchor available.</p>
+
 </dd>
 </dl>
-<p>Status values in <em>val_status_t</em> returned by the validator can be displayed
-in ASCII format using <em>p_val_status()</em>.</p>
+
+<p>Status values in <i>val_status_t</i> returned by the validator can be displayed in ASCII format using <i>p_val_status()</i>.</p>
+
 </dd>
 </dl>
+
 </dd>
 </dl>
+
 <dl>
-<dt><strong><a name="struct_val_authentication_chain" class="item"><em>struct val_authentication_chain</em></a></strong></dt>
 
+<dt id="struct-val_authentication_chain"><i>struct val_authentication_chain</i></dt>
 <dd>
-<pre>
-  struct val_authentication_chain
+
+<pre><code>  struct val_authentication_chain
   {
       val_astatus_t                    val_ac_status;
       struct val_rrset_rec                *val_ac_rrset;
       struct val_authentication_chain *val_ac_trust;
-  };</pre>
-<dl>
-<dt><strong><a name="val_ac_status" class="item"><em>val_ac_status</em></a></strong></dt>
+  };</code></pre>
 
-<dd>
-<p>Validation state of the authentication chain element.  This field will
-contain the status code for the given component in the authentication chain.
-This field may contain one of the following values:</p>
 <dl>
-<dt><strong><a name="val_ac_unset" class="item">VAL_AC_UNSET</a></strong></dt>
 
+<dt id="val_ac_status"><i>val_ac_status</i></dt>
 <dd>
+
+<p>Validation state of the authentication chain element. This field will contain the status code for the given component in the authentication chain. This field may contain one of the following values:</p>
+
+<dl>
+
+<dt id="VAL_AC_UNSET"><b>VAL_AC_UNSET</b></dt>
+<dd>
+
 <p>The status could not be determined.</p>
-</dd>
-<dt><strong><a name="val_ac_ignore_validation" class="item">VAL_AC_IGNORE_VALIDATION</a></strong></dt>
 
-<dd>
-<p>Validation for the given resource record was ignored,
-either because of some local policy directive or
-because of some protocol-specific behavior.</p>
 </dd>
-<dt><strong><a name="val_ac_untrusted_zone" class="item">VAL_AC_UNTRUSTED_ZONE</a></strong></dt>
-
+<dt id="VAL_AC_IGNORE_VALIDATION"><b>VAL_AC_IGNORE_VALIDATION</b></dt>
 <dd>
-<p>Local policy defined a given zone as untrusted,
-with no further validation being deemed necessary.</p>
+
+<p>Validation for the given resource record was ignored, either because of some local policy directive or because of some protocol-specific behavior.</p>
+
 </dd>
-<dt><strong><a name="val_ac_pinsecure" class="item">VAL_AC_PINSECURE</a></strong></dt>
-
+<dt id="VAL_AC_UNTRUSTED_ZONE"><b>VAL_AC_UNTRUSTED_ZONE</b></dt>
 <dd>
-<p>The authentication chain from a trust anchor to a
-given zone could not be constructed due to the
-provable absence of a DS record for this zone in
-the parent.</p>
+
+<p>Local policy defined a given zone as untrusted, with no further validation being deemed necessary.</p>
+
 </dd>
-<dt><strong><a name="val_ac_bare_rrsig" class="item">VAL_AC_BARE_RRSIG</a></strong></dt>
-
+<dt id="VAL_AC_PINSECURE"><b>VAL_AC_PINSECURE</b></dt>
 <dd>
-<p>The response was for a query of type RRSIG.  RRSIGs
-contain the cryptographic signatures for other DNS
-data and cannot themselves be validated.</p>
+
+<p>The authentication chain from a trust anchor to a given zone could not be constructed due to the provable absence of a DS record for this zone in the parent.</p>
+
 </dd>
-<dt><strong><a name="val_ac_no_link" class="item">VAL_AC_NO_LINK</a></strong></dt>
-
+<dt id="VAL_AC_BARE_RRSIG"><b>VAL_AC_BARE_RRSIG</b></dt>
 <dd>
-<p>There was no trust anchor configured for a given
-authentication chain or the chain didn't link up.</p>
+
+<p>The response was for a query of type RRSIG. RRSIGs contain the cryptographic signatures for other DNS data and cannot themselves be validated.</p>
+
 </dd>
-<dt><strong><a name="val_ac_trust" class="item">VAL_AC_TRUST</a></strong></dt>
-
+<dt id="VAL_AC_NO_LINK"><b>VAL_AC_NO_LINK</b></dt>
 <dd>
-<p>At least one of the signatures covering the given
-DNSKEY RRset was directly verified using a key that was
-configured as a DNSSEC trust anchor.</p>
+
+<p>There was no trust anchor configured for a given authentication chain or the chain didn&#39;t link up.</p>
+
 </dd>
-<dt><strong><a name="val_ac_rrsig_missing" class="item">VAL_AC_RRSIG_MISSING</a></strong></dt>
-
+<dt id="VAL_AC_TRUST"><b>VAL_AC_TRUST</b></dt>
 <dd>
-<p>RRSIG data could not be retrieved for a
-resource record.</p>
+
+<p>At least one of the signatures covering the given DNSKEY RRset was directly verified using a key that was configured as a DNSSEC trust anchor.</p>
+
 </dd>
-<dt><strong><a name="val_ac_dnskey_missing" class="item">VAL_AC_DNSKEY_MISSING</a></strong></dt>
-
+<dt id="VAL_AC_RRSIG_MISSING"><b>VAL_AC_RRSIG_MISSING</b></dt>
 <dd>
-<p>The DNSKEY for an RRSIG covering a resource
-record could not be retrieved.</p>
+
+<p>RRSIG data could not be retrieved for a resource record.</p>
+
 </dd>
-<dt><strong><a name="val_ac_ds_missing" class="item">VAL_AC_DS_MISSING</a></strong></dt>
-
+<dt id="VAL_AC_DNSKEY_MISSING"><b>VAL_AC_DNSKEY_MISSING</b></dt>
 <dd>
-<p>The DS record covering a DNSKEY record was
-not available.</p>
+
+<p>The DNSKEY for an RRSIG covering a resource record could not be retrieved.</p>
+
 </dd>
-<dt><strong><a name="val_ac_data_missing" class="item">VAL_AC_DATA_MISSING</a></strong></dt>
-
+<dt id="VAL_AC_DS_MISSING"><b>VAL_AC_DS_MISSING</b></dt>
 <dd>
-<p>No data were returned for a query and the
-DNS did not indicate an error.</p>
+
+<p>The DS record covering a DNSKEY record was not available.</p>
+
 </dd>
-<dt><strong><a name="val_ac_dns_error" class="item">VAL_AC_DNS_ERROR</a></strong></dt>
-
+<dt id="VAL_AC_DATA_MISSING"><b>VAL_AC_DATA_MISSING</b></dt>
 <dd>
+
+<p>No data were returned for a query and the DNS did not indicate an error.</p>
+
+</dd>
+<dt id="VAL_AC_DNS_ERROR"><b>VAL_AC_DNS_ERROR</b></dt>
+<dd>
+
 <p>Some error was encountered during DNS processing.</p>
-</dd>
-<dt><strong><a name="val_ac_not_verified" class="item">VAL_AC_NOT_VERIFIED</a></strong></dt>
 
-<dd>
-<p>All RRSIGs covering the RRset could not
-be verified.</p>
 </dd>
-<dt><strong><a name="val_ac_verified" class="item">VAL_AC_VERIFIED</a></strong></dt>
-
+<dt id="VAL_AC_NOT_VERIFIED"><b>VAL_AC_NOT_VERIFIED</b></dt>
 <dd>
-<p>At least one RRSIG covering a resource
-record had a status of VAL_AC_RRSIG_VERIFIED.</p>
+
+<p>All RRSIGs covering the RRset could not be verified.</p>
+
+</dd>
+<dt id="VAL_AC_VERIFIED"><b>VAL_AC_VERIFIED</b></dt>
+<dd>
+
+<p>At least one RRSIG covering a resource record had a status of <b>VAL_AC_RRSIG_VERIFIED</b>.</p>
+
 </dd>
 </dl>
-</dd>
-<dt><strong><a name="val_ac_rrset" class="item"><em>val_ac_rrset</em></a></strong></dt>
 
-<dd>
-<p>Pointer to an RRset of type <em>struct val_rrset_rec</em> obtained from the DNS response.</p>
 </dd>
-<dt><strong><a name="val_ac_trust" class="item"><em>val_ac_trust</em></a></strong></dt>
-
+<dt id="val_ac_rrset"><i>val_ac_rrset</i></dt>
 <dd>
-<p>Pointer to an authentication chain element that either contains a DNSKEY RRset
-that can be used to verify RRSIGs over the current record, or contains a DS
-RRset that can be used to build the chain-of-trust towards a trust anchor.</p>
+
+<p>Pointer to an RRset of type <i>struct val_rrset_rec</i> obtained from the DNS response.</p>
+
+</dd>
+<dt id="val_ac_trust"><i>val_ac_trust</i></dt>
+<dd>
+
+<p>Pointer to an authentication chain element that either contains a DNSKEY RRset that can be used to verify RRSIGs over the current record, or contains a DS RRset that can be used to build the chain-of-trust towards a trust anchor.</p>
+
 </dd>
 </dl>
+
 </dd>
 </dl>
+
 <dl>
-<dt><strong><a name="struct_val_rrset_rec" class="item"><em>struct val_rrset_rec</em></a></strong></dt>
 
+<dt id="struct-val_rrset_rec"><i>struct val_rrset_rec</i></dt>
 <dd>
-<pre>
-  struct val_rrset_rec
+
+<pre><code>  struct val_rrset_rec
   {
       int    val_rrset_rcode;
       char   *val_rrset_name;
@@ -518,286 +581,300 @@ RRset that can be used to build the chain-of-trust towards a trust anchor.</p>
       struct sockaddr *val_rrset_server;
       struct val_rr_rec *val_rrset_data;
       struct val_rr_rec *val_rrset_sig;
-  };</pre>
-<dl>
-<dt><strong><a name="val_rrset_rcode" class="item"><em>val_rrset_rcode</em></a></strong></dt>
+  };</code></pre>
 
+<dl>
+
+<dt id="val_rrset_rcode"><i>val_rrset_rcode</i></dt>
 <dd>
+
 <p>The rcode on the response header for this rrset.</p>
-</dd>
-<dt><strong><a name="val_rrset_name" class="item"><em>val_rrset_name</em></a></strong></dt>
 
+</dd>
+<dt id="val_rrset_name"><i>val_rrset_name</i></dt>
 <dd>
+
 <p>Owner name of the RRset.</p>
-</dd>
-<dt><strong><a name="val_rrset_class" class="item"><em>val_rrset_class</em></a></strong></dt>
 
+</dd>
+<dt id="val_rrset_class"><i>val_rrset_class</i></dt>
 <dd>
+
 <p>Class of the RRset.</p>
-</dd>
-<dt><strong><a name="val_val_rrset_type" class="item"><em>val_val_rrset_type</em></a></strong></dt>
 
+</dd>
+<dt id="val_val_rrset_type"><i>val_val_rrset_type</i></dt>
 <dd>
+
 <p>Type of the RRset.</p>
-</dd>
-<dt><strong><a name="val_rrset_ttl" class="item"><em>val_rrset_ttl</em></a></strong></dt>
 
+</dd>
+<dt id="val_rrset_ttl"><i>val_rrset_ttl</i></dt>
 <dd>
+
 <p>TTL of the RRset.</p>
-</dd>
-<dt><strong><a name="val_rrset_section" class="item"><em>val_rrset_section</em></a></strong></dt>
 
-<dd>
-<p>Section in which the RRset was received.  This value may be <strong>VAL_FROM_ANSWER</strong>,
-<strong>VAL_FROM_AUTHORITY</strong>, or <strong>VAL_FROM_ADDITIONAL</strong>.</p>
 </dd>
-<dt><strong><a name="val_rrset_server" class="item"><em>val_rrset_server</em></a></strong></dt>
-
+<dt id="val_rrset_section"><i>val_rrset_section</i></dt>
 <dd>
+
+<p>Section in which the RRset was received. This value may be <b>VAL_FROM_ANSWER</b>, <b>VAL_FROM_AUTHORITY</b>, or <b>VAL_FROM_ADDITIONAL</b>.</p>
+
+</dd>
+<dt id="val_rrset_server"><i>val_rrset_server</i></dt>
+<dd>
+
 <p>The name server that returned this reponse.</p>
-</dd>
-<dt><strong><a name="val_rrset_data" class="item"><em>val_rrset_data</em></a></strong></dt>
 
+</dd>
+<dt id="val_rrset_data"><i>val_rrset_data</i></dt>
 <dd>
+
 <p>Response RDATA.</p>
-</dd>
-<dt><strong><a name="val_rrset_sig" class="item"><em>val_rrset_sig</em></a></strong></dt>
 
+</dd>
+<dt id="val_rrset_sig"><i>val_rrset_sig</i></dt>
 <dd>
-<p>Any associated RRSIGs for the RDATA returned in <em>val_rrset_data</em>.</p>
+
+<p>Any associated RRSIGs for the RDATA returned in <i>val_rrset_data</i>.</p>
+
 </dd>
 </dl>
+
 </dd>
 </dl>
+
 <dl>
-<dt><strong><a name="struct_val_rr_rec" class="item"><em>struct val_rr_rec</em></a></strong></dt>
 
+<dt id="struct-val_rr_rec"><i>struct val_rr_rec</i></dt>
 <dd>
-<pre>
-  struct val_rr_rec
+
+<pre><code>  struct val_rr_rec
   {
       size_t            rr_rdata_length;
       unsigned char     *rr_rdata;
       struct val_rr_rec *rr_next;
       val_astatus_t     rr_status;
-  };</pre>
+  };</code></pre>
+
 <dl>
-<dt><strong><a name="rr_rdata_length_h" class="item"><em>rr_rdata_length_h</em></a></strong></dt>
 
+<dt id="rr_rdata_length_h"><i>rr_rdata_length_h</i></dt>
 <dd>
-<p>Length of data stored in <em>rr_rdata</em>.</p>
+
+<p>Length of data stored in <i>rr_rdata</i>.</p>
+
 </dd>
-<dt><strong><a name="rr_rdata" class="item"><em>rr_rdata</em></a></strong></dt>
-
+<dt id="rr_rdata"><i>rr_rdata</i></dt>
 <dd>
+
 <p>RDATA bytes.</p>
-</dd>
-<dt><strong><a name="rr_status" class="item"><em>rr_status</em></a></strong></dt>
 
+</dd>
+<dt id="rr_status"><i>rr_status</i></dt>
 <dd>
-<p>For each signature <em>val_rr_rec</em> member within the authentication chain
-<em>val_ac_rrset</em>, the validation status stored in the variable
-<em>rr_status</em> can return one of the following values:</p>
-<pre>
-    VAL_AC_RRSIG_VERIFIED
-        The RRSIG verified successfully.</pre>
-<pre>
+
+<p>For each signature <i>val_rr_rec</i> member within the authentication chain <i>val_ac_rrset</i>, the validation status stored in the variable <i>rr_status</i> can return one of the following values:</p>
+
+<pre><code>    VAL_AC_RRSIG_VERIFIED
+        The RRSIG verified successfully.
+
     VAL_AC_WCARD_VERIFIED
         A given RRSIG covering a resource record shows
-        that the record was wildcard expanded.</pre>
-<pre>
+        that the record was wildcard expanded.
+
     VAL_AC_RRSIG_VERIFIED_SKEW
         The RRSIG verified successfully after clock
-        skew was taken into account.</pre>
-<pre>
+        skew was taken into account.
+
     VAL_AC_WCARD_VERIFIED_SKEW
         A given RRSIG covering a resource record shows that
         the record was wildcard expanded, but it was verified
-        only after clock skew was taken into account.</pre>
-<pre>
+        only after clock skew was taken into account.
+
     VAL_AC_WRONG_LABEL_COUNT
         The number of labels on the signature was greater
-        than the count given in the RRSIG RDATA.</pre>
-<pre>
+        than the count given in the RRSIG RDATA.
+
     VAL_AC_INVALID_RRSIG
-        The RRSIG could not be parsed.</pre>
-<pre>
+        The RRSIG could not be parsed.
+
     VAL_AC_RRSIG_NOTYETACTIVE
-        The RRSIG's inception time is in the future.</pre>
-<pre>
+        The RRSIG&#39;s inception time is in the future.
+
     VAL_AC_RRSIG_EXPIRED
-        The RRSIG had expired.</pre>
-<pre>
+        The RRSIG had expired.
+
     VAL_AC_ALGORITHM_NOT_SUPPORTED
-        The RRSIG algorithm was not supported.</pre>
-<pre>
+        The RRSIG algorithm was not supported.
+
     VAL_AC_RRSIG_VERIFY_FAILED
-        A given RRSIG covering an RRset was bogus.</pre>
-<pre>
+        A given RRSIG covering an RRset was bogus.
+
     VAL_AC_RRSIG_ALGORITHM_MISMATCH
         The keytag referenced in the RRSIG matched a
-        DNSKEY but the algorithms were different.</pre>
-<pre>
+        DNSKEY but the algorithms were different.
+
     VAL_AC_DNSKEY_NOMATCH
         An RRSIG was created by a DNSKEY that did not
-        exist in the apex keyset.</pre>
-<p>For each <em>val_rr_rec</em> member of type DNSKEY (or DS, where relevant) within the
-authentication chain <em>val_ac_rrset</em>, the validation status is stored in the
-variable <em>rr_status</em> and can return one of the following values:</p>
-<pre>
-    VAL_AC_TRUST_POINT
-    The given DNSKEY or a DS record was configured 
-    as a DNSSEC trust anchor.</pre>
-<pre>
+        exist in the apex keyset.</code></pre>
+
+<p>For each <i>val_rr_rec</i> member of type DNSKEY (or DS, where relevant) within the authentication chain <i>val_ac_rrset</i>, the validation status is stored in the variable <i>rr_status</i> and can return one of the following values:</p>
+
+<pre><code>    VAL_AC_TRUST_POINT
+        The given DNSKEY or a DS record was configured 
+        as a DNSSEC trust anchor.
+
     VAL_AC_SIGNING_KEY
         This DNSKEY was used to create an RRSIG for
-        the resource record set.</pre>
-<pre>
+        the resource record set.
+
     VAL_AC_VERIFIED_LINK
         This DNSKEY provided the link in the authentication
-        chain from the trust anchor to the signed record.</pre>
-<pre>
+        chain from the trust anchor to the signed record.
+
     VAL_AC_UNKNOWN_ALGORITHM_LINK
         This DNSKEY provided the link in the authentication
         chain from the trust anchor to the signed record,
-        but the DNSKEY algorithm was unknown.</pre>
-<pre>
+        but the DNSKEY algorithm was unknown.
+
     VAL_AC_UNKNOWN_DNSKEY_PROTOCOL
-        The DNSKEY protocol number was unrecognized.</pre>
-<pre>
+        The DNSKEY protocol number was unrecognized.
+
     VAL_AC_ALGORITHM_NOT_SUPPORTED
         The DNSKEY or DS algorithm was not supported.
     
     VAL_AC_DS_NOMATCH
         An RRSIG was created with a key that did not
-        exist in the parent DS record set.</pre>
-<pre>
+        exist in the parent DS record set.
+
     VAL_AC_INVALID_KEY
-        The key used to verify the RRSIG was not a valid
-        DNSKEY.</pre>
-<pre>
+        The key used to verify the RRSIG was not a valid DNSKEY.
+
     VAL_AC_INVALID_DS
-        The DS used to validatate the DNSKEY could not be
-    parsed 
-=back</pre>
-</dd>
-<dt><strong><a name="rr_next" class="item"><em>rr_next</em></a></strong></dt>
+        The DS used to validate the DNSKEY could not be parsed.</code></pre>
 
+</dd>
+</dl>
+
+</dd>
+<dt id="rr_next"><i>rr_next</i></dt>
 <dd>
+
 <p>Points to the next resource record in the RRset.</p>
+
 </dd>
 </dl>
-</dd>
-</dl>
-<p>
-</p>
-<hr />
-<h1><a name="logging">LOGGING</a></h1>
-<p>libval provides the <code>val_log_add_optarg()</code> function for controlling the 
-verbosity and location of log message output.</p>
-<p>The <code>val_log_add_optarg()</code> function takes two arguments: the first argument
-args is a character string value that specifies the location and verbosity,
-the second argument, use_stderr, if set to a value greater than 0 allows 
-libval to send log messages to stderr.</p>
-<p>The character string that specifies log target location and verbosity has 
-a specific format:</p>
-<pre>
-    &lt;debug-level&gt;:&lt;dest-type&gt;[:&lt;dest-options&gt;]</pre>
-<p>where 
-    &lt;debug-level&gt; is 1-7, for increasing levels of verbosity
-    &lt;dest-type&gt; is one of file, net, syslog, stderr, stdout
-    &lt;dest-options&gt; depends on &lt;dest-type&gt;
-        file:&lt;file-name&gt;   (opened in append mode)
-        net[:&lt;host-name&gt;:&lt;host-port&gt;] (127.0.0.1:1053)
-        syslog[:facility] (0-23 (default 1 USER))</p>
-<p>The log levels can be roughly translated into different types of log messages 
-as follows (the messages returned for each level in this list subsumes the 
-messages returned for the level above it):</p>
-<pre>
-    3 : Error : errror encountered
+
+<h1 id="LOGGING">LOGGING</h1>
+
+<p><b>libval</b> provides the <i>val_log_add_optarg()</i> function for controlling the verbosity and location of log message output.</p>
+
+<p>The <i>val_log_add_optarg()</i> function takes two arguments: the first argument <i>args</i> is a character-string value that specifies the location and verbosity. The second argument, <i>use_stderr</i>, if set to a value greater than 0 allows <b>libval</b> to send log messages to stderr.</p>
+
+<p>The character string that specifies log target location and verbosity has a specific format:</p>
+
+<pre><code>    &lt;debug-level&gt;:&lt;dest-type&gt;[:&lt;dest-options&gt;]</code></pre>
+
+<p>where &lt;debug-level&gt; is 1-7, for increasing levels of verbosity &lt;dest-type&gt; is one of file, net, syslog, stderr, stdout &lt;dest-options&gt; depends on &lt;dest-type&gt; file:&lt;file-name&gt; (opened in append mode) net[:&lt;host-name&gt;:&lt;host-port&gt;] (127.0.0.1:1053) syslog[:facility] (0-23 (default 1 USER))</p>
+
+<p>The log levels can be roughly translated into different types of log messages as follows (the messages returned for each level in this list subsumes the messages returned for the level above it):</p>
+
+<pre><code>    3 : Error   : error encountered
     4 : Warning : recovering from error
-    5 : Notice : gives final validation results for a query 
-                 and details on policy files and labels used 
-    6 : Info : gives details on authentication chains 
-    7 : Debug : gives debug level information
-    
-=head1 RETURN VALUES</pre>
-<p>Return values for various functions are given below. These values can be
-displayed in ASCII format using the <em>p_val_error()</em> function.</p>
+    5 : Notice  : gives final validation results for a query 
+                  and details on policy files and labels used 
+    6 : Info    : gives details on authentication chains 
+    7 : Debug   : gives debug level information
+    </code></pre>
+
+<h1 id="RETURN-VALUES">RETURN VALUES</h1>
+
+<p>Return values for various functions are given below. These values can be displayed in ASCII format using the <i>p_val_error()</i> function.</p>
+
 <dl>
-<dt><strong><a name="val_no_error" class="item">VAL_NO_ERROR</a></strong></dt>
 
+<dt id="VAL_NO_ERROR">VAL_NO_ERROR</dt>
 <dd>
+
 <p>No error was encountered.</p>
-</dd>
-<dt><strong><a name="val_not_implemented" class="item">VAL_NOT_IMPLEMENTED</a></strong></dt>
 
+</dd>
+<dt id="VAL_NOT_IMPLEMENTED">VAL_NOT_IMPLEMENTED</dt>
 <dd>
+
 <p>Functionality not yet implemented.</p>
-</dd>
-<dt><strong><a name="val_resource_unavailable" class="item">VAL_RESOURCE_UNAVAILABLE</a></strong></dt>
 
-<dd>
-<p>Some resource (crypto possibly) was unavailable.  Currently not implemented.</p>
 </dd>
-<dt><strong><a name="val_bad_argument" class="item">VAL_BAD_ARGUMENT</a></strong></dt>
-
+<dt id="VAL_RESOURCE_UNAVAILABLE">VAL_RESOURCE_UNAVAILABLE</dt>
 <dd>
+
+<p>Some resource (crypto possibly) was unavailable. Currently not implemented.</p>
+
+</dd>
+<dt id="VAL_BAD_ARGUMENT">VAL_BAD_ARGUMENT</dt>
+<dd>
+
 <p>Bad arguments passed as parameters.</p>
-</dd>
-<dt><strong><a name="val_internal_error" class="item">VAL_INTERNAL_ERROR</a></strong></dt>
 
+</dd>
+<dt id="VAL_INTERNAL_ERROR">VAL_INTERNAL_ERROR</dt>
 <dd>
+
 <p>Encountered some internal error.</p>
-</dd>
-<dt><strong><a name="val_no_permission" class="item">VAL_NO_PERMISSION</a></strong></dt>
 
-<dd>
-<p>No permission to perform operation.  Currently not implemented.</p>
 </dd>
-<dt><strong><a name="val_conf_parse_error" class="item">VAL_CONF_PARSE_ERROR</a></strong></dt>
-
+<dt id="VAL_NO_PERMISSION">VAL_NO_PERMISSION</dt>
 <dd>
+
+<p>No permission to perform operation. Currently not implemented.</p>
+
+</dd>
+<dt id="VAL_CONF_PARSE_ERROR">VAL_CONF_PARSE_ERROR</dt>
+<dd>
+
 <p>Error in parsing some configuration file.</p>
-</dd>
-<dt><strong><a name="val_conf_not_found" class="item">VAL_CONF_NOT_FOUND</a></strong></dt>
 
+</dd>
+<dt id="VAL_CONF_NOT_FOUND">VAL_CONF_NOT_FOUND</dt>
 <dd>
+
 <p>A configuration file was not available.</p>
-</dd>
-<dt><strong><a name="val_no_policy" class="item">VAL_NO_POLICY</a></strong></dt>
 
+</dd>
+<dt id="VAL_NO_POLICY">VAL_NO_POLICY</dt>
 <dd>
+
 <p>The policy identifier being referenced was invalid.</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<hr />
-<h1><a name="files">FILES</a></h1>
-<p>The validator library reads configuration information from two files,
-<strong>resolv.conf</strong> and <strong>dnsval.conf</strong>.</p>
-<p>See <strong>dnsval.conf(5)</strong> for a description of syntax for these files.</p>
-<p>
-</p>
-<hr />
-<h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2004-2013 SPARTA, Inc.  All rights reserved.
-See the COPYING file included with the dnssec-tools package for details.</p>
-<p>
-</p>
-<hr />
-<h1><a name="authors">AUTHORS</a></h1>
-<p>Suresh Krishnaswamy, Robert Story</p>
-<p>
-</p>
-<hr />
-<h1><a name="see_also">SEE ALSO</a></h1>
-<p><em>libsres(3)</em></p>
-<p><strong>dnsval.conf(5)</strong></p>
-<p><a href="http://www.dnssec-tools.org">http://www.dnssec-tools.org</a></p>
 
-<!--#include virtual="/page-bottom.html" -->
+<h1 id="FILES">FILES</h1>
+
+<p>The validator library reads configuration information from two files, <b>resolv.conf</b> and <b>dnsval.conf</b>.</p>
+
+<p>See <b>dnsval.conf(5)</b> for a description of the syntax for these files.</p>
+
+<h1 id="COPYRIGHT">COPYRIGHT</h1>
+
+<p>Copyright 2004-2013 SPARTA, Inc. All rights reserved. See the COPYING file included with the dnssec-tools package for details.</p>
+
+<h1 id="AUTHORS">AUTHORS</h1>
+
+<p>Suresh Krishnaswamy, Robert Story</p>
+
+<h1 id="SEE-ALSO">SEE ALSO</h1>
+
+<p><b>libsres(3)</b></p>
+
+<p><b>dnsval.conf(5)</b></p>
+
+<p>http://www.dnssec-tools.org</p>
+
+
 </body>
 
 </html>
+
+

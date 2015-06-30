@@ -2,7 +2,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>trustman - Manage keys used as trust anchors</title>
+<title></title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
@@ -10,317 +10,294 @@
 <body style="background-color: white">
 
 
-<!-- INDEX BEGIN -->
-<div name="index">
-<p><a name="__index__"></a></p>
 
-<ul>
-
-	<li><a href="#name">NAME</a></li>
-	<li><a href="#synopsis">SYNOPSIS</a></li>
-	<li><a href="#description">DESCRIPTION</a></li>
-	<li><a href="#options">OPTIONS</a></li>
-	<li><a href="#configuration">CONFIGURATION</a></li>
-	<li><a href="#exit_codes">EXIT CODES</a></li>
-	<li><a href="#copyright">COPYRIGHT</a></li>
-	<li><a href="#author">Author</a></li>
-	<li><a href="#see_also">SEE ALSO</a></li>
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
+  <li><a href="#OPTIONS">OPTIONS</a></li>
+  <li><a href="#CONFIGURATION">CONFIGURATION</a></li>
+  <li><a href="#EXIT-CODES">EXIT CODES</a></li>
+  <li><a href="#COPYRIGHT">COPYRIGHT</a></li>
+  <li><a href="#Author">Author</a></li>
+  <li><a href="#SEE-ALSO">SEE ALSO</a></li>
 </ul>
 
-<hr name="index" />
-</div>
-<!-- INDEX END -->
+<h1 id="NAME">NAME</h1>
 
-<p>
-</p>
-<hr />
-<h1><a name="name">NAME</a></h1>
 <p>trustman - Manage keys used as trust anchors</p>
-<p>
-</p>
-<hr />
-<h1><a name="synopsis">SYNOPSIS</a></h1>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
 <p>trustman [options]</p>
-<p>
-</p>
-<hr />
-<h1><a name="description">DESCRIPTION</a></h1>
-<p><strong>trustman</strong> manages keys used by DNSSEC as trust anchors in compliance with
-<a href="http://www.ietf.org/rfc/rfc5011.txt" class="rfc">RFC5011</a>.  It may be used as a daemon for ongoing key verification or manually
-for initialization and one-time key verification.</p>
-<p>By default, <strong>trustman</strong> runs as a daemon to ensure that keys stored locally in
-configuration files still match the same keys fetched from the zone where they
-are defined.  In addition, these checks can be run once manually (<strong>-S</strong>) and
-in the foreground (<strong>-f</strong>).</p>
-<p>For each key mismatch check, if key mismatches are detected then <strong>trustman</strong>
-performs the following operations:</p>
-<pre>
-    - sets an add hold-down timer for new keys;
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p><b>trustman</b> manages keys used by DNSSEC as trust anchors in compliance with RFC5011. It may be used as a daemon for ongoing key verification or manually for initialization and one-time key verification.</p>
+
+<p>By default, <b>trustman</b> runs as a daemon to ensure that keys stored locally in configuration files still match the same keys fetched from the zone where they are defined. In addition, these checks can be run once manually (<b>-S</b>) and in the foreground (<b>-f</b>).</p>
+
+<p>For each key mismatch check, if key mismatches are detected then <b>trustman</b> performs the following operations:</p>
+
+<pre><code>    - sets an add hold-down timer for new keys;
     - sets a remove hold-down timer for missing keys;
-    - removes revoked keys from the configuration file.</pre>
-<p>On subsequent runs, the timers are checked.  If the timers have expired, keys
-are added to or removed from the configuration file, as appropriate.</p>
-<p><strong>named.conf</strong> and <strong>dnsval.conf</strong> are the usual configuration files.  These
-files must be specified in the DNSSEC-Tools configuration file or in command
-line options.</p>
-<p>
-</p>
-<hr />
-<h1><a name="options">OPTIONS</a></h1>
-<p><strong>trustman</strong> takes a number of options, each of which is described in this
-section.  Each option name may be shortened to the minimum number of unique
-characters, but some options also have an alias (as noted.)  The single-letter
-form of each option is denoted in parentheses, e.g.: <strong>-anchor_data_file</strong>
-(<strong>-a</strong>).</p>
-<dl>
-<dt><strong><a name="file" class="item"><strong>-anchor_data_file file (-a)</strong></a></strong></dt>
+    - removes revoked keys from the configuration file.</code></pre>
 
+<p>On subsequent runs, the timers are checked. If the timers have expired, keys are added to or removed from the configuration file, as appropriate.</p>
+
+<p><b>named.conf</b> and <b>dnsval.conf</b> are the usual configuration files. These files must be specified in the DNSSEC-Tools configuration file or in command line options.</p>
+
+<h1 id="OPTIONS">OPTIONS</h1>
+
+<p><b>trustman</b> takes a number of options, each of which is described in this section. Each option name may be shortened to the minimum number of unique characters, but some options also have an alias (as noted.) The single-letter form of each option is denoted in parentheses, e.g.: <b>-anchor_data_file</b> (<b>-a</b>).</p>
+
+<dl>
+
+<dt id="anchor_data_file-file--a"><b>-anchor_data_file file (-a)</b></dt>
 <dd>
+
 <p>A persistent data file for storing new keys waiting to be added.</p>
-</dd>
-<dt><strong><strong>-config file (-c) </strong></strong></dt>
 
-<dd>
-<p>Create a configuration file for <strong>trustman</strong> from the command line options
-given.  The existing DNSSEC-Tools configuration file is copied to the
-specified configuration file, and new configuration entries are appended
-corresponding to the command line options.  <strong>trustman</strong>-specific entries
-already in the existing configuration file will be replaced with new entries
-from the command line.  This will allow fewer command line options to be
-specified in the future.</p>
 </dd>
-<dt><strong><a name="conf" class="item"><strong>-dnsval_conf_file /path/to/dnsval.conf (-k)</strong></a></strong></dt>
-
+<dt id="config-file--c"><b>-config file (-c) </b></dt>
 <dd>
-<p>A <strong>dnsval.conf</strong> file to read, and possibly be updated.</p>
+
+<p>Create a configuration file for <b>trustman</b> from the command line options given. The existing DNSSEC-Tools configuration file is copied to the specified configuration file, and new configuration entries are appended corresponding to the command line options. <b>trustman</b>-specific entries already in the existing configuration file will be replaced with new entries from the command line. This will allow fewer command line options to be specified in the future.</p>
+
 </dd>
-<dt><strong><a name="config_file" class="item"><strong>-dtconfig config_file (-d)</strong></a></strong></dt>
-
+<dt id="dnsval_conf_file-path-to-dnsval.conf--k"><b>-dnsval_conf_file /path/to/dnsval.conf (-k)</b></dt>
 <dd>
-<p>Name of an alternate DNSSEC-Tools configuration file to be processed.
-If specified, this configuration file is used <em>in place</em> of the normal
-DNSSEC-Tools configuration file, <strong>not</strong> in addition to it.  Also, it will be
-handled prior to <em>keyrec</em> files, <em>rollrec</em> files, and command-line options.</p>
+
+<p>A <b>dnsval.conf</b> file to read, and possibly be updated.</p>
+
 </dd>
-<dt><strong><a name="foreground" class="item"><strong>-foreground (-f)</strong></a></strong></dt>
-
+<dt id="dtconfig-config_file--d"><b>-dtconfig config_file (-d)</b></dt>
 <dd>
-<p>Run in the foreground.  <strong>trustman</strong> will still run in a loop.
-To run once, use the <strong>-single_run</strong> option instead.</p>
+
+<p>Name of an alternate DNSSEC-Tools configuration file to be processed. If specified, this configuration file is used <i>in place</i> of the normal DNSSEC-Tools configuration file, <b>not</b> in addition to it. Also, it will be handled prior to <i>keyrec</i> files, <i>rollrec</i> files, and command-line options.</p>
+
 </dd>
-<dt><strong><a name="seconds" class="item"><strong>-hold_time seconds (-w)</strong></a></strong></dt>
-
+<dt id="foreground--f"><b>-foreground (-f)</b></dt>
 <dd>
-<p>The value of the hold-down timer.  This is the number of seconds from the time
-that a new key is found.  Generally, the default and recommended value of 30
-days should be used.</p>
+
+<p>Run in the foreground. <b>trustman</b> will still run in a loop. To run once, use the <b>-single_run</b> option instead.</p>
+
 </dd>
-<dt><strong><a name="email_address" class="item"><strong>-mail_contact_addr email_address (-m)</strong></a></strong></dt>
-
+<dt id="hold_time-seconds--w"><b>-hold_time seconds (-w)</b></dt>
 <dd>
+
+<p>The value of the hold-down timer. This is the number of seconds from the time that a new key is found. Generally, the default and recommended value of 30 days should be used.</p>
+
+</dd>
+<dt id="mail_contact_addr-email_address--m"><b>-mail_contact_addr email_address (-m)</b></dt>
+<dd>
+
 <p>Mail address for the contact person to whom reports should be sent.</p>
-</dd>
-<dt><strong><a name="monitor" class="item"><strong>-monitor (-M)</strong></a></strong></dt>
 
-<dd>
-<p>Indicates that <strong>trustman</strong> was run from a monitoring system, and a summary
-of events will be printed.  Specifying this option automatically turns on
-the <strong>-single_run</strong> option and turns off the <strong>-verbose</strong> option.</p>
-<p>This was developed for use with the Nagios monitoring system, but it can
-be adapted for other monitors.</p>
 </dd>
-<dt><strong><strong>-named_conf_file /path/to/named.conf (-n)</strong></strong></dt>
-
+<dt id="monitor--M"><b>-monitor (-M)</b></dt>
 <dd>
-<p>A <strong>named.conf</strong> file to read, and possibly update.</p>
+
+<p>Indicates that <b>trustman</b> was run from a monitoring system, and a summary of events will be printed. Specifying this option automatically turns on the <b>-single_run</b> option and turns off the <b>-verbose</b> option.</p>
+
+<p>This was developed for use with the Nagios monitoring system, but it can be adapted for other monitors.</p>
+
 </dd>
-<dt><strong><a name="nomail" class="item"><strong>-nomail</strong></a></strong></dt>
-
+<dt id="named_conf_file-path-to-named.conf--n"><b>-named_conf_file /path/to/named.conf (-n)</b></dt>
 <dd>
-<p>Prevents mail from being sent, even if an SMTP server was specified in the
-configuration file.  This is useful for only sending notifications via
-<strong>stdout</strong> (<strong>-p</strong>) or <strong>syslog</strong> (<strong>-L</strong>).</p>
+
+<p>A <b>named.conf</b> file to read, and possibly update.</p>
+
 </dd>
-<dt><strong><a name="norevoke" class="item"><strong>-norevoke</strong></a></strong></dt>
-
+<dt id="nomail"><b>-nomail</b></dt>
 <dd>
+
+<p>Prevents mail from being sent, even if an SMTP server was specified in the configuration file. This is useful for only sending notifications via <b>stdout</b> (<b>-p</b>) or <b>syslog</b> (<b>-L</b>).</p>
+
+</dd>
+<dt id="norevoke"><b>-norevoke</b></dt>
+<dd>
+
 <p>This option turns off checks for the REVOKE bit.</p>
-</dd>
-<dt><strong><a name="no_error" class="item"><strong>-no_error (-N)</strong></a></strong></dt>
 
+</dd>
+<dt id="no_error--N"><b>-no_error (-N)</b></dt>
 <dd>
+
 <p>Send report even when there are no errors.</p>
-</dd>
-<dt><strong><a name="print" class="item"><strong>-print (-p)</strong></a></strong></dt>
 
-<dd>
-<p>Log messages to <strong>stdout</strong>.</p>
 </dd>
-<dt><strong><a name="conffile" class="item"><strong>-resolv_conf_file conffile (-r)</strong></a></strong></dt>
-
+<dt id="print--p"><b>-print (-p)</b></dt>
 <dd>
-<p>A <strong>resolv.conf</strong> file to read.  <strong>/dev/null</strong> can be specified to force
-<em>libval</em> to recursively answer the query rather than asking other name
-servers.)</p>
+
+<p>Log messages to <b>stdout</b>.</p>
+
 </dd>
-<dt><strong><a name="hints" class="item"><strong>-root_hints_file /path/to/root.hints (-o)</strong></a></strong></dt>
-
+<dt id="resolv_conf_file-conffile--r"><b>-resolv_conf_file conffile (-r)</b></dt>
 <dd>
-<p>A <strong>root.hints</strong> file to read.</p>
+
+<p>A <b>resolv.conf</b> file to read. <b>/dev/null</b> can be specified to force <i>libval</i> to recursively answer the query rather than asking other name servers.)</p>
+
 </dd>
-<dt><strong><a name="single_run" class="item"><strong>-single_run (-S)</strong></a></strong></dt>
-
+<dt id="root_hints_file-path-to-root.hints--o"><b>-root_hints_file /path/to/root.hints (-o)</b></dt>
 <dd>
+
+<p>A <b>root.hints</b> file to read.</p>
+
+</dd>
+<dt id="single_run--S"><b>-single_run (-S)</b></dt>
+<dd>
+
 <p>Do not loop, but run only once.</p>
-</dd>
-<dt><strong><strong>-sleeptime seconds (-t)</strong></strong></dt>
 
-<dd>
-<p>The number of seconds to sleep between checks.  Default is 3600 (one hour.)</p>
 </dd>
-<dt><strong><a name="smtpservername" class="item"><strong>-smtp_server smtpservername (-s)</strong></a></strong></dt>
-
+<dt id="sleeptime-seconds--t"><b>-sleeptime seconds (-t)</b></dt>
 <dd>
-<p>The SMTP server that <strong>trustman</strong> should use to send reports by mail.</p>
+
+<p>The number of seconds to sleep between checks. Default is 3600 (one hour.)</p>
+
 </dd>
-<dt><strong><a name="syslog" class="item"><strong>-syslog (-L)</strong></a></strong></dt>
-
+<dt id="smtp_server-smtpservername--s"><b>-smtp_server smtpservername (-s)</b></dt>
 <dd>
-<p>Log messages to <strong>syslog</strong>.</p>
+
+<p>The SMTP server that <b>trustman</b> should use to send reports by mail.</p>
+
 </dd>
-<dt><strong><a name="directory" class="item"><strong>-tmp_dir directory (-T)</strong></a></strong></dt>
-
+<dt id="syslog--L"><b>-syslog (-L)</b></dt>
 <dd>
-<p>Specifies where temporary files should be created.  This is used when
-creating new versions of the <strong>dnsval.conf</strong> and <strong>named.conf</strong> files before
-they are moved into place.</p>
-<p>Files created in this directory will be <strong>renamed</strong> to their final location.
-You should ensure that this directory, the final <strong>dnsval.conf</strong> location,
-and the final <strong>named.conf</strong> location are on the same disk partition.
-Most operating systems will only rename files within a partition and will 
-give an error if told to rename a file from one partition to another.</p>
+
+<p>Log messages to <b>syslog</b>.</p>
+
 </dd>
-<dt><strong><a name="zone" class="item"><strong>-zone zone (-z)</strong></a></strong></dt>
-
+<dt id="tmp_dir-directory--T"><b>-tmp_dir directory (-T)</b></dt>
 <dd>
-<p>The zone to check.  Specifying this option supersedes the default
-configuration file.</p>
+
+<p>Specifies where temporary files should be created. This is used when creating new versions of the <b>dnsval.conf</b> and <b>named.conf</b> files before they are moved into place.</p>
+
+<p>Files created in this directory will be <b>renamed</b> to their final location. You should ensure that this directory, the final <b>dnsval.conf</b> location, and the final <b>named.conf</b> location are on the same disk partition. Most operating systems will only rename files within a partition and will give an error if told to rename a file from one partition to another.</p>
+
 </dd>
-<dt><strong><a name="help" class="item"><strong>-help (-h)</strong></a></strong></dt>
-
+<dt id="zone-zone--z"><b>-zone zone (-z)</b></dt>
 <dd>
+
+<p>The zone to check. Specifying this option supersedes the default configuration file.</p>
+
+</dd>
+<dt id="help--h"><b>-help (-h)</b></dt>
+<dd>
+
 <p>Display a help message.</p>
-</dd>
-<dt><strong><a name="verbose" class="item"><strong>-verbose (-v)</strong></a></strong></dt>
 
+</dd>
+<dt id="verbose--v"><b>-verbose (-v)</b></dt>
 <dd>
+
 <p>Gives verbose output.</p>
-</dd>
-<dt><strong><a name="version" class="item"><strong>-Version (-V)</strong></a></strong></dt>
 
+</dd>
+<dt id="Version--V"><b>-Version (-V)</b></dt>
 <dd>
-<p>Displays the version information for <strong>trustman</strong> and the DNSSEC-Tools package.</p>
+
+<p>Displays the version information for <b>trustman</b> and the DNSSEC-Tools package.</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<hr />
-<h1><a name="configuration">CONFIGURATION</a></h1>
-<p>In addition to the command line arguments, the <strong>dnssec-tools.conf</strong> file can
-be configured with the following values to remove the need to use some of
-the command-line options.  The command-line options always override the
-settings in the <strong>dnssec-tools.conf</strong> file.</p>
+
+<h1 id="CONFIGURATION">CONFIGURATION</h1>
+
+<p>In addition to the command line arguments, the <b>dnssec-tools.conf</b> file can be configured with the following values to remove the need to use some of the command-line options. The command-line options always override the settings in the <b>dnssec-tools.conf</b> file.</p>
+
 <dl>
-<dt><strong><a name="taanchorfile_file" class="item"><strong>taanchorfile file</strong></a></strong></dt>
 
+<dt id="taanchorfile-file"><b>taanchorfile file</b></dt>
 <dd>
-<p>This specifies the file where <strong>trustman</strong> state information will be kept.
-This is equivalent to the <strong>-anchor_data_file</strong> flag.</p>
+
+<p>This specifies the file where <b>trustman</b> state information will be kept. This is equivalent to the <b>-anchor_data_file</b> flag.</p>
+
 </dd>
-<dt><strong><a name="tacontact_contact_email" class="item"><strong>tacontact contact_email</strong></a></strong></dt>
-
+<dt id="tacontact-contact_email"><b>tacontact contact_email</b></dt>
 <dd>
-<p>This is equivalent to the <strong>-mail_contact_addr</strong> flag for specifying to whom
-email notices will be sent.</p>
+
+<p>This is equivalent to the <b>-mail_contact_addr</b> flag for specifying to whom email notices will be sent.</p>
+
 </dd>
-<dt><strong><a name="tadnsvalconffile_file" class="item"><strong>tadnsvalconffile file</strong></a></strong></dt>
-
+<dt id="tadnsvalconffile-file"><b>tadnsvalconffile file</b></dt>
 <dd>
-<p>This specifies the <strong>dnsval.conf</strong> file to read and write.
-This is equivalent to the <strong>-dnsval_conf_file</strong> flag.</p>
+
+<p>This specifies the <b>dnsval.conf</b> file to read and write. This is equivalent to the <b>-dnsval_conf_file</b> flag.</p>
+
 </dd>
-<dt><strong><a name="tanamedconffile_file" class="item"><strong>tanamedconffile file</strong></a></strong></dt>
-
+<dt id="tanamedconffile-file"><b>tanamedconffile file</b></dt>
 <dd>
-<p>This specifies the <strong>named.conf</strong> file to read and write.
-This is equivalent to the <strong>-named_conf_file</strong> flag.</p>
+
+<p>This specifies the <b>named.conf</b> file to read and write. This is equivalent to the <b>-named_conf_file</b> flag.</p>
+
 </dd>
-<dt><strong><a name="taresolvconffile_file" class="item"><strong>taresolvconffile file</strong></a></strong></dt>
-
+<dt id="taresolvconffile-file"><b>taresolvconffile file</b></dt>
 <dd>
-<p>This specifies the <strong>resolv.conf</strong> file to use.
-This is equivalent to the <strong>-resolv_conf_file</strong> flag.</p>
+
+<p>This specifies the <b>resolv.conf</b> file to use. This is equivalent to the <b>-resolv_conf_file</b> flag.</p>
+
 </dd>
-<dt><strong><a name="taroothintsfile_file" class="item"><strong>taroothintsfile file</strong></a></strong></dt>
-
+<dt id="taroothintsfile-file"><b>taroothintsfile file</b></dt>
 <dd>
-<p>This specifies the <strong>root.hints</strong> file to read.
-This is equivalent to the <strong>-root_hints_file</strong> flag.</p>
+
+<p>This specifies the <b>root.hints</b> file to read. This is equivalent to the <b>-root_hints_file</b> flag.</p>
+
 </dd>
-<dt><strong><a name="tasmtpserver_servername" class="item"><strong>tasmtpserver servername</strong></a></strong></dt>
-
+<dt id="tasmtpserver-servername"><b>tasmtpserver servername</b></dt>
 <dd>
-<p>This is equivalent to the <strong>-smtp_server</strong> flag for specifying the SMTP server
-to which email notices will be sent.</p>
+
+<p>This is equivalent to the <b>-smtp_server</b> flag for specifying the SMTP server to which email notices will be sent.</p>
+
 </dd>
-<dt><strong><a name="tatmpdir_directory" class="item"><strong>tatmpdir directory</strong></a></strong></dt>
-
+<dt id="tatmpdir-directory"><b>tatmpdir directory</b></dt>
 <dd>
-<p>This specifies where temporary files should be created.  This is used when
-creating new versions of the <strong>dnsval.conf</strong> and <strong>named.conf</strong> files before
-they're moved into place.</p>
-<p>See the note about renaming in the description of the <strong>-tmp_dir</strong> option.</p>
+
+<p>This specifies where temporary files should be created. This is used when creating new versions of the <b>dnsval.conf</b> and <b>named.conf</b> files before they&#39;re moved into place.</p>
+
+<p>See the note about renaming in the description of the <b>-tmp_dir</b> option.</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<hr />
-<h1><a name="exit_codes">EXIT CODES</a></h1>
-<p><strong>trustman</strong> may exit for the following reasons:</p>
-<pre>
-    0 - Successful execution.  In daemon mode, this may just mean
+
+<h1 id="EXIT-CODES">EXIT CODES</h1>
+
+<p><b>trustman</b> may exit for the following reasons:</p>
+
+<pre><code>    0 - Successful execution.  In daemon mode, this may just mean
         that the daemon was successfully started.  The daemon itself
-        may exit with some other error.</pre>
-<pre>
-    1 - Invalid options were specified.</pre>
-<pre>
-    2 - No new-key file was specified.</pre>
-<pre>
-    3 - Unable to open the new-key file.</pre>
-<pre>
-    4 - Unable to determine a set of zones to check.</pre>
-<pre>
-    5 - Some form of file-management error was encountered.</pre>
-<p>
-</p>
-<hr />
-<h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2006-2013 SPARTA, Inc.  All rights reserved.
-See the COPYING file included with the DNSSEC-Tools package for details.</p>
-<p>
-</p>
-<hr />
-<h1><a name="author">Author</a></h1>
+        may exit with some other error.
+
+    1 - Invalid options were specified.
+
+    2 - No new-key file was specified.
+
+    3 - Unable to open the new-key file.
+
+    4 - Unable to determine a set of zones to check.
+
+    5 - Some form of file-management error was encountered.</code></pre>
+
+<h1 id="COPYRIGHT">COPYRIGHT</h1>
+
+<p>Copyright 2006-2014 SPARTA, Inc. All rights reserved. See the COPYING file included with the DNSSEC-Tools package for details.</p>
+
+<h1 id="Author">Author</h1>
+
 <p>Lindy Foster</p>
-<p>(Current contact for <strong>trustman</strong> is Wayne Morrison, <a href="mailto:tewok@tislabs.com.)">tewok@tislabs.com.)</a></p>
-<p>
-</p>
-<hr />
-<h1><a name="see_also">SEE ALSO</a></h1>
-<p><strong>Net::DNS::SEC::Tools::conf.pm(3)</strong>,
-<strong>Net::DNS::SEC::Tools::defaults.pm(3)</strong>,</p>
-<p><strong>dnssec-tools.conf(5)</strong></p>
+
+<p>(Current contact for <b>trustman</b> is Wayne Morrison, tewok@tislabs.com.)</p>
+
+<h1 id="SEE-ALSO">SEE ALSO</h1>
+
+<p><b>Net::DNS::SEC::Tools::conf.pm(3)</b>, <b>Net::DNS::SEC::Tools::defaults.pm(3)</b>,</p>
+
+<p><b>dnssec-tools.conf(5)</b></p>
+
 
 </body>
 
 </html>
+
+

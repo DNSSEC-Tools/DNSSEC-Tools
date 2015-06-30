@@ -2,47 +2,33 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>I&lt;val_get_rrset&gt; - get DNSSEC-validated resource record
-information</title>
+<title></title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-<link rev="made" href="mailto:assp@beta.macosforge.org" />
+<link rev="made" href="mailto:root@localhost" />
 </head>
 
 <body style="background-color: white">
 
 
-<!-- INDEX BEGIN -->
-<div name="index">
-<p><a name="__index__"></a></p>
 
-<ul>
-
-	<li><a href="#name">NAME</a></li>
-	<li><a href="#synopsis">SYNOPSIS</a></li>
-	<li><a href="#description">DESCRIPTION</a></li>
-	<li><a href="#return_values">RETURN VALUES</a></li>
-	<li><a href="#copyright">COPYRIGHT</a></li>
-	<li><a href="#authors">AUTHORS</a></li>
-	<li><a href="#see_also">SEE ALSO</a></li>
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
+  <li><a href="#RETURN-VALUES">RETURN VALUES</a></li>
+  <li><a href="#COPYRIGHT">COPYRIGHT</a></li>
+  <li><a href="#AUTHORS">AUTHORS</a></li>
+  <li><a href="#SEE-ALSO">SEE ALSO</a></li>
 </ul>
 
-<hr name="index" />
-</div>
-<!-- INDEX END -->
+<h1 id="NAME">NAME</h1>
 
-<p>
-</p>
-<hr />
-<h1><a name="name">NAME</a></h1>
-<p><em>val_get_rrset()</em> - get DNSSEC-validated resource record
-information</p>
-<p>
-</p>
-<hr />
-<h1><a name="synopsis">SYNOPSIS</a></h1>
-<pre>
-  #include &lt;validator/validator.h&gt;</pre>
-<pre>
+<p><i>val_get_rrset()</i> - get DNSSEC-validated resource record information</p>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<pre><code>  #include &lt;validator/validator.h&gt;
+
   struct val_answer_chain {
       val_status_t   val_ans_status;
       char          *val_ans_name;
@@ -50,14 +36,14 @@ information</p>
       int            val_ans_type;
       struct rr_rec *val_ans;
       struct val_answer_chain *val_ans_next;
-  };</pre>
-<pre>
+  };
+
   struct rr_rec {
       size_t         rr_length;
       unsigned char *rr_data;
       struct rr_rec *rr_next;
-  };</pre>
-<pre>
+  };
+
   int val_get_rrset(val_context_t *ctx,
                     const char *name,
                     int class,
@@ -65,65 +51,45 @@ information</p>
                     unsigned int flags,
                     struct val_answer_chain **answers);
       
-  void val_free_answer_chain(struct val_answer_chain *answers);</pre>
-<p>
-</p>
-<hr />
-<h1><a name="description">DESCRIPTION</a></h1>
-<p><em>val_get_rrset()</em> performs DNSSEC validation for the given DNS
-name, class and type. It returns the DNSSEC validation status
-for the resource record set, but does not return any 
-authentication chain details. If the authentication chain details are
-required, the <em>val_resolve_and_check()</em> function must be used instead.</p>
-<p><em>val_get_rrset()</em> returns its results in the val_answer_chain structure. The
-memory for this structure is allocated by val_get_rrset; the user must
-release this memory after use using the <em>val_free_answer_chain()</em> function.</p>
-<p>The RRsets in the response are returned in the val_answer_chain structure.
-The val_ans_name member contains the DNS name of the actual resource 
-record set returned.  This value may differ from the value passed as the 
-<em>name</em> argument to <code>val_get_rrset()</code> if the resource record was returned after 
-following a CNAME or DNAME alias. val_ans_name and val_ans_type
-contains the actual class and type for the returned resource record. These
-values may differ from the values passed as arguments to <code>val_get_rrset()</code> if 
-the query type or class has the value 255 (ANY). The resource record set is 
-returned in <em>val_ans</em>as a linked list of rr_length and rr_data tuples, 
-for data returned in each resource record of the resource record set. 
-<em>val_ans</em> may be NULL if the name is non-existant.</p>
-<p><em>val_ans_status</em> gives the combined validation status value for the 
-the given RRset.  <em>val_istrusted()</em> and
-<em>val_isvalidated()</em> can be used to determine the trustworthiness of data and
-<em>p_val_status()</em> can be used to display the status value to the user in ASCII
-format (See <em>libval(3)</em> more for information).</p>
-<p>The <em>ctx</em> parameter specifies the validation context, which can be set to NULL
-for default values (see <em>libval(3)</em> and <em>dnsval.conf</em> for more details on 
-validation contexts and validation policy).</p>
-<p>
-</p>
-<hr />
-<h1><a name="return_values">RETURN VALUES</a></h1>
-<p>The <em>val_get_rrset()</em> function returns 0 on success and one of the error codes
-defined in <code>libval(3)</code> on failure.</p>
-<p>
-</p>
-<hr />
-<h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2004-2013 SPARTA, Inc.  All rights reserved.
-See the COPYING file included with the DNSSEC-Tools package for details.</p>
-<p>
-</p>
-<hr />
-<h1><a name="authors">AUTHORS</a></h1>
-<p>Suresh Krishnaswamy</p>
-<p>
-</p>
-<hr />
-<h1><a name="see_also">SEE ALSO</a></h1>
-<p><em>val_getaddrinfo(3)</em></p>
-<p><em>val_gethostbyname(3)</em>, <em>val_res_query(3)</em></p>
-<p><em>libval(3)</em></p>
-<p><a href="http://www.dnssec-tools.org">http://www.dnssec-tools.org</a></p>
+  void val_free_answer_chain(struct val_answer_chain *answers); </code></pre>
 
-<!--#include virtual="/page-bottom.html" -->
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p><i>val_get_rrset()</i> performs DNSSEC validation for the given DNS name, class and type. It returns the DNSSEC validation status for the resource record set, but does not return any authentication chain details. If the authentication chain details are required, the <i>val_resolve_and_check()</i> function must be used instead.</p>
+
+<p><i>val_get_rrset()</i> returns its results in the val_answer_chain structure. The memory for this structure is allocated by val_get_rrset; the user must release this memory after use using the <i>val_free_answer_chain()</i> function.</p>
+
+<p>The RRsets in the response are returned in the val_answer_chain structure. The val_ans_name member contains the DNS name of the actual resource record set returned. This value may differ from the value passed as the <i>name</i> argument to val_get_rrset() if the resource record was returned after following a CNAME or DNAME alias. val_ans_name and val_ans_type contains the actual class and type for the returned resource record. These values may differ from the values passed as arguments to val_get_rrset() if the query type or class has the value 255 (ANY). The resource record set is returned in <i>val_ans</i>as a linked list of rr_length and rr_data tuples, for data returned in each resource record of the resource record set. <i>val_ans</i> may be NULL if the name is non-existant.</p>
+
+<p><i>val_ans_status</i> gives the combined validation status value for the the given RRset. <i>val_istrusted()</i> and <i>val_isvalidated()</i> can be used to determine the trustworthiness of data and <i>p_val_status()</i> can be used to display the status value to the user in ASCII format (See <i>libval(3)</i> more for information).</p>
+
+<p>The <i>ctx</i> parameter specifies the validation context, which can be set to NULL for default values (see <i>libval(3)</i> and <i>dnsval.conf</i> for more details on validation contexts and validation policy).</p>
+
+<h1 id="RETURN-VALUES">RETURN VALUES</h1>
+
+<p>The <i>val_get_rrset()</i> function returns 0 on success and one of the error codes defined in libval(3) on failure.</p>
+
+<h1 id="COPYRIGHT">COPYRIGHT</h1>
+
+<p>Copyright 2004-2013 SPARTA, Inc. All rights reserved. See the COPYING file included with the DNSSEC-Tools package for details.</p>
+
+<h1 id="AUTHORS">AUTHORS</h1>
+
+<p>Suresh Krishnaswamy</p>
+
+<h1 id="SEE-ALSO">SEE ALSO</h1>
+
+<p><i>val_getaddrinfo(3)</i></p>
+
+<p><i>val_gethostbyname(3)</i>, <i>val_res_query(3)</i></p>
+
+<p><i>libval(3)</i></p>
+
+<p>http://www.dnssec-tools.org</p>
+
+
 </body>
 
 </html>
+
+

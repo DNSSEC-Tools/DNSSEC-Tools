@@ -2,7 +2,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>rollset - Modifies entries in a DNSSEC-Tools I&lt;rollrec&gt; file</title>
+<title></title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
@@ -10,230 +10,214 @@
 <body style="background-color: white">
 
 
-<!-- INDEX BEGIN -->
-<div name="index">
-<p><a name="__index__"></a></p>
 
-<ul>
-
-	<li><a href="#name">NAME</a></li>
-	<li><a href="#synopsis">SYNOPSIS</a></li>
-	<li><a href="#description">DESCRIPTION</a></li>
-	<li><a href="#options">OPTIONS</a></li>
-	<li><a href="#copyright">COPYRIGHT</a></li>
-	<li><a href="#author">AUTHOR</a></li>
-	<li><a href="#see_also">SEE ALSO</a></li>
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
+  <li><a href="#OPTIONS">OPTIONS</a></li>
+  <li><a href="#COPYRIGHT">COPYRIGHT</a></li>
+  <li><a href="#AUTHOR">AUTHOR</a></li>
+  <li><a href="#SEE-ALSO">SEE ALSO</a></li>
 </ul>
 
-<hr name="index" />
-</div>
-<!-- INDEX END -->
+<h1 id="NAME">NAME</h1>
 
-<p>
-</p>
-<hr />
-<h1><a name="name">NAME</a></h1>
-<p>rollset - Modifies entries in a DNSSEC-Tools <em>rollrec</em> file</p>
-<p>
-</p>
-<hr />
-<h1><a name="synopsis">SYNOPSIS</a></h1>
-<pre>
-  rollset [options] rollrec-file</pre>
-<p>
-</p>
-<hr />
-<h1><a name="description">DESCRIPTION</a></h1>
-<p><strong>rollset</strong> modifies fields in the <em>rollrec</em> file specified by
-<em>rollrec-file</em>.  Multiple options may be combined in a single <strong>rollset</strong>
-execution.  <strong>rollset</strong> operates quietly unless it is given the <em>-verbose</em>
-option.</p>
-<p>All records in the specified <em>rollrec</em> file will be modified, unless the
-<strong>-name</strong> option is given.  In that case, only the named zone will be modified.</p>
-<p>
-</p>
-<hr />
-<h1><a name="options">OPTIONS</a></h1>
+<p>rollset - Modifies entries in a DNSSEC-Tools <i>rollrec</i> file</p>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<pre><code>  rollset [options] rollrec-file</code></pre>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p><b>rollset</b> modifies fields in the <i>rollrec</i> file specified by <i>rollrec-file</i>. Multiple options may be combined in a single <b>rollset</b> execution. <b>rollset</b> operates quietly unless it is given the <i>-verbose</i> option.</p>
+
+<p>All records in the specified <i>rollrec</i> file will be modified, unless the <b>-name</b> option is given. In that case, only the named zone will be modified.</p>
+
+<h1 id="OPTIONS">OPTIONS</h1>
+
 <dl>
-<dt><strong><a name="admin_addr" class="item"><strong>-admin addr</strong></a></strong></dt>
 
+<dt id="admin-addr"><b>-admin addr</b></dt>
 <dd>
-<p>The zone administrator's email address is set to <em>addr</em>.</p>
+
+<p>The zone administrator&#39;s email address is set to <i>addr</i>.</p>
+
 </dd>
-<dt><strong><a name="check" class="item"><strong>-check</strong></a></strong></dt>
-
+<dt id="check"><b>-check</b></dt>
 <dd>
-<p>If this option is given, the <strong>rollchk</strong> command will be run on the modified
-<em>rollrec</em> file.</p>
+
+<p>If this option is given, the <b>rollchk</b> command will be run on the modified <i>rollrec</i> file.</p>
+
 </dd>
-<dt><strong><a name="del_admin" class="item"><strong>-del-admin</strong></a></strong></dt>
-
+<dt id="del-admin"><b>-del-admin</b></dt>
 <dd>
-<p>The <em>administrator</em> line is deleted.
-The <strong>-admin</strong> and <strong>-del-admin</strong> options are mutually exclusive.</p>
+
+<p>The <i>administrator</i> line is deleted. The <b>-admin</b> and <b>-del-admin</b> options are mutually exclusive.</p>
+
 </dd>
-<dt><strong><a name="del_directory" class="item"><strong>-del-directory</strong></a></strong></dt>
-
+<dt id="del-directory"><b>-del-directory</b></dt>
 <dd>
-<p>The <em>directory</em> line is deleted.
-The <strong>-directory</strong> and <strong>-del-directory</strong> options are mutually exclusive.</p>
+
+<p>The <i>directory</i> line is deleted. The <b>-directory</b> and <b>-del-directory</b> options are mutually exclusive.</p>
+
 </dd>
-<dt><strong><a name="del_loglevel" class="item"><strong>-del-loglevel</strong></a></strong></dt>
-
+<dt id="del-loglevel"><b>-del-loglevel</b></dt>
 <dd>
-<p>The <em>loglevel</em> line is deleted.
-The <strong>-loglevel</strong> and <strong>-del-loglevel</strong> options are mutually exclusive.</p>
+
+<p>The <i>loglevel</i> line is deleted. The <b>-loglevel</b> and <b>-del-loglevel</b> options are mutually exclusive.</p>
+
 </dd>
-<dt><strong><a name="del_zsargs" class="item"><strong>-del-zsargs</strong></a></strong></dt>
-
+<dt id="del-zg"><b>-del-zg</b></dt>
 <dd>
-<p>The <em>zsargs</em> line is deleted.
-The <strong>-zsargs</strong> and <strong>-delzsargs</strong> options are mutually exclusive.</p>
+
+<p>The <i>zonegroup</i> line is deleted. The <b>-zg</b> and <b>-del-zg</b> options are mutually exclusive.</p>
+
 </dd>
-<dt><strong><a name="directory_dir" class="item"><strong>-directory dir</strong></a></strong></dt>
-
+<dt id="del-zsargs"><b>-del-zsargs</b></dt>
 <dd>
-<p>The directory to hold the zone's files is set to <em>dir</em>.</p>
+
+<p>The <i>zsargs</i> line is deleted. The <b>-zsargs</b> and <b>-delzsargs</b> options are mutually exclusive.</p>
+
 </dd>
-<dt><strong><a name="display" class="item"><strong>-display</strong></a></strong></dt>
-
+<dt id="directory-dir"><b>-directory dir</b></dt>
 <dd>
-<p>Turn on the GUI display of the zones in the selected <em>rollrec</em>s.
-This option is mutually exclusive of the <em>-nodisplay</em> option.</p>
+
+<p>The directory to hold the zone&#39;s files is set to <i>dir</i>.</p>
+
 </dd>
-<dt><strong><a name="file_zone_file" class="item"><strong>-file zone-file</strong></a></strong></dt>
-
+<dt id="display"><b>-display</b></dt>
 <dd>
-<p>The zone file in the selected <em>rollrec</em> records is modified to be
-<em>zone-file</em>.</p>
+
+<p>Turn on the GUI display of the zones in the selected <i>rollrec</i>s. This option is mutually exclusive of the <i>-nodisplay</i> option.</p>
+
 </dd>
-<dt><strong><a name="keyrec_keyrec_file" class="item"><strong>-keyrec keyrec-file</strong></a></strong></dt>
-
+<dt id="file-zone-file"><b>-file zone-file</b></dt>
 <dd>
-<p>The <em>keyrec</em> file in the selected <em>rollrec</em> records is modified to be
-<em>keyrec-file</em>.</p>
+
+<p>The zone file in the selected <i>rollrec</i> records is modified to be <i>zone-file</i>.</p>
+
 </dd>
-<dt><strong><a name="loglevel_logging_level" class="item"><strong>-loglevel logging-level</strong></a></strong></dt>
-
+<dt id="keyrec-keyrec-file"><b>-keyrec keyrec-file</b></dt>
 <dd>
-<p>The logging level of the selected <em>rollrec</em> records is set to
-<em>logging-level</em>.  The valid logging levels are defined in <em>rollmgr.pm(3)</em>.</p>
+
+<p>The <i>keyrec</i> file in the selected <i>rollrec</i> records is modified to be <i>keyrec-file</i>.</p>
+
 </dd>
-<dt><strong><a name="name_rollrec_name" class="item"><strong>-name rollrec-name</strong></a></strong></dt>
-
+<dt id="loglevel-logging-level"><b>-loglevel logging-level</b></dt>
 <dd>
-<p>The <em>rollrec</em> whose name matches <em>zonename</em> is selected as the only rollrec
-that will be modified.  If this name is not given, then all <em>rollrec</em> records
-will be modified.</p>
+
+<p>The logging level of the selected <i>rollrec</i> records is set to <i>logging-level</i>. The valid logging levels are defined in <i>rollmgr.pm(3)</i>.</p>
+
 </dd>
-<dt><strong><a name="nodisplay" class="item"><strong>-nodisplay</strong></a></strong></dt>
-
+<dt id="name-rollrec-name"><b>-name rollrec-name</b></dt>
 <dd>
-<p>Turn off the GUI display of the zones in the selected <em>rollrec</em>s.
-This option is mutually exclusive of the <strong>-display</strong> option.</p>
+
+<p>The <i>rollrec</i> whose name matches <i>zonename</i> is selected as the only rollrec that will be modified. If this name is not given, then all <i>rollrec</i> records will be modified.</p>
+
 </dd>
-<dt><strong><a name="rename" class="item"><strong>-rename</strong></a></strong></dt>
-
+<dt id="nodisplay"><b>-nodisplay</b></dt>
 <dd>
-<p>The <em>rollrec</em>'s name is changed to match the specified name.
-The new name cannot be the name of an existing <em>rollrec</em> in the file.
-This option must be used in conjunction with the <strong>-name</strong> option.</p>
+
+<p>Turn off the GUI display of the zones in the selected <i>rollrec</i>s. This option is mutually exclusive of the <b>-display</b> option.</p>
+
 </dd>
-<dt><strong><a name="reset_zonename" class="item"><strong>-reset-zonename</strong></a></strong></dt>
-
+<dt id="rename"><b>-rename</b></dt>
 <dd>
-<p>The <em>zonename</em> field is set to match the name of the <em>rollrec</em> record.
-This option is mutually exclusive of the <strong>-zonename</strong> option.</p>
+
+<p>The <i>rollrec</i>&#39;s name is changed to match the specified name. The new name cannot be the name of an existing <i>rollrec</i> in the file. This option must be used in conjunction with the <b>-name</b> option.</p>
+
 </dd>
-<dt><strong><a name="roll" class="item"><strong>-roll</strong></a></strong></dt>
-
+<dt id="reset-zonename"><b>-reset-zonename</b></dt>
 <dd>
-<p>Convert the selected <em>rollrec</em>s to be active (&quot;roll&quot;) records.
-This option is mutually exclusive of the <strong>-skip</strong> option.</p>
+
+<p>The <i>zonename</i> field is set to match the name of the <i>rollrec</i> record. This option is mutually exclusive of the <b>-zonename</b> option.</p>
+
 </dd>
-<dt><strong><a name="skip" class="item"><strong>-skip</strong></a></strong></dt>
-
+<dt id="roll"><b>-roll</b></dt>
 <dd>
-<p>Convert the selected <em>rollrec</em>s to be inactive (&quot;skip&quot;) records.
-This option is mutually exclusive of the <strong>-roll</strong> option.</p>
+
+<p>Convert the selected <i>rollrec</i>s to be active (&quot;roll&quot;) records. This option is mutually exclusive of the <b>-skip</b> option.</p>
+
 </dd>
-<dt><strong><a name="zg_zonegroup_name" class="item"><strong>-zg zonegroup-name</strong></a></strong></dt>
-
+<dt id="skip"><b>-skip</b></dt>
 <dd>
-<p>The zonegroup in the selected <em>rollrec</em> records is modified to be
-<em>zonegroup-name</em>.</p>
+
+<p>Convert the selected <i>rollrec</i>s to be inactive (&quot;skip&quot;) records. This option is mutually exclusive of the <b>-roll</b> option.</p>
+
 </dd>
-<dt><strong><a name="zonename_zone_name" class="item"><strong>-zonename zone-name</strong></a></strong></dt>
-
+<dt id="zg-zonegroup-name"><b>-zg zonegroup-name</b></dt>
 <dd>
-<p>The zone name in the selected <em>rollrec</em> records is modified to be
-<em>zone-name</em>.</p>
+
+<p>The zonegroup in the selected <i>rollrec</i> records is modified to be <i>zonegroup-name</i>. This field may contain a single zonegroup name or a comma-separated list of names. If a list is given, then there may be whitespace before or after each name, but it is not recognized as being part of the zonegroup name itself. Whitespace <i>within</i> the name is considered part of the name. Zonegroup names are considered case insensitive. The names may be given with whatever case the user desires, but names whose only differences are the case of the letters are considered to be the same name.</p>
+
 </dd>
-<dt><strong><a name="zsargs_arglist" class="item"><strong>-zsargs arglist</strong></a></strong></dt>
-
+<dt id="zonename-zone-name"><b>-zonename zone-name</b></dt>
 <dd>
-<p>Provides additional <strong>zonesigner</strong> arguments.  These arguments will override
-the arguments in the DNSSEC-Tools defaults file, the DNSSEC-Tools
-configuration file, and the zones' <em>keyrec</em> files.  The <strong>zonesigner</strong>
-argument list is given in <em>arglist</em>.  If more than one argument is given,
-the set of arguments should be enclosed in quotes.</p>
-<p>Given the <strong>rollset</strong> argument processing, the new arguments for <strong>zonesigner</strong>
-cannot be specified as expected.  Instead, the arguments should be given in
-the following manner.  The leading dash should be replaced with an equals
-sign.  If the option takes an argument, the space that would separate the
-option from the option's argument should also be replaced by an equals sign.
-<strong>rollset</strong> translates these arguments to the appropriate format for
-<strong>zonesigner</strong>.  These examples should clarify the argument modifications:</p>
-<pre>
-    normal zonesigner option            -zsargs options
+
+<p>The zone name in the selected <i>rollrec</i> records is modified to be <i>zone-name</i>.</p>
+
+</dd>
+<dt id="zsargs-arglist"><b>-zsargs arglist</b></dt>
+<dd>
+
+<p>Provides additional <b>zonesigner</b> arguments. These arguments will override the arguments in the DNSSEC-Tools defaults file, the DNSSEC-Tools configuration file, and the zones&#39; <i>keyrec</i> files. The <b>zonesigner</b> argument list is given in <i>arglist</i>. If more than one argument is given, the set of arguments should be enclosed in quotes.</p>
+
+<p>Given the <b>rollset</b> argument processing, the new arguments for <b>zonesigner</b> cannot be specified as expected. Instead, the arguments should be given in the following manner. The leading dash should be replaced with an equals sign. If the option takes an argument, the space that would separate the option from the option&#39;s argument should also be replaced by an equals sign. <b>rollset</b> translates these arguments to the appropriate format for <b>zonesigner</b>. These examples should clarify the argument modifications:</p>
+
+<pre><code>    normal zonesigner option            -zsargs options
     ------------------------            ---------------
         -nokrfile                          =nokrfile
-        -zskcount 5                        =zskcount=5</pre>
-<p>The following are valid uses of <em>-zsargs</em>:</p>
-<pre>
-    # rollset -zsargs =ksklength=2048 example.rollrec
-    # rollset -zsargs &quot;=ksklen=2048 =zsklen=2048&quot; example.rollrec</pre>
-<p>The <strong>-zsargs</strong> and <strong>-delzsargs</strong> options are mutually exclusive.</p>
-</dd>
-<dt><strong><a name="verbose" class="item"><strong>-verbose</strong></a></strong></dt>
+        -zskcount 5                        =zskcount=5</code></pre>
 
-<dd>
-<p>Display information about every modification made to the <em>rollrec</em> file.</p>
-</dd>
-<dt><strong><a name="version" class="item"><strong>-Version</strong></a></strong></dt>
+<p>The following are valid uses of <i>-zsargs</i>:</p>
 
-<dd>
-<p>Displays the version information for <strong>rollset</strong> and the DNSSEC-Tools package.</p>
-</dd>
-<dt><strong><a name="help" class="item"><strong>-help</strong></a></strong></dt>
+<pre><code>    # rollset -zsargs =ksklength=2048 example.rollrec
+    # rollset -zsargs &quot;=ksklen=2048 =zsklen=2048&quot; example.rollrec</code></pre>
 
+<p>The <b>-zsargs</b> and <b>-delzsargs</b> options are mutually exclusive.</p>
+
+</dd>
+<dt id="verbose"><b>-verbose</b></dt>
 <dd>
+
+<p>Display information about every modification made to the <i>rollrec</i> file.</p>
+
+</dd>
+<dt id="Version"><b>-Version</b></dt>
+<dd>
+
+<p>Displays the version information for <b>rollset</b> and the DNSSEC-Tools package.</p>
+
+</dd>
+<dt id="help"><b>-help</b></dt>
+<dd>
+
 <p>Display a usage message.</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<hr />
-<h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2006-2013 SPARTA, Inc.  All rights reserved.
-See the COPYING file included with the DNSSEC-Tools package for details.</p>
-<p>
-</p>
-<hr />
-<h1><a name="author">AUTHOR</a></h1>
-<p>Wayne Morrison, <a href="mailto:tewok@tislabs.com">tewok@tislabs.com</a></p>
-<p>
-</p>
-<hr />
-<h1><a name="see_also">SEE ALSO</a></h1>
-<p><strong>lsroll(8)</strong>,
-<strong>rollchk(8)</strong>,
-<strong>rollerd(8)</strong>,
-<strong>rollinit(8)</strong></p>
-<p><strong>Net::DNS::SEC::Tools::rollmgr.pm(3)</strong>,
-<strong>Net::DNS::SEC::Tools::rollrec.pm(3)</strong></p>
-<p><strong>file-rollrec(5)</strong></p>
+
+<h1 id="COPYRIGHT">COPYRIGHT</h1>
+
+<p>Copyright 2006-2014 SPARTA, Inc. All rights reserved. See the COPYING file included with the DNSSEC-Tools package for details.</p>
+
+<h1 id="AUTHOR">AUTHOR</h1>
+
+<p>Wayne Morrison, tewok@tislabs.com</p>
+
+<h1 id="SEE-ALSO">SEE ALSO</h1>
+
+<p><b>lsroll(8)</b>, <b>rollchk(8)</b>, <b>rollerd(8)</b>, <b>rollinit(8)</b></p>
+
+<p><b>Net::DNS::SEC::Tools::rollmgr.pm(3)</b>, <b>Net::DNS::SEC::Tools::rollrec.pm(3)</b></p>
+
+<p><b>file-rollrec(5)</b></p>
+
 
 </body>
 
 </html>
+
+

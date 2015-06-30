@@ -2,7 +2,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>cleankrf - Clean a DNSSEC-Tools I&lt;keyrec&gt; files of old data</title>
+<title></title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
@@ -10,114 +10,104 @@
 <body style="background-color: white">
 
 
-<!-- INDEX BEGIN -->
-<div name="index">
-<p><a name="__index__"></a></p>
 
-<ul>
-
-	<li><a href="#name">NAME</a></li>
-	<li><a href="#synopsis">SYNOPSIS</a></li>
-	<li><a href="#description">DESCRIPTION</a></li>
-	<li><a href="#options">OPTIONS</a></li>
-	<li><a href="#copyright">COPYRIGHT</a></li>
-	<li><a href="#author">AUTHOR</a></li>
-	<li><a href="#see_also">SEE ALSO</a></li>
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
+  <li><a href="#OPTIONS">OPTIONS</a></li>
+  <li><a href="#COPYRIGHT">COPYRIGHT</a></li>
+  <li><a href="#AUTHOR">AUTHOR</a></li>
+  <li><a href="#SEE-ALSO">SEE ALSO</a></li>
 </ul>
 
-<hr name="index" />
-</div>
-<!-- INDEX END -->
+<h1 id="NAME">NAME</h1>
 
-<p>
-</p>
-<hr />
-<h1><a name="name">NAME</a></h1>
-<p>cleankrf - Clean a DNSSEC-Tools <em>keyrec</em> files of old data</p>
-<p>
-</p>
-<hr />
-<h1><a name="synopsis">SYNOPSIS</a></h1>
-<pre>
-  cleankrf [options] &lt;keyrec-files&gt;</pre>
-<p>
-</p>
-<hr />
-<h1><a name="description">DESCRIPTION</a></h1>
-<p><strong>cleankrf</strong> cleans old data out of a set of DNSSEC-Tools <em>keyrec</em> files.
-The old data are obsolete signing sets, orphaned keys, and obsolete keys.</p>
-<p>Obsolete signing sets are set <em>keyrec</em>s unreferenced by a zone <em>keyrec</em>.
-Revoked signing sets are considered obsolete by <strong>cleankrf</strong>.</p>
-<p>Orphaned keys are KSK and ZSK key <em>keyrec</em>s unreferenced by a set <em>keyrec</em>.</p>
-<p>Obsolete keys are key <em>keyrec</em>s with a <em>keyrec_type</em> of <strong>kskobs</strong> or
-<strong>zskobs</strong>.</p>
-<p><strong>cleankrf</strong>'s exit code is the count of orphaned and obsolete <em>keyrec</em>s
-found.</p>
-<p>
-</p>
-<hr />
-<h1><a name="options">OPTIONS</a></h1>
+<p>cleankrf - Clean a DNSSEC-Tools <i>keyrec</i> files of old data</p>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<pre><code>  cleankrf [options] &lt;keyrec-files&gt;</code></pre>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p><b>cleankrf</b> cleans old data out of a set of DNSSEC-Tools <i>keyrec</i> files. The old data are obsolete signing sets, orphaned keys, and obsolete keys.</p>
+
+<p>Obsolete signing sets are set <i>keyrec</i>s unreferenced by a zone <i>keyrec</i>. Revoked signing sets are considered obsolete by <b>cleankrf</b>.</p>
+
+<p>Orphaned keys are KSK and ZSK key <i>keyrec</i>s unreferenced by a set <i>keyrec</i>.</p>
+
+<p>Obsolete keys are key <i>keyrec</i>s with a <i>keyrec_type</i> of <b>kskobs</b> or <b>zskobs</b>.</p>
+
+<p><b>cleankrf</b>&#39;s exit code is the count of orphaned and obsolete <i>keyrec</i>s found.</p>
+
+<h1 id="OPTIONS">OPTIONS</h1>
+
 <dl>
-<dt><strong><a name="count" class="item"><strong>-count</strong></a></strong></dt>
 
+<dt id="count"><b>-count</b></dt>
 <dd>
-<p>Display a final count of old <em>keyrec</em>s found in the <em>keyrec</em> files.  This
-option allows the count to be displayed even if the <strong>-quiet</strong> option is given.</p>
+
+<p>Display a final count of old <i>keyrec</i>s found in the <i>keyrec</i> files. This option allows the count to be displayed even if the <b>-quiet</b> option is given.</p>
+
 </dd>
-<dt><strong><a name="list" class="item"><strong>-list</strong></a></strong></dt>
-
+<dt id="list"><b>-list</b></dt>
 <dd>
-<p>The key <em>keyrec</em>s are checked for old <em>keyrec</em>s, but they are not removed
-from the <em>keyrec</em> file.  The names of the old <em>keyrec</em>s are displayed.</p>
+
+<p>The key <i>keyrec</i>s are checked for old <i>keyrec</i>s, but they are not removed from the <i>keyrec</i> file. The names of the old <i>keyrec</i>s are displayed.</p>
+
 </dd>
-<dt><strong><a name="rm" class="item"><strong>-rm</strong></a></strong></dt>
-
+<dt id="rm"><b>-rm</b></dt>
 <dd>
-<p>Delete the key files, both <strong>.key</strong> and <strong>.private</strong>, from orphaned and
-expired <em>keyrec</em>s.</p>
+
+<p>Delete the key files, both <b>.key</b> and <b>.private</b>, from orphaned and expired <i>keyrec</i>s.</p>
+
 </dd>
-<dt><strong><a name="quiet" class="item"><strong>-quiet</strong></a></strong></dt>
-
+<dt id="quiet"><b>-quiet</b></dt>
 <dd>
+
 <p>Display no output.</p>
-</dd>
-<dt><strong><a name="verbose" class="item"><strong>-verbose</strong></a></strong></dt>
 
+</dd>
+<dt id="verbose"><b>-verbose</b></dt>
 <dd>
+
 <p>Display output about referenced keys and unreferenced keys.</p>
-</dd>
-<dt><strong><a name="version" class="item"><strong>-Version</strong></a></strong></dt>
 
-<dd>
-<p>Displays the version information for <strong>cleankrf</strong> and the DNSSEC-Tools package.</p>
 </dd>
-<dt><strong><a name="help" class="item"><strong>-help</strong></a></strong></dt>
-
+<dt id="Version"><b>-Version</b></dt>
 <dd>
+
+<p>Displays the version information for <b>cleankrf</b> and the DNSSEC-Tools package.</p>
+
+</dd>
+<dt id="help"><b>-help</b></dt>
+<dd>
+
 <p>Display a usage message.</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<hr />
-<h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2004-2013 SPARTA, Inc.  All rights reserved.
-See the COPYING file included with the DNSSEC-Tools package for details.</p>
-<p>
-</p>
-<hr />
-<h1><a name="author">AUTHOR</a></h1>
-<p>Wayne Morrison, <a href="mailto:tewok@tislabs.com">tewok@tislabs.com</a></p>
-<p>
-</p>
-<hr />
-<h1><a name="see_also">SEE ALSO</a></h1>
-<p><strong>fixkrf(8)</strong>,
-<strong>lskrf(8)</strong>,
-<strong>zonesigner(8)</strong></p>
-<p><strong>Net::DNS::SEC::Tools::keyrec.pm(3)</strong></p>
-<p><strong>file-keyrec.pm(5)</strong></p>
+
+<h1 id="COPYRIGHT">COPYRIGHT</h1>
+
+<p>Copyright 2004-2014 SPARTA, Inc. All rights reserved. See the COPYING file included with the DNSSEC-Tools package for details.</p>
+
+<h1 id="AUTHOR">AUTHOR</h1>
+
+<p>Wayne Morrison, tewok@tislabs.com</p>
+
+<h1 id="SEE-ALSO">SEE ALSO</h1>
+
+<p><b>fixkrf(8)</b>, <b>lskrf(8)</b>, <b>zonesigner(8)</b></p>
+
+<p><b>Net::DNS::SEC::Tools::keyrec.pm(3)</b></p>
+
+<p><b>file-keyrec.pm(5)</b></p>
+
 
 </body>
 
 </html>
+
+

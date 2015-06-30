@@ -2,7 +2,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>realmctl - Send commands to the DNSSEC-Tools realms daemon</title>
+<title></title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
@@ -10,237 +10,225 @@
 <body style="background-color: white">
 
 
-<!-- INDEX BEGIN -->
-<div name="index">
-<p><a name="__index__"></a></p>
 
-<ul>
-
-	<li><a href="#name">NAME</a></li>
-	<li><a href="#synopsis">SYNOPSIS</a></li>
-	<li><a href="#description">DESCRIPTION</a></li>
-	<li><a href="#options">OPTIONS</a></li>
-	<li><a href="#exit_codes">EXIT CODES</a></li>
-	<li><a href="#copyright">COPYRIGHT</a></li>
-	<li><a href="#author">AUTHOR</a></li>
-	<li><a href="#see_also">SEE ALSO</a></li>
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
+  <li><a href="#OPTIONS">OPTIONS</a></li>
+  <li><a href="#EXIT-CODES">EXIT CODES</a></li>
+  <li><a href="#COPYRIGHT">COPYRIGHT</a></li>
+  <li><a href="#AUTHOR">AUTHOR</a></li>
+  <li><a href="#SEE-ALSO">SEE ALSO</a></li>
 </ul>
 
-<hr name="index" />
-</div>
-<!-- INDEX END -->
+<h1 id="NAME">NAME</h1>
 
-<p>
-</p>
-<hr />
-<h1><a name="name">NAME</a></h1>
 <p>realmctl - Send commands to the DNSSEC-Tools realms daemon</p>
-<p>
-</p>
-<hr />
-<h1><a name="synopsis">SYNOPSIS</a></h1>
-<pre>
-  realmctl [options]</pre>
-<p>
-</p>
-<hr />
-<h1><a name="description">DESCRIPTION</a></h1>
-<p>The <strong>realmctl</strong> command sends commands to <strong>dtrealms</strong>, the DNSSEC-Tools realms
-daemon.  In most cases, <strong>dtrealms</strong> will send a response to <strong>realmctl</strong>.
-<strong>realmctl</strong> will print a success or failure message, as appropriate.  Only one
-option may be specified on a command line.</p>
-<p>
-</p>
-<hr />
-<h1><a name="options">OPTIONS</a></h1>
-<p>The following options are handled by <strong>realmctl</strong>.</p>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<pre><code>  realmctl [options]</code></pre>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p>The <b>realmctl</b> command sends commands to <b>dtrealms</b>, the DNSSEC-Tools realms daemon. In most cases, <b>dtrealms</b> will send a response to <b>realmctl</b>. <b>realmctl</b> will print a success or failure message, as appropriate. Only one option may be specified on a command line.</p>
+
+<h1 id="OPTIONS">OPTIONS</h1>
+
+<p>The following options are handled by <b>realmctl</b>.</p>
+
 <dl>
-<dt><strong><a name="allstart" class="item"><strong>-allstart</strong></a></strong></dt>
 
+<dt id="allstart"><b>-allstart</b></dt>
 <dd>
+
 <p>Starts all suspended realms.</p>
-</dd>
-<dt><strong><a name="allstop" class="item"><strong>-allstop</strong></a></strong></dt>
 
+</dd>
+<dt id="allstop"><b>-allstop</b></dt>
 <dd>
+
 <p>Stops all running realms.</p>
+
 </dd>
-<dt><strong><a name="cmd_realm_cmd_args" class="item"><strong>-cmd -- realm cmd args</strong></a></strong></dt>
-
-<dt><strong><a name="command_realm_cmd_args" class="item"><strong>-command -- realm cmd args</strong></a></strong></dt>
-
+<dt id="cmd----realm-cmd-args"><b>-cmd -- realm cmd args</b></dt>
 <dd>
-<p>Sends a command to the specified realm.  The command given as <em>cmd</em> will be
-sent to the <strong>rollerd</strong> running in realm <em>realm</em>.</p>
-<p>The double-dash given above is critical for proper argument parsing of the
-command line.</p>
-<p>All command-line arguments, as <em>args</em> above, following the realm name and
-command name will be sent as the command.</p>
-<p>Whatever output the command gives will be returned to <strong>realmctl</strong>, which will
-then print that output.  The command's return code will be appended to the
-command's output.  No attempt will be made to analyze the output for
-success or failure.</p>
-<p>For example, this command will tell the realm <strong>giant-isp</strong> to stop
-rollover of zone <em>bob.example.com</em>:</p>
-<pre>
-   $ realmctl -command -- giant-isp rollctl -skipzone bob.example.com</pre>
-<p><strong>Warning:</strong>  This is an inherently dangerous command.  When choosing a user
-under which the realm and rollover commands will be executed, be aware that
-this problem exists.  <strong>realmctl</strong> <em>may</em> be modified in the future to
-restrict the commands that may be executed with this option.</p>
+
 </dd>
-<dt><strong><a name="display" class="item"><strong>-display</strong></a></strong></dt>
-
+<dt id="command----realm-cmd-args"><b>-command -- realm cmd args</b></dt>
 <dd>
+
+<p>Sends a command to the specified realm. The command given as <i>cmd</i> will be sent to the <b>rollerd</b> running in realm <i>realm</i>.</p>
+
+<p>The double-dash given above is critical for proper argument parsing of the command line.</p>
+
+<p>All command-line arguments, as <i>args</i> above, following the realm name and command name will be sent as the command.</p>
+
+<p>Whatever output the command gives will be returned to <b>realmctl</b>, which will then print that output. The command&#39;s return code will be appended to the command&#39;s output. No attempt will be made to analyze the output for success or failure.</p>
+
+<p>For example, this command will tell the realm <b>giant-isp</b> to stop rollover of zone <i>bob.example.com</i>:</p>
+
+<pre><code>   $ realmctl -command -- giant-isp rollctl -skipzone bob.example.com</code></pre>
+
+<p><b>Warning:</b> This is an inherently dangerous command. When choosing a user under which the realm and rollover commands will be executed, be aware that this problem exists. <b>realmctl</b> <i>may</i> be modified in the future to restrict the commands that may be executed with this option.</p>
+
+</dd>
+<dt id="display"><b>-display</b></dt>
+<dd>
+
 <p>Starts the realms status GUI.</p>
-</dd>
-<dt><strong><a name="halt_now" class="item"><strong>-halt</strong> [now]</a></strong></dt>
 
-<dd>
-<p>Cleanly halts <strong>dtrealms</strong> execution.</p>
 </dd>
-<dt><strong><a name="logfile_logfile" class="item"><strong>-logfile logfile</strong></a></strong></dt>
-
+<dt id="halt-now"><b>-halt</b> [now]</dt>
 <dd>
-<p>Sets the <strong>dtrealms</strong> log file to <em>logfile</em>.  This must be a valid logging
-file, meaning that if <em>logfile</em> already exists, it must be a regular file.
-The only exceptions to this are if <em>logfile</em> is <strong>/dev/stdout</strong> or
-<strong>/dev/tty</strong>.</p>
+
+<p>Cleanly halts <b>dtrealms</b> execution.</p>
+
 </dd>
-<dt><strong><a name="loglevel_loglevel" class="item"><strong>-loglevel loglevel</strong></a></strong></dt>
-
+<dt id="logfile-logfile"><b>-logfile logfile</b></dt>
 <dd>
-<p>Sets the <strong>dtrealms</strong> logging level to <em>loglevel</em>.
-This must be one of the valid logging levels defined in <strong>realmmgr.pm(3)</strong>.</p>
-<p>If a logging level is not specified, then the list of valid levels will be
-printed and <strong>realmctl</strong> will exit.  The list is given in both text and numeric
-forms.</p>
+
+<p>Sets the <b>dtrealms</b> log file to <i>logfile</i>. This must be a valid logging file, meaning that if <i>logfile</i> already exists, it must be a regular file. The only exceptions to this are if <i>logfile</i> is <b>/dev/stdout</b> or <b>/dev/tty</b>.</p>
+
 </dd>
-<dt><strong><a name="logtz_logtz" class="item"><strong>-logtz logtz</strong></a></strong></dt>
-
+<dt id="loglevel-loglevel"><b>-loglevel loglevel</b></dt>
 <dd>
-<p>Sets the <strong>dtrealms</strong> logging timezone to <em>loglevel</em>.  This must be either
-<em>gmt</em> (for Greenwich Mean Time or <em>local</em> (for the host's local time.)</p>
+
+<p>Sets the <b>dtrealms</b> logging level to <i>loglevel</i>. This must be one of the valid logging levels defined in <b>realmmgr.pm(3)</b>.</p>
+
+<p>If a logging level is not specified, then the list of valid levels will be printed and <b>realmctl</b> will exit. The list is given in both text and numeric forms.</p>
+
 </dd>
-<dt><strong><a name="nodisplay" class="item"><strong>-nodisplay</strong></a></strong></dt>
-
+<dt id="logtz-logtz"><b>-logtz logtz</b></dt>
 <dd>
+
+<p>Sets the <b>dtrealms</b> logging timezone to <i>loglevel</i>. This must be either <i>gmt</i> (for Greenwich Mean Time or <i>local</i> (for the host&#39;s local time.)</p>
+
+</dd>
+<dt id="nodisplay"><b>-nodisplay</b></dt>
+<dd>
+
 <p>Stops the realms status GUI.</p>
-</dd>
-<dt><strong><a name="realmstatus" class="item"><strong>-realmstatus</strong></a></strong></dt>
 
+</dd>
+<dt id="realmstatus"><b>-realmstatus</b></dt>
 <dd>
-<p>Gets the current status of all the realms from <strong>dtrealms</strong>.  For each realm,
-the name, execution status, and zone counts are printed.  The zone counts
-are, in order, the number of zones in normal state, the number of zones in
-ZSK rollover, the number of zones in KSK rollover, and the number of zones
-waiting in KSK phase 6.  The zone counts are determined by sending the
-realm's rollover manager an information request.  Therefore, if the zone is
-inactive, the zone counts are not included.</p>
+
+<p>Gets the current status of all the realms from <b>dtrealms</b>. For each realm, the name, execution status, and zone counts are printed. The zone counts are, in order, the number of zones in normal state, the number of zones in ZSK rollover, the number of zones in KSK rollover, and the number of zones waiting in KSK phase 6. The zone counts are determined by sending the realm&#39;s rollover manager an information request. Therefore, if the zone is inactive, the zone counts are not included.</p>
+
 <p>Example:</p>
-<pre>
-    dev     active     normal: 18   ZSK: 3   KSK: 1   KSK phase 6: 0
+
+<pre><code>    dev     active     normal: 18   ZSK: 3   KSK: 1   KSK phase 6: 0
     test-r  inactive
-    money   active     normal: 10   ZSK: 0   KSK: 0   KSK phase 6: 1</pre>
-</dd>
-<dt><strong><a name="shutdown" class="item"><strong>-shutdown</strong></a></strong></dt>
+    money   active     normal: 10   ZSK: 0   KSK: 0   KSK phase 6: 1</code></pre>
 
-<dd>
-<p>Synonym for <strong>-halt</strong>.</p>
 </dd>
-<dt><strong><a name="startrealm_realm" class="item"><strong>-startrealm realm</strong></a></strong></dt>
-
+<dt id="shutdown"><b>-shutdown</b></dt>
 <dd>
-<p>Starts the suspended realm named by <em>realm</em>.  Multiple realms can be
-specified on the command line.  For instance, this command will send the
-<em>startrealm</em> command to <strong>dtrealms</strong> for three realms.</p>
-<pre>
-    $ realmctl -startrealm testing production customers</pre>
+
+<p>Synonym for <b>-halt</b>.</p>
+
 </dd>
-<dt><strong><a name="status" class="item"><strong>-status</strong></a></strong></dt>
-
+<dt id="startrealm-realm"><b>-startrealm realm</b></dt>
 <dd>
-<p>Has <strong>dtrealms</strong> write several of its operational parameters to its log file.
-The parameters are also reported to <strong>realmctl</strong>, which prints them to the
-screen.</p>
+
+<p>Starts the suspended realm named by <i>realm</i>. Multiple realms can be specified on the command line. For instance, this command will send the <i>startrealm</i> command to <b>dtrealms</b> for three realms.</p>
+
+<pre><code>    $ realmctl -startrealm testing production customers</code></pre>
+
 </dd>
-<dt><strong><a name="stoprealm_realm" class="item"><strong>-stoprealm realm</strong></a></strong></dt>
-
+<dt id="status"><b>-status</b></dt>
 <dd>
-<p>Stops the realm named by <em>realm</em>.  Multiple realms can be specified on the
-command line.  For instance, this command will send the <em>stoprealm</em> command
-to <strong>dtrealms</strong> for two realms.</p>
-<pre>
-    $ realmctl -stoprealm big-isp-3 misc-customers</pre>
+
+<p>Has <b>dtrealms</b> write several of its operational parameters to its log file. The parameters are also reported to <b>realmctl</b>, which prints them to the screen.</p>
+
 </dd>
-<dt><strong><a name="version" class="item"><strong>-Version</strong></a></strong></dt>
-
+<dt id="stoprealm-realm"><b>-stoprealm realm</b></dt>
 <dd>
-<p>Displays the version information for <strong>realmctl</strong> and the DNSSEC-Tools package.</p>
+
+<p>Stops the realm named by <i>realm</i>. Multiple realms can be specified on the command line. For instance, this command will send the <i>stoprealm</i> command to <b>dtrealms</b> for two realms.</p>
+
+<pre><code>    $ realmctl -stoprealm big-isp-3 misc-customers</code></pre>
+
 </dd>
-<dt><strong><a name="quiet" class="item"><strong>-quiet</strong></a></strong></dt>
-
+<dt id="Version"><b>-Version</b></dt>
 <dd>
-<p>Prevents output from being given.  Both error and non-error output is stopped.</p>
+
+<p>Displays the version information for <b>realmctl</b> and the DNSSEC-Tools package.</p>
+
 </dd>
-<dt><strong><a name="help" class="item"><strong>-help</strong></a></strong></dt>
-
+<dt id="quiet"><b>-quiet</b></dt>
 <dd>
+
+<p>Prevents output from being given. Both error and non-error output is stopped.</p>
+
+</dd>
+<dt id="help"><b>-help</b></dt>
+<dd>
+
 <p>Displays a usage message.</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<hr />
-<h1><a name="exit_codes">EXIT CODES</a></h1>
-<p><strong>realmctl</strong> may give the following exit codes:</p>
-<ol>
-<li><strong><a name="successful_execution" class="item">- Successful execution</a></strong>
 
-</li>
-<li><strong><a name="error_sending_the_command_to_dtrealms" class="item">- Error sending the command to <strong>dtrealms</strong>.</a></strong>
+<h1 id="EXIT-CODES">EXIT CODES</h1>
 
-</li>
-<li><strong><a name="missing_realm_argument" class="item">- Missing realm argument.</a></strong>
+<p><b>realmctl</b> may give the following exit codes:</p>
 
-</li>
-<li><strong><a name="too_many_command_options_specified" class="item">- Too many command options specified.</a></strong>
+<dl>
 
-</li>
-<li><strong><a name="missing_argument_for_cmd_or_command" class="item">- Missing argument for <strong>-cmd</strong> or <strong>-command</strong>.</a></strong>
+<dt id="Successful-execution">0 - Successful execution</dt>
+<dd>
 
-</li>
-<li><strong><a name="no_option_specified" class="item">- No option specified.</a></strong>
+</dd>
+<dt id="Error-sending-the-command-to-dtrealms">1 - Error sending the command to <b>dtrealms</b>.</dt>
+<dd>
 
-</li>
-<li><strong><a name="dtrealms_is_not_running" class="item">- dtrealms is not running.</a></strong>
+</dd>
+<dt id="Missing-realm-argument">2 - Missing realm argument.</dt>
+<dd>
 
-</li>
-<li><strong><a name="configuration_file_checks_failed" class="item">- Configuration file checks failed.</a></strong>
+</dd>
+<dt id="Too-many-command-options-specified">3 - Too many command options specified.</dt>
+<dd>
 
-</li>
-</ol>
-<p>
-</p>
-<hr />
-<h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2012-2013 SPARTA, Inc.  All rights reserved.
-See the COPYING file included with the DNSSEC-Tools package for details.</p>
-<p>
-</p>
-<hr />
-<h1><a name="author">AUTHOR</a></h1>
-<p>Wayne Morrison, <a href="mailto:tewok@tislabs.com">tewok@tislabs.com</a></p>
-<p>
-</p>
-<hr />
-<h1><a name="see_also">SEE ALSO</a></h1>
-<p><strong>Net::DNS::SEC::Tools::realmmgr.pm(3)</strong>,
-<strong>Net::DNS::SEC::Tools::realm.pm(3)</strong></p>
-<p><strong>dtrealms(8)</strong>,
-<strong>rollctl(8)</strong>
-<strong>rollerd(8)</strong></p>
+</dd>
+<dt id="Missing-argument-for--cmd-or--command">4 - Missing argument for <b>-cmd</b> or <b>-command</b>.</dt>
+<dd>
+
+</dd>
+<dt id="No-option-specified">5 - No option specified.</dt>
+<dd>
+
+</dd>
+<dt id="dtrealms-is-not-running">200 - dtrealms is not running.</dt>
+<dd>
+
+</dd>
+<dt id="Configuration-file-checks-failed">201 - Configuration file checks failed.</dt>
+<dd>
+
+</dd>
+</dl>
+
+<h1 id="COPYRIGHT">COPYRIGHT</h1>
+
+<p>Copyright 2012-2014 SPARTA, Inc. All rights reserved. See the COPYING file included with the DNSSEC-Tools package for details.</p>
+
+<h1 id="AUTHOR">AUTHOR</h1>
+
+<p>Wayne Morrison, tewok@tislabs.com</p>
+
+<h1 id="SEE-ALSO">SEE ALSO</h1>
+
+<p><b>Net::DNS::SEC::Tools::realmmgr.pm(3)</b>, <b>Net::DNS::SEC::Tools::realm.pm(3)</b></p>
+
+<p><b>dtrealms(8)</b>, <b>rollctl(8)</b> <b>rollerd(8)</b></p>
+
 
 </body>
 
 </html>
+
+

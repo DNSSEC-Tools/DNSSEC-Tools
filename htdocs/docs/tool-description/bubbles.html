@@ -2,7 +2,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>bubbles - DNSSEC-Tools Rollrec Simple GUI Display</title>
+<title></title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
@@ -10,184 +10,173 @@
 <body style="background-color: white">
 
 
-<!-- INDEX BEGIN -->
-<div name="index">
-<p><a name="__index__"></a></p>
 
-<ul>
-
-	<li><a href="#name">NAME</a></li>
-	<li><a href="#synopsis">SYNOPSIS</a></li>
-	<li><a href="#description">DESCRIPTION</a></li>
-	<li><a href="#options">OPTIONS</a></li>
-	<li><a href="#requirements">REQUIREMENTS</a></li>
-	<li><a href="#copyright">COPYRIGHT</a></li>
-	<li><a href="#author">AUTHOR</a></li>
-	<li><a href="#see_also">SEE ALSO</a></li>
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
+  <li><a href="#OPTIONS">OPTIONS</a></li>
+  <li><a href="#REQUIREMENTS">REQUIREMENTS</a></li>
+  <li><a href="#COPYRIGHT">COPYRIGHT</a></li>
+  <li><a href="#AUTHOR">AUTHOR</a></li>
+  <li><a href="#SEE-ALSO">SEE ALSO</a></li>
 </ul>
 
-<hr name="index" />
-</div>
-<!-- INDEX END -->
+<h1 id="NAME">NAME</h1>
 
-<p>
-</p>
-<hr />
-<h1><a name="name">NAME</a></h1>
 <p>bubbles - DNSSEC-Tools Rollrec Simple GUI Display</p>
-<p>
-</p>
-<hr />
-<h1><a name="synopsis">SYNOPSIS</a></h1>
-<pre>
-  bubbles [options] &lt;rollrec-file&gt;</pre>
-<p>
-</p>
-<hr />
-<h1><a name="description">DESCRIPTION</a></h1>
-<p><strong>bubbles</strong> gives a simple display of the roll status of a set of zones
-listed in a <em>rollrec</em> file.  In contrast, <strong>blinkenlights</strong> gives a detailed
-display of the roll status of a set of zones.  <strong>bubbles</strong> gives very little
-control over <strong>rollerd</strong>, the way <strong>blinkenlights</strong> does.  <strong>bubbles</strong> can halt
-<strong>rollerd</strong>'s execution only.</p>
-<p>A <strong>rollrec</strong> file contains one or more <em>rollrec</em> records.  These records are
-used by the DNSSEC-Tools rollover utilities (<strong>rollerd</strong>, etc.) to describe
-zones' rollover states.  Each zone's <em>rollrec</em> record contains such
-information as the zone file, the rollover phase, and logging level.
-<em>rollrec</em> files are text files.</p>
-<p>When <strong>bubbles</strong> starts, a window is created that has &quot;bubbles&quot; for each
-zone with a <em>rollrec</em> record in the given <em>rollrec</em> file.  (Clicking on a
-bubble doesn't do anything.)  By default, all zones with a <em>display</em> flag
-set on will be shown in the <strong>bubbles</strong> window.  Options may be given to
-modify this behavior.</p>
-<p>The zone bubbles are color-coded according to roll-over state.  The default
-colors are:</p>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<pre><code>  bubbles [options] &lt;rollrec-file&gt;</code></pre>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p><b>bubbles</b> gives a simple display of the roll status of a set of zones listed in a <i>rollrec</i> file. In contrast, <b>blinkenlights</b> gives a detailed display of the roll status of a set of zones. <b>bubbles</b> gives very little control over <b>rollerd</b>, the way <b>blinkenlights</b> does. <b>bubbles</b> can halt <b>rollerd</b>&#39;s execution only.</p>
+
+<p>A <b>rollrec</b> file contains one or more <i>rollrec</i> records. These records are used by the DNSSEC-Tools rollover utilities (<b>rollerd</b>, etc.) to describe zones&#39; rollover states. Each zone&#39;s <i>rollrec</i> record contains such information as the zone file, the rollover phase, and logging level. <i>rollrec</i> files are text files.</p>
+
+<p>When <b>bubbles</b> starts, a window is created that has &quot;bubbles&quot; for each zone with a <i>rollrec</i> record in the given <i>rollrec</i> file. (Clicking on a bubble doesn&#39;t do anything.) By default, all zones with a <i>display</i> flag set on will be shown in the <b>bubbles</b> window. Options may be given to modify this behavior.</p>
+
+<p>The zone bubbles are color-coded according to roll-over state. The default colors are:</p>
+
 <p>* green: not in roll-over</p>
+
 <p>* yellow: in ZSK roll-over</p>
+
 <p>* red: in KSK roll-over</p>
+
 <p>These colors may be specified by the user via command-line options.</p>
-<p>In building the bubble window, <strong>bubbles</strong> window defaults to creating a square
-window.  This may be overridden by specifying the number of columns, using the
-<strong>-columns</strong> option.</p>
-<p>
-</p>
-<hr />
-<h1><a name="options">OPTIONS</a></h1>
-<p><strong>bubbles</strong> supports the following options.</p>
+
+<p>In building the bubble window, <b>bubbles</b> window defaults to creating a square window. This may be overridden by specifying the number of columns, using the <b>-columns</b> option.</p>
+
+<h1 id="OPTIONS">OPTIONS</h1>
+
+<p><b>bubbles</b> supports the following options.</p>
+
 <dl>
-<dt><strong><a name="columns_columns" class="item"><strong>-columns columns</strong></a></strong></dt>
 
+<dt id="columns-columns"><b>-columns columns</b></dt>
 <dd>
-<p>This option allows the user to specify the number of columns to be used in
-the Button Window.</p>
+
+<p>This option allows the user to specify the number of columns to be used in the Button Window.</p>
+
 </dd>
-<dt><strong><a name="kskcolor_color" class="item"><strong>-kskcolor color</strong></a></strong></dt>
-
+<dt id="kskcolor-color"><b>-kskcolor color</b></dt>
 <dd>
+
 <p>Set the bubble color for zones that are performing KSK roll-overs.</p>
-</dd>
-<dt><strong><a name="zskcolor_color" class="item"><strong>-zskcolor color</strong></a></strong></dt>
 
+</dd>
+<dt id="zskcolor-color"><b>-zskcolor color</b></dt>
 <dd>
+
 <p>Set the bubble color for zones that are performing ZSK roll-overs.</p>
-</dd>
-<dt><strong><a name="noncolor_color" class="item"><strong>-noncolor color</strong></a></strong></dt>
 
+</dd>
+<dt id="noncolor-color"><b>-noncolor color</b></dt>
 <dd>
+
 <p>Set the bubble color for zones that are not in roll-over.</p>
-</dd>
-<dt><strong><a name="ignore_display" class="item"><strong>-ignore-display</strong></a></strong></dt>
 
-<dd>
-<p>Ignore the <strong>rollrec</strong> display flag and display every zone in the <strong>rollrec</strong>
-file.</p>
 </dd>
-<dt><strong><a name="interval_wait_time" class="item"><strong>-interval wait-time</strong></a></strong></dt>
-
+<dt id="ignore-display"><b>-ignore-display</b></dt>
 <dd>
-<p>Interval between checks of the <strong>rollrec</strong> file.  By default, <em>wait-time</em> is
-given in minutes.  This can be adjusted by specifying one of the following
-time-unit suffixes.</p>
+
+<p>Ignore the <b>rollrec</b> display flag and display every zone in the <b>rollrec</b> file.</p>
+
+</dd>
+<dt id="interval-wait-time"><b>-interval wait-time</b></dt>
+<dd>
+
+<p>Interval between checks of the <b>rollrec</b> file. By default, <i>wait-time</i> is given in minutes. This can be adjusted by specifying one of the following time-unit suffixes.</p>
+
 <p>* s - seconds</p>
+
 <p>* m - minutes</p>
+
 <p>* h - hours</p>
+
 <p>Examples:</p>
-<p>* <em>-interval 24</em> - 24 minutes</p>
-<p>* <em>-interval 24s</em> - 24 seconds</p>
-<p>* <em>-interval 24m</em> - 24 minutes</p>
-<p>* <em>-interval 24h</em> - 24 hours</p>
-</dd>
-<dt><strong><a name="no_filter" class="item"><strong>-no-filter</strong></a></strong></dt>
 
-<dd>
-<p>This option turns off name filtering when <strong>bubbles</strong> presents a
-file-selection dialog for choosing a new <em>rollrec</em> file.  If this option
-is not given, then the file-selection dialog will only list regular files
-with a suffix of <strong>.rrf</strong>.</p>
-</dd>
-<dt><strong><a name="showksk" class="item"><strong>-showksk</strong></a></strong></dt>
+<p>* <i>-interval 24</i> - 24 minutes</p>
 
+<p>* <i>-interval 24s</i> - 24 seconds</p>
+
+<p>* <i>-interval 24m</i> - 24 minutes</p>
+
+<p>* <i>-interval 24h</i> - 24 hours</p>
+
+</dd>
+<dt id="no-filter"><b>-no-filter</b></dt>
 <dd>
+
+<p>This option turns off name filtering when <b>bubbles</b> presents a file-selection dialog for choosing a new <i>rollrec</i> file. If this option is not given, then the file-selection dialog will only list regular files with a suffix of <b>.rrf</b>.</p>
+
+</dd>
+<dt id="showksk"><b>-showksk</b></dt>
+<dd>
+
 <p>Show the zones that are performing KSK roll-overs.</p>
-</dd>
-<dt><strong><a name="shownonrolls" class="item"><strong>-shownonrolls</strong></a></strong></dt>
 
+</dd>
+<dt id="shownonrolls"><b>-shownonrolls</b></dt>
 <dd>
+
 <p>Show the zones that are not in roll-over.</p>
-</dd>
-<dt><strong><a name="showrolls" class="item"><strong>-showrolls</strong></a></strong></dt>
 
+</dd>
+<dt id="showrolls"><b>-showrolls</b></dt>
 <dd>
+
 <p>Show the zones that are performing either type of roll-over.</p>
-</dd>
-<dt><strong><a name="showzsk" class="item"><strong>-showzsk</strong></a></strong></dt>
 
+</dd>
+<dt id="showzsk"><b>-showzsk</b></dt>
 <dd>
+
 <p>Show the zones that are performing ZSK roll-overs.</p>
-</dd>
-<dt><strong><a name="help" class="item"><strong>-help</strong></a></strong></dt>
 
+</dd>
+<dt id="help"><b>-help</b></dt>
 <dd>
+
 <p>Give a usage message and exit.</p>
-</dd>
-<dt><strong><a name="version" class="item"><strong>-Version</strong></a></strong></dt>
 
+</dd>
+<dt id="Version"><b>-Version</b></dt>
 <dd>
-<p>Displays the version information for <strong>bubbles</strong> and the DNSSEC-Tools
-package.</p>
+
+<p>Displays the version information for <b>bubbles</b> and the DNSSEC-Tools package.</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<hr />
-<h1><a name="requirements">REQUIREMENTS</a></h1>
-<p><strong>bubbles</strong> is implemented in Perl/Tk, so both Perl and Perl/Tk must be
-installed on your system.</p>
-<p>
-</p>
-<hr />
-<h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2009-2013 SPARTA, Inc.  All rights reserved.
-See the COPYING file included with the DNSSEC-Tools package for details.</p>
-<p>
-</p>
-<hr />
-<h1><a name="author">AUTHOR</a></h1>
-<p>Wayne Morrison, <a href="mailto:tewok@tislabs.com">tewok@tislabs.com</a></p>
-<p>
-</p>
-<hr />
-<h1><a name="see_also">SEE ALSO</a></h1>
-<p><strong>lsroll(1)</strong></p>
-<p><strong>blinkenlights(8)</strong>,
-<strong>rollchk(8)</strong>,
-<strong>rollerd(8)</strong>
-<strong>rollinit(8)</strong>,
-<strong>rollrec-editor(8)</strong>
-<strong>rollset(8)</strong>,</p>
-<p><strong>Net::DNS::SEC::Tools::rollrec(3)</strong></p>
-<p><strong>file-rollrec(5)</strong></p>
+
+<h1 id="REQUIREMENTS">REQUIREMENTS</h1>
+
+<p><b>bubbles</b> is implemented in Perl/Tk, so both Perl and Perl/Tk must be installed on your system.</p>
+
+<h1 id="COPYRIGHT">COPYRIGHT</h1>
+
+<p>Copyright 2009-2014 SPARTA, Inc. All rights reserved. See the COPYING file included with the DNSSEC-Tools package for details.</p>
+
+<h1 id="AUTHOR">AUTHOR</h1>
+
+<p>Wayne Morrison, tewok@tislabs.com</p>
+
+<h1 id="SEE-ALSO">SEE ALSO</h1>
+
+<p><b>lsroll(1)</b></p>
+
+<p><b>blinkenlights(8)</b>, <b>rollchk(8)</b>, <b>rollerd(8)</b> <b>rollinit(8)</b>, <b>rollrec-editor(8)</b> <b>rollset(8)</b>,</p>
+
+<p><b>Net::DNS::SEC::Tools::rollrec(3)</b></p>
+
+<p><b>file-rollrec(5)</b></p>
+
 
 </body>
 
 </html>
+
+

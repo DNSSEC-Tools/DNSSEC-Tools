@@ -2,7 +2,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>mapper - Create graphical maps of DNS zone data</title>
+<title></title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
@@ -10,226 +10,197 @@
 <body style="background-color: white">
 
 
-<!-- INDEX BEGIN -->
-<div name="index">
-<p><a name="__index__"></a></p>
 
-<ul>
-
-	<li><a href="#name">NAME</a></li>
-	<li><a href="#synopsis">SYNOPSIS</a></li>
-	<li><a href="#description">DESCRIPTION</a></li>
-	<li><a href="#options">OPTIONS</a></li>
-	<li><a href="#example_invocations">EXAMPLE INVOCATIONS</a></li>
-	<li><a href="#copyright">COPYRIGHT</a></li>
-	<li><a href="#author">AUTHOR</a></li>
-	<li><a href="#see_also">SEE ALSO</a></li>
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
+  <li><a href="#OPTIONS">OPTIONS</a></li>
+  <li><a href="#EXAMPLE-INVOCATIONS">EXAMPLE INVOCATIONS</a></li>
+  <li><a href="#COPYRIGHT">COPYRIGHT</a></li>
+  <li><a href="#AUTHOR">AUTHOR</a></li>
+  <li><a href="#SEE-ALSO">SEE ALSO</a></li>
 </ul>
 
-<hr name="index" />
-</div>
-<!-- INDEX END -->
+<h1 id="NAME">NAME</h1>
 
-<p>
-</p>
-<hr />
-<h1><a name="name">NAME</a></h1>
-<pre>
-    mapper - Create graphical maps of DNS zone data</pre>
-<p>
-</p>
-<hr />
-<h1><a name="synopsis">SYNOPSIS</a></h1>
-<pre>
-    mapper [options] zonefile1 domainname1 ... zonefileN domainnameN</pre>
-<p>
-</p>
-<hr />
-<h1><a name="description">DESCRIPTION</a></h1>
-<p>This application creates a graphical map of one or more zone files.  The
-output gives a graphical representation of a DNS zone or zones.  The output
-is written in the PNG format.  The result can be useful for getting a more
-intuitive view of a zone or set of zones.  It is extremely useful for
-visualizing DNSSEC deployment within a given zone as well as to help discover
-problem spots.</p>
-<p>
-</p>
-<hr />
-<h1><a name="options">OPTIONS</a></h1>
+<pre><code>    mapper - Create graphical maps of DNS zone data</code></pre>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<pre><code>    mapper [options] zonefile1 domainname1 ... zonefileN domainnameN</code></pre>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p>This application creates a graphical map of one or more zone files. The output gives a graphical representation of a DNS zone or zones. The output is written in the PNG format. The result can be useful for getting a more intuitive view of a zone or set of zones. It is extremely useful for visualizing DNSSEC deployment within a given zone as well as to help discover problem spots.</p>
+
+<h1 id="OPTIONS">OPTIONS</h1>
+
 <dl>
-<dt><strong><a name="h" class="item">-h</a></strong></dt>
 
+<dt id="h">-h</dt>
 <dd>
+
 <p>Prints a help summary.</p>
-</dd>
-<dt><strong><a name="o_outfile_png" class="item">-o OUTFILE.png</a></strong></dt>
 
-<dd>
-<p>Saves the results to a given filename.  If this option is not given, the map
-will be saved to <strong>map.png</strong>.</p>
 </dd>
-<dt><strong><a name="r" class="item">-r</a></strong></dt>
-
+<dt id="o-OUTFILE.png">-o OUTFILE.png</dt>
 <dd>
+
+<p>Saves the results to a given filename. If this option is not given, the map will be saved to <b>map.png</b>.</p>
+
+</dd>
+<dt id="r">-r</dt>
+<dd>
+
 <p>Lists resource records assigned to each node within the map.</p>
-</dd>
-<dt><strong><a name="t_type_type" class="item">-t TYPE,TYPE...</a></strong></dt>
 
-<dd>
-<p>Adds the data portion of a resource record to the displayed node
-information.  Data types passed will be automatically converted to
-upper-case for ease of use.</p>
-<p>Example usage: <em>-t A</em> will add IPv4 addresses to
-all displayed nodes that have A records.</p>
 </dd>
-<dt><strong><a name="l" class="item">-L</a></strong></dt>
-
+<dt id="t-TYPE-TYPE">-t TYPE,TYPE...</dt>
 <dd>
+
+<p>Adds the data portion of a resource record to the displayed node information. Data types passed will be automatically converted to upper-case for ease of use.</p>
+
+<p>Example usage: <i>-t A</i> will add IPv4 addresses to all displayed nodes that have A records.</p>
+
+</dd>
+<dt id="L">-L</dt>
+<dd>
+
 <p>Adds a legend to the map.</p>
-</dd>
-<dt><strong><a name="l" class="item">-l (neato|dot|twopi|circo|fdp)</a></strong></dt>
 
-<dd>
-<p>Selects a layout format.  The default is <em>neato</em>, which is circular in
-pattern.  See the documentation on the <strong>GraphViz</strong> package and the
-<strong>GraphViz</strong> Perl module for further details.</p>
 </dd>
-<dt><strong><a name="node_size_none_small" class="item">--node-size=(none|small)</a></strong></dt>
-
+<dt id="l-neato-dot-twopi-circo-fdp">-l (neato|dot|twopi|circo|fdp)</dt>
 <dd>
-<p>If the map size is too large, it is possible to either greatly reduce
-the node size (and the text) using <em>--node-size=small</em> or eliminate
-the circles entirely, leaving only the arrows using
-<em>--node-size=none</em>.  This can make for better visual diagrams of very
-complex node sets, although all labeling is lost.</p>
+
+<p>Selects a layout format. The default is <i>neato</i>, which is circular in pattern. See the documentation on the <b>GraphViz</b> package and the <b>GraphViz</b> Perl module for further details.</p>
+
 </dd>
-<dt><strong><a name="a" class="item">-a</a></strong></dt>
-
+<dt id="node-size-none-small">--node-size=(none|small)</dt>
 <dd>
-<p>Allows overlapping of nodes.  This makes much tighter maps with the
-downside being that they are somewhat cluttered.  Maps of extremely
-large zones will be difficult to decipher if this option is not used.</p>
+
+<p>If the map size is too large, it is possible to either greatly reduce the node size (and the text) using <i>--node-size=small</i> or eliminate the circles entirely, leaving only the arrows using <i>--node-size=none</i>. This can make for better visual diagrams of very complex node sets, although all labeling is lost.</p>
+
 </dd>
-<dt><strong><a name="e_weight" class="item">-e WEIGHT</a></strong></dt>
-
+<dt id="a">-a</dt>
 <dd>
-<p>Assigns an edge weight to edges.  In theory, &gt;1 means shorter and &lt;1 means
-longer, although, it may not have any effect as implemented.
-This should work better in the future.</p>
+
+<p>Allows overlapping of nodes. This makes much tighter maps with the downside being that they are somewhat cluttered. Maps of extremely large zones will be difficult to decipher if this option is not used.</p>
+
 </dd>
-<dt><strong><a name="f_integer" class="item">-f INTEGER</a></strong></dt>
-
+<dt id="e-WEIGHT">-e WEIGHT</dt>
 <dd>
-<p>Uses the INTEGER value for the font size to print node names with.
-The default value is 10.</p>
+
+<p>Assigns an edge weight to edges. In theory, &gt;1 means shorter and &lt;1 means longer, although, it may not have any effect as implemented. This should work better in the future.</p>
+
 </dd>
-<dt><strong><a name="w_warntime" class="item">-w WARNTIME</a></strong></dt>
-
+<dt id="f-INTEGER">-f INTEGER</dt>
 <dd>
-<p>Specifies how far in advance expiration warnings are enabled for signed 
-resource records.  The default is 7 days.  The warning time is measured
-in seconds.</p>
+
+<p>Uses the INTEGER value for the font size to print node names with. The default value is 10.</p>
+
 </dd>
-<dt><strong><a name="i_regex" class="item">-i REGEX</a></strong></dt>
-
+<dt id="w-WARNTIME">-w WARNTIME</dt>
 <dd>
-<p>Ignores record types matching a <em>REGEX</em> regular expression.</p>
+
+<p>Specifies how far in advance expiration warnings are enabled for signed resource records. The default is 7 days. The warning time is measured in seconds.</p>
+
 </dd>
-<dt><strong><a name="s_type_type" class="item">-s TYPE,TYPE...</a></strong></dt>
-
+<dt id="i-REGEX">-i REGEX</dt>
 <dd>
-<p>Specifies a list of record types that will not be analyzed or displayed
-in the map.  By default, this is set to NSEC and CNAME in order to reduce
-clutter.  Setting it to &quot;&quot; will display these results again.</p>
+
+<p>Ignores record types matching a <i>REGEX</i> regular expression.</p>
+
 </dd>
-<dt><strong><a name="t_type_type" class="item">-T TYPE,TYPE...</a></strong></dt>
-
+<dt id="s-TYPE-TYPE">-s TYPE,TYPE...</dt>
 <dd>
-<p>Restrict record types that will be processed to those of type <em>TYPE</em>.
-This is the converse of the <em>-s</em> option.  It is not meaningful to use both
-<em>-s</em> and <em>-t</em> in the same invocation.  They will both work at once, however,
-so if <em>-T</em> specifies a type which <em>-s</em> excludes, it will not be shown.</p>
+
+<p>Specifies a list of record types that will not be analyzed or displayed in the map. By default, this is set to NSEC and CNAME in order to reduce clutter. Setting it to &quot;&quot; will display these results again.</p>
+
 </dd>
-<dt><strong><a name="g" class="item">-g</a></strong></dt>
-
+<dt id="T-TYPE-TYPE">-T TYPE,TYPE...</dt>
 <dd>
-<p>Attempts to cluster nodes around the domain name.  For &quot;dot&quot; layouts,
-this actually means drawing a box around the cluster.  For the other
-types, it makes very little difference, if any.</p>
+
+<p>Restrict record types that will be processed to those of type <i>TYPE</i>. This is the converse of the <i>-s</i> option. It is not meaningful to use both <i>-s</i> and <i>-t</i> in the same invocation. They will both work at once, however, so if <i>-T</i> specifies a type which <i>-s</i> excludes, it will not be shown.</p>
+
 </dd>
-<dt><strong><a name="q" class="item">-q</a></strong></dt>
-
+<dt id="g">-g</dt>
 <dd>
-<p>Prevents output of warnings or errors about records that have DNSSEC
-signatures that are near or beyond their signature lifetimes.</p>
+
+<p>Attempts to cluster nodes around the domain name. For &quot;dot&quot; layouts, this actually means drawing a box around the cluster. For the other types, it makes very little difference, if any.</p>
+
 </dd>
-<dt><strong><a name="dump_styles" class="item">--dump-styles</a></strong></dt>
-
+<dt id="q">-q</dt>
 <dd>
+
+<p>Prevents output of warnings or errors about records that have DNSSEC signatures that are near or beyond their signature lifetimes.</p>
+
+</dd>
+<dt id="dump-styles">--dump-styles</dt>
+<dd>
+
 <p>Dumps the current style settings for both nodes and edges.</p>
+
 </dd>
-<dt><strong><a name="node_style_formats" class="item">--node-style=FORMATS</a></strong></dt>
-
-<dt><strong><a name="edge_style_formats" class="item">--edge-style=FORMATS</a></strong></dt>
-
+<dt id="node-style-FORMATS">--node-style=FORMATS</dt>
 <dd>
-<p>Allows specific style settings to be used when drawing nodes and
-edges.  Major format specifications are delimited by '/'s and pairs
-within that are delimited by ':'s.  The first token in a ':' list is
-expected to be the record name.</p>
-<p>For example, to make all A address records appear as a red box and all
-MX records to appear as a triangle use this specification:</p>
-<pre>
-  --node-style=A:shape=box:fillcolor=red/MX:shape=triangle</pre>
-<p>Run mapper with --dump-styles to show its default settings and/or how
-you've modified it the options have been used.</p>
+
+</dd>
+<dt id="edge-style-FORMATS">--edge-style=FORMATS</dt>
+<dd>
+
+<p>Allows specific style settings to be used when drawing nodes and edges. Major format specifications are delimited by &#39;/&#39;s and pairs within that are delimited by &#39;:&#39;s. The first token in a &#39;:&#39; list is expected to be the record name.</p>
+
+<p>For example, to make all A address records appear as a red box and all MX records to appear as a triangle use this specification:</p>
+
+<pre><code>  --node-style=A:shape=box:fillcolor=red/MX:shape=triangle</code></pre>
+
+<p>Run mapper with --dump-styles to show its default settings and/or how you&#39;ve modified it the options have been used.</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<hr />
-<h1><a name="example_invocations">EXAMPLE INVOCATIONS</a></h1>
+
+<h1 id="EXAMPLE-INVOCATIONS">EXAMPLE INVOCATIONS</h1>
+
 <dl>
-<dt><strong><a name="mapper_s_cname_nsec_i_dhcp_l_zonefile_zone_com" class="item"><em>mapper -s cname,nsec -i dhcp -L zonefile zone.com</em></a></strong></dt>
 
+<dt id="mapper--s-cname-nsec--i-dhcp--L-zonefile-zone.com"><i>mapper -s cname,nsec -i dhcp -L zonefile zone.com</i></dt>
 <dd>
-<p>Writes to the default file (<strong>map.png</strong>) of a <em>zone.com</em> zone
-stored in <em>zonefile</em>.  It excludes any hosts with a name containing
-<em>dhcp</em> and ignores any record of type <em>CNAME</em> or <em>NSEC</em>.  A legend
-is included in the output.</p>
+
+<p>Writes to the default file (<b>map.png</b>) of a <i>zone.com</i> zone stored in <i>zonefile</i>. It excludes any hosts with a name containing <i>dhcp</i> and ignores any record of type <i>CNAME</i> or <i>NSEC</i>. A legend is included in the output.</p>
+
 </dd>
-<dt><strong><a name="mapper_s_txt_hinfo_cname_nsec_a_aaaa_mx_rrsig_l_zonefile_zone_com_zonefile2_sub_zone_com" class="item"><em>mapper -s txt,hinfo,cname,nsec,a,aaaa,mx,rrsig -L zonefile zone.com zonefile2 sub.zone.com ...</em></a></strong></dt>
-
+<dt id="mapper--s-txt-hinfo-cname-nsec-a-aaaa-mx-rrsig--L-zonefile-zone.com-zonefile2-sub.zone.com"><i>mapper -s txt,hinfo,cname,nsec,a,aaaa,mx,rrsig -L zonefile zone.com zonefile2 sub.zone.com ...</i></dt>
 <dd>
-<p>Removes a lot of records from the display in order to primarily display
-a map of a zone hierarchy.</p>
+
+<p>Removes a lot of records from the display in order to primarily display a map of a zone hierarchy.</p>
+
 </dd>
-<dt><strong><a name="mapper_l_dot_s_txt_hinfo_cname_nsec_a_aaaa_mx_rrsig_l_zonefile_zone_com_zonefile2_sub_zone_com" class="item"><em>mapper -l dot -s txt,hinfo,cname,nsec,a,aaaa,mx,rrsig -L zonefile zone.com zonefile2 sub.zone.com ...</em></a></strong></dt>
-
+<dt id="mapper--l-dot--s-txt-hinfo-cname-nsec-a-aaaa-mx-rrsig--L-zonefile-zone.com-zonefile2-sub.zone.com"><i>mapper -l dot -s txt,hinfo,cname,nsec,a,aaaa,mx,rrsig -L zonefile zone.com zonefile2 sub.zone.com ...</i></dt>
 <dd>
-<p>As the previous example, but this command draws a more vertical tree-style
-graph of the zone.  This works well for fairly deep but narrow hierarchies.
-Tree-style diagrams rarely look as nice for full zones.</p>
+
+<p>As the previous example, but this command draws a more vertical tree-style graph of the zone. This works well for fairly deep but narrow hierarchies. Tree-style diagrams rarely look as nice for full zones.</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<hr />
-<h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2004-2013 SPARTA, Inc.  All rights reserved.
-See the COPYING file included with the DNSSEC-Tools package for details.</p>
-<p>
-</p>
-<hr />
-<h1><a name="author">AUTHOR</a></h1>
-<p>Wes Hardaker &lt;<a href="mailto:hardaker@users.sourceforge.net">hardaker@users.sourceforge.net</a>&gt;</p>
-<p>
-</p>
-<hr />
-<h1><a name="see_also">SEE ALSO</a></h1>
-<p><strong>Net::DNS</strong></p>
-<p><a href="http://dnssec-tools.sourceforge.net">http://dnssec-tools.sourceforge.net</a></p>
+
+<h1 id="COPYRIGHT">COPYRIGHT</h1>
+
+<p>Copyright 2004-2013 SPARTA, Inc. All rights reserved. See the COPYING file included with the DNSSEC-Tools package for details.</p>
+
+<h1 id="AUTHOR">AUTHOR</h1>
+
+<p>Wes Hardaker &lt;hardaker@users.sourceforge.net&gt;</p>
+
+<h1 id="SEE-ALSO">SEE ALSO</h1>
+
+<p><b>Net::DNS</b></p>
+
+<p>http://dnssec-tools.sourceforge.net</p>
+
 
 </body>
 
 </html>
+
+

@@ -2,7 +2,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>realmchk - Validate a set of DNSSEC-Tools realms files</title>
+<title></title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
@@ -10,98 +10,92 @@
 <body style="background-color: white">
 
 
-<!-- INDEX BEGIN -->
-<div name="index">
-<p><a name="__index__"></a></p>
 
-<ul>
-
-	<li><a href="#name">NAME</a></li>
-	<li><a href="#synopsis">SYNOPSIS</a></li>
-	<li><a href="#description">DESCRIPTION</a></li>
-	<li><a href="#options">OPTIONS</a></li>
-	<li><a href="#copyright">COPYRIGHT</a></li>
-	<li><a href="#author">AUTHOR</a></li>
-	<li><a href="#see_also">SEE ALSO</a></li>
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
+  <li><a href="#OPTIONS">OPTIONS</a></li>
+  <li><a href="#COPYRIGHT">COPYRIGHT</a></li>
+  <li><a href="#AUTHOR">AUTHOR</a></li>
+  <li><a href="#SEE-ALSO">SEE ALSO</a></li>
 </ul>
 
-<hr name="index" />
-</div>
-<!-- INDEX END -->
+<h1 id="NAME">NAME</h1>
 
-<p>
-</p>
-<hr />
-<h1><a name="name">NAME</a></h1>
 <p>realmchk - Validate a set of DNSSEC-Tools realms files</p>
-<p>
-</p>
-<hr />
-<h1><a name="synopsis">SYNOPSIS</a></h1>
-<pre>
-  realmchk [options] &lt;realm-files&gt;</pre>
-<p>
-</p>
-<hr />
-<h1><a name="description">DESCRIPTION</a></h1>
-<p><strong>realmchk</strong> checks the validity of a set of DNSSEC-Tools <strong>realms</strong> file.
-The results can be given in a summary or verbose form, or without any results
-printed at all.  The exit code is the count of errors found by <strong>realmchk</strong> in
-all the <strong>realms</strong> files checked.</p>
-<p><strong>realmchk</strong> identifies the following error conditions:</p>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<pre><code>  realmchk [options] &lt;realm-files&gt;</code></pre>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p><b>realmchk</b> checks the validity of a set of DNSSEC-Tools <b>realms</b> file. The results can be given in a summary or verbose form, or without any results printed at all. The exit code is the count of errors found by <b>realmchk</b> in all the <b>realms</b> files checked.</p>
+
+<p><b>realmchk</b> identifies the following error conditions:</p>
+
 <p>* The state is either &quot;active&quot; or &quot;inactive&quot;.</p>
+
 <p>* The config directory is a writable, searchable directory.</p>
+
 <p>* The state directory is a writable, searchable directory..</p>
+
 <p>* The realm directory is a writable, searchable directory.</p>
+
 <p>* The rollrec file is a writable regular file.</p>
+
 <p>* If the user is defined, it is a valid user.</p>
-<p>
-</p>
-<hr />
-<h1><a name="options">OPTIONS</a></h1>
-<p>The following options are handled by <strong>realmchk</strong>.</p>
+
+<h1 id="OPTIONS">OPTIONS</h1>
+
+<p>The following options are handled by <b>realmchk</b>.</p>
+
 <dl>
-<dt><strong><a name="quiet" class="item"><strong>-quiet</strong></a></strong></dt>
 
+<dt id="quiet"><b>-quiet</b></dt>
 <dd>
+
 <p>Give no output.</p>
-</dd>
-<dt><strong><a name="verbose" class="item"><strong>-verbose</strong></a></strong></dt>
 
-<dd>
-<p>Provide extensive output describing the state of the <strong>realms</strong> files.</p>
 </dd>
-<dt><strong><a name="version" class="item"><strong>-Version</strong></a></strong></dt>
-
+<dt id="verbose"><b>-verbose</b></dt>
 <dd>
-<p>Displays the version information for <strong>realmchk</strong> and the DNSSEC-Tools package.</p>
+
+<p>Provide extensive output describing the state of the <b>realms</b> files.</p>
+
 </dd>
-<dt><strong><a name="help" class="item"><strong>-help</strong></a></strong></dt>
-
+<dt id="Version"><b>-Version</b></dt>
 <dd>
+
+<p>Displays the version information for <b>realmchk</b> and the DNSSEC-Tools package.</p>
+
+</dd>
+<dt id="help"><b>-help</b></dt>
+<dd>
+
 <p>Displays a help message and exits.</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<hr />
-<h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2012-2013 SPARTA, Inc.  All rights reserved.
-See the COPYING file included with the DNSSEC-Tools package for details.</p>
-<p>
-</p>
-<hr />
-<h1><a name="author">AUTHOR</a></h1>
-<p>Wayne Morrison, <a href="mailto:tewok@tislabs.com">tewok@tislabs.com</a></p>
-<p>
-</p>
-<hr />
-<h1><a name="see_also">SEE ALSO</a></h1>
-<p><strong>dtrealms(8)</strong>,
-<strong>lsrealm(8)</strong>,
-<strong>realminit(8)</strong></p>
-<p><strong>Net::DNS::SEC::Tools::realm.pm(3)</strong>,</p>
+
+<h1 id="COPYRIGHT">COPYRIGHT</h1>
+
+<p>Copyright 2012-2014 SPARTA, Inc. All rights reserved. See the COPYING file included with the DNSSEC-Tools package for details.</p>
+
+<h1 id="AUTHOR">AUTHOR</h1>
+
+<p>Wayne Morrison, tewok@tislabs.com</p>
+
+<h1 id="SEE-ALSO">SEE ALSO</h1>
+
+<p><b>dtrealms(8)</b>, <b>lsrealm(8)</b>, <b>realminit(8)</b></p>
+
+<p><b>Net::DNS::SEC::Tools::realm.pm(3)</b>,</p>
+
 
 </body>
 
 </html>
+
+

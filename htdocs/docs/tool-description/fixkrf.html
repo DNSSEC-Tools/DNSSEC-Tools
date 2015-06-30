@@ -2,8 +2,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>fixkrf - Fixes DNSSEC-Tools I&lt;keyrec&gt; files whose encryption key files have
-been moved</title>
+<title></title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
@@ -11,97 +10,78 @@ been moved</title>
 <body style="background-color: white">
 
 
-<!-- INDEX BEGIN -->
-<div name="index">
-<p><a name="__index__"></a></p>
 
-<ul>
-
-	<li><a href="#name">NAME</a></li>
-	<li><a href="#synopsis">SYNOPSIS</a></li>
-	<li><a href="#description">DESCRIPTION</a></li>
-	<li><a href="#options">OPTIONS</a></li>
-	<li><a href="#copyright">COPYRIGHT</a></li>
-	<li><a href="#author">AUTHOR</a></li>
-	<li><a href="#see_also">SEE ALSO</a></li>
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
+  <li><a href="#OPTIONS">OPTIONS</a></li>
+  <li><a href="#COPYRIGHT">COPYRIGHT</a></li>
+  <li><a href="#AUTHOR">AUTHOR</a></li>
+  <li><a href="#SEE-ALSO">SEE ALSO</a></li>
 </ul>
 
-<hr name="index" />
-</div>
-<!-- INDEX END -->
+<h1 id="NAME">NAME</h1>
 
-<p>
-</p>
-<hr />
-<h1><a name="name">NAME</a></h1>
-<p>fixkrf - Fixes DNSSEC-Tools <em>keyrec</em> files whose encryption key files have
-been moved</p>
-<p>
-</p>
-<hr />
-<h1><a name="synopsis">SYNOPSIS</a></h1>
-<pre>
-  fixkrf [options] &lt;keyrec-file&gt; &lt;dir 1&gt; ... &lt;dir N&gt;</pre>
-<p>
-</p>
-<hr />
-<h1><a name="description">DESCRIPTION</a></h1>
-<p><strong>fixkrf</strong> checks a specified <em>keyrec</em> file to ensure that the referenced
-encryption key files exist where listed.  If a key is not where the <em>keyrec</em>
-specifies it should be, then <strong>fixkrf</strong> will search the given directories for
-those keys and adjust the <em>keyrec</em> to match reality.  If a key of a
-particular filename is found in multiple places, a warning will be printed
-and the <em>keyrec</em> file will not be changed for that key.</p>
-<p>
-</p>
-<hr />
-<h1><a name="options">OPTIONS</a></h1>
+<p>fixkrf - Fixes DNSSEC-Tools <i>keyrec</i> files whose encryption key files have been moved</p>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<pre><code>  fixkrf [options] &lt;keyrec-file&gt; &lt;dir 1&gt; ... &lt;dir N&gt;</code></pre>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p><b>fixkrf</b> checks a specified <i>keyrec</i> file to ensure that the referenced encryption key files exist where listed. If a key is not where the <i>keyrec</i> specifies it should be, then <b>fixkrf</b> will search the given directories for those keys and adjust the <i>keyrec</i> to match reality. If a key of a particular filename is found in multiple places, a warning will be printed and the <i>keyrec</i> file will not be changed for that key.</p>
+
+<h1 id="OPTIONS">OPTIONS</h1>
+
 <dl>
-<dt><strong><a name="list" class="item"><strong>-list</strong></a></strong></dt>
 
+<dt id="list"><b>-list</b></dt>
 <dd>
-<p>Display output about missing keys, but don't fix the <em>keyrec</em> file.</p>
+
+<p>Display output about missing keys, but don&#39;t fix the <i>keyrec</i> file.</p>
+
 </dd>
-<dt><strong><a name="verbose" class="item"><strong>-verbose</strong></a></strong></dt>
-
+<dt id="verbose"><b>-verbose</b></dt>
 <dd>
+
 <p>Display output about found keys as well as missing keys.</p>
+
 </dd>
-<dt><strong><a name="version" class="item"><strong>-Version</strong></a></strong></dt>
-
+<dt id="Version"><b>-Version</b></dt>
 <dd>
-<pre>
 
-Display version information for B&lt;fixkrf&gt; and DNSSEC-Tools.</pre>
+<p>Display version information for <b>fixkrf</b> and DNSSEC-Tools.</p>
+
 </dd>
-<dt><strong><a name="help" class="item"><strong>-help</strong></a></strong></dt>
-
+<dt id="help"><b>-help</b></dt>
 <dd>
+
 <p>Display a usage message.</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<hr />
-<h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2004-2013 SPARTA, Inc.  All rights reserved.
-See the COPYING file included with the DNSSEC-Tools package for details.</p>
-<p>
-</p>
-<hr />
-<h1><a name="author">AUTHOR</a></h1>
-<p>Wayne Morrison, <a href="mailto:tewok@tislabs.com">tewok@tislabs.com</a></p>
-<p>
-</p>
-<hr />
-<h1><a name="see_also">SEE ALSO</a></h1>
-<p><strong>cleankrf(8)</strong>,
-<strong>genkrf(8)</strong>,
-<strong>lskrf(8)</strong>,
-<strong>zonesigner(8)</strong></p>
-<p><strong>Net::DNS::SEC::Tools::keyrec.pm(3)</strong></p>
-<p><strong>file-keyrec.pm(5)</strong></p>
+
+<h1 id="COPYRIGHT">COPYRIGHT</h1>
+
+<p>Copyright 2004-2014 SPARTA, Inc. All rights reserved. See the COPYING file included with the DNSSEC-Tools package for details.</p>
+
+<h1 id="AUTHOR">AUTHOR</h1>
+
+<p>Wayne Morrison, tewok@tislabs.com</p>
+
+<h1 id="SEE-ALSO">SEE ALSO</h1>
+
+<p><b>cleankrf(8)</b>, <b>genkrf(8)</b>, <b>lskrf(8)</b>, <b>zonesigner(8)</b></p>
+
+<p><b>Net::DNS::SEC::Tools::keyrec.pm(3)</b></p>
+
+<p><b>file-keyrec.pm(5)</b></p>
+
 
 </body>
 
 </html>
+
+

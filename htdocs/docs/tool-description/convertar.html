@@ -2,7 +2,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>B&lt;convertar&gt; - Converts trust anchor repositories from one format to another</title>
+<title></title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
@@ -10,224 +10,202 @@
 <body style="background-color: white">
 
 
-<!-- INDEX BEGIN -->
-<div name="index">
-<p><a name="__index__"></a></p>
 
-<ul>
-
-	<li><a href="#name">NAME</a></li>
-	<li><a href="#description">DESCRIPTION</a></li>
-	<li><a href="#examples">EXAMPLES</a></li>
-	<li><a href="#file_specification_conventions">FILE SPECIFICATION CONVENTIONS</a></li>
-	<li><a href="#file_formats">FILE FORMATS</a></li>
-	<li><a href="#options">OPTIONS</a></li>
-	<li><a href="#copyright">COPYRIGHT</a></li>
-	<li><a href="#author">AUTHOR</a></li>
-	<li><a href="#see_also">SEE ALSO</a></li>
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
+  <li><a href="#EXAMPLES">EXAMPLES</a></li>
+  <li><a href="#FILE-SPECIFICATION-CONVENTIONS">FILE SPECIFICATION CONVENTIONS</a></li>
+  <li><a href="#FILE-FORMATS">FILE FORMATS</a></li>
+  <li><a href="#OPTIONS">OPTIONS</a></li>
+  <li><a href="#COPYRIGHT">COPYRIGHT</a></li>
+  <li><a href="#AUTHOR">AUTHOR</a></li>
+  <li><a href="#SEE-ALSO">SEE ALSO</a></li>
 </ul>
 
-<hr name="index" />
-</div>
-<!-- INDEX END -->
+<h1 id="NAME">NAME</h1>
 
-<p>
-</p>
-<hr />
-<h1><a name="name">NAME</a></h1>
-<p><strong>convertar</strong> - Converts trust anchor repositories from one format to another</p>
-<p>
-</p>
-<hr />
-<h1><a name="description">DESCRIPTION</a></h1>
-<p><strong>convertar</strong> operates on input and output files of different Trust
-Anchor Repository (TAR) formats.  <strong>convertar</strong> decides what type of
-file format is being referred to by a &quot;type:filename&quot; specification.
-Options can be passed to the convertar module by using a '/' delimited
-specifier in the <em>type</em> identifier.  Such as
-&quot;type/option=value/other=othervalue:filename&quot;.  See below for a list
-of different input and output formats that <strong>convertar</strong> understands by
-default and what options they take.</p>
-<p>See the <em>Net::DNS::SEC::Tools::TrustAnchor</em> module and its
-documentation for writing new plugins to allow <strong>convertar</strong> to understand
-other TAR formats.</p>
-<p>
-</p>
-<hr />
-<h1><a name="examples">EXAMPLES</a></h1>
-<p>This command will read in an <strong>itar.xml</strong> file (available from
-<a href="https://itar.iana.org/)">https://itar.iana.org/)</a> and convert it to a file that can be read in
-by BIND's <strong>named</strong> application:</p>
-<pre>
-  # convertar -i itar:itar.xml -o bind:bind.conf</pre>
-<p>Read in multiple files, merge them together and write them out to two
-different output file formats (the libval format is printed to stdout):</p>
-<pre>
-  # convertar -i itar:itar.xml,csv:local.csv -o bind:bind.conf,libval:-</pre>
-<p>
-</p>
-<hr />
-<h1><a name="file_specification_conventions">FILE SPECIFICATION CONVENTIONS</a></h1>
-<p>Types and files (e.g. for the -i and -o switches) are specificied
-using the following format:</p>
-<pre>
-  type:/path/to/file</pre>
-<p>The <em>type</em> portion of the specification dictates what internal module
-will attempt to read in the file.  The file portion of the
-specification may or may not be required (but the ':' always is) and
-may or may not point to a real file, depending on the module in charge
-of the content.  Some modules may, for exmaple, load content from the
-network.  For types that can read and write to a file, a '-' may be
-specified as a file to print to or read from standard output.</p>
-<p>File formats MAY be infered from a trailing suffix, if the trailing
-suffix.  EG, if a referenced file is foo.csv then internally convertar
-will translate this to &quot;csv:foo.csv&quot;.</p>
-<p>
-</p>
-<hr />
-<h1><a name="file_formats">FILE FORMATS</a></h1>
-<p>The following file formats are known by default to <strong>convertar</strong>:</p>
+<p><b>convertar</b> - Converts trust anchor repositories from one format to another</p>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p><b>convertar</b> operates on input and output files of different Trust Anchor Repository (TAR) formats. <b>convertar</b> decides what type of file format is being referred to by a &quot;type:filename&quot; specification. Options can be passed to the convertar module by using a &#39;/&#39; delimited specifier in the <i>type</i> identifier. Such as &quot;type/option=value/other=othervalue:filename&quot;. See below for a list of different input and output formats that <b>convertar</b> understands by default and what options they take.</p>
+
+<p>See the <i>Net::DNS::SEC::Tools::TrustAnchor</i> module and its documentation for writing new plugins to allow <b>convertar</b> to understand other TAR formats.</p>
+
+<h1 id="EXAMPLES">EXAMPLES</h1>
+
+<p>This command will read in an <b>itar.xml</b> file (available from https://itar.iana.org/) and convert it to a file that can be read in by BIND&#39;s <b>named</b> application:</p>
+
+<pre><code>  # convertar -i itar:itar.xml -o bind:bind.conf</code></pre>
+
+<p>Read in multiple files, merge them together and write them out to two different output file formats (the libval format is printed to stdout):</p>
+
+<pre><code>  # convertar -i itar:itar.xml,csv:local.csv -o bind:bind.conf,libval:-</code></pre>
+
+<h1 id="FILE-SPECIFICATION-CONVENTIONS">FILE SPECIFICATION CONVENTIONS</h1>
+
+<p>Types and files (e.g. for the -i and -o switches) are specificied using the following format:</p>
+
+<pre><code>  type:/path/to/file</code></pre>
+
+<p>The <i>type</i> portion of the specification dictates what internal module will attempt to read in the file. The file portion of the specification may or may not be required (but the &#39;:&#39; always is) and may or may not point to a real file, depending on the module in charge of the content. Some modules may, for exmaple, load content from the network. For types that can read and write to a file, a &#39;-&#39; may be specified as a file to print to or read from standard output.</p>
+
+<p>File formats MAY be infered from a trailing suffix, if the trailing suffix. EG, if a referenced file is foo.csv then internally convertar will translate this to &quot;csv:foo.csv&quot;.</p>
+
+<h1 id="FILE-FORMATS">FILE FORMATS</h1>
+
+<p>The following file formats are known by default to <b>convertar</b>:</p>
+
 <dl>
-<dt><strong><a name="bind" class="item">bind</a></strong></dt>
 
+<dt id="bind">bind</dt>
 <dd>
-<p>A BIND name server (<strong>named</strong>) compatible trust anchor configuration file.
-This can be included within a master <strong>named.conf</strong> file using the
-&quot;include&quot; directive.</p>
-<p>The <em>bind</em> option can also take a <em>/write_expectations=1</em> flag when
-writing to write an options {} section that will turn on dnssec and
-require validation for zones from all the imported data.</p>
+
+<p>A BIND name server (<b>named</b>) compatible trust anchor configuration file. This can be included within a master <b>named.conf</b> file using the &quot;include&quot; directive.</p>
+
+<p>The <i>bind</i> option can also take a <i>/write_expectations=1</i> flag when writing to write an options {} section that will turn on dnssec and require validation for zones from all the imported data.</p>
+
 <p>E.G. bind/write_expectations=1:named.conf</p>
-</dd>
-<dt><strong><a name="secspider" class="item">secspider</a></strong></dt>
 
+</dd>
+<dt id="secspider">secspider</dt>
 <dd>
-<p>This is merely an alias that fetches the specspider
-(http://secspider.cs.ucla.edu/) bind configuration file and then parse
-it using the bind file format.</p>
+
+<p>This is merely an alias that fetches the specspider (http://secspider.cs.ucla.edu/) bind configuration file and then parse it using the bind file format.</p>
+
 <p>WARNING: The PGP signature on the downloaded file is NOT checked.</p>
-</dd>
-<dt><strong><a name="csv" class="item">csv</a></strong></dt>
 
+</dd>
+<dt id="csv">csv</dt>
 <dd>
+
 <p>A comma-separated list format.</p>
-</dd>
-<dt><strong><a name="dump" class="item">dump</a></strong></dt>
 
-<dd>
-<p>A Perl hash <em>dump</em> format.  This should be used mostly for debugging of
-newly developed modules as it shows the internal hash structure that is
-passed between modules.</p>
 </dd>
-<dt><strong><a name="itar" class="item">itar</a></strong></dt>
-
+<dt id="dump">dump</dt>
 <dd>
-<p>IANA's <em>itar</em> format, which is an XML-based format of trust anchor
-keys.  IANA's file is available from <a href="https://itar.iana.org/.">https://itar.iana.org/.</a></p>
-<p>Specifying only 'itar:' line only (or itar:URL), <strong>convertar</strong> will
-attempt to retrieve the current remote ITAR respository file directly.</p>
+
+<p>A Perl hash <i>dump</i> format. This should be used mostly for debugging of newly developed modules as it shows the internal hash structure that is passed between modules.</p>
+
+</dd>
+<dt id="itar">itar</dt>
+<dd>
+
+<p>IANA&#39;s <i>itar</i> format, which is an XML-based format of trust anchor keys. IANA&#39;s file is available from https://itar.iana.org/.</p>
+
+<p>Specifying only &#39;itar:&#39; line only (or itar:URL), <b>convertar</b> will attempt to retrieve the current remote ITAR respository file directly.</p>
+
 <p>WARNING: The PGP signature on the downloaded file is NOT checked.</p>
-<p>NOTE: support for downloading the ITAR repository over the network
-requires the LWP::UserAgent module to be installed.</p>
-</dd>
-<dt><strong><a name="libval" class="item">libval</a></strong></dt>
 
+<p>NOTE: support for downloading the ITAR repository over the network requires the LWP::UserAgent module to be installed.</p>
+
+</dd>
+<dt id="libval">libval</dt>
 <dd>
-<p>The <em>libval</em> format is the configuration file format that
-DNSSEC-Tool's <em>libval</em> library uses.</p>
-<p>The <em>libval</em> option can also take a <em>/write_expectations=1</em> flag
-when writing to specify that the default (:)
-zone-security-expectation's should be populated to require validation
-of all the zones with imported data.  All other zones will have a
-policy set to 'ignore.</p>
+
+<p>The <i>libval</i> format is the configuration file format that DNSSEC-Tool&#39;s <i>libval</i> library uses.</p>
+
+<p>The <i>libval</i> option can also take a <i>/write_expectations=1</i> flag when writing to specify that the default (:) zone-security-expectation&#39;s should be populated to require validation of all the zones with imported data. All other zones will have a policy set to &#39;ignore.</p>
+
 <p>E.G. libval/write_expectations=1:dnsval.conf</p>
-</dd>
-<dt><strong><a name="mf" class="item">mf</a></strong></dt>
 
-<dd>
-<p>The master file (<em>mf</em>) format is also available from the <em>itar</em> web
-site.</p>
 </dd>
-<dt><strong><a name="dns" class="item">dns</a></strong></dt>
-
+<dt id="mf">mf</dt>
 <dd>
-<p>The <em>dns</em> format performs live queries of records attached to a
-domain name to request either DS or DNSKEY records.  By default,
-DNSKEY records will be queried.  The specific type to be queried can
-be specified by preceeding the zone name with a &quot;ds/&quot; or &quot;dnskey/&quot;
-prefix.  Example valid 'dns:' type specifications:</p>
-<pre>
-  dns:dnssec-tools.org
+
+<p>The master file (<i>mf</i>) format is also available from the <i>itar</i> web site.</p>
+
+</dd>
+<dt id="dns">dns</dt>
+<dd>
+
+<p>The <i>dns</i> format performs live queries of records attached to a domain name to request either DS or DNSKEY records. By default, DNSKEY records will be queried. The specific type to be queried can be specified by preceeding the zone name with a &quot;ds/&quot; or &quot;dnskey/&quot; prefix. Example valid &#39;dns:&#39; type specifications:</p>
+
+<pre><code>  dns:dnssec-tools.org
   dns:ds/dnssec-tools.org
-  dns:dnskey/dnssec-tools.org</pre>
-<p>Also, if you want to read dnskeys from the network but convert
-them to ds records, you can use the /tods flag:</p>
-<pre>
-  dns/tods=1:dnssec-tools.org</pre>
-<p>The DNS type can not output records and is only useful for reading in
-information.</p>
-<p>WARNING: The keys and data being retrieved are not internally
-validated and thus should not be trusted unless a secured resolver is
-being used.</p>
+  dns:dnskey/dnssec-tools.org</code></pre>
+
+<p>Also, if you want to read dnskeys from the network but convert them to ds records, you can use the /tods flag:</p>
+
+<pre><code>  dns/tods=1:dnssec-tools.org</code></pre>
+
+<p>The DNS type can not output records and is only useful for reading in information.</p>
+
+<p>WARNING: The keys and data being retrieved are not internally validated and thus should not be trusted unless a secured resolver is being used.</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<hr />
-<h1><a name="options">OPTIONS</a></h1>
+
+<h1 id="OPTIONS">OPTIONS</h1>
+
 <dl>
-<dt><strong><a name="i_string" class="item"><strong>-i STRING</strong></a></strong></dt>
 
-<dt><strong><a name="input_file_string" class="item"><strong>--input-file=STRING</strong></a></strong></dt>
-
+<dt id="i-STRING"><b>-i STRING</b></dt>
 <dd>
+
+</dd>
+<dt id="input-file-STRING"><b>--input-file=STRING</b></dt>
+<dd>
+
 <p>Input file(s) to process.</p>
-<p><strong>convertar</strong> will read in the specified file(s).  Multiple files can
-be separated by commas.</p>
+
+<p><b>convertar</b> will read in the specified file(s). Multiple files can be separated by commas.</p>
+
 </dd>
-<dt><strong><a name="o_string" class="item"><strong>-o STRING</strong></a></strong></dt>
-
-<dt><strong><a name="output_file_string" class="item"><strong>--output-file=STRING</strong></a></strong></dt>
-
+<dt id="o-STRING"><b>-o STRING</b></dt>
 <dd>
+
+</dd>
+<dt id="output-file-STRING"><b>--output-file=STRING</b></dt>
+<dd>
+
 <p>Output file(s) to write.</p>
-<p><strong>convertar</strong> will write out these specified file(s) in the requested
-output formats.  Multiple files can be separated by commas.</p>
+
+<p><b>convertar</b> will write out these specified file(s) in the requested output formats. Multiple files can be separated by commas.</p>
+
 </dd>
-<dt><strong><a name="h" class="item"><strong>-h</strong></a></strong></dt>
-
-<dt><strong><a name="help" class="item"><strong>--help</strong></a></strong></dt>
-
-<dt><strong><a name="help_full" class="item"><strong>--help-full</strong></a></strong></dt>
-
+<dt id="h"><b>-h</b></dt>
 <dd>
+
+</dd>
+<dt id="help"><b>--help</b></dt>
+<dd>
+
+</dd>
+<dt id="help-full"><b>--help-full</b></dt>
+<dd>
+
 <p>Displays command line help information.</p>
+
 </dd>
-<dt><strong><a name="gui" class="item"><strong>--gui</strong></a></strong></dt>
-
-<dt><strong><a name="no_gui" class="item"><strong>--no-gui</strong></a></strong></dt>
-
+<dt id="gui"><b>--gui</b></dt>
 <dd>
+
+</dd>
+<dt id="no-gui"><b>--no-gui</b></dt>
+<dd>
+
 <p>Controls the use of the optional GUI.</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<hr />
-<h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2009-2013 SPARTA, Inc.  All rights reserved.
-See the COPYING file included with the DNSSEC-Tools package for details.</p>
-<p>
-</p>
-<hr />
-<h1><a name="author">AUTHOR</a></h1>
+
+<h1 id="COPYRIGHT">COPYRIGHT</h1>
+
+<p>Copyright 2009-2013 SPARTA, Inc. All rights reserved. See the COPYING file included with the DNSSEC-Tools package for details.</p>
+
+<h1 id="AUTHOR">AUTHOR</h1>
+
 <p>Wes Hardaker &lt; hardaker AT users DOT sourceforge DOT net &gt;</p>
-<p>
-</p>
-<hr />
-<h1><a name="see_also">SEE ALSO</a></h1>
-<p><em>Net::DNS::SEC::Tools::TrustAnchor</em>(3)</p>
+
+<h1 id="SEE-ALSO">SEE ALSO</h1>
+
+<p><i>Net::DNS::SEC::Tools::TrustAnchor</i>(3)</p>
+
 
 </body>
 
 </html>
+
+

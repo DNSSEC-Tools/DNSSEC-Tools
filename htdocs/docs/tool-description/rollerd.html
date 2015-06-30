@@ -2,7 +2,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>rollerd - DNSSEC-Tools daemon to manage DNSSEC key rollover</title>
+<title></title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
@@ -10,317 +10,195 @@
 <body style="background-color: white">
 
 
-<!-- INDEX BEGIN -->
-<div name="index">
-<p><a name="__index__"></a></p>
 
-<ul>
-
-	<li><a href="#name">NAME</a></li>
-	<li><a href="#synopsis">SYNOPSIS</a></li>
-	<li><a href="#description">DESCRIPTION</a></li>
-	<ul>
-
-		<li><a href="#zsk_rollover_using_the_pre_publish_method">ZSK Rollover Using the Pre-Publish Method</a></li>
-		<li><a href="#ksk_rollover_using_the_double_signature_method">KSK Rollover Using the Double Signature Method</a></li>
-		<li><a href="#ksk_rollover_using_the_double_signature_method_and_rfc5011">KSK Rollover Using the Double Signature Method and <a href="http://www.ietf.org/rfc/rfc5011.txt" class="rfc">RFC5011</a></a></li>
-		<li><a href="#site_specific_rollover_actions">Site-Specific Rollover Actions</a></li>
-		<ul>
-
-			<li><a href="#dnssec_tools_configuration_file_changes">DNSSEC-Tools Configuration File Changes</a></li>
-			<li><a href="#site_specific_commands">Site-Specific Commands</a></li>
-			<li><a href="#considerations_for_site_specific_commands">Considerations for Site-Specific Commands</a></li>
-		</ul>
-
-		<li><a href="#zone_reloading">Zone Reloading</a></li>
-		<li><a href="#rollrec_files"><em>rollrec</em> Files</a></li>
-		<li><a href="#directories">Directories</a></li>
-		<li><a href="#controlling_rollerd_with_rollctl">Controlling <strong>rollerd</strong> with <strong>rollctl</strong></a></li>
-		<li><a href="#a_note_about_files_and_filenames">A Note About Files and Filenames</a></li>
-	</ul>
-
-	<li><a href="#initialization_and_usage">INITIALIZATION AND USAGE</a></li>
-	<li><a href="#options">OPTIONS</a></li>
-	<li><a href="#assumptions">ASSUMPTIONS</a></li>
-	<li><a href="#known_problems">KNOWN PROBLEMS</a></li>
-	<li><a href="#copyright">COPYRIGHT</a></li>
-	<li><a href="#author">AUTHOR</a></li>
-	<li><a href="#see_also">SEE ALSO</a></li>
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a>
+    <ul>
+      <li><a href="#ZSK-Rollover-Using-the-Pre-Publish-Method">ZSK Rollover Using the Pre-Publish Method</a></li>
+      <li><a href="#KSK-Rollover-Using-the-Double-Signature-Method">KSK Rollover Using the Double Signature Method</a></li>
+      <li><a href="#KSK-Rollover-Using-the-Double-Signature-Method-and-RFC5011">KSK Rollover Using the Double Signature Method and RFC5011</a></li>
+      <li><a href="#Site-Specific-Rollover-Actions">Site-Specific Rollover Actions</a>
+        <ul>
+          <li><a href="#DNSSEC-Tools-Configuration-File-Changes">DNSSEC-Tools Configuration File Changes</a></li>
+          <li><a href="#Site-Specific-Commands">Site-Specific Commands</a></li>
+          <li><a href="#Considerations-for-Site-Specific-Commands">Considerations for Site-Specific Commands</a></li>
+        </ul>
+      </li>
+      <li><a href="#Zone-Reloading">Zone Reloading</a></li>
+      <li><a href="#rollrec-Files">rollrec Files</a></li>
+      <li><a href="#Directories">Directories</a></li>
+      <li><a href="#Controlling-rollerd-with-rollctl">Controlling rollerd with rollctl</a></li>
+      <li><a href="#A-Note-About-Files-and-Filenames">A Note About Files and Filenames</a></li>
+    </ul>
+  </li>
+  <li><a href="#INITIALIZATION-AND-USAGE">INITIALIZATION AND USAGE</a></li>
+  <li><a href="#OPTIONS">OPTIONS</a></li>
+  <li><a href="#ASSUMPTIONS">ASSUMPTIONS</a></li>
+  <li><a href="#KNOWN-PROBLEMS">KNOWN PROBLEMS</a></li>
+  <li><a href="#COPYRIGHT">COPYRIGHT</a></li>
+  <li><a href="#AUTHOR">AUTHOR</a></li>
+  <li><a href="#SEE-ALSO">SEE ALSO</a></li>
 </ul>
 
-<hr name="index" />
-</div>
-<!-- INDEX END -->
+<h1 id="NAME">NAME</h1>
 
-<p>
-</p>
-<hr />
-<h1><a name="name">NAME</a></h1>
 <p>rollerd - DNSSEC-Tools daemon to manage DNSSEC key rollover</p>
-<p>
-</p>
-<hr />
-<h1><a name="synopsis">SYNOPSIS</a></h1>
-<pre>
-  rollerd [-options] -rrfile &lt;rollrec_file&gt;</pre>
-<p>
-</p>
-<hr />
-<h1><a name="description">DESCRIPTION</a></h1>
-<p>The <strong>rollerd</strong> daemon manages key rollover for zones.  <strong>rollerd</strong> is just a
-scheduler for zone rollover; it uses <strong>zonesigner</strong> to perform the actual key
-generation, zone signing, and key manipulation.</p>
-<p><strong>rollerd</strong> manages both KSK and ZSK rollover, though only one rollover type
-per zone may take place at a time.  Initiation of KSK rollovers takes
-precedence over the initiation of ZSK rollovers.</p>
-<p><strong>rollerd</strong> uses two methods of key rollover.  The Pre-Publish Method of key
-rollover is used for ZSK key rollovers.  The Double Signature Method of key
-rollover is used for KSK rollovers.  These methods are described more fully
-below.</p>
-<p><strong>rollerd</strong> maintains zone rollover state in files called <em>rollrec</em> files;
-zone/key mappings are stored in <em>keyrec</em> files.  <strong>rollerd</strong> only modifies
-<em>rollrec</em> files.  For the most part, <strong>rollerd</strong> does not modify <em>keyrec</em>
-directly, but relies on <strong>zonesigner</strong> to update those files as needed.
-(The exceptions where <strong>rollerd</strong> modifies <em>keyrec</em> files.  At start-up,
-it will mark each managed zone's <em>keyrec</em> file to indicate the zone is under
-<strong>rollerd</strong>'s control.  During the course of rollover, <strong>rollerd</strong> will also
-update a zone's rollover times in its <em>keyrec</em> file.)</p>
-<p>The administrator may control <strong>rollerd</strong> with the <strong>rollctl</strong> command.  A large
-number of commands are available to control and modify <strong>rollerd</strong>'s operation,
-as well as to retrieve information about rollover and daemon status.</p>
-<p>The zone administrator will need to update their zone files periodically.  If
-<strong>rollerd</strong> is managing zones, then problems could arise if modified zones were
-signed without <strong>rollerd</strong>'s knowledge.  To prevent such problems, <strong>rollerd</strong>
-can be configured to automatically re-sign a zone when its zonefile is found
-to be newer than its corresponding signed zonefile.  (The files' &quot;last
-modification&quot; timestamps are compared.)  The zone will be re-signed without
-any other rollover actions taking place, so no new keys will be generated, no
-key rollovers will occur, and the various rollover timers will be unaffected.</p>
-<p><strong>rollerd</strong> will perform these re-signs by default, but this can be further
-controlled by the <em>autosign</em> configuration parameter and <strong>rollerd</strong>'s
-<strong>-autosign</strong>/<strong>-noautosign</strong> command line options.  If <strong>rollerd</strong> is configured
-to not perform automatic re-signing, the administrator can still get this
-controlled behavior by use of the <strong>zonesigner</strong> or <strong>rollctl</strong> commands.</p>
-<p>If the <strong>rollrec</strong> file does not exist or is of zero length, <strong>rollerd</strong> will
-give an error message and continue running.  It will periodically wake up and
-check for a usable <strong>rollrec</strong> file.  Once it finds the specified <strong>rollrec</strong>
-file exists and isn't empty, then it will proceed with normal rollover
-management.</p>
-<p>
-</p>
-<h2><a name="zsk_rollover_using_the_pre_publish_method">ZSK Rollover Using the Pre-Publish Method</a></h2>
-<p>The Pre-Publish Method has four phases that are entered when it is time to
-perform ZSK rollover:</p>
-<pre>
-    1. wait for old zone data to expire from caches
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<pre><code>  rollerd [-options] -rrfile &lt;rollrec_file&gt;</code></pre>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p>The <b>rollerd</b> daemon manages key rollover for zones. <b>rollerd</b> is just a scheduler for zone rollover; it uses <b>zonesigner</b> to perform the actual key generation, zone signing, and key manipulation.</p>
+
+<p><b>rollerd</b> manages both KSK and ZSK rollover, though only one rollover type per zone may take place at a time. Initiation of KSK rollovers takes precedence over the initiation of ZSK rollovers.</p>
+
+<p><b>rollerd</b> uses two methods of key rollover. The Pre-Publish Method of key rollover is used for ZSK key rollovers. The Double Signature Method of key rollover is used for KSK rollovers. These methods are described more fully below.</p>
+
+<p><b>rollerd</b> maintains zone rollover state in files called <i>rollrec</i> files; zone/key mappings are stored in <i>keyrec</i> files. <b>rollerd</b> only modifies <i>rollrec</i> files. For the most part, <b>rollerd</b> does not modify <i>keyrec</i> directly, but relies on <b>zonesigner</b> to update those files as needed. (The exceptions where <b>rollerd</b> modifies <i>keyrec</i> files. At start-up, it will mark each managed zone&#39;s <i>keyrec</i> file to indicate the zone is under <b>rollerd</b>&#39;s control. During the course of rollover, <b>rollerd</b> will also update a zone&#39;s rollover times in its <i>keyrec</i> file.)</p>
+
+<p>The administrator may control <b>rollerd</b> with the <b>rollctl</b> command. A large number of commands are available to control and modify <b>rollerd</b>&#39;s operation, as well as to retrieve information about rollover and daemon status.</p>
+
+<p>The zone administrator will need to update their zone files periodically. If <b>rollerd</b> is managing zones, then problems could arise if modified zones were signed without <b>rollerd</b>&#39;s knowledge. To prevent such problems, <b>rollerd</b> can be configured to automatically re-sign a zone when its zonefile is found to be newer than its corresponding signed zonefile. (The files&#39; &quot;last modification&quot; timestamps are compared.) The zone will be re-signed without any other rollover actions taking place, so no new keys will be generated, no key rollovers will occur, and the various rollover timers will be unaffected.</p>
+
+<p><b>rollerd</b> will perform these re-signs by default, but this can be further controlled by the <i>autosign</i> configuration parameter and <b>rollerd</b>&#39;s <b>-autosign</b>/<b>-noautosign</b> command line options. If <b>rollerd</b> is configured to not perform automatic re-signing, the administrator can still get this controlled behavior by use of the <b>zonesigner</b> or <b>rollctl</b> commands.</p>
+
+<p>If the <b>rollrec</b> file does not exist or is of zero length, <b>rollerd</b> will give an error message and continue running. It will periodically wake up and check for a usable <b>rollrec</b> file. Once it finds the specified <b>rollrec</b> file exists and isn&#39;t empty, then it will proceed with normal rollover management.</p>
+
+<h2 id="ZSK-Rollover-Using-the-Pre-Publish-Method">ZSK Rollover Using the Pre-Publish Method</h2>
+
+<p>The Pre-Publish Method has four phases that are entered when it is time to perform ZSK rollover:</p>
+
+<pre><code>    1. wait for old zone data to expire from caches
     2. sign the zone with the KSK and Published ZSK
     3. wait for old zone data to expire from caches
-    4. adjust keys in keyrec and sign the zone with new Current ZSK</pre>
-<p><strong>rollerd</strong> uses the <strong>zonesigner</strong> command during ZSK rollover phases 2 and 4.
-<strong>zonesigner</strong> will generate keys as required and sign the zone during these
-two phases.</p>
-<p>The Pre-Publish Method of key rollover is defined in the Step-by-Step DNS
-Security Operator Guidance Document.  See that document for more detailed
-information.</p>
-<p>
-</p>
-<h2><a name="ksk_rollover_using_the_double_signature_method">KSK Rollover Using the Double Signature Method</a></h2>
-<p>The Double Signature Method has seven phases that are entered when it is time
-to perform KSK rollover:</p>
-<pre>
-    1 - wait for cache data to expire
+    4. adjust keys in keyrec and sign the zone with new Current ZSK</code></pre>
+
+<p><b>rollerd</b> uses the <b>zonesigner</b> command during ZSK rollover phases 2 and 4. <b>zonesigner</b> will generate keys as required and sign the zone during these two phases.</p>
+
+<p>The Pre-Publish Method of key rollover is defined in the Step-by-Step DNS Security Operator Guidance Document. See that document for more detailed information.</p>
+
+<h2 id="KSK-Rollover-Using-the-Double-Signature-Method">KSK Rollover Using the Double Signature Method</h2>
+
+<p>The Double Signature Method has seven phases that are entered when it is time to perform KSK rollover:</p>
+
+<pre><code>    1 - wait for cache data to expire
     2 - generate a new (published) KSK and load zone
     3 - wait for the old DNSKEY RRset to expire from caches
     4 - transfer new keyset to the parent
     5 - wait for parent to publish DS record
     6 - wait for cache data to expire
-    7 - roll the KSKs and load the zone</pre>
-<p>This is a modification of the original Double Signature Method.  In the
-original method, the KSK keys were rolled before the new keyset was
-transferred to the parent.  The new method rolls the KSK keys after the
-parent has published the new DS records and old data has expired for caches.
-This addresses a potential problem with signing zones during key rollovers.</p>
-<p><strong>rollerd</strong> uses the <strong>zonesigner</strong> command during KSK rollover phases 2 and 7.
-<strong>zonesigner</strong> will generate keys as required and sign the zone during these
-two phases.</p>
-<p>Currently, leaving the waiting period in step 5 is handled manually.  In step
-4, <strong>rollerd</strong> informs the administrator via email that the zone's keyset must
-be transferred to its parent in order for rollover to continue.  In step 5,
-after the keyset has been transferred to the parent and the parent has
-published a new DS record, the administrator uses <strong>rollctl</strong> to inform
-<strong>rollerd</strong> that the DS record has been published and rollover may continue.</p>
-<p>The Double Signature Method of key rollover is defined in the Step-by-Step
-DNS Security Operator Guidance Document.  See that document for more detailed
-information.</p>
-<p>
-</p>
-<h2><a name="ksk_rollover_using_the_double_signature_method_and_rfc5011">KSK Rollover Using the Double Signature Method and <a href="http://www.ietf.org/rfc/rfc5011.txt" class="rfc">RFC5011</a></a></h2>
-<p>RFC5011 describes how remote-validating resolvers must track KSK changes
-within a zone.  If configured for <a href="http://www.ietf.org/rfc/rfc5011.txt" class="rfc">RFC5011</a> behavior, <strong>rollerd</strong> and
-<strong>zonesigner</strong> add an extra-long period of time between the point a new KSK is
-created and published and the point where the actual switch to using it takes
-place.  <a href="http://www.ietf.org/rfc/rfc5011.txt" class="rfc">RFC5011</a> specifies that remote validators should add a &quot;hold-down
-timer&quot; to the rollover process, such that the new key is not added as a
-trust-anchor until 30 days have past.  Thus, <strong>rollerd</strong> will wait for 60 days
-(by default) during phase 3 of the KSK rollover process if the &quot;istrustanchor&quot;
-field of the <em>rollrec</em> definition has been set to either 1 or &quot;yes&quot;.  To wait
-for a different length of time other than 60 days, use the <strong>holddowntime</strong>
-field.</p>
-<p>At this time, the other conventions of <a href="http://www.ietf.org/rfc/rfc5011.txt" class="rfc">RFC5011</a> are not being followed.
-Specifically, it's not waiting for a while before removing the old key
-and it's not adding the revoke bit to the old key after switching.</p>
-<p>
-</p>
-<h2><a name="site_specific_rollover_actions">Site-Specific Rollover Actions</a></h2>
-<p>An administrator can specify site-specific commands to be run during the
-various rollover phases.  The commands can be run in place of the default
-<strong>rollerd</strong> rollover actions, or in addition to them.  This subsection
-describes how to make use of site-specific rollover actions.</p>
-<p>This capability is provided to allow different installations to handle
-rollover according to their specific needs.  For example, it is anticipated
-that this might be helpful to sites using HSM hardware, or to allow for
-enhanced reporting to administrators.  This has been used with simple test
-programs to ensure that it actually works.  However, it has not yet been used
-in actual HSM environment or with other production-level software
-replacements.</p>
-<p>See the <em>ZSK Rollover Using the Pre-Publish Method</em> and <em>KSK Rollover
-Using the Double Signature Method</em> sections for descriptions of the default
-rollover actions.</p>
-<p><strong>WARNING:</strong> This has the potential of being a dangerous capability.  Be
-<em>very</em> careful when setting up and using it.  Take care with the site-specific
-commands to be executed and the permissions and ownership of <strong>rollerd</strong> and
-its data files.</p>
-<p>
-</p>
-<h3><a name="dnssec_tools_configuration_file_changes">DNSSEC-Tools Configuration File Changes</a></h3>
-<p>The DNSSEC-Tools configuration file must be modified to tell <strong>rollerd</strong> what
-must be run for the non-default rollover phase actions.  Key/value pairs may
-be set for each rollover phase to control how that phase differs from the
-default.</p>
-<p>The value portion of the configuration entry contains the path to the
-site-specific phase command, along with any arguments it might need.
-Multiple commands are separated by bangs.</p>
-<p>The reserved <em>default</em> command tells <strong>rollerd</strong> to use its normal rollover
-action for a particular phase.  This may be combined with other commands to
-provide things such as specialized logging or notifications.</p>
-<p><strong>rollerd</strong> will only alter the behavior of a rollover phase if the
-configuration file contains an entry for that phase.  If not, the default
-action will be taken.</p>
-<p>For example, this configuration line tells <strong>rollerd</strong> that for ZSK rollover
-phase 2, instead of using its normal <strong>zonesigner</strong> executions it should run
-the <strong>hsm-signer</strong> command.</p>
-<pre>
-    prog-zsk2        hsm-signer</pre>
-<p>In this example, this configuration line informs <strong>rollerd</strong> that when entering
-KSK rollover phase 1 and ZSK rollover phase 1, it should execute the
-<strong>log-and-mail</strong> command, then use the normal rollover action for those phases.</p>
-<pre>
-    prog-ksk1        /usr/local/sbin/log-and-mail mary ! default
-    prog-zsk1        /usr/local/sbin/log-and-mail bob!default</pre>
-<p>The following configuration keys are used for controlling KSK rollover
-phases: <em>prog-ksk1</em>, <em>prog-ksk2</em>, <em>prog-ksk3</em>, <em>prog-ksk4</em>, <em>prog-ksk5</em>,
-<em>prog-ksk6</em>, and <em>prog-ksk7</em>,</p>
-<p>The following configuration keys are used for controlling ZSK rollover phases:
-<em>prog-zsk1</em>, <em>prog-zsk2</em>, <em>prog-zsk3</em>, and <em>prog-zsk4</em>.</p>
-<p>The <em>prog-normal</em> configuration key controls the normal, non-rollover state.</p>
-<p>
-</p>
-<h3><a name="site_specific_commands">Site-Specific Commands</a></h3>
-<p>To be generally useful, the site-specific commands executed by <strong>rollerd</strong>
-will be given a standard set of arguments, and a standard set of exit
-values will be recognized.</p>
-<p>The standard arguments from <strong>rollerd</strong> are:
-    1. zonename - Zone to be handled.
-    2. phase - Zone's current rollover phase (e.g., zsk1, ksk6, normal.)
-    3. rollrec name - Zone's entry key in the rollrec file.
-    4. rollrec file - The path to the rollrec file.
-    5. keyrec file - The path to the zone's keyrec file.</p>
-<p>The <em>prog-phase</em> entry in the configuration file may specify additional
-options and arguments for a command.  These will be included on the execution
-command line <em>prior</em> to the standard arguments.</p>
-<p>The standard exit values expected by <strong>rollerd</strong> are:
-    0. The zone can move to the next rollover phase.
-       This is only applicable to the current command; other
-       commands in this phase's command list must still be run.
-    1. The zone should stay in the current rollover phase.
-       This is not necessarily the result of an error.
-    2. An error was found in the arguments given to the command.
-    3. An error was encountered during execution.</p>
-<p>If a rollover phase's configuration entry lists multiple commands, they will
-be executed in the order listed.  If any command in that command list fails,
-processing stops there.</p>
-<p>The <strong>rp-wrapper</strong> command shows how a site-specific command may be written.
-<strong>rp-wrapper</strong> may be used as a skeleton on which to build a more useful
-rollover-phase command.</p>
-<p>
-</p>
-<h3><a name="considerations_for_site_specific_commands">Considerations for Site-Specific Commands</a></h3>
-<p>The following should be taken into consideration when writing a site-specific
-command for a rollover phase.</p>
+    7 - roll the KSKs and load the zone</code></pre>
+
+<p>This is a modification of the original Double Signature Method. In the original method, the KSK keys were rolled before the new keyset was transferred to the parent. The new method rolls the KSK keys after the parent has published the new DS records and old data has expired for caches. This addresses a potential problem with signing zones during key rollovers.</p>
+
+<p><b>rollerd</b> uses the <b>zonesigner</b> command during KSK rollover phases 2 and 7. <b>zonesigner</b> will generate keys as required and sign the zone during these two phases.</p>
+
+<p>Currently, leaving the waiting period in step 5 is handled manually. In step 4, <b>rollerd</b> informs the administrator via email that the zone&#39;s keyset must be transferred to its parent in order for rollover to continue. In step 5, after the keyset has been transferred to the parent and the parent has published a new DS record, the administrator uses <b>rollctl</b> to inform <b>rollerd</b> that the DS record has been published and rollover may continue.</p>
+
+<p>The Double Signature Method of key rollover is defined in the Step-by-Step DNS Security Operator Guidance Document. See that document for more detailed information.</p>
+
+<h2 id="KSK-Rollover-Using-the-Double-Signature-Method-and-RFC5011">KSK Rollover Using the Double Signature Method and RFC5011</h2>
+
+<p>RFC5011 describes how remote-validating resolvers must track KSK changes within a zone. If configured for RFC5011 behavior, <b>rollerd</b> and <b>zonesigner</b> add an extra-long period of time between the point a new KSK is created and published and the point where the actual switch to using it takes place. RFC5011 specifies that remote validators should add a &quot;hold-down timer&quot; to the rollover process, such that the new key is not added as a trust-anchor until 30 days have past. Thus, <b>rollerd</b> will wait for 60 days (by default) during phase 3 of the KSK rollover process if the &quot;istrustanchor&quot; field of the <i>rollrec</i> definition has been set to either 1 or &quot;yes&quot;. To wait for a different length of time other than 60 days, use the <b>holddowntime</b> field.</p>
+
+<p>At this time, the other conventions of RFC5011 are not being followed. Specifically, it&#39;s not waiting for a while before removing the old key and it&#39;s not adding the revoke bit to the old key after switching.</p>
+
+<h2 id="Site-Specific-Rollover-Actions">Site-Specific Rollover Actions</h2>
+
+<p>An administrator can specify site-specific commands to be run during the various rollover phases. The commands can be run in place of the default <b>rollerd</b> rollover actions, or in addition to them. This subsection describes how to make use of site-specific rollover actions.</p>
+
+<p>This capability is provided to allow different installations to handle rollover according to their specific needs. For example, it is anticipated that this might be helpful to sites using HSM hardware, or to allow for enhanced reporting to administrators. This has been used with simple test programs to ensure that it actually works. However, it has not yet been used in actual HSM environment or with other production-level software replacements.</p>
+
+<p>See the <i>ZSK Rollover Using the Pre-Publish Method</i> and <i>KSK Rollover Using the Double Signature Method</i> sections for descriptions of the default rollover actions.</p>
+
+<p><b>WARNING:</b> This has the potential of being a dangerous capability. Be <i>very</i> careful when setting up and using it. Take care with the site-specific commands to be executed and the permissions and ownership of <b>rollerd</b> and its data files.</p>
+
+<h3 id="DNSSEC-Tools-Configuration-File-Changes">DNSSEC-Tools Configuration File Changes</h3>
+
+<p>The DNSSEC-Tools configuration file must be modified to tell <b>rollerd</b> what must be run for the non-default rollover phase actions. Key/value pairs may be set for each rollover phase to control how that phase differs from the default.</p>
+
+<p>The value portion of the configuration entry contains the path to the site-specific phase command, along with any arguments it might need. Multiple commands are separated by bangs.</p>
+
+<p>The reserved <i>default</i> command tells <b>rollerd</b> to use its normal rollover action for a particular phase. This may be combined with other commands to provide things such as specialized logging or notifications.</p>
+
+<p><b>rollerd</b> will only alter the behavior of a rollover phase if the configuration file contains an entry for that phase. If not, the default action will be taken.</p>
+
+<p>For example, this configuration line tells <b>rollerd</b> that for ZSK rollover phase 2, instead of using its normal <b>zonesigner</b> executions it should run the <b>hsm-signer</b> command.</p>
+
+<pre><code>    prog-zsk2        hsm-signer</code></pre>
+
+<p>In this example, this configuration line informs <b>rollerd</b> that when entering KSK rollover phase 1 and ZSK rollover phase 1, it should execute the <b>log-and-mail</b> command, then use the normal rollover action for those phases.</p>
+
+<pre><code>    prog-ksk1        /usr/local/sbin/log-and-mail mary ! default
+    prog-zsk1        /usr/local/sbin/log-and-mail bob!default</code></pre>
+
+<p>The following configuration keys are used for controlling KSK rollover phases: <i>prog-ksk1</i>, <i>prog-ksk2</i>, <i>prog-ksk3</i>, <i>prog-ksk4</i>, <i>prog-ksk5</i>, <i>prog-ksk6</i>, and <i>prog-ksk7</i>,</p>
+
+<p>The following configuration keys are used for controlling ZSK rollover phases: <i>prog-zsk1</i>, <i>prog-zsk2</i>, <i>prog-zsk3</i>, and <i>prog-zsk4</i>.</p>
+
+<p>The <i>prog-normal</i> configuration key controls the normal, non-rollover state.</p>
+
+<h3 id="Site-Specific-Commands">Site-Specific Commands</h3>
+
+<p>To be generally useful, the site-specific commands executed by <b>rollerd</b> will be given a standard set of arguments, and a standard set of exit values will be recognized.</p>
+
+<p>The standard arguments from <b>rollerd</b> are: 1. zonename - Zone to be handled. 2. phase - Zone&#39;s current rollover phase (e.g., zsk1, ksk6, normal.) 3. rollrec name - Zone&#39;s entry key in the rollrec file. 4. rollrec file - The path to the rollrec file. 5. keyrec file - The path to the zone&#39;s keyrec file.</p>
+
+<p>The <i>prog-phase</i> entry in the configuration file may specify additional options and arguments for a command. These will be included on the execution command line <i>prior</i> to the standard arguments.</p>
+
+<p>The standard exit values expected by <b>rollerd</b> are: 0. The zone can move to the next rollover phase. This is only applicable to the current command; other commands in this phase&#39;s command list must still be run. 1. The zone should stay in the current rollover phase. This is not necessarily the result of an error. 2. An error was found in the arguments given to the command. 3. An error was encountered during execution.</p>
+
+<p>If a rollover phase&#39;s configuration entry lists multiple commands, they will be executed in the order listed. If any command in that command list fails, processing stops there.</p>
+
+<p>The <b>rp-wrapper</b> command shows how a site-specific command may be written. <b>rp-wrapper</b> may be used as a skeleton on which to build a more useful rollover-phase command.</p>
+
+<h3 id="Considerations-for-Site-Specific-Commands">Considerations for Site-Specific Commands</h3>
+
+<p>The following should be taken into consideration when writing a site-specific command for a rollover phase.</p>
+
 <dl>
-<dt><strong><a name="execution_length" class="item">execution length</a></strong></dt>
 
+<dt id="execution-length">execution length</dt>
 <dd>
-<p>A phase command should not execute very long.  As currently written, <strong>rollerd</strong>
-serializes zone rollover.  So the longer a phase command takes to execute, the
-longer it will take to get to the next zone.  If a phase command sleeps or
-actively waits, so to speak, for the next phase timeout, then every zone
-<strong>rollerd</strong> manages will be left waiting.</p>
+
+<p>A phase command should not execute very long. As currently written, <b>rollerd</b> serializes zone rollover. So the longer a phase command takes to execute, the longer it will take to get to the next zone. If a phase command sleeps or actively waits, so to speak, for the next phase timeout, then every zone <b>rollerd</b> manages will be left waiting.</p>
+
 </dd>
-<dt><strong><a name="follow_interface_guidelines" class="item">follow interface guidelines</a></strong></dt>
-
+<dt id="follow-interface-guidelines">follow interface guidelines</dt>
 <dd>
-<p>Follow the standards for arguments and exit values.  Not following the
-standards is likely to negatively affect zone rollover.</p>
+
+<p>Follow the standards for arguments and exit values. Not following the standards is likely to negatively affect zone rollover.</p>
+
 </dd>
-<dt><strong><a name="frequency_of_command_execution" class="item">frequency of command execution</a></strong></dt>
-
+<dt id="frequency-of-command-execution">frequency of command execution</dt>
 <dd>
-<p>If <strong>rollerd</strong> is operating in its traditional &quot;full list&quot; processing mode, a
-phase command list will be executed every time <strong>rollerd</strong> cycles through its
-zone list and a zone is in that particular command's phase.  For example, if
-&lt;i&gt;prog_zsk1&lt;/i&gt; is defined for example.com, that command list will be
-executed for example.com every time <strong>rollerd</strong> runs its zone list and finds
-example.com is in the ZSK phase 1 rollover state.  A phase command <strong>must</strong> take
-this into account so it doesn't perform its actions more frequently than
-necessary.  This is most likely an issue for the various rollover wait states,
-and possibly the normal state.</p>
-<p>If <strong>rollerd</strong> is operating in the experimental &quot;soon queue&quot; processing mode, a
-phase command list will be executed for a zone only when a phase change
-occurs.  Since phase changes are time queued, this should not happen more than
-once per phase.  A phase command <strong>should</strong> take this into account, in case the
-soon queue is reordered before the zone leaves the queue, or queue timing is
-relatively swift.  This is most likely an issue for the various rollover wait
-states.</p>
-<p><strong>WARNING:</strong>  &quot;soon queue&quot; processing is <em>experimental</em>.  Care should be taken
-when using this processing method, as it may still have some lingering bugs.</p>
+
+<p>If <b>rollerd</b> is operating in its traditional &quot;full list&quot; processing mode, a phase command list will be executed every time <b>rollerd</b> cycles through its zone list and a zone is in that particular command&#39;s phase. For example, if &lt;i&gt;prog_zsk1&lt;/i&gt; is defined for example.com, that command list will be executed for example.com every time <b>rollerd</b> runs its zone list and finds example.com is in the ZSK phase 1 rollover state. A phase command <b>must</b> take this into account so it doesn&#39;t perform its actions more frequently than necessary. This is most likely an issue for the various rollover wait states, and possibly the normal state.</p>
+
+<p>If <b>rollerd</b> is operating in the experimental &quot;soon queue&quot; processing mode, a phase command list will be executed for a zone only when a phase change occurs. Since phase changes are time queued, this should not happen more than once per phase. A phase command <b>should</b> take this into account, in case the soon queue is reordered before the zone leaves the queue, or queue timing is relatively swift. This is most likely an issue for the various rollover wait states.</p>
+
+<p><b>WARNING:</b> &quot;soon queue&quot; processing is <i>experimental</i>. Care should be taken when using this processing method, as it may still have some lingering bugs.</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<h2><a name="zone_reloading">Zone Reloading</a></h2>
-<p><strong>rollerd</strong> has the opportunity to inform the DNS daemon to reload a zone in
-KSK phase 2, KSK phase 7, ZSK phase 2, and ZSK phase 4.  This is the
-<strong>rollerd</strong>'s default behavior.  However, there are situations where this
-shouldn't be done, such as for off-line signing.</p>
-<p>The <strong>roll_loadzone</strong> field of the DNSSEC-Tools configuration file is a boolean
-field that overrides the default to force the zone-reload behavior either on
-or off.  This field takes precedence over the default.</p>
-<p>Similarly, the <strong>-noreload</strong> option prevents <strong>rollerd</strong> from requesting a zone
-reload, and it takes precedence over the <strong>roll_loadzone</strong> configuration field
-and the default.</p>
-<p>
-</p>
-<h2><a name="rollrec_files"><em>rollrec</em> Files</a></h2>
-<p>The zones to be managed by <strong>rollerd</strong> are described in a <em>rollrec</em>
-file.  Generally speaking most people will want to use the <strong>rollinit</strong>
-command to create an initial <em>rollrec</em> file instead of typing their
-own from scratch.  See the INITIALIZATION AND USAGE section below and
-the <strong>rollinit</strong> manual page for details. Each zone's entry contains
-data needed by <strong>rollerd</strong> and some data useful to a user.  Below is a
-sample <em>rollrec</em> entry:</p>
-<pre>
-        roll &quot;example.com&quot;
+
+<h2 id="Zone-Reloading">Zone Reloading</h2>
+
+<p><b>rollerd</b> has the opportunity to inform the DNS daemon to reload a zone in KSK phase 2, KSK phase 7, ZSK phase 2, and ZSK phase 4. This is the <b>rollerd</b>&#39;s default behavior. However, there are situations where this shouldn&#39;t be done, such as for off-line signing.</p>
+
+<p>The <b>roll_loadzone</b> field of the DNSSEC-Tools configuration file is a boolean field that overrides the default to force the zone-reload behavior either on or off. This field takes precedence over the default.</p>
+
+<p>Similarly, the <b>-noreload</b> option prevents <b>rollerd</b> from requesting a zone reload, and it takes precedence over the <b>roll_loadzone</b> configuration field and the default.</p>
+
+<h2 id="rollrec-Files"><i>rollrec</i> Files</h2>
+
+<p>The zones to be managed by <b>rollerd</b> are described in a <i>rollrec</i> file. Generally speaking most people will want to use the <b>rollinit</b> command to create an initial <i>rollrec</i> file instead of typing their own from scratch. See the INITIALIZATION AND USAGE section below and the <b>rollinit</b> manual page for details. Each zone&#39;s entry contains data needed by <b>rollerd</b> and some data useful to a user. Below is a sample <i>rollrec</i> entry:</p>
+
+<pre><code>        roll &quot;example.com&quot;
                 zonename        &quot;example.com&quot;
                 zonefile        &quot;example.com.signed&quot;
                 keyrec          &quot;example.com.krf&quot;
@@ -337,363 +215,291 @@ sample <em>rollrec</em> entry:</p>
                 phasestart      &quot;Tue Feb 27 22:25:07 2007&quot;
                 # optional records for RFC5011 rolling:
                 istrustanchor   &quot;no&quot;
-                holddowntime    &quot;60D&quot;</pre>
-<p>The first line gives the <em>rollrec</em> entry's name.  The name distinguishes it
-from other <em>rollrec</em> entries and must be unique.  This may be the zone's
-name, but this is not a requirement.  The following lines give the zone's
-name, the zone's signed zone file, <em>keyrec</em> file, the current rollover
-phases, the rollover timestamps, and other information.  The zone group is
-optional and allows a set of related zones to be controlled with a single
-<strong>rollctl</strong> execution, rather than one execution per zone.</p>
-<p>If either of the <em>zonefile</em> or <em>keyrec</em> files do not exist, then a &quot;roll&quot;
-<em>rollrec</em> will be changed into a &quot;skip&quot; <em>rollrec</em>.  That record will not be
-processed.</p>
-<p>A more detailed explanation may be found in <em>rollrec(5)</em>.</p>
-<p>
-</p>
-<h2><a name="directories">Directories</a></h2>
-<p><strong>rollerd</strong>'s execution directory is either the directory in which it is
-executed or the directory passed in the <strong>-directory</strong> command-line option.
-Any files used by <strong>rollerd</strong> that were not specified with absolute paths use
-this directory as their base.</p>
-<p>A <em>rollrec</em> file's <em>directory</em> field informs <strong>rollerd</strong> where the zone's
-files may be found.  For that zone, <strong>rollerd</strong> will move into that directory,
-then return to its execution directory when it finishes rollover operations
-for that zone.  If the <em>directory</em> value is a relative path, it will be
-appended to <strong>rollerd</strong>'s execution directory.  If the <em>directory</em> value is an
-absolute path, it will be used as is.</p>
-<p>
-</p>
-<h2><a name="controlling_rollerd_with_rollctl">Controlling <strong>rollerd</strong> with <strong>rollctl</strong></a></h2>
-<p>The <strong>rollctl</strong> command is used to control the behavior of <strong>rollerd</strong>.  A
-number of commands are available, such as starting or stopping rollover for a
-selected zone or all zones, turning on or off a GUI rollover display, and
-halting <strong>rollerd</strong> execution.  The communications path between <strong>rollerd</strong> and
-<strong>rollctl</strong> is operating system-dependent.  On Unix-like systems, it is a Unix
-pipe that should <strong>only</strong> be writable by the user which runs <em>rollerd</em>.  A
-more detailed explanation of <strong>rollctl</strong> may be found in <em>rollctl(8)</em>.</p>
-<p>
-</p>
-<h2><a name="a_note_about_files_and_filenames">A Note About Files and Filenames</a></h2>
-<p>There are a number of files and filenames used by <strong>rollerd</strong> and
-<strong>zonesigner</strong>.  The user must be aware of the files used by these programs,
-where the files are located, and where the programs are executed.</p>
-<p>By default, <strong>rollerd</strong> will change directory to the DNSSEC-Tools directory,
-though this may be changed by the <strong>-directory</strong> option.  Any programs started
-by <strong>rollerd</strong>, most importantly <strong>zonesigner</strong>, will run in this same
-directory.  If files and directories referenced by these programs are named
-with relative paths, those paths must be relative to this directory.</p>
-<p>The <em>rollrec</em> entry name is used as a key to the <em>rollrec</em> file and to the
-zone's <em>keyrec</em> file.  This entry does not have to be the name of the
-entry's domain, but it is a very good idea to make it so.  Whatever is used
-for this entry name, the same name <strong>must</strong> be used for the zone <em>keyrec</em> in
-that zone's <em>keyrec</em> file.</p>
-<p>It is probably easiest to store <em>rollrec</em> files, <em>keyrec</em> files, zone
-files, and key files in a single directory.</p>
-<p>
-</p>
-<hr />
-<h1><a name="initialization_and_usage">INITIALIZATION AND USAGE</a></h1>
-<p>The following steps must be taken to initialize and use <strong>rollerd</strong>.  This
-assumes that zone files have been created, and that BIND and DNSSEC-Tools
-have been installed.</p>
-<ol>
-<li><strong><a name="sign_zones" class="item">sign zones</a></strong>
+                holddowntime    &quot;60D&quot;</code></pre>
 
-<p>The zones to be managed by <strong>rollerd</strong> must be signed.  Use <strong>zonesigner</strong> to
-create the signed zone files and the <em>keyrec</em> files needed by <strong>rollerd</strong>.
-The <em>rollrec</em> file created in the next step <strong>must</strong> use the <em>keyrec</em> file
-names and the signed zone file names created here.</p>
-<p>This step is optional.  If it is bypassed, then (in step 4 and later)
-<strong>rollerd</strong> will perform the initial key creation and zone signing of your
-zones using the defaults found in the DNSSEC-Tools configuration file.
-<strong>rollerd</strong> determines if it must perform these initial operations by whether
-it can find the <em>keyrec</em> file for a zone (as specified in the <em>rollrec</em>
-file.  If it can't, it performs the initial operations; if it can, it assumes
-the zone's initial operations have been performed.</p>
-</li>
-<li><strong><a name="create_rollrec_file" class="item">create <em>rollrec</em> file</a></strong>
+<p>The first line gives the <i>rollrec</i> entry&#39;s name. The name distinguishes it from other <i>rollrec</i> entries and must be unique. This may be the zone&#39;s name, but this is not a requirement. The following lines give the zone&#39;s name, the zone&#39;s signed zone file, <i>keyrec</i> file, the current rollover phases, the rollover timestamps, and other information. The zone group is optional and allows a set of related zones to be controlled with a single <b>rollctl</b> execution, rather than one execution per zone.</p>
 
-<p>Before <strong>rollerd</strong> may be used, a <em>rollrec</em> file must first be created.
-While this file may be built by hand, the <strong>rollinit</strong> command was
-written specifically to build the file.</p>
-</li>
-<li><strong><a name="select_operational_parameters" class="item">select operational parameters</a></strong>
+<p>If either of the <i>zonefile</i> or <i>keyrec</i> files do not exist, then a &quot;roll&quot; <i>rollrec</i> will be changed into a &quot;skip&quot; <i>rollrec</i>. That record will not be processed.</p>
 
-<p>A number of <strong>rollerd</strong>'s operational parameters are taken from the
-DNSSEC-Tools configuration file.  However, these may be overridden
-by command-line options.  See the OPTIONS section below for more details.
-If non-standard parameters are desired to always be used, the appropriate
-fields in the DNSSEC-Tools configuration file may be modified to use these
-values.</p>
-</li>
-<li><strong><a name="install_the_rollover_configuration" class="item">install the rollover configuration</a></strong>
+<p>A more detailed explanation may be found in <i>rollrec(5)</i>.</p>
 
-<p>The complete rollover configuration -- <strong>rollerd</strong>, <em>rollrec</em> file,
-DNSSEC-Tools configuration file values, zone files -- should be installed.
-The appropriate places for these locations are both installation-dependent
-and operating system-dependent.</p>
-</li>
-<li><strong><a name="test_the_rollover_configuration" class="item">test the rollover configuration</a></strong>
+<h2 id="Directories">Directories</h2>
+
+<p><b>rollerd</b>&#39;s execution directory is either the directory in which it is executed or the directory passed in the <b>-directory</b> command-line option. Any files used by <b>rollerd</b> that were not specified with absolute paths use this directory as their base.</p>
+
+<p>A <i>rollrec</i> file&#39;s <i>directory</i> field informs <b>rollerd</b> where the zone&#39;s files may be found. For that zone, <b>rollerd</b> will move into that directory, then return to its execution directory when it finishes rollover operations for that zone. If the <i>directory</i> value is a relative path, it will be appended to <b>rollerd</b>&#39;s execution directory. If the <i>directory</i> value is an absolute path, it will be used as is.</p>
+
+<h2 id="Controlling-rollerd-with-rollctl">Controlling <b>rollerd</b> with <b>rollctl</b></h2>
+
+<p>The <b>rollctl</b> command is used to control the behavior of <b>rollerd</b>. A number of commands are available, such as starting or stopping rollover for a selected zone or all zones, turning on or off a GUI rollover display, and halting <b>rollerd</b> execution. The communications path between <b>rollerd</b> and <b>rollctl</b> is operating system-dependent. On Unix-like systems, it is a Unix pipe that should <b>only</b> be writable by the user which runs <i>rollerd</i>. A more detailed explanation of <b>rollctl</b> may be found in <i>rollctl(8)</i>.</p>
+
+<h2 id="A-Note-About-Files-and-Filenames">A Note About Files and Filenames</h2>
+
+<p>There are a number of files and filenames used by <b>rollerd</b> and <b>zonesigner</b>. The user must be aware of the files used by these programs, where the files are located, and where the programs are executed.</p>
+
+<p>By default, <b>rollerd</b> will change directory to the DNSSEC-Tools directory, though this may be changed by the <b>-directory</b> option. Any programs started by <b>rollerd</b>, most importantly <b>zonesigner</b>, will run in this same directory. If files and directories referenced by these programs are named with relative paths, those paths must be relative to this directory.</p>
+
+<p>The <i>rollrec</i> entry name is used as a key to the <i>rollrec</i> file and to the zone&#39;s <i>keyrec</i> file. This entry does not have to be the name of the entry&#39;s domain, but it is a very good idea to make it so. Whatever is used for this entry name, the same name <b>must</b> be used for the zone <i>keyrec</i> in that zone&#39;s <i>keyrec</i> file.</p>
+
+<p>It is probably easiest to store <i>rollrec</i> files, <i>keyrec</i> files, zone files, and key files in a single directory.</p>
+
+<h1 id="INITIALIZATION-AND-USAGE">INITIALIZATION AND USAGE</h1>
+
+<p>The following steps must be taken to initialize and use <b>rollerd</b>. This assumes that zone files have been created, and that BIND and DNSSEC-Tools have been installed.</p>
+
+<dl>
+
+<dt id="sign-zones">0. sign zones</dt>
+<dd>
+
+<p>The zones to be managed by <b>rollerd</b> must be signed. Use <b>zonesigner</b> to create the signed zone files and the <i>keyrec</i> files needed by <b>rollerd</b>. The <i>rollrec</i> file created in the next step <b>must</b> use the <i>keyrec</i> file names and the signed zone file names created here.</p>
+
+<p>This step is optional. If it is bypassed, then (in step 4 and later) <b>rollerd</b> will perform the initial key creation and zone signing of your zones using the defaults found in the DNSSEC-Tools configuration file. <b>rollerd</b> determines if it must perform these initial operations by whether it can find the <i>keyrec</i> file for a zone (as specified in the <i>rollrec</i> file. If it can&#39;t, it performs the initial operations; if it can, it assumes the zone&#39;s initial operations have been performed.</p>
+
+</dd>
+<dt id="create-rollrec-file">1. create <i>rollrec</i> file</dt>
+<dd>
+
+<p>Before <b>rollerd</b> may be used, a <i>rollrec</i> file must first be created. While this file may be built by hand, the <b>rollinit</b> command was written specifically to build the file.</p>
+
+</dd>
+<dt id="select-operational-parameters">2. select operational parameters</dt>
+<dd>
+
+<p>A number of <b>rollerd</b>&#39;s operational parameters are taken from the DNSSEC-Tools configuration file. However, these may be overridden by command-line options. See the OPTIONS section below for more details. If non-standard parameters are desired to always be used, the appropriate fields in the DNSSEC-Tools configuration file may be modified to use these values.</p>
+
+</dd>
+<dt id="install-the-rollover-configuration">3. install the rollover configuration</dt>
+<dd>
+
+<p>The complete rollover configuration -- <b>rollerd</b>, <i>rollrec</i> file, DNSSEC-Tools configuration file values, zone files -- should be installed. The appropriate places for these locations are both installation-dependent and operating system-dependent.</p>
+
+</dd>
+<dt id="test-the-rollover-configuration">4. test the rollover configuration</dt>
+<dd>
 
 <p>The complete rollover configuration should be tested.</p>
-<p>Edit the zone files so that their zones have short TTL values.  A minute TTL
-should be sufficient.  Test rollovers of this speed should <strong>only</strong> be done
-in a test environment without the real signed zone.</p>
+
+<p>Edit the zone files so that their zones have short TTL values. A minute TTL should be sufficient. Test rollovers of this speed should <b>only</b> be done in a test environment without the real signed zone.</p>
+
 <p>Run the following command:</p>
-<pre>
-    rollerd -rrfile test.rollrec -logfile - -loglevel info -sleep 60</pre>
-<p>This command assumes the test <em>rollrec</em> file is <strong>test.rollrec</strong>.  It writes
-a fair amount of log messages to the terminal, and checks its queue every 60
-seconds.  Follow the messages to ensure that the appropriate actions, as
-required by the Pre-Publish Method, are taking place.</p>
-</li>
-<li><strong><a name="set_rollerd_to_start_at_boot" class="item">set <strong>rollerd</strong> to start at boot</a></strong>
 
-<p>Once the configuration is found to work, <strong>rollerd</strong> should be set to start
-at system boot.  The actual operations required for this step are operating
-system-dependent.</p>
-</li>
-<li><strong><a name="reboot_and_verify" class="item">reboot and verify</a></strong>
+<pre><code>    rollerd -rrfile test.rollrec -logfile - -loglevel info -sleep 60</code></pre>
 
-<p>The system should be rebooted and the <strong>rollerd</strong> logfile checked to ensure
-that <strong>rollerd</strong> is operating properly.</p>
-</li>
-</ol>
-<p>
-</p>
-<hr />
-<h1><a name="options">OPTIONS</a></h1>
-<p>There are a number of operational parameters that define how <strong>rollerd</strong> works.
-These parameters define things such as the <em>rollrec</em> file, the logging level,
-and the log file.  These parameters can be set in the DNSSEC-Tools
-configuration file or given as options on the <strong>rollerd</strong> command line.
-The command line options override values in the configuration file.</p>
+<p>This command assumes the test <i>rollrec</i> file is <b>test.rollrec</b>. It writes a fair amount of log messages to the terminal, and checks its queue every 60 seconds. Follow the messages to ensure that the appropriate actions, as required by the Pre-Publish Method, are taking place.</p>
+
+</dd>
+<dt id="set-rollerd-to-start-at-boot">5. set <b>rollerd</b> to start at boot</dt>
+<dd>
+
+<p>Once the configuration is found to work, <b>rollerd</b> should be set to start at system boot. The actual operations required for this step are operating system-dependent.</p>
+
+</dd>
+<dt id="reboot-and-verify">6. reboot and verify</dt>
+<dd>
+
+<p>The system should be rebooted and the <b>rollerd</b> logfile checked to ensure that <b>rollerd</b> is operating properly.</p>
+
+</dd>
+</dl>
+
+<h1 id="OPTIONS">OPTIONS</h1>
+
+<p>There are a number of operational parameters that define how <b>rollerd</b> works. These parameters define things such as the <i>rollrec</i> file, the logging level, and the log file. These parameters can be set in the DNSSEC-Tools configuration file or given as options on the <b>rollerd</b> command line. The command line options override values in the configuration file.</p>
+
 <p>The following options are recognized:</p>
+
 <dl>
-<dt><strong><a name="alwayssign" class="item"><strong>-alwayssign</strong></a></strong></dt>
 
+<dt id="alwayssign"><b>-alwayssign</b></dt>
 <dd>
-<p>Tells <strong>rollerd</strong> to sign the zones that aren't in the middle of being
-rolled.  This allows <strong>rollerd</strong> to refresh signed zone signatures and
-allows complete management of zone signing to be taken over by <strong>rollerd</strong>.</p>
-<p>The downside to using this option is that all the non-rolling zones will be
-signed after every sleep, which may be expensive computationally.</p>
-<p>Note:  The zone files are not updated or installed at this time.
-Manual copying and installation are still needed.</p>
+
+<p>Tells <b>rollerd</b> to sign the zones that aren&#39;t in the middle of being rolled. This allows <b>rollerd</b> to refresh signed zone signatures and allows complete management of zone signing to be taken over by <b>rollerd</b>.</p>
+
+<p>The downside to using this option is that all the non-rolling zones will be signed after every sleep, which may be expensive computationally.</p>
+
+<p>Note: The zone files are not updated or installed at this time. Manual copying and installation are still needed.</p>
+
 </dd>
-<dt><strong><a name="autosign_noautosign" class="item"><strong>-autosign</strong> | <strong>-noautosign</strong></a></strong></dt>
-
+<dt id="autosign--noautosign"><b>-autosign</b> | <b>-noautosign</b></dt>
 <dd>
-<p>Automatic zone-signing flag.  If this is set, then a zone's zonefile will
-be re-signed (and only re-signed) if it is found to be newer than the
-corresponding signed zonefile.</p>
+
+<p>Automatic zone-signing flag. If this is set, then a zone&#39;s zonefile will be re-signed (and only re-signed) if it is found to be newer than the corresponding signed zonefile.</p>
+
 </dd>
-<dt><strong><a name="directory_dir" class="item"><strong>-directory dir</strong></a></strong></dt>
-
+<dt id="directory-dir"><b>-directory dir</b></dt>
 <dd>
-<p>Sets the <strong>rollerd</strong> execution directory.  This must be a valid directory.</p>
+
+<p>Sets the <b>rollerd</b> execution directory. This must be a valid directory.</p>
+
 </dd>
-<dt><strong><a name="display" class="item"><strong>-display</strong></a></strong></dt>
-
+<dt id="display"><b>-display</b></dt>
 <dd>
-<p>Starts the <strong>blinkenlights</strong> graphical display program to show the status of
-zones managed by <strong>rollerd</strong>.</p>
+
+<p>Starts the <b>blinkenlights</b> graphical display program to show the status of zones managed by <b>rollerd</b>.</p>
+
 </dd>
-<dt><strong><a name="dtconfig_config_file" class="item"><strong>-dtconfig config_file</strong></a></strong></dt>
-
+<dt id="dtconfig-config_file"><b>-dtconfig config_file</b></dt>
 <dd>
-<p>Name of an alternate DNSSEC-Tools configuration file to be processed.
-If specified, this configuration file is used <em>in place</em> of the normal
-DNSSEC-Tools configuration file <strong>not</strong> in addition to it.  Also, it will be
-handled prior to <em>keyrec</em> files, <em>rollrec</em> files, and command-line options.</p>
+
+<p>Name of an alternate DNSSEC-Tools configuration file to be processed. If specified, this configuration file is used <i>in place</i> of the normal DNSSEC-Tools configuration file <b>not</b> in addition to it. Also, it will be handled prior to <i>keyrec</i> files, <i>rollrec</i> files, and command-line options.</p>
+
 </dd>
-<dt><strong><a name="foreground" class="item"><strong>-foreground</strong></a></strong></dt>
-
+<dt id="foreground"><b>-foreground</b></dt>
 <dd>
+
 <p>Run in the foreground and do not fork into a daemon.</p>
-</dd>
-<dt><strong><a name="logfile_log_file" class="item"><strong>-logfile log_file</strong></a></strong></dt>
 
-<dd>
-<p>Sets the <strong>rollerd</strong> log file to <em>log_file</em>.
-This must be a valid logging file, meaning that if <em>log_file</em> already
-exists, it must be a regular file.  The only exceptions to this are if
-<em>logfile</em> is <strong>/dev/stdout</strong>, <strong>/dev/tty</strong>, <strong>-</strong>.  Of these three, using a
-<em>log_file</em> of <strong>-</strong> is preferable since Perl will properly convert the <strong>-</strong>
-to the process' standard output.</p>
 </dd>
-<dt><strong><a name="loglevel_level" class="item"><strong>-loglevel level</strong></a></strong></dt>
-
+<dt id="logfile-log_file"><b>-logfile log_file</b></dt>
 <dd>
-<p>Sets <strong>rollerd</strong>'s logging level to <em>level</em>.  <strong>rollmgr.pm(3)</strong> contains a list
-of the valid logging levels.</p>
+
+<p>Sets the <b>rollerd</b> log file to <i>log_file</i>. This must be a valid logging file, meaning that if <i>log_file</i> already exists, it must be a regular file. The only exceptions to this are if <i>logfile</i> is <b>/dev/stdout</b>, <b>/dev/tty</b>, <b>-</b>. Of these three, using a <i>log_file</i> of <b>-</b> is preferable since Perl will properly convert the <b>-</b> to the process&#39; standard output.</p>
+
 </dd>
-<dt><strong><a name="noreload" class="item"><strong>-noreload</strong></a></strong></dt>
-
+<dt id="loglevel-level"><b>-loglevel level</b></dt>
 <dd>
-<p>Prevents <strong>rollerd</strong> from telling the DNS daemon to reload zones.</p>
+
+<p>Sets <b>rollerd</b>&#39;s logging level to <i>level</i>. <b>rollmgr.pm(3)</b> contains a list of the valid logging levels.</p>
+
 </dd>
-<dt><strong><a name="parameters" class="item"><strong>-parameters</strong></a></strong></dt>
-
+<dt id="noreload"><b>-noreload</b></dt>
 <dd>
-<p>Prints a set of <strong>rollerd</strong> parameters and then exits.  This shows the
-parameters with which <strong>rollerd</strong> will execute, but very little parameter
-validation is performed.</p>
+
+<p>Prevents <b>rollerd</b> from telling the DNS daemon to reload zones.</p>
+
 </dd>
-<dt><strong><a name="pidfile_pid_file" class="item"><strong>-pidfile pid_file</strong></a></strong></dt>
-
+<dt id="parameters"><b>-parameters</b></dt>
 <dd>
-<p>Stores the running process PID into <em>pid_file</em>.  This defaults to
-<strong>/var/run/rollerd.pid</strong> on most systems.</p>
+
+<p>Prints a set of <b>rollerd</b> parameters and then exits. This shows the parameters with which <b>rollerd</b> will execute, but very little parameter validation is performed.</p>
+
 </dd>
-<dt><strong><a name="rrfile_rollrec_file" class="item"><strong>-rrfile rollrec_file</strong></a></strong></dt>
-
+<dt id="pidfile-pid_file"><b>-pidfile pid_file</b></dt>
 <dd>
-<p>Name of the <em>rollrec</em> file to be processed.  This is the only required
-&quot;option&quot;.</p>
+
+<p>Stores the running process PID into <i>pid_file</i>. This defaults to <b>/var/run/rollerd.pid</b> on most systems.</p>
+
 </dd>
-<dt><strong><a name="realm_realm_name" class="item"><strong>-realm realm_name</strong></a></strong></dt>
-
+<dt id="rrfile-rollrec_file"><b>-rrfile rollrec_file</b></dt>
 <dd>
-<p>Name of the realm in which <strong>rollerd</strong> is running.  This is for use with the
-DNSSEC-Tools realms facility as a means of easily identifying different
-instantiations of <strong>rollerd</strong>.  It is informational only (e.g., <strong>ps</strong> output
-and log files) and is not used for anything else.</p>
+
+<p>Name of the <i>rollrec</i> file to be processed. This is the only required &quot;option&quot;.</p>
+
 </dd>
-<dt><strong><a name="singlerun" class="item"><strong>-singlerun</strong></a></strong></dt>
-
+<dt id="realm-realm_name"><b>-realm realm_name</b></dt>
 <dd>
-<p>Processes all needed steps once and exits.  This is not the ideal way to run
-<strong>rollerd</strong>, but it is potentially useful for environments where keying
-material is only available when specific hardware tokens have been made
-available.</p>
-<p>The timing between the steps will be potentially longer since the
-time between <strong>rollerd</strong> runs is dependent on when <strong>rollerd</strong> is executed.
-&quot;cmd&quot; lines must be added to the <em>rollrec</em> file to do particular actions.</p>
+
+<p>Name of the realm in which <b>rollerd</b> is running. This is for use with the DNSSEC-Tools realms facility as a means of easily identifying different instantiations of <b>rollerd</b>. It is informational only (e.g., <b>ps</b> output and log files) and is not used for anything else.</p>
+
+</dd>
+<dt id="singlerun"><b>-singlerun</b></dt>
+<dd>
+
+<p>Processes all needed steps once and exits. This is not the ideal way to run <b>rollerd</b>, but it is potentially useful for environments where keying material is only available when specific hardware tokens have been made available.</p>
+
+<p>The timing between the steps will be potentially longer since the time between <b>rollerd</b> runs is dependent on when <b>rollerd</b> is executed. &quot;cmd&quot; lines must be added to the <i>rollrec</i> file to do particular actions.</p>
+
 <p>The following lines should serve as examples:</p>
-<pre>
-  cmd &quot;rollzsk example.com&quot;
+
+<pre><code>  cmd &quot;rollzsk example.com&quot;
   cmd &quot;rollksk example.com&quot;
   cmd &quot;dspub example.com&quot;   # (for when the parent publishes
-                            # the new ksk)</pre>
-<p>The <em>-singlerun</em> option implicitly implies <em>-foreground</em> as well.</p>
-</dd>
-<dt><strong><a name="sleep_sleeptime" class="item"><strong>-sleep sleeptime</strong></a></strong></dt>
+                            # the new ksk)</code></pre>
 
-<dd>
-<p>Sets <strong>rollerd</strong>'s sleep time to <em>sleeptime</em>.  The sleep time is the amount
-of time (in seconds) <strong>rollerd</strong> waits between processing its <em>rollrec</em>-based
-queue.</p>
-</dd>
-<dt><strong><a name="username_username" class="item"><strong>-username username</strong></a></strong></dt>
+<p>The <i>-singlerun</i> option implicitly implies <i>-foreground</i> as well.</p>
 
-<dd>
-<p><strong>username</strong> is the user for which the <strong>rollerd</strong> daemon will be executed.
-The <strong>rollerd</strong> process' effective uid will be set to the uid corresponding
-to <strong>username</strong>.</p>
-<p>If <strong>username</strong> is a username, it must correspond to a valid uid; if it is
-a uid, it must correspond to a valid username.</p>
-<p>If <strong>rollerd</strong> does not have the appropriate O/S magic (e.g., for Unix,
-installed as <em>setuid</em> program and owned by root) then it will only be able
-to switch to those users to which the executing user has privilege to switch.
-This restriction is dependent on the operating system and the manner by which
-<strong>rollerd</strong> is installed.</p>
-<p>When using this option, the target user must have access to the various
-directories, logs, and data files that <strong>rollerd</strong> requires to execute.
-Without this access, proper execution cannot occur.</p>
 </dd>
-<dt><strong><a name="zsargs_arglist" class="item"><strong>-zsargs arglist</strong></a></strong></dt>
-
+<dt id="sleep-sleeptime"><b>-sleep sleeptime</b></dt>
 <dd>
-<p>Additional <strong>zonesigner</strong> arguments that will be passed to all <strong>zonesigner</strong>
-executions. These arguments will override the corresponding arguments in the
-DNSSEC-Tools configuration file, and the zones' <em>keyrec</em> files.  If a zone's
-<strong>rollrec</strong> entry contains a <em>zsargs</em> field, then it will be used instead of
-those specified by this argument.</p>
-<p>Given the <strong>rollerd</strong> argument processing, the new arguments for <strong>zonesigner</strong>
-cannot be specified as expected.  Instead, the arguments should be given in
-the following manner.  The leading dash should be replaced with an equals sign.
-If the option takes an argument, the space that would separate the option from
-the option's argument should also be replaced by an equals sign.  If multiple
-arguments will be passed via <strong>-zsargs</strong>, quotes must be used to group them
-into a single argument.</p>
-<p><strong>rollerd</strong> translates these arguments to the appropriate format for
-<strong>zonesigner</strong>.  These examples should clarify the modifications:</p>
-<pre>
-    normal zonesigner option     rollerd -zsargs option
+
+<p>Sets <b>rollerd</b>&#39;s sleep time to <i>sleeptime</i>. The sleep time is the amount of time (in seconds) <b>rollerd</b> waits between processing its <i>rollrec</i>-based queue.</p>
+
+</dd>
+<dt id="username-username"><b>-username username</b></dt>
+<dd>
+
+<p><b>username</b> is the user for which the <b>rollerd</b> daemon will be executed. The <b>rollerd</b> process&#39; effective uid will be set to the uid corresponding to <b>username</b>.</p>
+
+<p>If <b>username</b> is a username, it must correspond to a valid uid; if it is a uid, it must correspond to a valid username.</p>
+
+<p>If <b>rollerd</b> does not have the appropriate O/S magic (e.g., for Unix, installed as <i>setuid</i> program and owned by root) then it will only be able to switch to those users to which the executing user has privilege to switch. This restriction is dependent on the operating system and the manner by which <b>rollerd</b> is installed.</p>
+
+<p>When using this option, the target user must have access to the various directories, logs, and data files that <b>rollerd</b> requires to execute. Without this access, proper execution cannot occur.</p>
+
+</dd>
+<dt id="zsargs-arglist"><b>-zsargs arglist</b></dt>
+<dd>
+
+<p>Additional <b>zonesigner</b> arguments that will be passed to all <b>zonesigner</b> executions. These arguments will override the corresponding arguments in the DNSSEC-Tools configuration file, and the zones&#39; <i>keyrec</i> files. If a zone&#39;s <b>rollrec</b> entry contains a <i>zsargs</i> field, then it will be used instead of those specified by this argument.</p>
+
+<p>Given the <b>rollerd</b> argument processing, the new arguments for <b>zonesigner</b> cannot be specified as expected. Instead, the arguments should be given in the following manner. The leading dash should be replaced with an equals sign. If the option takes an argument, the space that would separate the option from the option&#39;s argument should also be replaced by an equals sign. If multiple arguments will be passed via <b>-zsargs</b>, quotes must be used to group them into a single argument.</p>
+
+<p><b>rollerd</b> translates these arguments to the appropriate format for <b>zonesigner</b>. These examples should clarify the modifications:</p>
+
+<pre><code>    normal zonesigner option     rollerd -zsargs option
     ------------------------     ----------------------
     -nokrfile                    -zsargs =nokrfile
-    -zskcount 5 -kskcount 3      -zsargs &quot;=zskcount=5 =kskcount=3&quot;</pre>
-</dd>
-<dt><strong><a name="version" class="item"><strong>-Version</strong></a></strong></dt>
+    -zskcount 5 -kskcount 3      -zsargs &quot;=zskcount=5 =kskcount=3&quot;</code></pre>
 
-<dd>
-<p>Displays the version information for <strong>rollerd</strong> and the DNSSEC-Tools package.</p>
 </dd>
-<dt><strong><a name="help" class="item"><strong>-help</strong></a></strong></dt>
-
+<dt id="Version"><b>-Version</b></dt>
 <dd>
+
+<p>Displays the version information for <b>rollerd</b> and the DNSSEC-Tools package.</p>
+
+</dd>
+<dt id="help"><b>-help</b></dt>
+<dd>
+
 <p>Display a usage message.</p>
-</dd>
-<dt><strong><a name="verbose" class="item"><strong>-verbose</strong></a></strong></dt>
 
+</dd>
+<dt id="verbose"><b>-verbose</b></dt>
 <dd>
+
 <p>Verbose output will be given.</p>
-</dd>
-</dl>
-<p>
-</p>
-<hr />
-<h1><a name="assumptions">ASSUMPTIONS</a></h1>
-<p><strong>rollerd</strong> uses the <strong>rndc</strong> command to communicate with the BIND
-<strong>named</strong> daemon.  Therefore, it assumes that appropriate measures have been
-taken so that this communication is possible.</p>
-<p>
-</p>
-<hr />
-<h1><a name="known_problems">KNOWN PROBLEMS</a></h1>
-<p>The following problems (or potential problems) are known:</p>
-<dl>
-<dt><strong><a name="_" class="item">-</a></strong></dt>
 
-<dd>
-<p>Any process that can write to the rollover socket can send commands to
-<strong>rollerd</strong>.  This is probably not a Good Thing.</p>
 </dd>
 </dl>
-<p>
-</p>
-<hr />
-<h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2005-2013 SPARTA, Inc.  All rights reserved.
-See the COPYING file included with the DNSSEC-Tools package for details.</p>
-<p>
-</p>
-<hr />
-<h1><a name="author">AUTHOR</a></h1>
-<p>Wayne Morrison, <a href="mailto:tewok@tislabs.com">tewok@tislabs.com</a></p>
-<p>
-</p>
-<hr />
-<h1><a name="see_also">SEE ALSO</a></h1>
-<p><strong>blinkenlights(8)</strong>,
-<strong>dtrealms(8)</strong>,
-<strong>named(8)</strong>,
-<strong>rndc(8)</strong>,
-<strong>rp-wrapper(8)</strong>,
-<strong>rollchk(8)</strong>,
-<strong>rollctl(8)</strong>,
-<strong>rollinit(8)</strong>,
-<strong>zonesigner(8)</strong></p>
-<p><strong>Net::DNS::SEC::Tools::conf.pm(3)</strong>,
-<strong>Net::DNS::SEC::Tools::defaults.pm(3)</strong>,
-<strong>Net::DNS::SEC::Tools::keyrec.pm(3)</strong>,
-<strong>Net::DNS::SEC::Tools::rolllog.pm(3)</strong>,
-<strong>Net::DNS::SEC::Tools::rollmgr.pm(3)</strong>,
-<strong>Net::DNS::SEC::Tools::rollrec.pm(3)</strong></p>
-<p><strong>rollrec(5)</strong></p>
+
+<h1 id="ASSUMPTIONS">ASSUMPTIONS</h1>
+
+<p><b>rollerd</b> uses the <b>rndc</b> command to communicate with the BIND <b>named</b> daemon. Therefore, it assumes that appropriate measures have been taken so that this communication is possible.</p>
+
+<h1 id="KNOWN-PROBLEMS">KNOWN PROBLEMS</h1>
+
+<p>The following problems (or potential problems) are known:</p>
+
+<dl>
+
+<dt id="pod">-</dt>
+<dd>
+
+<p>Any process that can write to the rollover socket can send commands to <b>rollerd</b>. This is probably not a Good Thing.</p>
+
+</dd>
+</dl>
+
+<h1 id="COPYRIGHT">COPYRIGHT</h1>
+
+<p>Copyright 2005-2014 SPARTA, Inc. All rights reserved. See the COPYING file included with the DNSSEC-Tools package for details.</p>
+
+<h1 id="AUTHOR">AUTHOR</h1>
+
+<p>Wayne Morrison, tewok@tislabs.com</p>
+
+<h1 id="SEE-ALSO">SEE ALSO</h1>
+
+<p><b>blinkenlights(8)</b>, <b>dtrealms(8)</b>, <b>named(8)</b>, <b>rndc(8)</b>, <b>rp-wrapper(8)</b>, <b>rollchk(8)</b>, <b>rollctl(8)</b>, <b>rollinit(8)</b>, <b>zonesigner(8)</b></p>
+
+<p><b>Net::DNS::SEC::Tools::conf.pm(3)</b>, <b>Net::DNS::SEC::Tools::defaults.pm(3)</b>, <b>Net::DNS::SEC::Tools::keyrec.pm(3)</b>, <b>Net::DNS::SEC::Tools::rolllog.pm(3)</b>, <b>Net::DNS::SEC::Tools::rollmgr.pm(3)</b>, <b>Net::DNS::SEC::Tools::rollrec.pm(3)</b></p>
+
+<p><b>rollrec(5)</b></p>
+
 
 </body>
 
 </html>
+
+

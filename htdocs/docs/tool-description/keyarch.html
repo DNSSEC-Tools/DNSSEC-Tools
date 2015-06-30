@@ -2,7 +2,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>keyarch - DNSSEC-Tools daemon to archive old KSK and ZSK keys</title>
+<title></title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
@@ -10,139 +10,121 @@
 <body style="background-color: white">
 
 
-<!-- INDEX BEGIN -->
-<div name="index">
-<p><a name="__index__"></a></p>
 
-<ul>
-
-	<li><a href="#name">NAME</a></li>
-	<li><a href="#synopsis">SYNOPSIS</a></li>
-	<li><a href="#description">DESCRIPTION</a></li>
-	<li><a href="#options">OPTIONS</a></li>
-	<li><a href="#exit_values">EXIT VALUES</a></li>
-	<li><a href="#copyright">COPYRIGHT</a></li>
-	<li><a href="#author">AUTHOR</a></li>
-	<li><a href="#see_also">SEE ALSO</a></li>
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
+  <li><a href="#OPTIONS">OPTIONS</a></li>
+  <li><a href="#EXIT-VALUES">EXIT VALUES</a></li>
+  <li><a href="#COPYRIGHT">COPYRIGHT</a></li>
+  <li><a href="#AUTHOR">AUTHOR</a></li>
+  <li><a href="#SEE-ALSO">SEE ALSO</a></li>
 </ul>
 
-<hr name="index" />
-</div>
-<!-- INDEX END -->
+<h1 id="NAME">NAME</h1>
 
-<p>
-</p>
-<hr />
-<h1><a name="name">NAME</a></h1>
 <p>keyarch - DNSSEC-Tools daemon to archive old KSK and ZSK keys</p>
-<p>
-</p>
-<hr />
-<h1><a name="synopsis">SYNOPSIS</a></h1>
-<pre>
-  keyarch [options] &lt;keyrec_file | rollrec_file&gt;</pre>
-<p>
-</p>
-<hr />
-<h1><a name="description">DESCRIPTION</a></h1>
-<p>The <strong>keyarch</strong> program archives old KSK and ZSK keys.  Keys are considered old
-if they are revoked or obsolete.  Keys marked as either <em>kskrev</em> or <em>zskrev</em>
-are revoked; keys marked as either <em>kskobs</em> or <em>zskobs</em> are obsolete.
-Archived keys are prefixed with the seconds-since-epoch as a means of
-distinguishing a zone's keys that have the same five digit number.</p>
-<p>If the required file argument is a <em>keyrec</em> file, then expired keys listed
-in that file are archived.  If the file argument is a <em>rollrec</em> file, the
-<em>keyrec</em> files of the zones in that file are checked for expired keys.</p>
-<p>If the <strong>-zone</strong> option is given, then only revoked and obsolete keys belonging
-to the specified zone will be archived.</p>
-<p>The archive directory is either zone-specific (listed in the zone's <em>keyrec</em>
-record in the zone's <em>keyrec</em> file) or the default archive directory given
-in the DNSSEC-Tools configuration file.</p>
-<p>The count of archived keys is given as the program's exit code.  Error exit
-codes are negative.</p>
-<p>
-</p>
-<hr />
-<h1><a name="options">OPTIONS</a></h1>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<pre><code>  keyarch [options] &lt;keyrec_file | rollrec_file&gt;</code></pre>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p>The <b>keyarch</b> program archives old KSK and ZSK keys. Keys are considered old if they are revoked or obsolete. Keys marked as either <i>kskrev</i> or <i>zskrev</i> are revoked; keys marked as either <i>kskobs</i> or <i>zskobs</i> are obsolete. Archived keys are prefixed with the seconds-since-epoch as a means of distinguishing a zone&#39;s keys that have the same five digit number.</p>
+
+<p>If the required file argument is a <i>keyrec</i> file, then expired keys listed in that file are archived. If the file argument is a <i>rollrec</i> file, the <i>keyrec</i> files of the zones in that file are checked for expired keys.</p>
+
+<p>If the <b>-zone</b> option is given, then only revoked and obsolete keys belonging to the specified zone will be archived.</p>
+
+<p>The archive directory is either zone-specific (listed in the zone&#39;s <i>keyrec</i> record in the zone&#39;s <i>keyrec</i> file) or the default archive directory given in the DNSSEC-Tools configuration file.</p>
+
+<p>The count of archived keys is given as the program&#39;s exit code. Error exit codes are negative.</p>
+
+<h1 id="OPTIONS">OPTIONS</h1>
+
 <p>The following options are recognized:</p>
+
 <dl>
-<dt><strong><a name="zone_zone_file" class="item"><strong>-zone zone_file</strong></a></strong></dt>
 
+<dt id="zone-zone_file"><b>-zone zone_file</b></dt>
 <dd>
-<p>Name of the zone whose KSKs will be archived.  If this is not given, then
-all the zones defined in the <em>rollrec</em> file will be checked.</p>
+
+<p>Name of the zone whose KSKs will be archived. If this is not given, then all the zones defined in the <i>rollrec</i> file will be checked.</p>
+
 </dd>
-<dt><strong><a name="kskonly" class="item"><strong>-kskonly</strong></a></strong></dt>
-
+<dt id="kskonly"><b>-kskonly</b></dt>
 <dd>
+
 <p>Only archive KSK keys.</p>
-</dd>
-<dt><strong><a name="zskonly" class="item"><strong>-zskonly</strong></a></strong></dt>
 
+</dd>
+<dt id="zskonly"><b>-zskonly</b></dt>
 <dd>
+
 <p>Only archive ZSK keys.</p>
-</dd>
-<dt><strong><a name="dtconfig_config_file" class="item"><strong>-dtconfig config_file</strong></a></strong></dt>
 
-<dd>
-<p>Name of an alternate DNSSEC-Tools configuration file to be processed.
-If specified, this configuration file is used <em>in place</em> of the normal
-DNSSEC-Tools configuration file <strong>not</strong> in addition to it.  Also, it will be
-handled prior to <em>keyrec</em> files, <em>rollrec</em> files, and command-line options.</p>
 </dd>
-<dt><strong><a name="quiet" class="item"><strong>-quiet</strong></a></strong></dt>
-
+<dt id="dtconfig-config_file"><b>-dtconfig config_file</b></dt>
 <dd>
+
+<p>Name of an alternate DNSSEC-Tools configuration file to be processed. If specified, this configuration file is used <i>in place</i> of the normal DNSSEC-Tools configuration file <b>not</b> in addition to it. Also, it will be handled prior to <i>keyrec</i> files, <i>rollrec</i> files, and command-line options.</p>
+
+</dd>
+<dt id="quiet"><b>-quiet</b></dt>
+<dd>
+
 <p>No output will be given.</p>
-</dd>
-<dt><strong><a name="verbose" class="item"><strong>-verbose</strong></a></strong></dt>
 
+</dd>
+<dt id="verbose"><b>-verbose</b></dt>
 <dd>
+
 <p>Verbose output will be given.</p>
-</dd>
-<dt><strong><a name="help" class="item"><strong>-help</strong></a></strong></dt>
 
+</dd>
+<dt id="help"><b>-help</b></dt>
 <dd>
+
 <p>Display a usage message.</p>
-</dd>
-<dt><strong><a name="version" class="item"><strong>-Version</strong></a></strong></dt>
 
+</dd>
+<dt id="Version"><b>-Version</b></dt>
 <dd>
-<p>Displays the version information for <strong>keyarch</strong> and the DNSSEC-Tools package.</p>
+
+<p>Displays the version information for <b>keyarch</b> and the DNSSEC-Tools package.</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<hr />
-<h1><a name="exit_values">EXIT VALUES</a></h1>
-<p>On success, <strong>keyarch</strong>'s exit code is the number of keys archived.</p>
-<p><strong>keyarch</strong> has a 0 exit code if the help message is given.</p>
-<p><strong>keyarch</strong> has a negative exit code if an error is encountered.</p>
-<p>
-</p>
-<hr />
-<h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2007-2013 SPARTA, Inc.  All rights reserved.
-See the COPYING file included with the DNSSEC-Tools package for details.</p>
-<p>
-</p>
-<hr />
-<h1><a name="author">AUTHOR</a></h1>
-<p>Wayne Morrison, <a href="mailto:tewok@tislabs.com">tewok@tislabs.com</a></p>
-<p>
-</p>
-<hr />
-<h1><a name="see_also">SEE ALSO</a></h1>
-<p><strong>rollerd(8)</strong>,
-<strong>zonesigner(8)</strong></p>
-<p><strong>Net::DNS::SEC::Tools::conf.pm(3)</strong>,
-<strong>Net::DNS::SEC::Tools::dnssectools.pm(3)</strong>,
-<strong>Net::DNS::SEC::Tools::defaults.pm(3)</strong>,
-<strong>Net::DNS::SEC::Tools::keyrec.pm(3)</strong>,
-<strong>Net::DNS::SEC::Tools::rollrec.pm(3)</strong></p>
-<p><strong>keyrec(5)</strong>,
-<strong>rollrec(5)</strong></p>
+
+<h1 id="EXIT-VALUES">EXIT VALUES</h1>
+
+<p>On success, <b>keyarch</b>&#39;s exit code is the number of keys archived.</p>
+
+<p><b>keyarch</b> has a 0 exit code if the help message is given.</p>
+
+<p><b>keyarch</b> has a negative exit code if an error is encountered.</p>
+
+<h1 id="COPYRIGHT">COPYRIGHT</h1>
+
+<p>Copyright 2007-2014 SPARTA, Inc. All rights reserved. See the COPYING file included with the DNSSEC-Tools package for details.</p>
+
+<h1 id="AUTHOR">AUTHOR</h1>
+
+<p>Wayne Morrison, tewok@tislabs.com</p>
+
+<h1 id="SEE-ALSO">SEE ALSO</h1>
+
+<p><b>rollerd(8)</b>, <b>zonesigner(8)</b></p>
+
+<p><b>Net::DNS::SEC::Tools::conf.pm(3)</b>, <b>Net::DNS::SEC::Tools::dnssectools.pm(3)</b>, <b>Net::DNS::SEC::Tools::defaults.pm(3)</b>, <b>Net::DNS::SEC::Tools::keyrec.pm(3)</b>, <b>Net::DNS::SEC::Tools::rollrec.pm(3)</b></p>
+
+<p><b>keyrec(5)</b>, <b>rollrec(5)</b></p>
+
 
 </body>
 
 </html>
+
+

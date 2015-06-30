@@ -2,7 +2,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>dtinitconf - Creates a DNSSEC-Tools configuration file</title>
+<title></title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
@@ -10,460 +10,423 @@
 <body style="background-color: white">
 
 
-<!-- INDEX BEGIN -->
-<div name="index">
-<p><a name="__index__"></a></p>
 
-<ul>
-
-	<li><a href="#name">NAME</a></li>
-	<li><a href="#synopsis">SYNOPSIS</a></li>
-	<li><a href="#description">DESCRIPTION</a></li>
-	<li><a href="#options">OPTIONS</a></li>
-	<ul>
-
-		<li><a href="#key_related_options">Key-related Options</a></li>
-		<li><a href="#zone_related_options">Zone-related Options</a></li>
-		<li><a href="#trustman_related_options">trustman-related Options</a></li>
-		<li><a href="#bind_options">BIND Options</a></li>
-		<li><a href="#dnssec_tools_options">DNSSEC-Tools Options</a></li>
-		<li><a href="#dtinitconf_options">dtinitconf Options</a></li>
-	</ul>
-
-	<li><a href="#copyright">COPYRIGHT</a></li>
-	<li><a href="#author">AUTHOR</a></li>
-	<li><a href="#see_also">SEE ALSO</a></li>
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
+  <li><a href="#OPTIONS">OPTIONS</a>
+    <ul>
+      <li><a href="#Key-related-Options">Key-related Options</a></li>
+      <li><a href="#Zone-related-Options">Zone-related Options</a></li>
+      <li><a href="#trustman-related-Options">trustman-related Options</a></li>
+      <li><a href="#BIND-Options">BIND Options</a></li>
+      <li><a href="#DNSSEC-Tools-Options">DNSSEC-Tools Options</a></li>
+      <li><a href="#dtinitconf-Options">dtinitconf Options</a></li>
+    </ul>
+  </li>
+  <li><a href="#COPYRIGHT">COPYRIGHT</a></li>
+  <li><a href="#AUTHOR">AUTHOR</a></li>
+  <li><a href="#SEE-ALSO">SEE ALSO</a></li>
 </ul>
 
-<hr name="index" />
-</div>
-<!-- INDEX END -->
+<h1 id="NAME">NAME</h1>
 
-<p>
-</p>
-<hr />
-<h1><a name="name">NAME</a></h1>
 <p>dtinitconf - Creates a DNSSEC-Tools configuration file</p>
-<p>
-</p>
-<hr />
-<h1><a name="synopsis">SYNOPSIS</a></h1>
-<pre>
-  dtinitconf [options]</pre>
-<p>
-</p>
-<hr />
-<h1><a name="description">DESCRIPTION</a></h1>
-<p>The <strong>dtinitconf</strong> program initializes the DNSSEC-Tools configuration file.
-By default, the actual configuration file will be created, though the created
-file can be specified by the user.  Existing files, whether the default or one
-specified by the user, will not be overwritten unless specifically directed
-by the user.</p>
-<p>Each configuration field can be individually specified on the command line.
-The user will also be prompted for the fields, with default values taken from
-the DNSSEC-Tools <strong>defaults.pm</strong> module.  If the <strong>-noprompt</strong> option is given,
-then a default configuration file (modulo command-line arguments) will be
-created.</p>
-<p>Configuration entries are created for several BIND programs.  Several
-locations on the system are searched to find the locations of these programs. 
-First, the directories in the path environment variable are checked; the
-names of any directories that contain the BIND programs are saved.  Next,
-several common locations for BIND programs are checked; again, the names of
-directories that contain the BIND programs are saved.  After collecting these
-directories, the user is presented with this list and may choose to use
-whichever set is desired.  If no directories are found that contain the BIND
-programs, the user is prompted for the proper location.</p>
-<p>If the configuration file's parent directory does not exist, then an attempt
-is made to create the directory.  The new directory's ownership will be set
-to <em>root</em> for the owner and <em>dnssec</em> for the group, assuming the <em>dnssec</em>
-group exists.  Writability checks for the directory will not be performed if
-the <em>-outfile</em> option is given.</p>
-<p>
-</p>
-<hr />
-<h1><a name="options">OPTIONS</a></h1>
-<p><strong>dtinitconf</strong> takes options that control the contents of the newly generated
-DNSSEC-Tools configuration file.  Each configuration file entry has a
-corresponding command-line option.  The options, described below, are ordered
-in logical groups.</p>
-<p>
-</p>
-<h2><a name="key_related_options">Key-related Options</a></h2>
-<p>These options deal with different aspects of creating and managing
-encryption keys.</p>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<pre><code>  dtinitconf [options]</code></pre>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p>The <b>dtinitconf</b> program initializes the DNSSEC-Tools configuration file. By default, the actual configuration file will be created, though the created file can be specified by the user. Existing files, whether the default or one specified by the user, will not be overwritten unless specifically directed by the user.</p>
+
+<p>Each configuration field can be individually specified on the command line. The user will also be prompted for the fields, with default values taken from the DNSSEC-Tools <b>defaults.pm</b> module. If the <b>-noprompt</b> option is given, then a default configuration file (modulo command-line arguments) will be created.</p>
+
+<p>Configuration entries are created for several BIND programs. Several locations on the system are searched to find the locations of these programs. First, the directories in the path environment variable are checked; the names of any directories that contain the BIND programs are saved. Next, several common locations for BIND programs are checked; again, the names of directories that contain the BIND programs are saved. After collecting these directories, the user is presented with this list and may choose to use whichever set is desired. If no directories are found that contain the BIND programs, the user is prompted for the proper location.</p>
+
+<p>If the configuration file&#39;s parent directory does not exist, then an attempt is made to create the directory. The new directory&#39;s ownership will be set to <i>root</i> for the owner and <i>dnssec</i> for the group, assuming the <i>dnssec</i> group exists. Writability checks for the directory will not be performed if the <i>-outfile</i> option is given.</p>
+
+<h1 id="OPTIONS">OPTIONS</h1>
+
+<p><b>dtinitconf</b> takes options that control the contents of the newly generated DNSSEC-Tools configuration file. Each configuration file entry has a corresponding command-line option. The options, described below, are ordered in logical groups.</p>
+
+<h2 id="Key-related-Options">Key-related Options</h2>
+
+<p>These options deal with different aspects of creating and managing encryption keys.</p>
+
 <dl>
-<dt><strong><a name="algorithm_algorithm" class="item"><strong>-algorithm algorithm</strong></a></strong></dt>
 
+<dt id="algorithm-algorithm"><b>-algorithm algorithm</b></dt>
 <dd>
-<p>Selects the cryptographic algorithm. The value of algorithm must be one that
-is recognized by the installed version of <strong>dnssec-keygen</strong>.</p>
+
+<p>Selects the cryptographic algorithm. The value of algorithm must be one that is recognized by the installed version of <b>dnssec-keygen</b>.</p>
+
 </dd>
-<dt><strong><a name="kskcount_ksk_count" class="item"><strong>-kskcount KSK-count</strong></a></strong></dt>
-
+<dt id="kskcount-KSK-count"><b>-kskcount KSK-count</b></dt>
 <dd>
+
 <p>The default number of KSK keys that will be created for a zone.</p>
-</dd>
-<dt><strong><a name="ksklength_keylen" class="item"><strong>-ksklength keylen</strong></a></strong></dt>
 
-<dd>
-<p>The default KSK key length to be passed to <strong>dnssec-keygen</strong>.</p>
 </dd>
-<dt><strong><a name="ksklife_lifespan" class="item"><strong>-ksklife lifespan</strong></a></strong></dt>
-
+<dt id="ksklength-keylen"><b>-ksklength keylen</b></dt>
 <dd>
-<p>The default length of time between KSK rollovers.  This is measured in   
-seconds.  This value must be within the range of the <strong>minlife</strong> and
-<strong>maxlife</strong> values.</p>
-<p>This value is <strong>only</strong> used for key rollover.  Keys do not have a life-time
-in any other sense.</p>
+
+<p>The default KSK key length to be passed to <b>dnssec-keygen</b>.</p>
+
 </dd>
-<dt><strong><a name="maxlife_maxlifespan" class="item"><strong>-maxlife maxlifespan</strong></a></strong></dt>
-
+<dt id="ksklife-lifespan"><b>-ksklife lifespan</b></dt>
 <dd>
-<p>The maximum length of time between key rollovers.  This is measured in   
-seconds.  The <strong>ksklife</strong> and <strong>zsklife</strong> values must be not greater than
-this value.</p>
-<p>This value is <strong>only</strong> used for key rollover.  Keys do not have a life-time
-in any other sense.</p>
+
+<p>The default length of time between KSK rollovers. This is measured in seconds. This value must be within the range of the <b>minlife</b> and <b>maxlife</b> values.</p>
+
+<p>This value is <b>only</b> used for key rollover. Keys do not have a life-time in any other sense.</p>
+
 </dd>
-<dt><strong><a name="minlife_minlifespan" class="item"><strong>-minlife minlifespan</strong></a></strong></dt>
-
+<dt id="maxlife-maxlifespan"><b>-maxlife maxlifespan</b></dt>
 <dd>
-<p>The minimum length of time between key rollovers.  This is measured in   
-seconds.  The <strong>ksklife</strong> and <strong>zsklife</strong> values must be not less than
-this value.</p>
-<p>This value is <strong>only</strong> used for key rollover.  Keys do not have a life-time
-in any other sense.</p>
+
+<p>The maximum length of time between key rollovers. This is measured in seconds. The <b>ksklife</b> and <b>zsklife</b> values must be not greater than this value.</p>
+
+<p>This value is <b>only</b> used for key rollover. Keys do not have a life-time in any other sense.</p>
+
 </dd>
-<dt><strong><a name="zskcount_zsk_count" class="item"><strong>-zskcount ZSK-count</strong></a></strong></dt>
-
+<dt id="minlife-minlifespan"><b>-minlife minlifespan</b></dt>
 <dd>
+
+<p>The minimum length of time between key rollovers. This is measured in seconds. The <b>ksklife</b> and <b>zsklife</b> values must be not less than this value.</p>
+
+<p>This value is <b>only</b> used for key rollover. Keys do not have a life-time in any other sense.</p>
+
+</dd>
+<dt id="zskcount-ZSK-count"><b>-zskcount ZSK-count</b></dt>
+<dd>
+
 <p>The default number of ZSK keys that will be created for a zone.</p>
-</dd>
-<dt><strong><a name="zsklength_keylen" class="item"><strong>-zsklength keylen</strong></a></strong></dt>
 
-<dd>
-<p>The default ZSK key length to be passed to <strong>dnssec-keygen</strong>.</p>
 </dd>
-<dt><strong><a name="zsklife_lifespan" class="item"><strong>-zsklife lifespan</strong></a></strong></dt>
-
+<dt id="zsklength-keylen"><b>-zsklength keylen</b></dt>
 <dd>
-<p>The default length of time between ZSK rollovers.  This is measured in   
-seconds.  This value must be within the range of the <strong>minlife</strong> and
-<strong>maxlife</strong> values.</p>
-<p>This value is <strong>only</strong> used for key rollover.  Keys do not have a life-time
-in any other sense.</p>
+
+<p>The default ZSK key length to be passed to <b>dnssec-keygen</b>.</p>
+
 </dd>
-<dt><strong><a name="random_randomdev" class="item"><strong>-random randomdev</strong></a></strong></dt>
-
+<dt id="zsklife-lifespan"><b>-zsklife lifespan</b></dt>
 <dd>
-<p>The random device generator to be passed to <strong>dnssec-keygen</strong>.</p>
+
+<p>The default length of time between ZSK rollovers. This is measured in seconds. This value must be within the range of the <b>minlife</b> and <b>maxlife</b> values.</p>
+
+<p>This value is <b>only</b> used for key rollover. Keys do not have a life-time in any other sense.</p>
+
+</dd>
+<dt id="random-randomdev"><b>-random randomdev</b></dt>
+<dd>
+
+<p>The random device generator to be passed to <b>dnssec-keygen</b>.</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<h2><a name="zone_related_options">Zone-related Options</a></h2>
+
+<h2 id="Zone-related-Options">Zone-related Options</h2>
+
 <p>These options deal with different aspects of zone signing.</p>
-<dl>
-<dt><strong><a name="endtime_endtime" class="item"><strong>-endtime endtime</strong></a></strong></dt>
 
+<dl>
+
+<dt id="endtime-endtime"><b>-endtime endtime</b></dt>
 <dd>
-<p>The zone default expiration time to be passed to <strong>dnssec-signzone</strong>.</p>
+
+<p>The zone default expiration time to be passed to <b>dnssec-signzone</b>.</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<h2><a name="trustman_related_options">trustman-related Options</a></h2>
-<p>These options deal with different aspects of executing <strong>trustman</strong>.</p>
+
+<h2 id="trustman-related-Options">trustman-related Options</h2>
+
+<p>These options deal with different aspects of executing <b>trustman</b>.</p>
+
 <dl>
-<dt><strong><a name="genroothints_roothints" class="item"><strong>-genroothints roothints</strong></a></strong></dt>
 
+<dt id="genroothints-roothints"><b>-genroothints roothints</b></dt>
 <dd>
-<p>A new <strong>root.hints</strong> file will be created at the specified location.
-<strong>dtinitconf</strong> requires that the file not already exist.</p>
-<p>The <strong>root.hints</strong> file is retrieved from
-<strong><a href="http://www.internic.net/zones/named.root">http://www.internic.net/zones/named.root</a></strong>.  It is not considered a fatal
-error if <strong>dtinitconf</strong> is unable to fetch the file.  Rather, a warning message
-will be given and creation of the configuration file will continue.</p>
+
+<p>A new <b>root.hints</b> file will be created at the specified location. <b>dtinitconf</b> requires that the file not already exist.</p>
+
+<p>The <b>root.hints</b> file is retrieved from <b>http://www.internic.net/zones/named.root</b>. It is not considered a fatal error if <b>dtinitconf</b> is unable to fetch the file. Rather, a warning message will be given and creation of the configuration file will continue.</p>
+
 </dd>
-<dt><strong><a name="ta_contact_email" class="item"><strong>-ta-contact email</strong></a></strong></dt>
-
+<dt id="ta-contact-email"><b>-ta-contact email</b></dt>
 <dd>
-<p>The email address of the <strong>trustman</strong> administrator.</p>
+
+<p>The email address of the <b>trustman</b> administrator.</p>
+
 </dd>
-<dt><strong><a name="ta_resolvconf_resolvconffile" class="item"><strong>-ta-resolvconf resolvconffile</strong></a></strong></dt>
-
+<dt id="ta-resolvconf-resolvconffile"><b>-ta-resolvconf resolvconffile</b></dt>
 <dd>
-<p>The location of the <strong>resolv.conf</strong> file.</p>
+
+<p>The location of the <b>resolv.conf</b> file.</p>
+
 </dd>
-<dt><strong><a name="ta_smtpserver_hostname" class="item"><strong>-ta-smtpserver hostname</strong></a></strong></dt>
-
+<dt id="ta-smtpserver-hostname"><b>-ta-smtpserver hostname</b></dt>
 <dd>
-<p>The SMTP server for the <strong>trustman</strong> command.</p>
+
+<p>The SMTP server for the <b>trustman</b> command.</p>
+
 </dd>
-<dt><strong><a name="ta_tmpdir_hostname" class="item"><strong>-ta-tmpdir hostname</strong></a></strong></dt>
-
+<dt id="ta-tmpdir-hostname"><b>-ta-tmpdir hostname</b></dt>
 <dd>
-<p>The temporary directory for the <strong>trustman</strong> command.</p>
+
+<p>The temporary directory for the <b>trustman</b> command.</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<h2><a name="bind_options">BIND Options</a></h2>
+
+<h2 id="BIND-Options">BIND Options</h2>
+
 <p>These options deal specifically with functionality provided by BIND.</p>
-<dl>
-<dt><strong><a name="rndc_rndc_path" class="item"><strong>-rndc rndc-path</strong></a></strong></dt>
 
+<dl>
+
+<dt id="rndc-rndc-path"><b>-rndc rndc-path</b></dt>
 <dd>
-<p><strong>rndc</strong> is the path to BIND's <strong>rndc</strong> command.</p>
+
+<p><b>rndc</b> is the path to BIND&#39;s <b>rndc</b> command.</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<h2><a name="dnssec_tools_options">DNSSEC-Tools Options</a></h2>
+
+<h2 id="DNSSEC-Tools-Options">DNSSEC-Tools Options</h2>
+
 <p>These options deal specifically with functionality provided by DNSSEC-Tools.</p>
+
 <dl>
-<dt><strong><a name="admin_email_address" class="item"><strong>-admin email-address</strong></a></strong></dt>
 
+<dt id="admin-email-address"><b>-admin email-address</b></dt>
 <dd>
-<p><strong>admin</strong> is the email address of the DNSSEC-Tools administrator.  This is the
-default address used by the <em>dt_adminmail()</em> routine.</p>
+
+<p><b>admin</b> is the email address of the DNSSEC-Tools administrator. This is the default address used by the <i>dt_adminmail()</i> routine.</p>
+
 </dd>
-<dt><strong><a name="archivedir_directory" class="item"><strong>-archivedir directory</strong></a></strong></dt>
-
+<dt id="archivedir-directory"><b>-archivedir directory</b></dt>
 <dd>
-<p><strong>directory</strong> is the archived-key directory.  Old encryption keys are moved to
-this directory, but only if they are to be saved and not deleted.</p>
+
+<p><b>directory</b> is the archived-key directory. Old encryption keys are moved to this directory, but only if they are to be saved and not deleted.</p>
+
 </dd>
-<dt><strong><a name="autosign" class="item"><strong>-autosign</strong></a></strong></dt>
-
+<dt id="autosign"><b>-autosign</b></dt>
 <dd>
-<p>A flag indicating that <strong>rollerd</strong> should automatically sign zonefiles that
-are found to be newer than their signed zonefile.  If <strong>-noautosign</strong> is
-specified, this will be set to false.</p>
+
+<p>A flag indicating that <b>rollerd</b> should automatically sign zonefiles that are found to be newer than their signed zonefile. If <b>-noautosign</b> is specified, this will be set to false.</p>
+
 </dd>
-<dt><strong><a name="binddir_directory" class="item"><strong>-binddir directory</strong></a></strong></dt>
-
+<dt id="binddir-directory"><b>-binddir directory</b></dt>
 <dd>
-<p><strong>directory</strong> is the directory holding the BIND programs.  If the reserved
-word &quot;path&quot; is specified, then existence of the BIND programs is not verified
-when <strong>dtinitconf</strong> is executed.  Rather, the user's PATH directories will be
-searched for the BIND programs when the DNSSEC-Tools are executed.</p>
+
+<p><b>directory</b> is the directory holding the BIND programs. If the reserved word &quot;path&quot; is specified, then existence of the BIND programs is not verified when <b>dtinitconf</b> is executed. Rather, the user&#39;s PATH directories will be searched for the BIND programs when the DNSSEC-Tools are executed.</p>
+
 </dd>
-<dt><strong><a name="dtdir_directory" class="item"><strong>-dtdir directory</strong></a></strong></dt>
-
+<dt id="dtdir-directory"><b>-dtdir directory</b></dt>
 <dd>
-<p><strong>directory</strong> is the directory holding the DNSSEC-Tools programs.  If the
-reserved word &quot;path&quot; is specified, then existence of the DNSSEC-Tools programs
-is not verified when <strong>dtinitconf</strong> is executed.  Rather, the user's PATH
-directories will be searched for the DNSSEC-Tools programs when those tools
-are executed.</p>
+
+<p><b>directory</b> is the directory holding the DNSSEC-Tools programs. If the reserved word &quot;path&quot; is specified, then existence of the DNSSEC-Tools programs is not verified when <b>dtinitconf</b> is executed. Rather, the user&#39;s PATH directories will be searched for the DNSSEC-Tools programs when those tools are executed.</p>
+
 </dd>
-<dt><strong><a name="entropy_msg" class="item"><strong>-entropy_msg</strong></a></strong></dt>
-
+<dt id="entropy_msg"><b>-entropy_msg</b></dt>
 <dd>
-<p>A flag indicating that <strong>zonesigner</strong> should display a message about entropy
-generation.  This is primarily dependent on the implementation of a system's
-random number generation.</p>
+
+<p>A flag indicating that <b>zonesigner</b> should display a message about entropy generation. This is primarily dependent on the implementation of a system&#39;s random number generation.</p>
+
 </dd>
-<dt><strong><a name="mailer_server_host" class="item"><strong>-mailer-server host</strong></a></strong></dt>
-
+<dt id="mailer-server-host"><b>-mailer-server host</b></dt>
 <dd>
-<p>The mail server that will be contacted by <em>dt_adminmail()</em>.
-This is passed to <em>Mail::Send</em>.</p>
+
+<p>The mail server that will be contacted by <i>dt_adminmail()</i>. This is passed to <i>Mail::Send</i>.</p>
+
 </dd>
-<dt><strong><a name="mailer_server_mailtype" class="item"><strong>-mailer-server mailtype</strong></a></strong></dt>
-
+<dt id="mailer-server-mailtype"><b>-mailer-server mailtype</b></dt>
 <dd>
-<p>The mail type that will be contacted by <em>dt_adminmail()</em>.
-This is passed to <em>Mail::Mailer</em> (by way of <em>Mail::Send</em>.)
-Any values recognized by <em>Mail::Mailer</em> may be used here.</p>
+
+<p>The mail type that will be contacted by <i>dt_adminmail()</i>. This is passed to <i>Mail::Mailer</i> (by way of <i>Mail::Send</i>.) Any values recognized by <i>Mail::Mailer</i> may be used here.</p>
+
 </dd>
-<dt><strong><a name="noentropy_msg" class="item"><strong>-noentropy_msg</strong></a></strong></dt>
-
+<dt id="noentropy_msg"><b>-noentropy_msg</b></dt>
 <dd>
-<p>A flag indicating that <strong>zonesigner</strong> should not display a message about
-entropy generation.  This is primarily dependent on the implementation of
-a system's random number generation.</p>
+
+<p>A flag indicating that <b>zonesigner</b> should not display a message about entropy generation. This is primarily dependent on the implementation of a system&#39;s random number generation.</p>
+
 </dd>
-<dt><strong><a name="roll_loadzone" class="item"><strong>-roll-loadzone</strong></a></strong></dt>
-
-<dt><strong><a name="no_roll_loadzone" class="item"><strong>-no-roll-loadzone</strong></a></strong></dt>
-
+<dt id="roll-loadzone"><b>-roll-loadzone</b></dt>
 <dd>
-<p>Flags indicating whether or not <strong>rollerd</strong> should have the DNS daemon load
-zones.</p>
+
 </dd>
-<dt><strong><a name="roll_logfile_logfile" class="item"><strong>-roll-logfile logfile</strong></a></strong></dt>
-
+<dt id="no-roll-loadzone"><b>-no-roll-loadzone</b></dt>
 <dd>
-<p><strong>logfile</strong> is the logfile for the <strong>rollerd</strong> daemon.</p>
+
+<p>Flags indicating whether or not <b>rollerd</b> should have the DNS daemon load zones.</p>
+
 </dd>
-<dt><strong><a name="roll_loglevel_loglevel" class="item"><strong>-roll-loglevel loglevel</strong></a></strong></dt>
-
+<dt id="roll-logfile-logfile"><b>-roll-logfile logfile</b></dt>
 <dd>
-<p><strong>loglevel</strong> is the logging level for the <strong>rollerd</strong> daemon.</p>
+
+<p><b>logfile</b> is the logfile for the <b>rollerd</b> daemon.</p>
+
 </dd>
-<dt><strong><a name="roll_phasemsg_length" class="item"><strong>-roll-phasemsg length</strong></a></strong></dt>
-
+<dt id="roll-loglevel-loglevel"><b>-roll-loglevel loglevel</b></dt>
 <dd>
-<p><strong>length</strong> is the default length of phase-related log messages used by
-<strong>rollerd</strong>.  The valid levels are &quot;long&quot; and &quot;short&quot;, with &quot;long&quot; being
-the default value.</p>
-<p>The long message length means that a phase description will be included with
-some log messages.  For example, the long form of a message about ZSK rollover
-phase 3 will look like this:  &quot;ZSK phase 3 (Waiting for old zone data to
-expire from caches)&quot;.</p>
-<p>The short message length means that a phase description will not be included
-with some log messages.  For example, the short form of a message about ZSK
-rollover phase 3 will look like this:  &quot;ZSK phase 3&quot;.</p>
+
+<p><b>loglevel</b> is the logging level for the <b>rollerd</b> daemon.</p>
+
 </dd>
-<dt><strong><a name="roll_sleeptime_sleep_time" class="item"><strong>-roll-sleeptime sleep-time</strong></a></strong></dt>
-
+<dt id="roll-phasemsg-length"><b>-roll-phasemsg length</b></dt>
 <dd>
-<p><strong>sleep-time</strong> is the sleep-time for the <strong>rollerd</strong> daemon.</p>
+
+<p><b>length</b> is the default length of phase-related log messages used by <b>rollerd</b>. The valid levels are &quot;long&quot; and &quot;short&quot;, with &quot;long&quot; being the default value.</p>
+
+<p>The long message length means that a phase description will be included with some log messages. For example, the long form of a message about ZSK rollover phase 3 will look like this: &quot;ZSK phase 3 (Waiting for old zone data to expire from caches)&quot;.</p>
+
+<p>The short message length means that a phase description will not be included with some log messages. For example, the short form of a message about ZSK rollover phase 3 will look like this: &quot;ZSK phase 3&quot;.</p>
+
 </dd>
-<dt><strong><a name="roll_username_username" class="item"><strong>-roll-username username</strong></a></strong></dt>
-
+<dt id="roll-sleeptime-sleep-time"><b>-roll-sleeptime sleep-time</b></dt>
 <dd>
-<p><strong>username</strong> is the user for which the <strong>rollerd</strong> daemon will be executed.  If
-this is a username, it must correspond to a valid uid; if it is a uid, it
-must correspond to a valid username.</p>
+
+<p><b>sleep-time</b> is the sleep-time for the <b>rollerd</b> daemon.</p>
+
 </dd>
-<dt><strong><a name="roll_logtz_logtz" class="item"><strong>-roll-logtz logtz</strong></a></strong></dt>
-
+<dt id="roll-username-username"><b>-roll-username username</b></dt>
 <dd>
-<p><strong>loglevel</strong> is the timezone of the message timestamp for <strong>rollerd</strong>'s logfile.</p>
+
+<p><b>username</b> is the user for which the <b>rollerd</b> daemon will be executed. If this is a username, it must correspond to a valid uid; if it is a uid, it must correspond to a valid username.</p>
+
 </dd>
-<dt><strong><a name="zoneerrs_error_count" class="item"><strong>-zoneerrs error-count</strong></a></strong></dt>
-
+<dt id="roll-logtz-logtz"><b>-roll-logtz logtz</b></dt>
 <dd>
-<p><strong>error-count</strong> is the maximum error count for zones used by the <strong>rollerd</strong>
-daemon.</p>
+
+<p><b>loglevel</b> is the timezone of the message timestamp for <b>rollerd</b>&#39;s logfile.</p>
+
 </dd>
-<dt><strong><a name="savekeys" class="item"><strong>-savekeys</strong></a></strong></dt>
-
+<dt id="zoneerrs-error-count"><b>-zoneerrs error-count</b></dt>
 <dd>
+
+<p><b>error-count</b> is the maximum error count for zones used by the <b>rollerd</b> daemon.</p>
+
+</dd>
+<dt id="savekeys"><b>-savekeys</b></dt>
+<dd>
+
 <p>A flag indicating that old keys should be moved to the archive directory.</p>
-</dd>
-<dt><strong><a name="nosavekeys" class="item"><strong>-nosavekeys</strong></a></strong></dt>
 
-<dd>
-<p>A flag indicating that old keys should not be moved to the archive directory
-but will instead be left in place.</p>
 </dd>
-<dt><strong><a name="usegui" class="item"><strong>-usegui</strong></a></strong></dt>
-
+<dt id="nosavekeys"><b>-nosavekeys</b></dt>
 <dd>
+
+<p>A flag indicating that old keys should not be moved to the archive directory but will instead be left in place.</p>
+
+</dd>
+<dt id="usegui"><b>-usegui</b></dt>
+<dd>
+
 <p>A flag indicating that the GUI for specifying command options may be used.</p>
-</dd>
-<dt><strong><a name="nousegui" class="item"><strong>-nousegui</strong></a></strong></dt>
 
-<dd>
-<p>A flag indicating that the GUI for specifying command options should not be
-used.</p>
 </dd>
-<dt><strong><a name="zoneparser_parser_module" class="item"><strong>-zoneparser parser-module</strong></a></strong></dt>
-
+<dt id="nousegui"><b>-nousegui</b></dt>
 <dd>
-<p><strong>parser-module</strong> is the name of the Perl module that will be used to parse
-zone files.  The default is specified in <em>dnssec_tools_default()</em>.</p>
+
+<p>A flag indicating that the GUI for specifying command options should not be used.</p>
+
+</dd>
+<dt id="zoneparser-parser-module"><b>-zoneparser parser-module</b></dt>
+<dd>
+
+<p><b>parser-module</b> is the name of the Perl module that will be used to parse zone files. The default is specified in <i>dnssec_tools_default()</i>.</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<h2><a name="dtinitconf_options">dtinitconf Options</a></h2>
-<p>These options deal specifically with <strong>dtinitconf</strong>.</p>
+
+<h2 id="dtinitconf-Options">dtinitconf Options</h2>
+
+<p>These options deal specifically with <b>dtinitconf</b>.</p>
+
 <dl>
-<dt><strong><a name="outfile_conffile" class="item"><strong>-outfile conffile</strong></a></strong></dt>
 
+<dt id="outfile-conffile"><b>-outfile conffile</b></dt>
 <dd>
-<p>The configuration file will be written to <strong>conffile</strong>.  If this is
-not given, then the default configuration file (as returned by
-<em>Net::DNS::SEC::Tools::conf::getconffile()</em>) will be used.</p>
-<p>If <strong>conffile</strong> is given as <strong>-</strong>, then the new configuration file will be
-written to the standard output.</p>
-<p><strong>conffile</strong> must be writable.</p>
+
+<p>The configuration file will be written to <b>conffile</b>. If this is not given, then the default configuration file (as returned by <i>Net::DNS::SEC::Tools::conf::getconffile()</i>) will be used.</p>
+
+<p>If <b>conffile</b> is given as <b>-</b>, then the new configuration file will be written to the standard output.</p>
+
+<p><b>conffile</b> must be writable.</p>
+
 </dd>
-<dt><strong><a name="overwrite" class="item"><strong>-overwrite</strong></a></strong></dt>
-
+<dt id="overwrite"><b>-overwrite</b></dt>
 <dd>
-<p>If <strong>-overwrite</strong> is specified, existing output files may be overwritten.
-Without <strong>-overwrite</strong>, if the output file is found to exist then <strong>dtinitconf</strong>
-will give an error message and exit.</p>
+
+<p>If <b>-overwrite</b> is specified, existing output files may be overwritten. Without <b>-overwrite</b>, if the output file is found to exist then <b>dtinitconf</b> will give an error message and exit.</p>
+
 </dd>
-<dt><strong><a name="noprompt" class="item"><strong>-noprompt</strong></a></strong></dt>
-
+<dt id="noprompt"><b>-noprompt</b></dt>
 <dd>
-<p>If <strong>-noprompt</strong> is specified, the user will not be prompted for any input.
-The configuration file will be created from command-line options and
-DNSSEC-Tools defaults.  Guesses will be made for the BIND paths, based on
-the PATH environment variable.</p>
-<p><strong>WARNING</strong>:  After using the <strong>-noprompt</strong> option, the configuration file
-<strong>must</strong> be checked to ensure that the defaults are appropriate and acceptable
-for the installation.</p>
+
+<p>If <b>-noprompt</b> is specified, the user will not be prompted for any input. The configuration file will be created from command-line options and DNSSEC-Tools defaults. Guesses will be made for the BIND paths, based on the PATH environment variable.</p>
+
+<p><b>WARNING</b>: After using the <b>-noprompt</b> option, the configuration file <b>must</b> be checked to ensure that the defaults are appropriate and acceptable for the installation.</p>
+
 </dd>
-<dt><strong><a name="template" class="item"><strong>-template</strong></a></strong></dt>
-
+<dt id="template"><b>-template</b></dt>
 <dd>
-<p>If <strong>-template</strong> is specified, a default configuration file is created.
-However, all entries are commented out.</p>
-<p>The only command line options that may be used in conjunction with
-<strong>-template</strong> are <strong>-outfile</strong> and <strong>-overwrite</strong>.</p>
+
+<p>If <b>-template</b> is specified, a default configuration file is created. However, all entries are commented out.</p>
+
+<p>The only command line options that may be used in conjunction with <b>-template</b> are <b>-outfile</b> and <b>-overwrite</b>.</p>
+
 </dd>
-<dt><strong><a name="edit" class="item"><strong>-edit</strong></a></strong></dt>
-
+<dt id="edit"><b>-edit</b></dt>
 <dd>
-<p>If <strong>-edit</strong> is specified, the output file will be edited after it has been
-created.  The EDITOR environment variable is consulted for the editor to
-use.  If the EDITOR environment variable isn't defined, then the <strong>vi</strong>
-editor will be used.</p>
+
+<p>If <b>-edit</b> is specified, the output file will be edited after it has been created. The EDITOR environment variable is consulted for the editor to use. If the EDITOR environment variable isn&#39;t defined, then the <b>vi</b> editor will be used.</p>
+
 </dd>
-<dt><strong><a name="verbose" class="item"><strong>-verbose</strong></a></strong></dt>
-
+<dt id="verbose"><b>-verbose</b></dt>
 <dd>
+
 <p>Provide verbose output.</p>
-</dd>
-<dt><strong><a name="version" class="item"><strong>-Version</strong></a></strong></dt>
 
-<dd>
-<p>Displays the version information for <strong>dtinitconf</strong> and the DNSSEC-Tools package.</p>
 </dd>
-<dt><strong><a name="help" class="item"><strong>-help</strong></a></strong></dt>
-
+<dt id="Version"><b>-Version</b></dt>
 <dd>
+
+<p>Displays the version information for <b>dtinitconf</b> and the DNSSEC-Tools package.</p>
+
+</dd>
+<dt id="help"><b>-help</b></dt>
+<dd>
+
 <p>Display a usage message and exit.</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<hr />
-<h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2006-2013 SPARTA, Inc.  All rights reserved.  See the COPYING file
-included with the DNSSEC-Tools package for details.</p>
-<p>
-</p>
-<hr />
-<h1><a name="author">AUTHOR</a></h1>
-<p>Wayne Morrison, <a href="mailto:tewok@tislabs.com">tewok@tislabs.com</a></p>
-<p>
-</p>
-<hr />
-<h1><a name="see_also">SEE ALSO</a></h1>
-<p><strong>dnssec-keygen(8)</strong>,
-<strong>dnssec-signzone(8)</strong>,
-<strong>named-checkzone(8)</strong>,
-<strong>keyarch(8)</strong>,
-<strong>rollckk(8)</strong>,
-<strong>rollerd(8)</strong>,
-<strong>zonesigner(8)</strong></p>
-<p><strong>Net::DNS::SEC::Tools::conf.pm(3)</strong>,
-<strong>Net::DNS::SEC::Tools::defaults.pm(3)</strong>,
-<strong>Net::DNS::SEC::Tools::dnssectools.pm(3)</strong>,
-<strong>Net::DNS::SEC::Tools::tooloptions.pm(3)</strong>,
-<strong>QWizard.pm(3)</strong></p>
-<p><strong>dnssec-tools.conf(5)</strong></p>
+
+<h1 id="COPYRIGHT">COPYRIGHT</h1>
+
+<p>Copyright 2006-2014 SPARTA, Inc. All rights reserved. See the COPYING file included with the DNSSEC-Tools package for details.</p>
+
+<h1 id="AUTHOR">AUTHOR</h1>
+
+<p>Wayne Morrison, tewok@tislabs.com</p>
+
+<h1 id="SEE-ALSO">SEE ALSO</h1>
+
+<p><b>dnssec-keygen(8)</b>, <b>dnssec-signzone(8)</b>, <b>named-checkzone(8)</b>, <b>keyarch(8)</b>, <b>rollckk(8)</b>, <b>rollerd(8)</b>, <b>zonesigner(8)</b></p>
+
+<p><b>Net::DNS::SEC::Tools::conf.pm(3)</b>, <b>Net::DNS::SEC::Tools::defaults.pm(3)</b>, <b>Net::DNS::SEC::Tools::dnssectools.pm(3)</b>, <b>Net::DNS::SEC::Tools::tooloptions.pm(3)</b>, <b>QWizard.pm(3)</b></p>
+
+<p><b>dnssec-tools.conf(5)</b></p>
+
 
 </body>
 
 </html>
+
+

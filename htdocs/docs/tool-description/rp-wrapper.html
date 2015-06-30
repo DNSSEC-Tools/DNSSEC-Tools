@@ -2,7 +2,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>rp-wrapper - Example script for installation-specific rollover program.</title>
+<title></title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
@@ -10,135 +10,110 @@
 <body style="background-color: white">
 
 
-<!-- INDEX BEGIN -->
-<div name="index">
-<p><a name="__index__"></a></p>
 
-<ul>
-
-	<li><a href="#name">NAME</a></li>
-	<li><a href="#synopsis">SYNOPSIS</a></li>
-	<li><a href="#description">DESCRIPTION</a></li>
-	<li><a href="#standard_arguments">STANDARD ARGUMENTS</a></li>
-	<li><a href="#options">OPTIONS</a></li>
-	<li><a href="#exit_codes">EXIT CODES</a></li>
-	<li><a href="#copyright">COPYRIGHT</a></li>
-	<li><a href="#author">AUTHOR</a></li>
-	<li><a href="#see_also">SEE ALSO</a></li>
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
+  <li><a href="#STANDARD-ARGUMENTS">STANDARD ARGUMENTS</a></li>
+  <li><a href="#OPTIONS">OPTIONS</a></li>
+  <li><a href="#EXIT-CODES">EXIT CODES</a></li>
+  <li><a href="#COPYRIGHT">COPYRIGHT</a></li>
+  <li><a href="#AUTHOR">AUTHOR</a></li>
+  <li><a href="#SEE-ALSO">SEE ALSO</a></li>
 </ul>
 
-<hr name="index" />
-</div>
-<!-- INDEX END -->
+<h1 id="NAME">NAME</h1>
 
-<p>
-</p>
-<hr />
-<h1><a name="name">NAME</a></h1>
 <p>rp-wrapper - Example script for installation-specific rollover program.</p>
-<p>
-</p>
-<hr />
-<h1><a name="synopsis">SYNOPSIS</a></h1>
-<pre>
-  rp-wrapper [options] zonename phase rollrec-name rollrec-file [keyrec-file]</pre>
-<p>
-</p>
-<hr />
-<h1><a name="description">DESCRIPTION</a></h1>
-<p><strong>rp-wrapper</strong> is a wrapper/example script for use as an installation-specific
-phase command to handle a particular rollover phase.  This script is intended
-to be run by <strong>rollerd</strong>.  These rollover phase commands may be executed in
-place of the normal rollover actions, or in addition to them.</p>
-<p>When executed by <strong>rollerd</strong>, <strong>rp-wrapper</strong> is given a standard set of
-arguments.  It validates these arguments to ensure it can properly act
-on behalf of <strong>rollerd</strong>.  These arguments are described in the next section.</p>
-<p>Site-specific arguments and options may be passed to <strong>rp-wrapper</strong> and other
-phase commands through the <strong>dnssec-tools.conf</strong> file.  These arguments and
-options are passed <em>before</em> the standard arguments.  The <em>stdargs()</em>
-subroutine parses and validates the standard arguments from the command line.
-A subroutine, <em>siteargs()</em>, is called prior to <em>stdargs</em> in order to
-handle site-specific arguments.  The existing <em>siteargs()</em> is very simple
-and must be expanded as needed.</p>
-<p>
-</p>
-<hr />
-<h1><a name="standard_arguments">STANDARD ARGUMENTS</a></h1>
-<p>The <em>zonename</em> argument is the name of the zone under consideration.</p>
-<p>The <em>phase</em> argument tells <strong>rp-wrapper</strong> the rollover phase that the zone
-has just entered.  It may be one of the following values: <em>ksk1</em>, <em>ksk2</em>,
-<em>ksk3</em>, <em>ksk4</em>, <em>ksk5</em>, <em>ksk6</em>, <em>ksk7</em>, <em>zsk1</em>, <em>zsk2</em>, <em>ksk3</em>,
-<em>zsk4</em>, or <em>normal</em>,</p>
-<p>The <em>rollrec-name</em> argument is the name of the zone's <em>rollrec</em> record.</p>
-<p>The <em>rollrec-file</em> argument is the path to the <em>rollrec</em> file that is
-controlling the zone's rollover actions.  It may be absolute or relative.</p>
-<p>The <em>keyrec-file</em> argument is the path to the <em>keyrec</em> file that contains
-key information used in signing the zone's zonefile.  It may be absolute or
-relative.  This argument is optional; if it is not specified, then it will be
-derived by appending <strong>.krf</strong> to the zone's name and will be assumed to be in
-the directory in which <strong>rp-wrapper</strong> is executed.</p>
-<p>
-</p>
-<hr />
-<h1><a name="options">OPTIONS</a></h1>
-<p><strong>rp-wrapper</strong> takes the following options:</p>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<pre><code>  rp-wrapper [options] zonename phase rollrec-name rollrec-file [keyrec-file]</code></pre>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p><b>rp-wrapper</b> is a wrapper/example script for use as an installation-specific phase command to handle a particular rollover phase. This script is intended to be run by <b>rollerd</b>. These rollover phase commands may be executed in place of the normal rollover actions, or in addition to them.</p>
+
+<p>When executed by <b>rollerd</b>, <b>rp-wrapper</b> is given a standard set of arguments. It validates these arguments to ensure it can properly act on behalf of <b>rollerd</b>. These arguments are described in the next section.</p>
+
+<p>Site-specific arguments and options may be passed to <b>rp-wrapper</b> and other phase commands through the <b>dnssec-tools.conf</b> file. These arguments and options are passed <i>before</i> the standard arguments. The <i>stdargs()</i> subroutine parses and validates the standard arguments from the command line. A subroutine, <i>siteargs()</i>, is called prior to <i>stdargs</i> in order to handle site-specific arguments. The existing <i>siteargs()</i> is very simple and must be expanded as needed.</p>
+
+<h1 id="STANDARD-ARGUMENTS">STANDARD ARGUMENTS</h1>
+
+<p>The <i>zonename</i> argument is the name of the zone under consideration.</p>
+
+<p>The <i>phase</i> argument tells <b>rp-wrapper</b> the rollover phase that the zone has just entered. It may be one of the following values: <i>ksk1</i>, <i>ksk2</i>, <i>ksk3</i>, <i>ksk4</i>, <i>ksk5</i>, <i>ksk6</i>, <i>ksk7</i>, <i>zsk1</i>, <i>zsk2</i>, <i>ksk3</i>, <i>zsk4</i>, or <i>normal</i>,</p>
+
+<p>The <i>rollrec-name</i> argument is the name of the zone&#39;s <i>rollrec</i> record.</p>
+
+<p>The <i>rollrec-file</i> argument is the path to the <i>rollrec</i> file that is controlling the zone&#39;s rollover actions. It may be absolute or relative.</p>
+
+<p>The <i>keyrec-file</i> argument is the path to the <i>keyrec</i> file that contains key information used in signing the zone&#39;s zonefile. It may be absolute or relative. This argument is optional; if it is not specified, then it will be derived by appending <b>.krf</b> to the zone&#39;s name and will be assumed to be in the directory in which <b>rp-wrapper</b> is executed.</p>
+
+<h1 id="OPTIONS">OPTIONS</h1>
+
+<p><b>rp-wrapper</b> takes the following options:</p>
+
 <dl>
-<dt><strong><a name="quiet" class="item"><strong>-quiet</strong></a></strong></dt>
 
+<dt id="quiet"><b>-quiet</b></dt>
 <dd>
+
 <p>Does not give any output.</p>
-</dd>
-<dt><strong><a name="verbose" class="item"><strong>-verbose</strong></a></strong></dt>
 
+</dd>
+<dt id="verbose"><b>-verbose</b></dt>
 <dd>
+
 <p>Gives verbose output.</p>
-</dd>
-<dt><strong><a name="version" class="item"><strong>-Version</strong></a></strong></dt>
 
-<dd>
-<p>Displays the version information for <strong>rp-wrapper</strong> and the DNSSEC-Tools
-package and exits.</p>
 </dd>
-<dt><strong><a name="help" class="item"><strong>-help</strong></a></strong></dt>
-
+<dt id="Version"><b>-Version</b></dt>
 <dd>
+
+<p>Displays the version information for <b>rp-wrapper</b> and the DNSSEC-Tools package and exits.</p>
+
+</dd>
+<dt id="help"><b>-help</b></dt>
+<dd>
+
 <p>Displays a usage message and exits.</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<hr />
-<h1><a name="exit_codes">EXIT CODES</a></h1>
-<p><strong>rp-wrapper</strong> gives the following exit codes:</p>
-<p>- 0 - <strong>rollerd</strong> should move the zone to the next rollover phase.</p>
-<p>- 1 - <strong>rollerd</strong> should keep the zone in the same rollover phase.
-      This is not an error condition.  It may, for example, be the
-      result of needing to wait an extended time for an external
-      condition, and other zone rollovers should not be held up.</p>
-<p>- 2 - An error was found in the arguments given to <strong>rp-wrapper</strong>.</p>
+
+<h1 id="EXIT-CODES">EXIT CODES</h1>
+
+<p><b>rp-wrapper</b> gives the following exit codes:</p>
+
+<p>- 0 - <b>rollerd</b> should move the zone to the next rollover phase.</p>
+
+<p>- 1 - <b>rollerd</b> should keep the zone in the same rollover phase. This is not an error condition. It may, for example, be the result of needing to wait an extended time for an external condition, and other zone rollovers should not be held up.</p>
+
+<p>- 2 - An error was found in the arguments given to <b>rp-wrapper</b>.</p>
+
 <p>- 3 - An error was encountered during execution.</p>
-<p>
-</p>
-<hr />
-<h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2011-2013 SPARTA, Inc.  All rights reserved.
-See the COPYING file included with the DNSSEC-Tools package for details.</p>
-<p>
-</p>
-<hr />
-<h1><a name="author">AUTHOR</a></h1>
-<p>Wayne Morrison, <a href="mailto:tewok@tislabs.com">tewok@tislabs.com</a></p>
-<p>
-</p>
-<hr />
-<h1><a name="see_also">SEE ALSO</a></h1>
-<p><strong>rollerd(8)</strong>, <strong>zonesigner(8)</strong></p>
-<p><strong>Net::DNS::SEC::Tools::keyrec.pm(3)</strong>,
-<strong>Net::DNS::SEC::Tools::rollrec.pm(3)</strong>,</p>
-<p><strong>file-keyrec(5)</strong>,
-<strong>file-rollrec(5)</strong>,
-<strong>file-dnssec-tools.conf(5)</strong></p>
+
+<h1 id="COPYRIGHT">COPYRIGHT</h1>
+
+<p>Copyright 2011-2014 SPARTA, Inc. All rights reserved. See the COPYING file included with the DNSSEC-Tools package for details.</p>
+
+<h1 id="AUTHOR">AUTHOR</h1>
+
+<p>Wayne Morrison, tewok@tislabs.com</p>
+
+<h1 id="SEE-ALSO">SEE ALSO</h1>
+
+<p><b>rollerd(8)</b>, <b>zonesigner(8)</b></p>
+
+<p><b>Net::DNS::SEC::Tools::keyrec.pm(3)</b>, <b>Net::DNS::SEC::Tools::rollrec.pm(3)</b>,</p>
+
+<p><b>file-keyrec(5)</b>, <b>file-rollrec(5)</b>, <b>file-dnssec-tools.conf(5)</b></p>
+
 
 </body>
 
 </html>
+
+

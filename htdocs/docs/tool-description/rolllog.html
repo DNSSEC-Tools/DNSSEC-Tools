@@ -2,8 +2,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>rolllog - DNSSEC-Tools utility to write messages to the DNSSEC rollover
-log file</title>
+<title></title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
@@ -11,88 +10,72 @@ log file</title>
 <body style="background-color: white">
 
 
-<!-- INDEX BEGIN -->
-<div name="index">
-<p><a name="__index__"></a></p>
 
-<ul>
-
-	<li><a href="#name">NAME</a></li>
-	<li><a href="#synopsis">SYNOPSIS</a></li>
-	<li><a href="#description">DESCRIPTION</a></li>
-	<li><a href="#options">OPTIONS</a></li>
-	<li><a href="#copyright">COPYRIGHT</a></li>
-	<li><a href="#author">AUTHOR</a></li>
-	<li><a href="#see_also">SEE ALSO</a></li>
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
+  <li><a href="#OPTIONS">OPTIONS</a></li>
+  <li><a href="#COPYRIGHT">COPYRIGHT</a></li>
+  <li><a href="#AUTHOR">AUTHOR</a></li>
+  <li><a href="#SEE-ALSO">SEE ALSO</a></li>
 </ul>
 
-<hr name="index" />
-</div>
-<!-- INDEX END -->
+<h1 id="NAME">NAME</h1>
 
-<p>
-</p>
-<hr />
-<h1><a name="name">NAME</a></h1>
-<p>rolllog - DNSSEC-Tools utility to write messages to the DNSSEC rollover
-log file</p>
-<p>
-</p>
-<hr />
-<h1><a name="synopsis">SYNOPSIS</a></h1>
-<pre>
-  rolllog -loglevel &lt;level&gt; &lt;log_message&gt;</pre>
-<p>
-</p>
-<hr />
-<h1><a name="description">DESCRIPTION</a></h1>
-<p>The <strong>rolllog</strong> program writes log messages to the DNSSEC rollover log file.
-<strong>rolllog</strong> does not actually write the messages itself; rather, it sends them
-to the <strong>rollerd</strong> rollover daemon to write the messages.  <strong>rollerd</strong> keeps
-track of a logging level, and only messages of that level or higher are
-written to the log file.</p>
-<p>
-</p>
-<hr />
-<h1><a name="options">OPTIONS</a></h1>
+<p>rolllog - DNSSEC-Tools utility to write messages to the DNSSEC rollover log file</p>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<pre><code>  rolllog -loglevel &lt;level&gt; &lt;log_message&gt;</code></pre>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p>The <b>rolllog</b> program writes log messages to the DNSSEC rollover log file. <b>rolllog</b> does not actually write the messages itself; rather, it sends them to the <b>rollerd</b> rollover daemon to write the messages. <b>rollerd</b> keeps track of a logging level, and only messages of that level or higher are written to the log file.</p>
+
+<h1 id="OPTIONS">OPTIONS</h1>
+
 <p>The following options are recognized:</p>
+
 <dl>
-<dt><strong><a name="loglevel_level" class="item"><strong>-loglevel level</strong></a></strong></dt>
 
+<dt id="loglevel-level"><b>-loglevel level</b></dt>
 <dd>
-<p>Logging level of this message.  The valid levels are defined in
-<strong>rollmgr.pm</strong>(3).   This option is required.</p>
+
+<p>Logging level of this message. The valid levels are defined in <b>rollmgr.pm</b>(3). This option is required.</p>
+
 </dd>
-<dt><strong><a name="help" class="item"><strong>-help</strong></a></strong></dt>
-
+<dt id="help"><b>-help</b></dt>
 <dd>
+
 <p>Display a usage message.</p>
-</dd>
-<dt><strong><a name="version" class="item"><strong>-Version</strong></a></strong></dt>
 
+</dd>
+<dt id="Version"><b>-Version</b></dt>
 <dd>
-<p>Displays the version information for <strong>rolllog</strong> and the DNSSEC-Tools package.</p>
+
+<p>Displays the version information for <b>rolllog</b> and the DNSSEC-Tools package.</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<hr />
-<h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2006-2013 SPARTA, Inc.  All rights reserved.
-See the COPYING file included with the DNSSEC-Tools package for details.</p>
-<p>
-</p>
-<hr />
-<h1><a name="author">AUTHOR</a></h1>
-<p>Wayne Morrison, <a href="mailto:tewok@tislabs.com">tewok@tislabs.com</a></p>
-<p>
-</p>
-<hr />
-<h1><a name="see_also">SEE ALSO</a></h1>
-<p><strong>rollctl(8)</strong>,
-<strong>rollerd(8)</strong></p>
-<p><strong>Net::DNS::SEC::Tools::rollmgr.pm(3)</strong></p>
+
+<h1 id="COPYRIGHT">COPYRIGHT</h1>
+
+<p>Copyright 2006-2014 SPARTA, Inc. All rights reserved. See the COPYING file included with the DNSSEC-Tools package for details.</p>
+
+<h1 id="AUTHOR">AUTHOR</h1>
+
+<p>Wayne Morrison, tewok@tislabs.com</p>
+
+<h1 id="SEE-ALSO">SEE ALSO</h1>
+
+<p><b>rollctl(8)</b>, <b>rollerd(8)</b></p>
+
+<p><b>Net::DNS::SEC::Tools::rollmgr.pm(3)</b></p>
+
 
 </body>
 
 </html>
+
+

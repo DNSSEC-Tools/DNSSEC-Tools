@@ -2,7 +2,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>lsrealm - List the I&lt;realm&gt;s in a DNSSEC-Tools I&lt;realm&gt; file</title>
+<title></title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
@@ -10,64 +10,44 @@
 <body style="background-color: white">
 
 
-<!-- INDEX BEGIN -->
-<div name="index">
-<p><a name="__index__"></a></p>
 
-<ul>
-
-	<li><a href="#name">NAME</a></li>
-	<li><a href="#synopsis">SYNOPSIS</a></li>
-	<li><a href="#description">DESCRIPTION</a></li>
-	<li><a href="#options">OPTIONS</a></li>
-	<ul>
-
-		<li><a href="#record_selection_options">Record-selection Options</a></li>
-		<li><a href="#attribute_selection_options">Attribute-selection Options</a></li>
-		<li><a href="#output_format_options">Output-format Options</a></li>
-	</ul>
-
-	<li><a href="#copyright">COPYRIGHT</a></li>
-	<li><a href="#author">AUTHOR</a></li>
-	<li><a href="#see_also">SEE ALSO</a></li>
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
+  <li><a href="#OPTIONS">OPTIONS</a>
+    <ul>
+      <li><a href="#Record-selection-Options">Record-selection Options</a></li>
+      <li><a href="#Attribute-selection-Options">Attribute-selection Options</a></li>
+      <li><a href="#Output-format-Options">Output-format Options</a></li>
+    </ul>
+  </li>
+  <li><a href="#COPYRIGHT">COPYRIGHT</a></li>
+  <li><a href="#AUTHOR">AUTHOR</a></li>
+  <li><a href="#SEE-ALSO">SEE ALSO</a></li>
 </ul>
 
-<hr name="index" />
-</div>
-<!-- INDEX END -->
+<h1 id="NAME">NAME</h1>
 
-<p>
-</p>
-<hr />
-<h1><a name="name">NAME</a></h1>
-<p>lsrealm - List the <em>realm</em>s in a DNSSEC-Tools <em>realm</em> file</p>
-<p>
-</p>
-<hr />
-<h1><a name="synopsis">SYNOPSIS</a></h1>
-<pre>
-  lsrealm [options] &lt;realm-files&gt;</pre>
-<p>
-</p>
-<hr />
-<h1><a name="description">DESCRIPTION</a></h1>
-<p>This script lists the contents of the specified <em>realm</em> files.  All <em>realm</em>
-files are loaded before the output is displayed.  If any <em>realm</em>s have
-duplicated names, whether within one file or across multiple files, the later
-<em>realm</em> will be the one whose data are displayed.</p>
-<p>The output displayed for each realm in a <em>realm</em> file depends on the selected
-records, the selected attributes, and the selected output format.  Each option
-in these option groups is described in detail in the next section.  The three
-base output formats are described here.</p>
-<p>The <strong>-terse</strong> option indicates that a minimal amount of output is desired; the
-<strong>-long</strong> option indicates that a great deal of output is desired.  The
-record-selection and attribute-selection options may be used in conjunction
-with <strong>-terse</strong> to display exactly the set of <em>realm</em> fields needed.</p>
-<p>The default output format is that used when neither <strong>-terse</strong> nor <strong>-long</strong> is
-given, and is a middle ground between terse and long output.</p>
+<p>lsrealm - List the <i>realm</i>s in a DNSSEC-Tools <i>realm</i> file</p>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<pre><code>  lsrealm [options] &lt;realm-files&gt;</code></pre>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p>This script lists the contents of the specified <i>realm</i> files. All <i>realm</i> files are loaded before the output is displayed. If any <i>realm</i>s have duplicated names, whether within one file or across multiple files, the later <i>realm</i> will be the one whose data are displayed.</p>
+
+<p>The output displayed for each realm in a <i>realm</i> file depends on the selected records, the selected attributes, and the selected output format. Each option in these option groups is described in detail in the next section. The three base output formats are described here.</p>
+
+<p>The <b>-terse</b> option indicates that a minimal amount of output is desired; the <b>-long</b> option indicates that a great deal of output is desired. The record-selection and attribute-selection options may be used in conjunction with <b>-terse</b> to display exactly the set of <i>realm</i> fields needed.</p>
+
+<p>The default output format is that used when neither <b>-terse</b> nor <b>-long</b> is given, and is a middle ground between terse and long output.</p>
+
 <p>The table below shows the fields displayed for each output format.</p>
-<pre>
-    realm field          default        terse        long
+
+<pre><code>    realm field          default        terse        long
     -------------        -------        -----        ----
     realm name             yes           yes         yes
     state                  yes           no          yes
@@ -79,162 +59,165 @@ given, and is a middle ground between terse and long output.</p>
     display flag           no            no          yes
     manager                no            no          yes
     manager arguments      no            no          yes
-    user                   no            no          yes</pre>
-<p>
-</p>
-<hr />
-<h1><a name="options">OPTIONS</a></h1>
-<p>There are three types of options recognized by <strong>lsrealm</strong>:  record-selection
-options, attribute-selection options, and output-format options.  Each type
-is described in the subsections below.</p>
-<p>
-</p>
-<h2><a name="record_selection_options">Record-selection Options</a></h2>
-<p>These options select the records that will be displayed by <strong>lsrealm</strong>.
-By default, all records will be displayed; selecting one or the other of
-these options will restrict the records shown.</p>
+    user                   no            no          yes</code></pre>
+
+<h1 id="OPTIONS">OPTIONS</h1>
+
+<p>There are three types of options recognized by <b>lsrealm</b>: record-selection options, attribute-selection options, and output-format options. Each type is described in the subsections below.</p>
+
+<h2 id="Record-selection-Options">Record-selection Options</h2>
+
+<p>These options select the records that will be displayed by <b>lsrealm</b>. By default, all records will be displayed; selecting one or the other of these options will restrict the records shown.</p>
+
 <p>These options are mutually exclusive.</p>
+
 <dl>
-<dt><strong><a name="active" class="item"><strong>-active</strong></a></strong></dt>
 
+<dt id="active"><b>-active</b></dt>
 <dd>
-<p>List all active records in the <em>realm</em> file.</p>
+
+<p>List all active records in the <i>realm</i> file.</p>
+
 </dd>
-<dt><strong><a name="inactive" class="item"><strong>-inactive</strong></a></strong></dt>
-
+<dt id="inactive"><b>-inactive</b></dt>
 <dd>
-<p>List all inactive records in the <em>realm</em> file.</p>
+
+<p>List all inactive records in the <i>realm</i> file.</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<h2><a name="attribute_selection_options">Attribute-selection Options</a></h2>
-<p>These options select the attributes of the records that will be displayed
-by <strong>lsrealm</strong>.</p>
+
+<h2 id="Attribute-selection-Options">Attribute-selection Options</h2>
+
+<p>These options select the attributes of the records that will be displayed by <b>lsrealm</b>.</p>
+
 <dl>
-<dt><strong><a name="admin" class="item"><strong>-admin</strong></a></strong></dt>
 
+<dt id="admin"><b>-admin</b></dt>
 <dd>
-<p>The record's administrator value is included in the output.
-If an administrator value is not included in a <em>realm</em>, then the value
-&quot;(defadmin)&quot; will be given.</p>
+
+<p>The record&#39;s administrator value is included in the output. If an administrator value is not included in a <i>realm</i>, then the value &quot;(defadmin)&quot; will be given.</p>
+
 </dd>
-<dt><strong><a name="args" class="item"><strong>-args</strong></a></strong></dt>
-
+<dt id="args"><b>-args</b></dt>
 <dd>
-<p>The record's user-defined arguments for the realm's rollover manager.</p>
+
+<p>The record&#39;s user-defined arguments for the realm&#39;s rollover manager.</p>
+
 </dd>
-<dt><strong><a name="configdir" class="item"><strong>-configdir</strong></a></strong></dt>
-
+<dt id="configdir"><b>-configdir</b></dt>
 <dd>
-<p>The record's configuration directory is included in the output.
-This value will be the filename only, unless the <strong>-fullpaths</strong> option
-is given.  In that case, the full pathname will be printed.</p>
+
+<p>The record&#39;s configuration directory is included in the output. This value will be the filename only, unless the <b>-fullpaths</b> option is given. In that case, the full pathname will be printed.</p>
+
 </dd>
-<dt><strong><a name="display" class="item"><strong>-display</strong></a></strong></dt>
-
+<dt id="display"><b>-display</b></dt>
 <dd>
-<p>The record's display flag, used by <strong>grandvizier</strong> is included in the output.</p>
+
+<p>The record&#39;s display flag, used by <b>grandvizier</b> is included in the output.</p>
+
 </dd>
-<dt><strong><a name="manager" class="item"><strong>-manager</strong></a></strong></dt>
-
+<dt id="manager"><b>-manager</b></dt>
 <dd>
-<p>The record's manager field, indicating which rollover manager is used for the
-realm..  The default is <strong>rollerd</strong>, but individual installations may use other
-managers.</p>
+
+<p>The record&#39;s manager field, indicating which rollover manager is used for the realm.. The default is <b>rollerd</b>, but individual installations may use other managers.</p>
+
 </dd>
-<dt><strong><a name="realmdir" class="item"><strong>-realmdir</strong></a></strong></dt>
-
+<dt id="realmdir"><b>-realmdir</b></dt>
 <dd>
-<p>The record's realm directory is included in the output.
-This value will be the filename only, unless the <strong>-fullpaths</strong> option
-is given.  In that case, the full pathname will be printed.</p>
+
+<p>The record&#39;s realm directory is included in the output. This value will be the filename only, unless the <b>-fullpaths</b> option is given. In that case, the full pathname will be printed.</p>
+
 </dd>
-<dt><strong><a name="rollrec" class="item"><strong>-rollrec</strong></a></strong></dt>
-
+<dt id="rollrec"><b>-rollrec</b></dt>
 <dd>
-<p>The record's <em>rollrec</em> file is included in the output.
-This value will be the filename only, unless the <strong>-fullpaths</strong> option
-is given.  In that case, the full pathname will be printed.</p>
+
+<p>The record&#39;s <i>rollrec</i> file is included in the output. This value will be the filename only, unless the <b>-fullpaths</b> option is given. In that case, the full pathname will be printed.</p>
+
 </dd>
-<dt><strong><a name="state" class="item"><strong>-state</strong></a></strong></dt>
-
+<dt id="state"><b>-state</b></dt>
 <dd>
-<p>Include each <em>realm</em> record's state in the output.  The state will be
-either &quot;active&quot; or &quot;inactive&quot;.
-This field is part of the default output.</p>
+
+<p>Include each <i>realm</i> record&#39;s state in the output. The state will be either &quot;active&quot; or &quot;inactive&quot;. This field is part of the default output.</p>
+
 </dd>
-<dt><strong><a name="user" class="item"><strong>-user</strong></a></strong></dt>
-
+<dt id="user"><b>-user</b></dt>
 <dd>
-<p>The record's user field, which is the user the realm's manager will be
-executed with.  <em>This field is not yet implemented.</em></p>
+
+<p>The record&#39;s user field, which is the user the realm&#39;s manager will be executed with. <i>This field is not yet implemented.</i></p>
+
 </dd>
 </dl>
-<p>
-</p>
-<h2><a name="output_format_options">Output-format Options</a></h2>
-<p>These options select the type of output that will be given by <em>lsrealm</em>.</p>
+
+<h2 id="Output-format-Options">Output-format Options</h2>
+
+<p>These options select the type of output that will be given by <i>lsrealm</i>.</p>
+
 <dl>
-<dt><strong><a name="count" class="item"><strong>-count</strong></a></strong></dt>
 
+<dt id="count"><b>-count</b></dt>
 <dd>
-<p>Only a count of matching realms in the <em>realm</em> file is given.</p>
+
+<p>Only a count of matching realms in the <i>realm</i> file is given.</p>
+
 </dd>
-<dt><strong><a name="fullpaths" class="item"><strong>-fullpaths</strong></a></strong></dt>
-
+<dt id="fullpaths"><b>-fullpaths</b></dt>
 <dd>
-<p>Display pathname data as the full pathname given in the realm file.
-If this option is not specified, only the filename itself will be displayed.</p>
+
+<p>Display pathname data as the full pathname given in the realm file. If this option is not specified, only the filename itself will be displayed.</p>
+
 </dd>
-<dt><strong><a name="headers" class="item"><strong>-headers</strong></a></strong></dt>
-
+<dt id="headers"><b>-headers</b></dt>
 <dd>
+
 <p>Display explanatory column headers.</p>
-</dd>
-<dt><strong><a name="terse" class="item"><strong>-terse</strong></a></strong></dt>
 
-<dd>
-<p>Terse output is given.  Only the record name and any other fields specifically
-selected are included in the output.</p>
 </dd>
-<dt><strong><a name="long" class="item"><strong>-long</strong></a></strong></dt>
-
+<dt id="terse"><b>-terse</b></dt>
 <dd>
-<p>Long output is given.  All record fields are included.</p>
+
+<p>Terse output is given. Only the record name and any other fields specifically selected are included in the output.</p>
+
 </dd>
-<dt><strong><a name="help" class="item"><strong>-help</strong></a></strong></dt>
-
+<dt id="long"><b>-long</b></dt>
 <dd>
+
+<p>Long output is given. All record fields are included.</p>
+
+</dd>
+<dt id="help"><b>-help</b></dt>
+<dd>
+
 <p>Display a usage message.</p>
-</dd>
-<dt><strong><a name="version" class="item"><strong>-Version</strong></a></strong></dt>
 
+</dd>
+<dt id="Version"><b>-Version</b></dt>
 <dd>
-<p>Displays the version information for <strong>lsrealm</strong> and the DNSSEC-Tools package.</p>
+
+<p>Displays the version information for <b>lsrealm</b> and the DNSSEC-Tools package.</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<hr />
-<h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2012-2013 SPARTA, Inc.  All rights reserved.
-See the COPYING file included with the DNSSEC-Tools package for details.</p>
-<p>
-</p>
-<hr />
-<h1><a name="author">AUTHOR</a></h1>
-<p>Wayne Morrison, <a href="mailto:tewok@tislabs.com">tewok@tislabs.com</a></p>
-<p>
-</p>
-<hr />
-<h1><a name="see_also">SEE ALSO</a></h1>
-<p><strong>dtrealms(8)</strong>,
-<strong>grandvizier(8)</strong>,
-<strong>realminit(8)</strong></p>
-<p><strong>Net::DNS::SEC::Tools::realm.pm(3)</strong></p>
-<p><strong>file-realm(5)</strong></p>
+
+<h1 id="COPYRIGHT">COPYRIGHT</h1>
+
+<p>Copyright 2012-2014 SPARTA, Inc. All rights reserved. See the COPYING file included with the DNSSEC-Tools package for details.</p>
+
+<h1 id="AUTHOR">AUTHOR</h1>
+
+<p>Wayne Morrison, tewok@tislabs.com</p>
+
+<h1 id="SEE-ALSO">SEE ALSO</h1>
+
+<p><b>dtrealms(8)</b>, <b>grandvizier(8)</b>, <b>realminit(8)</b></p>
+
+<p><b>Net::DNS::SEC::Tools::realm.pm(3)</b></p>
+
+<p><b>file-realm(5)</b></p>
+
 
 </body>
 
 </html>
+
+

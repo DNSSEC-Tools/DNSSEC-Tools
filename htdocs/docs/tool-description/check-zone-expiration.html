@@ -2,7 +2,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>check-zone-expiration - displays how long until a zone's records expire</title>
+<title></title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
@@ -10,79 +10,64 @@
 <body style="background-color: white">
 
 
-<!-- INDEX BEGIN -->
-<div name="index">
-<p><a name="__index__"></a></p>
 
-<ul>
-
-	<li><a href="#name">NAME</a></li>
-	<li><a href="#synopsis">SYNOPSIS</a></li>
-	<li><a href="#description">DESCRIPTION</a></li>
-	<li><a href="#options">OPTIONS</a></li>
-	<li><a href="#copyright">COPYRIGHT</a></li>
-	<li><a href="#author">AUTHOR</a></li>
-	<li><a href="#see_also">SEE ALSO</a></li>
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
+  <li><a href="#OPTIONS">OPTIONS</a></li>
+  <li><a href="#COPYRIGHT">COPYRIGHT</a></li>
+  <li><a href="#AUTHOR">AUTHOR</a></li>
+  <li><a href="#SEE-ALSO">SEE ALSO</a></li>
 </ul>
 
-<hr name="index" />
-</div>
-<!-- INDEX END -->
+<h1 id="NAME">NAME</h1>
 
-<p>
-</p>
-<hr />
-<h1><a name="name">NAME</a></h1>
-<p>check-zone-expiration - displays how long until a zone's records expire</p>
-<p>
-</p>
-<hr />
-<h1><a name="synopsis">SYNOPSIS</a></h1>
-<p># check-zone-expiration dnssec-tools.org paypal.com
-dnssec-tools.org    will expire in 26 days, 2 hours, 16 minutes, 36 seconds
-paypal.com          will expire in 12 days, 17 hours, 7 minutes, 1 second</p>
-<p># check-zone-expiration -m 1123200 dnssec-tools.org paypal.com 
-paypal.com          will expire in 12 days, 17 hours, 6 minutes, 22 seconds</p>
-<p>
-</p>
-<hr />
-<h1><a name="description">DESCRIPTION</a></h1>
-<p>The check-zone-exiration script reports how long until a zone will
-expire by querying for the zone's (top level) RRSIG and calculating
-how much time is left before the signatures will no longer be valid.
-It will then report how much time is left in human readable form.</p>
-<p>If the -m switch is provided with a time argument (in seconds), it
-will only print output for zones that have less than that time left.</p>
-<p>
-</p>
-<hr />
-<h1><a name="options">OPTIONS</a></h1>
+<p>check-zone-expiration - displays how long until a zone&#39;s records expire</p>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<p># check-zone-expiration dnssec-tools.org paypal.com dnssec-tools.org will expire in 26 days, 2 hours, 16 minutes, 36 seconds paypal.com will expire in 12 days, 17 hours, 7 minutes, 1 second</p>
+
+<p># check-zone-expiration -m 1123200 dnssec-tools.org paypal.com paypal.com will expire in 12 days, 17 hours, 6 minutes, 22 seconds</p>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p>The check-zone-exiration script reports how long until a zone will expire by querying for the zone&#39;s (top level) RRSIG and calculating how much time is left before the signatures will no longer be valid. It will then report how much time is left in human readable form.</p>
+
+<p>If the -m switch is provided with a time argument (in seconds), it will only print output for zones that have less than that time left.</p>
+
+<h1 id="OPTIONS">OPTIONS</h1>
+
 <dl>
-<dt><strong><a name="m_string" class="item">-m STRING</a></strong></dt>
 
-<dt><strong><a name="minimum_reporting_string" class="item">--minimum-reporting=STRING</a></strong></dt>
-
+<dt id="m-STRING">-m STRING</dt>
 <dd>
+
+</dd>
+<dt id="minimum-reporting-STRING">--minimum-reporting=STRING</dt>
+<dd>
+
 <p>Minimum reporting time, or else be silent for the zone</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<hr />
-<h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2012-2013 SPARTA, Inc.  All rights reserved.
-See the COPYING file included with the DNSSEC-Tools package for details.</p>
-<p>
-</p>
-<hr />
-<h1><a name="author">AUTHOR</a></h1>
-<p>Wes Hardaker, <a href="mailto:hardaker@tislabs.com">hardaker@tislabs.com</a></p>
-<p>
-</p>
-<hr />
-<h1><a name="see_also">SEE ALSO</a></h1>
-<p><strong>donuts(1)</strong></p>
+
+<h1 id="COPYRIGHT">COPYRIGHT</h1>
+
+<p>Copyright 2012-2014 SPARTA, Inc. All rights reserved. See the COPYING file included with the DNSSEC-Tools package for details.</p>
+
+<h1 id="AUTHOR">AUTHOR</h1>
+
+<p>Wes Hardaker, hardaker@tislabs.com</p>
+
+<h1 id="SEE-ALSO">SEE ALSO</h1>
+
+<p><b>donuts(1)</b></p>
+
 
 </body>
 
 </html>
+
+

@@ -2,7 +2,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>tachk - Check the validity of the trust anchors in a B&lt;named.conf&gt; file</title>
+<title></title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
@@ -10,119 +10,112 @@
 <body style="background-color: white">
 
 
-<!-- INDEX BEGIN -->
-<div name="index">
-<p><a name="__index__"></a></p>
 
-<ul>
-
-	<li><a href="#name">NAME</a></li>
-	<li><a href="#synopsis">SYNOPSIS</a></li>
-	<li><a href="#description">DESCRIPTION</a></li>
-	<li><a href="#options">OPTIONS</a></li>
-	<ul>
-
-		<li><a href="#record_attribute_options">Record-Attribute Options</a></li>
-		<li><a href="#output_format_options">Output-Format Options</a></li>
-	</ul>
-
-	<li><a href="#author">AUTHOR</a></li>
-	<li><a href="#see_also">SEE ALSO</a></li>
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
+  <li><a href="#OPTIONS">OPTIONS</a>
+    <ul>
+      <li><a href="#Record-Attribute-Options">Record-Attribute Options</a></li>
+      <li><a href="#Output-Format-Options">Output-Format Options</a></li>
+    </ul>
+  </li>
+  <li><a href="#AUTHOR">AUTHOR</a></li>
+  <li><a href="#SEE-ALSO">SEE ALSO</a></li>
 </ul>
 
-<hr name="index" />
-</div>
-<!-- INDEX END -->
+<h1 id="NAME">NAME</h1>
 
-<p>
-</p>
-<hr />
-<h1><a name="name">NAME</a></h1>
-<p>tachk - Check the validity of the trust anchors in a <strong>named.conf</strong> file</p>
-<p>
-</p>
-<hr />
-<h1><a name="synopsis">SYNOPSIS</a></h1>
-<pre>
-  tachk [options] &lt;named.conf&gt;</pre>
-<p>
-</p>
-<hr />
-<h1><a name="description">DESCRIPTION</a></h1>
-<p><strong>tachk</strong> checks the validity of the trust anchors in the specified
-<strong>named.conf</strong> file.  The output given depends on the options selected.</p>
-<p>Note:  This script may be removed in future releases.</p>
-<p>
-</p>
-<hr />
-<h1><a name="options">OPTIONS</a></h1>
-<p><strong>tachk</strong> takes two types of options:  record-attribute options
-and output-style options.  These option sets are detailed below.</p>
-<p>
-</p>
-<h2><a name="record_attribute_options">Record-Attribute Options</a></h2>
+<p>tachk - Check the validity of the trust anchors in a <b>named.conf</b> file</p>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<pre><code>  tachk [options] &lt;named.conf&gt;</code></pre>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p><b>tachk</b> checks the validity of the trust anchors in the specified <b>named.conf</b> file. The output given depends on the options selected.</p>
+
+<p>Note: This script may be removed in future releases.</p>
+
+<h1 id="OPTIONS">OPTIONS</h1>
+
+<p><b>tachk</b> takes two types of options: record-attribute options and output-style options. These option sets are detailed below.</p>
+
+<h2 id="Record-Attribute-Options">Record-Attribute Options</h2>
+
 <p>These options define which trust anchor records will be displayed.</p>
+
 <dl>
-<dt><strong><a name="valid" class="item"><strong>-valid</strong></a></strong></dt>
 
+<dt id="valid"><b>-valid</b></dt>
 <dd>
-<p>This option displays the valid trust anchors in a <strong>named.conf</strong> file.</p>
+
+<p>This option displays the valid trust anchors in a <b>named.conf</b> file.</p>
+
 </dd>
-<dt><strong><a name="invalid" class="item"><strong>-invalid</strong></a></strong></dt>
-
+<dt id="invalid"><b>-invalid</b></dt>
 <dd>
-<p>This option displays the invalid trust anchors in a <strong>named.conf</strong> file.</p>
+
+<p>This option displays the invalid trust anchors in a <b>named.conf</b> file.</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<h2><a name="output_format_options">Output-Format Options</a></h2>
-<p>These options define how the trust anchor information will be displayed.
-Without any of these options, the zone name and key tag will be displayed
-for each trust anchor.</p>
+
+<h2 id="Output-Format-Options">Output-Format Options</h2>
+
+<p>These options define how the trust anchor information will be displayed. Without any of these options, the zone name and key tag will be displayed for each trust anchor.</p>
+
 <dl>
-<dt><strong><a name="count" class="item"><strong>-count</strong></a></strong></dt>
 
+<dt id="count"><b>-count</b></dt>
 <dd>
-<p>The count of matching records will be displayed, but the matching records
-will not be.</p>
+
+<p>The count of matching records will be displayed, but the matching records will not be.</p>
+
 </dd>
-<dt><strong><a name="long" class="item"><strong>-long</strong></a></strong></dt>
-
+<dt id="long"><b>-long</b></dt>
 <dd>
-<p>The long form of output will be given.  The zone name and key tag will be
-displayed for each trust anchor.</p>
+
+<p>The long form of output will be given. The zone name and key tag will be displayed for each trust anchor.</p>
+
 </dd>
-<dt><strong><a name="terse" class="item"><strong>-terse</strong></a></strong></dt>
-
+<dt id="terse"><b>-terse</b></dt>
 <dd>
+
 <p>This option displays only the name of the zones selected by other options.</p>
-</dd>
-<dt><strong><a name="version" class="item"><strong>-Version</strong></a></strong></dt>
 
-<dd>
-<p>Displays the version information for <strong>tachk</strong> and the DNSSEC-Tools package.</p>
 </dd>
-<dt><strong><a name="help" class="item"><strong>-help</strong></a></strong></dt>
-
+<dt id="Version"><b>-Version</b></dt>
 <dd>
+
+<p>Displays the version information for <b>tachk</b> and the DNSSEC-Tools package.</p>
+
+</dd>
+<dt id="help"><b>-help</b></dt>
+<dd>
+
 <p>Display a usage message.</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<hr />
-<h1><a name="author">AUTHOR</a></h1>
+
+<h1 id="AUTHOR">AUTHOR</h1>
+
 <p>Wesley Griffin</p>
-<p>(Current contact for <strong>tachk</strong> is Wayne Morrison,
-<a href="mailto:tewok@tislabs.com.)">tewok@tislabs.com.)</a></p>
-<p>
-</p>
-<hr />
-<h1><a name="see_also">SEE ALSO</a></h1>
-<p><strong>trustman(8)</strong></p>
-<p><strong>named.conf(5)</strong></p>
+
+<p>(Current contact for <b>tachk</b> is Wayne Morrison, tewok@tislabs.com.)</p>
+
+<h1 id="SEE-ALSO">SEE ALSO</h1>
+
+<p><b>trustman(8)</b></p>
+
+<p><b>named.conf(5)</b></p>
+
 
 </body>
 
 </html>
+
+

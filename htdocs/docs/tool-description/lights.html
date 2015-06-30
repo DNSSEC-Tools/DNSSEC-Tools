@@ -2,7 +2,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>lights - DNSSEC-Tools Rollover Overview GUI Display</title>
+<title></title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
@@ -10,154 +10,127 @@
 <body style="background-color: white">
 
 
-<!-- INDEX BEGIN -->
-<div name="index">
-<p><a name="__index__"></a></p>
+
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
+  <li><a href="#OPTIONS">OPTIONS</a></li>
+  <li><a href="#REQUIREMENTS">REQUIREMENTS</a></li>
+  <li><a href="#KNOWN-ISSUES">KNOWN ISSUES</a></li>
+  <li><a href="#COPYRIGHT">COPYRIGHT</a></li>
+  <li><a href="#AUTHOR">AUTHOR</a></li>
+  <li><a href="#SEE-ALSO">SEE ALSO</a></li>
+</ul>
+
+<h1 id="NAME">NAME</h1>
+
+<p>lights - DNSSEC-Tools Rollover Overview GUI Display</p>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<pre><code>  lights [options]</code></pre>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p><b>lights</b> gives a very simple overview of the rollover status of a set of zones. The rollover status counts are given in a &quot;traffic light&quot; display. In contrast, <b>blinkenlights</b> gives a detailed display of the roll status of a set of zones. <b>lights</b> gives very little control over <b>rollerd</b>, the way <b>blinkenlights</b> does. <b>lights</b> can halt <b>rollerd</b>&#39;s execution only.</p>
+
+<p>The rollover status is retrieved in one of two ways. By default, <b>rollerd</b> is contacted via the <b>rollctl</b> command. Alternately, if the <b>-rrf</b> option is given, then zone status is read directly from a <b>rollrec</b> file. The default method gets the status directly from <b>rollerd</b> and the user need not know the location of the relevant <b>rollrec</b> file. However, that method will not get zone status until <b>rollerd</b> is available to respond to the information request. Consequently, the alternate method allows <b>lights</b> to bypass communicating with <b>rollerd</b> and not having to wait for <b>rollerd</b> to be available.</p>
+
+<p>A window is created that has three colored sections - green, yellow, and red. The green section displays a count of those zones that are in &quot;normal&quot; status; that is, they are not in rollover. The yellow section displays a count of those zones that are in rollover. The red section displays a count of those zones that are in need of attention. A common cause for this last state is because a zone is in phase 5 of KSK rollover and is waiting for its parent zone to publish the child&#39;s new DS record.</p>
+
+<p>Clicking on the color rows in the main window will bring up a dialog box that lists the zones in that state. This list will not automatically update as zones change rollover state.</p>
+
+<h1 id="OPTIONS">OPTIONS</h1>
+
+<p><b>lights</b> supports the following options.</p>
+
+<dl>
+
+<dt id="interval-wait-time"><b>-interval wait-time</b></dt>
+<dd>
+
+<p>Interval between checks of zone rollover status By default, <i>wait-time</i> is given in minutes. This can be adjusted by specifying one of the following time-unit suffixes.</p>
+
+<p>* s - seconds</p>
+
+<p>* m - minutes</p>
+
+<p>* h - hours</p>
+
+<p>Examples:</p>
+
+<p>* <i>-interval 24</i> - 24 minutes</p>
+
+<p>* <i>-interval 24s</i> - 24 seconds</p>
+
+<p>* <i>-interval 24m</i> - 24 minutes</p>
+
+<p>* <i>-interval 24h</i> - 24 hours</p>
+
+</dd>
+<dt id="rrf-rollrec-file"><b>-rrf rollrec-file</b></dt>
+<dd>
+
+<p>A <b>rollrec</b> file to be read for zone status.</p>
+
+</dd>
+<dt id="labels"><b>-labels</b></dt>
+<dd>
+
+<p>Labels will be given for each color field in the GUI.</p>
+
+</dd>
+<dt id="verbose"><b>-verbose</b></dt>
+<dd>
+
+<p>Give verbose output.</p>
+
+</dd>
+<dt id="help"><b>-help</b></dt>
+<dd>
+
+<p>Give a usage message and exit.</p>
+
+</dd>
+<dt id="Version"><b>-Version</b></dt>
+<dd>
+
+<p>Displays the version information for <b>lights</b> and the DNSSEC-Tools package.</p>
+
+</dd>
+</dl>
+
+<h1 id="REQUIREMENTS">REQUIREMENTS</h1>
+
+<p><b>lights</b> is implemented in Perl/Tk, so both Perl and Perl/Tk must be installed on your system.</p>
+
+<h1 id="KNOWN-ISSUES">KNOWN ISSUES</h1>
+
+<p>The following are known issues. These will be resolved in the fullness of time.</p>
 
 <ul>
 
-	<li><a href="#name">NAME</a></li>
-	<li><a href="#synopsis">SYNOPSIS</a></li>
-	<li><a href="#description">DESCRIPTION</a></li>
-	<li><a href="#options">OPTIONS</a></li>
-	<li><a href="#requirements">REQUIREMENTS</a></li>
-	<li><a href="#known_issues">KNOWN ISSUES</a></li>
-	<li><a href="#copyright">COPYRIGHT</a></li>
-	<li><a href="#author">AUTHOR</a></li>
-	<li><a href="#see_also">SEE ALSO</a></li>
+<li><p>Resizing the window leaves the color blobs in their original size. This is an issue with the Tk widget used to display the color stripes. Other display methods are being investigated...</p>
+
+</li>
 </ul>
 
-<hr name="index" />
-</div>
-<!-- INDEX END -->
+<h1 id="COPYRIGHT">COPYRIGHT</h1>
 
-<p>
-</p>
-<hr />
-<h1><a name="name">NAME</a></h1>
-<p>lights - DNSSEC-Tools Rollover Overview GUI Display</p>
-<p>
-</p>
-<hr />
-<h1><a name="synopsis">SYNOPSIS</a></h1>
-<pre>
-  lights [options]</pre>
-<p>
-</p>
-<hr />
-<h1><a name="description">DESCRIPTION</a></h1>
-<p><strong>lights</strong> gives a very simple overview of the rollover status of a set of
-zones.  The rollover status counts are given in a &quot;traffic light&quot; display.
-In contrast, <strong>blinkenlights</strong> gives a detailed display of the roll status
-of a set of zones.  <strong>lights</strong> gives very little control over <strong>rollerd</strong>,
-the way <strong>blinkenlights</strong> does.  <strong>lights</strong> can halt <strong>rollerd</strong>'s execution
-only.</p>
-<p>The rollover status is retrieved in one of two ways.  By default, <strong>rollerd</strong>
-is contacted via the <strong>rollctl</strong> command.  Alternately, if the <strong>-rrf</strong> option
-is given, then zone status is read directly from a <strong>rollrec</strong> file.  The
-default method gets the status directly from <strong>rollerd</strong> and the user need
-not know the location of the relevant <strong>rollrec</strong> file.  However, that method
-will not get zone status until <strong>rollerd</strong> is available to respond to the
-information request.  Consequently, the alternate method allows <strong>lights</strong>
-to bypass communicating with <strong>rollerd</strong> and not having to wait for <strong>rollerd</strong>
-to be available.</p>
-<p>A window is created that has three colored sections - green, yellow, and red.
-The green section displays a count of those zones that are in &quot;normal&quot; status;
-that is, they are not in rollover.  The yellow section displays a count of
-those zones that are in rollover.  The red section displays a count of those
-zones that are in need of attention.  A common cause for this last state is
-because a zone is in phase 5 of KSK rollover and is waiting for its parent
-zone to publish the child's new DS record.</p>
-<p>Clicking on the color rows in the main window will bring up a dialog box that
-lists the zones in that state.  This list will not automatically update as
-zones change rollover state.</p>
-<p>
-</p>
-<hr />
-<h1><a name="options">OPTIONS</a></h1>
-<p><strong>lights</strong> supports the following options.</p>
-<dl>
-<dt><strong><a name="interval_wait_time" class="item"><strong>-interval wait-time</strong></a></strong></dt>
+<p>Copyright 2010-2014 SPARTA, Inc. All rights reserved. See the COPYING file included with the DNSSEC-Tools package for details.</p>
 
-<dd>
-<p>Interval between checks of zone rollover status  By default, <em>wait-time</em> is
-given in minutes.  This can be adjusted by specifying one of the following
-time-unit suffixes.</p>
-<p>* s - seconds</p>
-<p>* m - minutes</p>
-<p>* h - hours</p>
-<p>Examples:</p>
-<p>* <em>-interval 24</em> - 24 minutes</p>
-<p>* <em>-interval 24s</em> - 24 seconds</p>
-<p>* <em>-interval 24m</em> - 24 minutes</p>
-<p>* <em>-interval 24h</em> - 24 hours</p>
-</dd>
-<dt><strong><a name="rrf_rollrec_file" class="item"><strong>-rrf rollrec-file</strong></a></strong></dt>
+<h1 id="AUTHOR">AUTHOR</h1>
 
-<dd>
-<p>A <strong>rollrec</strong> file to be read for zone status.</p>
-</dd>
-<dt><strong><a name="labels" class="item"><strong>-labels</strong></a></strong></dt>
+<p>Wayne Morrison, tewok@tislabs.com</p>
 
-<dd>
-<p>Labels will be given for each color field in the GUI.</p>
-</dd>
-<dt><strong><a name="verbose" class="item"><strong>-verbose</strong></a></strong></dt>
+<h1 id="SEE-ALSO">SEE ALSO</h1>
 
-<dd>
-<p>Give verbose output.</p>
-</dd>
-<dt><strong><a name="help" class="item"><strong>-help</strong></a></strong></dt>
+<p><b>blinkenlights(8)</b>, <b>bubbles(8)</b>, <b>rollerd(8)</b>, <b>rollrec(5)</b></p>
 
-<dd>
-<p>Give a usage message and exit.</p>
-</dd>
-<dt><strong><a name="version" class="item"><strong>-Version</strong></a></strong></dt>
-
-<dd>
-<p>Displays the version information for <strong>lights</strong> and the DNSSEC-Tools
-package.</p>
-</dd>
-</dl>
-<p>
-</p>
-<hr />
-<h1><a name="requirements">REQUIREMENTS</a></h1>
-<p><strong>lights</strong> is implemented in Perl/Tk, so both Perl and Perl/Tk must be
-installed on your system.</p>
-<p>
-</p>
-<hr />
-<h1><a name="known_issues">KNOWN ISSUES</a></h1>
-<p>The following are known issues.  These will be resolved in the fullness of time.</p>
-<dl>
-<dt>
-<dd>
-<p>Resizing the window leaves the color blobs in their original size.
-This is an issue with the Tk widget used to display the color stripes.
-Other display methods are being investigated...</p>
-</dd>
-</dl>
-<p>
-</p>
-<hr />
-<h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2010-2013 SPARTA, Inc.  All rights reserved.
-See the COPYING file included with the DNSSEC-Tools package for details.</p>
-<p>
-</p>
-<hr />
-<h1><a name="author">AUTHOR</a></h1>
-<p>Wayne Morrison, <a href="mailto:tewok@tislabs.com">tewok@tislabs.com</a></p>
-<p>
-</p>
-<hr />
-<h1><a name="see_also">SEE ALSO</a></h1>
-<p><strong>blinkenlights(8)</strong>,
-<strong>bubbles(8)</strong>,
-<strong>rollerd(8)</strong>,
-<strong>rollrec(5)</strong></p>
 
 </body>
 
 </html>
+
+

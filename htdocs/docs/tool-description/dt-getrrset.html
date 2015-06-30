@@ -2,109 +2,87 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>dt-getquery - command-line test program for the I&lt;val_get_rrset&gt; function</title>
+<title></title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-<link rev="made" href="mailto:assp@beta.macosforge.org" />
+<link rev="made" href="mailto:root@localhost" />
 </head>
 
 <body style="background-color: white">
 
 
-<!-- INDEX BEGIN -->
-<div name="index">
-<p><a name="__index__"></a></p>
 
-<ul>
-
-	<li><a href="#name">NAME</a></li>
-	<li><a href="#synopsis">SYNOPSIS</a></li>
-	<li><a href="#description">DESCRIPTION</a></li>
-	<li><a href="#options">OPTIONS</a></li>
-	<li><a href="#pre_requisites">PRE-REQUISITES</a></li>
-	<li><a href="#copyright">COPYRIGHT</a></li>
-	<li><a href="#authors">AUTHORS</a></li>
-	<li><a href="#see_also">SEE ALSO</a></li>
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
+  <li><a href="#OPTIONS">OPTIONS</a></li>
+  <li><a href="#PRE-REQUISITES">PRE-REQUISITES</a></li>
+  <li><a href="#COPYRIGHT">COPYRIGHT</a></li>
+  <li><a href="#AUTHORS">AUTHORS</a></li>
+  <li><a href="#SEE-ALSO">SEE ALSO</a></li>
 </ul>
 
-<hr name="index" />
-</div>
-<!-- INDEX END -->
+<h1 id="NAME">NAME</h1>
 
-<p>
-</p>
-<hr />
-<h1><a name="name">NAME</a></h1>
-<p>dt-getquery - command-line test program for the <em>val_get_rrset()</em> function</p>
-<p>
-</p>
-<hr />
-<h1><a name="synopsis">SYNOPSIS</a></h1>
-<pre>
-   dt-getquery [options] name</pre>
-<p>
-</p>
-<hr />
-<h1><a name="description">DESCRIPTION</a></h1>
-<p>This utility is a command-line wrapper around the <em>val_get_rrset()</em>
-function.  It invokes the <em>val_get_rrset()</em> function with the given
-command-line arguments and displays the returned data and the 
-validated, trusted and non-existence status
-for each resource record set returned in the response. Any information about name
-aliases are also displayed. The trusted and
-validated status values are obtained using the <em>val_istrusted()</em> and
-<em>val_isvalidated()</em> functions from <em>libval(3)</em>.</p>
+<p>dt-getquery - command-line test program for the <i>val_get_rrset()</i> function</p>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<pre><code>   dt-getquery [options] name </code></pre>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p>This utility is a command-line wrapper around the <i>val_get_rrset()</i> function. It invokes the <i>val_get_rrset()</i> function with the given command-line arguments and displays the returned data and the validated, trusted and non-existence status for each resource record set returned in the response. Any information about name aliases are also displayed. The trusted and validated status values are obtained using the <i>val_istrusted()</i> and <i>val_isvalidated()</i> functions from <i>libval(3)</i>.</p>
+
 <p>This program returns 0 on success and -1 on failure.</p>
-<p>
-</p>
-<hr />
-<h1><a name="options">OPTIONS</a></h1>
+
+<h1 id="OPTIONS">OPTIONS</h1>
+
 <dl>
-<dt><strong><a name="t_type" class="item">-t &lt;type&gt;</a></strong></dt>
 
+<dt id="t-type">-t &lt;type&gt;</dt>
 <dd>
+
 <p>Perform the query for the given DNS record type</p>
-</dd>
-<dt><strong><a name="o_output_debug_level_dest_type_dest_options" class="item">-o, --output=&lt;debug-level&gt;:&lt;dest-type&gt;[:&lt;dest-options&gt;]</a></strong></dt>
 
-<dd>
-<p>&lt;debug-level&gt; is 1-7, corresponding to syslog levels ALERT-DEBUG
-&lt;dest-type&gt; is one of file, net, syslog, stderr, stdout
-&lt;dest-options&gt; depends on &lt;dest-type&gt;
-    file:&lt;file-name&gt;   (opened in append mode)
-    net[:&lt;host-name&gt;:&lt;host-port&gt;] (127.0.0.1:1053
-    syslog[:facility] (0-23 (default 1 USER))</p>
 </dd>
-<dt><strong><a name="h_help" class="item">-h, --help</a></strong></dt>
-
+<dt id="o---output-debug-level:dest-type-:dest-options">-o, --output=&lt;debug-level&gt;:&lt;dest-type&gt;[:&lt;dest-options&gt;]</dt>
 <dd>
+
+<p>&lt;debug-level&gt; is 1-7, corresponding to syslog levels ALERT-DEBUG &lt;dest-type&gt; is one of file, net, syslog, stderr, stdout &lt;dest-options&gt; depends on &lt;dest-type&gt; file:&lt;file-name&gt; (opened in append mode) net[:&lt;host-name&gt;:&lt;host-port&gt;] (127.0.0.1:1053 syslog[:facility] (0-23 (default 1 USER))</p>
+
+</dd>
+<dt id="h---help">-h, --help</dt>
+<dd>
+
 <p>Display the help and exit.</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<hr />
-<h1><a name="pre_requisites">PRE-REQUISITES</a></h1>
-<p>libval</p>
-<p>
-</p>
-<hr />
-<h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2005-2013 SPARTA, Inc.  All rights reserved.
-See the COPYING file included with the DNSSEC-Tools package for details.</p>
-<p>
-</p>
-<hr />
-<h1><a name="authors">AUTHORS</a></h1>
-<p>Abhijit Hayatnagarkar, Suresh Krishnaswamy, Robert Story, Michael Baer</p>
-<p>
-</p>
-<hr />
-<h1><a name="see_also">SEE ALSO</a></h1>
-<p><strong>val_get_rrset(3)</strong></p>
-<p><strong>libval(3)</strong></p>
-<p><a href="http://www.dnssec-tools.org">http://www.dnssec-tools.org</a></p>
 
-<!--#include virtual="/page-bottom.html" -->
+<h1 id="PRE-REQUISITES">PRE-REQUISITES</h1>
+
+<p>libval</p>
+
+<h1 id="COPYRIGHT">COPYRIGHT</h1>
+
+<p>Copyright 2005-2013 SPARTA, Inc. All rights reserved. See the COPYING file included with the DNSSEC-Tools package for details.</p>
+
+<h1 id="AUTHORS">AUTHORS</h1>
+
+<p>Abhijit Hayatnagarkar, Suresh Krishnaswamy, Robert Story, Michael Baer</p>
+
+<h1 id="SEE-ALSO">SEE ALSO</h1>
+
+<p><b>val_get_rrset(3)</b></p>
+
+<p><b>libval(3)</b></p>
+
+<p>http://www.dnssec-tools.org</p>
+
+
 </body>
 
 </html>
+
+

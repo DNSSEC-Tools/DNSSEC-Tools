@@ -2,7 +2,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>donuts - analyze DNS zone files for errors and warnings</title>
+<title></title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
@@ -10,333 +10,354 @@
 <body style="background-color: white">
 
 
-<!-- INDEX BEGIN -->
-<div name="index">
-<p><a name="__index__"></a></p>
 
-<ul>
-
-	<li><a href="#name">NAME</a></li>
-	<li><a href="#synopsis">SYNOPSIS</a></li>
-	<li><a href="#description">DESCRIPTION</a></li>
-	<li><a href="#options">OPTIONS</a></li>
-	<ul>
-
-		<li><a href="#rule_set_configuration_">Rule Set Configuration:</a></li>
-		<li><a href="#configuration_file_options_">Configuration File Options:</a></li>
-		<li><a href="#extra_live_query_options_">Extra Live Query Options:</a></li>
-		<li><a href="#help_options">Help Options</a></li>
-		<li><a href="#obsolete_options">Obsolete Options</a></li>
-	</ul>
-
-	<li><a href="#examples">EXAMPLES</a></li>
-	<li><a href="#copyright">COPYRIGHT</a></li>
-	<li><a href="#author">AUTHOR</a></li>
-	<li><a href="#see_also">SEE ALSO</a></li>
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a>
+    <ul>
+      <li><a href="#QUERYING-LIVE-ZONES">QUERYING LIVE ZONES</a></li>
+      <li><a href="#QUERYING-LIVE-ZONES-WITH-AFXR">QUERYING LIVE ZONES WITH AFXR</a></li>
+    </ul>
+  </li>
+  <li><a href="#OPTIONS">OPTIONS</a>
+    <ul>
+      <li><a href="#Rule-Set-Configuration">Rule Set Configuration:</a></li>
+      <li><a href="#Configuration-File-Options">Configuration File Options:</a></li>
+      <li><a href="#Extra-Live-Query-Options">Extra Live Query Options:</a></li>
+      <li><a href="#Help-Options">Help Options</a></li>
+      <li><a href="#Obsolete-Options">Obsolete Options</a></li>
+    </ul>
+  </li>
+  <li><a href="#EXAMPLES">EXAMPLES</a></li>
+  <li><a href="#COPYRIGHT">COPYRIGHT</a></li>
+  <li><a href="#AUTHOR">AUTHOR</a></li>
+  <li><a href="#SEE-ALSO">SEE ALSO</a></li>
 </ul>
 
-<hr name="index" />
-</div>
-<!-- INDEX END -->
+<h1 id="NAME">NAME</h1>
 
-<p>
-</p>
-<hr />
-<h1><a name="name">NAME</a></h1>
 <p>donuts - analyze DNS zone files for errors and warnings</p>
-<p>
-</p>
-<hr />
-<h1><a name="synopsis">SYNOPSIS</a></h1>
-<pre>
-  donuts [-v] [-l LEVEL] [-r RULEFILES] [-i IGNORELIST]
-         [-C] [-c configfile] [-h] [-H] ZONEFILE DOMAINNAME...</pre>
-<p>
-</p>
-<hr />
-<h1><a name="description">DESCRIPTION</a></h1>
-<p><strong>donuts</strong> is a DNS lint application that examines DNS zone files
-looking for particular problems.  This is especially important for
-zones making use of DNSSEC security records, since many subtle
-problems can occur.  The default mode of operation assumes you want to
-check for DNSSEC-related issues; to turn off the invocation of the
-DNSSEC-related rules run <strong>donuts</strong> with &quot;-i DNSSEC&quot;.</p>
-<p>If the <strong>Text::Wrap</strong> Perl module is installed, <strong>donuts</strong> will give better
-output formatting.</p>
-<p>
-</p>
-<hr />
-<h1><a name="options">OPTIONS</a></h1>
-<p>
-</p>
-<h2><a name="rule_set_configuration_">Rule Set Configuration:</a></h2>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<pre><code>  donuts [-v] [-l LEVEL] [-r RULEFILES] [-i IGNORELIST]
+         [-C] [-c configfile] [-h] [-H] ZONEFILE DOMAINNAME...</code></pre>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p><b>donuts</b> is a DNS lint application that examines DNS zone files looking for particular problems. This is especially important for zones making use of DNSSEC security records, since many subtle problems can occur. The default mode of operation assumes you want to check for DNSSEC-related issues; to turn off the invocation of the DNSSEC-related rules run <b>donuts</b> with &quot;-i DNSSEC&quot;.</p>
+
+<p>If the <b>Text::Wrap</b> Perl module is installed, <b>donuts</b> will give better output formatting.</p>
+
+<h2 id="QUERYING-LIVE-ZONES">QUERYING LIVE ZONES</h2>
+
+<p>If the <i>ZONEFILE</i> may be a live name prefixed with &quot;live:&quot; and the records afterwards will be queried and analyized as if it was in a zonefile. For example, running donuts as:</p>
+
+<pre><code>  donuts -i NSEC live:badsign-a,good-a test.dnssec-tools.org</code></pre>
+
+<p>Will query the test.dnssec-tools.org zone for the <i>badsign-a</i> and <i>good-a</i> records, collect the data and run them through the donuts analysis. Because other data is needed as well for the analysis to be useful, donuts will also automatically collect the DNSKEYs, SOAs, and NS records for the zone. Because NSEC records aren&#39;t loaded, it is advisable to add that rule exclusion for rules to be run.</p>
+
+<p>Other data types may be queried by appending a &#39;:&#39; and the type name to a record. For example:</p>
+
+<pre><code>  donuts -i NSEC live:good-a,good-aaaa:aaaa test.dnssec-tools.org</code></pre>
+
+<h2 id="QUERYING-LIVE-ZONES-WITH-AFXR">QUERYING LIVE ZONES WITH AFXR</h2>
+
+<p>If your host is allowed to query for afxr transfers of a particular zone, you may use the <i>afxr:</i> filename token to indicate it should pull the zone data using a AFXR transfer.</p>
+
+<pre><code>  donuts -i NSEC afxr: dnssec-tools.org</code></pre>
+
+<h1 id="OPTIONS">OPTIONS</h1>
+
+<h2 id="Rule-Set-Configuration">Rule Set Configuration:</h2>
+
 <dl>
-<dt><strong><a name="l_level" class="item">-l <em>LEVEL</em></a></strong></dt>
 
-<dt><strong><a name="level_level" class="item">--level=<em>LEVEL</em></a></strong></dt>
-
+<dt id="l-LEVEL">-l <i>LEVEL</i></dt>
 <dd>
-<p>Sets the level of errors to be displayed.  The default is level 5.
-The maximum value is level 9, which displays many debugging results.
-You probably want to run no higher than level 8.</p>
+
 </dd>
-<dt><strong><a name="r_rulefiles" class="item">-r <em>RULEFILES</em></a></strong></dt>
-
-<dt><strong><a name="rules_rulefiles" class="item">--rules=<em>RULEFILES</em></a></strong></dt>
-
+<dt id="level-LEVEL">--level=<i>LEVEL</i></dt>
 <dd>
-<p>A comma-separated list of rule files to load.  The strings will be
-passed to <em>glob()</em> so * wildcards can be used to specify multiple files.</p>
-<p>Defaults to <strong>/usr/local/share/dnssec-tools/donuts/rules/*.txt</strong> and
-<strong>$HOME/.dnssec-tools/donuts/rules/*.txt</strong>.</p>
+
+<p>Sets the level of errors to be displayed. The default is level 5. The maximum value is level 9, which displays many debugging results. You probably want to run no higher than level 8.</p>
+
 </dd>
-<dt><strong><a name="i_ignorelist" class="item">-i <em>IGNORELIST</em></a></strong></dt>
-
-<dt><strong><a name="ignore_ignorelist" class="item">--ignore=<em>IGNORELIST</em></a></strong></dt>
-
+<dt id="r-RULEFILES">-r <i>RULEFILES</i></dt>
 <dd>
-<p>A comma-separated list of regex patterns which are checked against
-rule names to determine if some should be ignored.  Run with <em>-v</em> to
-figure out rule names if you're not sure which rule is generating
-errors you don't wish to see.</p>
+
 </dd>
-<dt><strong><a name="f_list" class="item">-f LIST</a></strong></dt>
-
-<dt><strong><a name="features_list" class="item">--features=LIST</a></strong></dt>
-
+<dt id="rules-RULEFILES">--rules=<i>RULEFILES</i></dt>
 <dd>
-<p>The <em>--features</em> option specifies additional rule features that should
-be executed.  Some rules are turned off by default because they are
-more intensive or require a live network connection, for instance.
-Use the <em>--features</em> flag to turn them on.  The LIST argument should be
-a comma-separated list.  Example usage:</p>
-<pre>
-  --features live,nsec_check</pre>
-<p>Features available in the default rule set distributed with <strong>donuts</strong>:</p>
+
+<p>A comma-separated list of rule files to load. The strings will be passed to <i>glob()</i> so * wildcards can be used to specify multiple files.</p>
+
+<p>Defaults to <b>/usr/local/share/dnssec-tools/donuts/rules/*.txt</b> and <b>$HOME/.dnssec-tools/donuts/rules/*.txt</b>.</p>
+
+</dd>
+<dt id="i-IGNORELIST">-i <i>IGNORELIST</i></dt>
+<dd>
+
+</dd>
+<dt id="ignore-IGNORELIST">--ignore=<i>IGNORELIST</i></dt>
+<dd>
+
+<p>A comma-separated list of regex patterns which are checked against rule names to determine if some should be ignored. Run with <i>-v</i> to figure out rule names if you&#39;re not sure which rule is generating errors you don&#39;t wish to see.</p>
+
+</dd>
+<dt id="f-LIST">-f LIST</dt>
+<dd>
+
+</dd>
+<dt id="features-LIST">--features=LIST</dt>
+<dd>
+
+<p>The <i>--features</i> option specifies additional rule features that should be executed. Some rules are turned off by default because they are more intensive or require a live network connection, for instance. Use the <i>--features</i> flag to turn them on. The LIST argument should be a comma-separated list. Example usage:</p>
+
+<pre><code>  --features live,nsec_check</code></pre>
+
+<p>Features available in the default rule set distributed with <b>donuts</b>:</p>
+
 <dl>
-<dt><strong><a name="live" class="item">live</a></strong></dt>
 
+<dt id="live">live</dt>
 <dd>
-<p>The <em>live</em> feature allows rules that need to perform live DNS queries
-to run.  Most of these <em>live</em> rules query parent and children of the
-current zone, when appropriate, to see that the parent/child
-relationships have been built properly.  For example, if you have a
-DS record which authenticates the key used in a child zone the <em>live</em>
-feature will let a rule run which checks to see if the child is
-actually publishing the DNSKEY that corresponds to the test zone's DS
-record.</p>
+
+<p>The <i>live</i> feature allows rules that need to perform live DNS queries to run. Most of these <i>live</i> rules query parent and children of the current zone, when appropriate, to see that the parent/child relationships have been built properly. For example, if you have a DS record which authenticates the key used in a child zone the <i>live</i> feature will let a rule run which checks to see if the child is actually publishing the DNSKEY that corresponds to the test zone&#39;s DS record.</p>
+
 </dd>
-<dt><strong><a name="nsec_check" class="item">nsec_check</a></strong></dt>
-
+<dt id="nsec_check">nsec_check</dt>
 <dd>
-<p>This checks all the NSEC or NSEC3 records (as appropriate for the
-zone) to ensure the chain is complete and that no-overlaps exist.  It
-is fairly memory- and cpu-intensive in large zones.</p>
+
+<p>This checks all the NSEC or NSEC3 records (as appropriate for the zone) to ensure the chain is complete and that no-overlaps exist. It is fairly memory- and cpu-intensive in large zones.</p>
+
 </dd>
 </dl>
+
 </dd>
 </dl>
-<p>
-</p>
-<h2><a name="configuration_file_options_">Configuration File Options:</a></h2>
+
+<h2 id="Configuration-File-Options">Configuration File Options:</h2>
+
 <dl>
-<dt><strong><a name="c_configfile" class="item">-c <em>CONFIGFILE</em></a></strong></dt>
 
-<dt><strong><a name="config_file_configfile" class="item">--config-file=<em>CONFIGFILE</em></a></strong></dt>
-
+<dt id="c-CONFIGFILE">-c <i>CONFIGFILE</i></dt>
 <dd>
-<p>Parse a configuration file to change constraints specified by rules.
-This defaults to <strong>$HOME/.donuts.conf</strong>.</p>
+
 </dd>
-<dt><strong><a name="c" class="item">-C</a></strong></dt>
-
-<dt><strong><a name="no_config" class="item">--no-config</a></strong></dt>
-
+<dt id="config-file-CONFIGFILE">--config-file=<i>CONFIGFILE</i></dt>
 <dd>
-<p>Don't read user configuration files at all, such as those specified by
-the <em>-c</em> option or the <strong>$HOME/.donuts.conf</strong> file.</p>
+
+<p>Parse a configuration file to change constraints specified by rules. This defaults to <b>$HOME/.donuts.conf</b>.</p>
+
+</dd>
+<dt id="C">-C</dt>
+<dd>
+
+</dd>
+<dt id="no-config">--no-config</dt>
+<dd>
+
+<p>Don&#39;t read user configuration files at all, such as those specified by the <i>-c</i> option or the <b>$HOME/.donuts.conf</b> file.</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<h2><a name="extra_live_query_options_">Extra Live Query Options:</a></h2>
-<p>Live Queries are enabled through the use of the <em>-f live</em> arguments.
-These options are only useful if that feature has been enabled.</p>
+
+<h2 id="Extra-Live-Query-Options">Extra Live Query Options:</h2>
+
+<p>Live Queries are enabled through the use of the <i>-f live</i> arguments. These options are only useful if that feature has been enabled.</p>
+
 <dl>
-<dt><strong><a name="t_interface" class="item">-t <em>INTERFACE</em></a></strong></dt>
 
-<dt><strong><a name="tcpdump_capture_interface" class="item">--tcpdump-capture=<em>INTERFACE</em></a></strong></dt>
-
+<dt id="t-INTERFACE">-t <i>INTERFACE</i></dt>
 <dd>
-<p>Specifies that <strong>tcpdump</strong> should be started on <em>INTERFACE</em> (e.g.,
-&quot;eth0&quot;) just before <strong>donuts</strong> begins its run of rules for each domain
-and will stop it just after it has processed the rules.  This is
-useful when you wish to capture the traffic generated by the <em>live</em>
-feature, described above.</p>
+
 </dd>
-<dt><strong><a name="t_filter" class="item">-T <em>FILTER</em></a></strong></dt>
-
-<dt><strong><a name="tcpdump_filter_filter" class="item">--tcpdump-filter=<em>FILTER</em></a></strong></dt>
-
+<dt id="tcpdump-capture-INTERFACE">--tcpdump-capture=<i>INTERFACE</i></dt>
 <dd>
-<p>When <strong>tcpdump</strong> is run, this <em>FILTER</em> is passed to it for purposes of
-filtering traffic.  By default, this is set to <em>port 53 || ip[6:2] &amp;
-0x1fff != 0</em>, which limits the traffic to traffic destined to port 53
-(DNS) or fragmented packets.</p>
+
+<p>Specifies that <b>tcpdump</b> should be started on <i>INTERFACE</i> (e.g., &quot;eth0&quot;) just before <b>donuts</b> begins its run of rules for each domain and will stop it just after it has processed the rules. This is useful when you wish to capture the traffic generated by the <i>live</i> feature, described above.</p>
+
 </dd>
-<dt><strong><a name="o_file" class="item">-o <em>FILE</em></a></strong></dt>
-
-<dt><strong><a name="tcpdump_output_file_file" class="item">--tcpdump-output-file=<em>FILE</em></a></strong></dt>
-
+<dt id="T-FILTER">-T <i>FILTER</i></dt>
 <dd>
-<p>Saves the <strong>tcpdump</strong>-captured packets to <em>FILE</em>.  The following
-special fields can be used to help generate unique file names:</p>
+
+</dd>
+<dt id="tcpdump-filter-FILTER">--tcpdump-filter=<i>FILTER</i></dt>
+<dd>
+
+<p>When <b>tcpdump</b> is run, this <i>FILTER</i> is passed to it for purposes of filtering traffic. By default, this is set to <i>port 53 || ip[6:2] &amp; 0x1fff != 0</i>, which limits the traffic to traffic destined to port 53 (DNS) or fragmented packets.</p>
+
+</dd>
+<dt id="o-FILE">-o <i>FILE</i></dt>
+<dd>
+
+</dd>
+<dt id="tcpdump-output-file-FILE">--tcpdump-output-file=<i>FILE</i></dt>
+<dd>
+
+<p>Saves the <b>tcpdump</b>-captured packets to <i>FILE</i>. The following special fields can be used to help generate unique file names:</p>
+
 <dl>
-<dt><strong><a name="_d" class="item">%d</a></strong></dt>
 
+<dt id="d">%d</dt>
 <dd>
-<p>This is replaced with the current domain name being analyzed (e.g.,
-&quot;example.com&quot;).</p>
+
+<p>This is replaced with the current domain name being analyzed (e.g., &quot;example.com&quot;).</p>
+
 </dd>
-<dt><strong><a name="_t" class="item">%t</a></strong></dt>
-
+<dt id="t">%t</dt>
 <dd>
-<p>This is replaced with the current epoch time (i.e., the number of
-seconds since Jan 1, 1970).</p>
+
+<p>This is replaced with the current epoch time (i.e., the number of seconds since Jan 1, 1970).</p>
+
 </dd>
 </dl>
-<p>This field defaults to <em>%d.%t.pcap</em>.</p>
-</dd>
-<dt><strong><a name="show_gui" class="item">--show-gui</a></strong></dt>
 
+<p>This field defaults to <i>%d.%t.pcap</i>.</p>
+
+</dd>
+<dt id="show-gui">--show-gui</dt>
 <dd>
+
 <p>[alpha code]</p>
-<p>Displays a browsable GUI screen showing the results of the <strong>donuts</strong> tests.</p>
-<p>The <strong>QWizard</strong> and <strong>Gtk2</strong> Perl modules must be installed for this to work.</p>
+
+<p>Displays a browsable GUI screen showing the results of the <b>donuts</b> tests.</p>
+
+<p>The <b>QWizard</b> and <b>Gtk2</b> Perl modules must be installed for this to work.</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<h2><a name="help_options">Help Options</a></h2>
-<dl>
-<dt><strong><a name="h" class="item">-H</a></strong></dt>
 
+<h2 id="Help-Options">Help Options</h2>
+
+<dl>
+
+<dt id="H">-H</dt>
 <dd>
-<p>Displays the personal configuration file rules and tokens that are
-acceptable in a configuration file.  The output will
-consist of a rule name, a token, and a description of its meaning.</p>
-<p>Your configuration file (e.g., <strong>$HOME/.donuts.conf</strong>) may have lines in it
-that look like this:</p>
-<pre>
-  # change the default minimum number of legal NS records from 2 to 1
+
+<p>Displays the personal configuration file rules and tokens that are acceptable in a configuration file. The output will consist of a rule name, a token, and a description of its meaning.</p>
+
+<p>Your configuration file (e.g., <b>$HOME/.donuts.conf</b>) may have lines in it that look like this:</p>
+
+<pre><code>  # change the default minimum number of legal NS records from 2 to 1
   name: DNS_MULTIPLE_NS
-  minnsrecords: 1</pre>
-<pre>
+  minnsrecords: 1
+
   # change the level of the following rule from 8 to 5
   name: DNS_REASONABLE_TTLS
-  level: 5</pre>
+  level: 5</code></pre>
+
 <p>This allows you to override certain aspects of how rules are executed.</p>
-</dd>
-<dt><strong><a name="r" class="item">-R</a></strong></dt>
 
-<dd>
-<p>Displays a list of all known rules along with their description (if
-available).</p>
 </dd>
-<dt><strong><a name="h" class="item">-h</a></strong></dt>
-
+<dt id="R">-R</dt>
 <dd>
+
+<p>Displays a list of all known rules along with their description (if available).</p>
+
+</dd>
+<dt id="h">-h</dt>
+<dd>
+
 <p>Displays a help message.</p>
-</dd>
-<dt><strong><a name="help" class="item">--help</a></strong></dt>
 
-<dd>
-<p>Displays a help message more tailored to people who prefer long-style
-options.</p>
 </dd>
-<dt><strong><a name="q" class="item">-q</a></strong></dt>
-
+<dt id="help">--help</dt>
 <dd>
-<p>Turns on a quieter output mode where only the errors and warnings are
-shown.  IE, the summary line of &quot;N errors found ...&quot; is not shown.</p>
-<p>-q is ignored if a -v argument is present; the -v argument requests a
-longer output summary and thus it doesn't make sense to use them both
-at the same time.</p>
+
+<p>Displays a help message more tailored to people who prefer long-style options.</p>
+
 </dd>
-<dt><strong><a name="v" class="item">-v</a></strong></dt>
-
+<dt id="q">-q</dt>
 <dd>
-<p>Turns on more verbose output.  Multiple <em>-v</em>'s will turn on increasing
-amounts of output.  The number of -v's will dictate output:</p>
+
+<p>Turns on a quieter output mode where only the errors and warnings are shown. IE, the summary line of &quot;N errors found ...&quot; is not shown.</p>
+
+<p>-q is ignored if a -v argument is present; the -v argument requests a longer output summary and thus it doesn&#39;t make sense to use them both at the same time.</p>
+
+</dd>
+<dt id="v">-v</dt>
+<dd>
+
+<p>Turns on more verbose output. Multiple <i>-v</i>&#39;s will turn on increasing amounts of output. The number of -v&#39;s will dictate output:</p>
+
+</dd>
+<dt id="s">-s</dt>
+<dd>
+
+<p>Sorts the resource records so that the order they&#39;re processed in is always consistent. If the incoming zone is not always consistently ordered, the output can vary unless the resource records are always in the same order. When sorted, however, they&#39;re always evaluated in the same order even if the zone file (or similar) order changes, and thus the output is consistent, making it easier for tools like <i>diff</i> to detect where changes occur in the output. This comes at a higher CPU cost, as it takes more time to sort the entries.</p>
+
 <ol>
-<li>
-<p>Describes which rules are being loaded and extra detail for rules that found errors (rule Level and extra text detail)</p>
+
+<li><p>Describes which rules are being loaded and extra detail for rules that found errors (rule Level and extra text detail)</p>
+
 </li>
-<li>
-<p>Even more detail about rules that found errors: file name, file line
-number, rule type.</p>
+<li><p>Even more detail about rules that found errors: file name, file line number, rule type.</p>
+
 </li>
-<li>
-<p>Shows extra detail on the record text being analyzed (the detail is
-not always available, however).</p>
+<li><p>Shows extra detail on the record text being analyzed (the detail is not always available, however).</p>
+
 </li>
-<li>
-<p>Even more detail about rules that found errors: dumps the rule code itself.</p>
+<li><p>Even more detail about rules that found errors: dumps the rule code itself.</p>
+
 </li>
-<li>
-<p>Even more detail about rules that found errors: dumps the internal
-rule structure.</p>
+<li><p>Even more detail about rules that found errors: dumps the internal rule structure.</p>
+
 </li>
 </ol>
-</dd>
-</dl>
-<p>
-</p>
-<h2><a name="obsolete_options">Obsolete Options</a></h2>
-<dl>
-<dt><strong><a name="l" class="item">-L</a></strong></dt>
 
-<dd>
-<p>Obsolete command line option.  Please use <em>--features live</em> instead.</p>
 </dd>
 </dl>
-<p>
-</p>
-<hr />
-<h1><a name="examples">EXAMPLES</a></h1>
-<p>Run <strong>donuts</strong> in its default mode on the <em>example.com</em> zone which is
-contained in the <strong>db.example.com</strong> file:</p>
-<pre>
-  % donuts db.example.com example.com</pre>
-<p>Run <strong>donuts</strong> with significantly more output, both in terms of verbosity
-and in terms of the number of rules that are run to analyze the file:</p>
-<pre>
-  % donuts -v -v --level 9 db.example.com example.com</pre>
-<p>
-</p>
-<hr />
-<h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2004-2013 SPARTA, Inc.  All rights reserved.
-See the COPYING file included with the DNSSEC-Tools package for details.</p>
-<p>
-</p>
-<hr />
-<h1><a name="author">AUTHOR</a></h1>
-<p>Wes Hardaker &lt;<a href="mailto:hardaker@users.sourceforge.net">hardaker@users.sourceforge.net</a>&gt;</p>
-<p>
-</p>
-<hr />
-<h1><a name="see_also">SEE ALSO</a></h1>
+
+<h2 id="Obsolete-Options">Obsolete Options</h2>
+
+<dl>
+
+<dt id="L">-L</dt>
+<dd>
+
+<p>Obsolete command line option. Please use <i>--features live</i> instead.</p>
+
+</dd>
+</dl>
+
+<h1 id="EXAMPLES">EXAMPLES</h1>
+
+<p>Run <b>donuts</b> in its default mode on the <i>example.com</i> zone which is contained in the <b>db.example.com</b> file:</p>
+
+<pre><code>  % donuts db.example.com example.com</code></pre>
+
+<p>Run <b>donuts</b> with significantly more output, both in terms of verbosity and in terms of the number of rules that are run to analyze the file:</p>
+
+<pre><code>  % donuts -v -v --level 9 db.example.com example.com</code></pre>
+
+<h1 id="COPYRIGHT">COPYRIGHT</h1>
+
+<p>Copyright 2004-2013 SPARTA, Inc. All rights reserved. See the COPYING file included with the DNSSEC-Tools package for details.</p>
+
+<h1 id="AUTHOR">AUTHOR</h1>
+
+<p>Wes Hardaker &lt;hardaker@users.sourceforge.net&gt;</p>
+
+<h1 id="SEE-ALSO">SEE ALSO</h1>
+
 <p>For more information on the dnssec-tools project:</p>
-<pre>
-  <a href="http://www.dnssec-tools.org/">http://www.dnssec-tools.org/</a></pre>
-<p>For writing rules that can be loaded by <strong>donuts</strong>:</p>
-<pre>
-  B&lt;Net::DNS::SEC::Tools::Donuts::Rule&gt;,</pre>
+
+<pre><code>  http://www.dnssec-tools.org/</code></pre>
+
+<p>For writing rules that can be loaded by <b>donuts</b>:</p>
+
+<pre><code>  B&lt;Net::DNS::SEC::Tools::Donuts::Rule&gt;, </code></pre>
+
 <p>General DNS and DNSSEC usage:</p>
-<pre>
-  B&lt;Net::DNS&gt;, B&lt;Net::DNS::SEC&gt;</pre>
+
+<pre><code>  B&lt;Net::DNS&gt;, B&lt;Net::DNS::SEC&gt;</code></pre>
+
 
 </body>
 
 </html>
+
+

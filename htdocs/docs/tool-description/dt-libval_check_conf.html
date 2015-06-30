@@ -2,114 +2,93 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>B&lt;dt-libval_check_conf&gt; - command-line program for checking validity of the
-validator configuration files.</title>
+<title></title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-<link rev="made" href="mailto:assp@beta.macosforge.org" />
+<link rev="made" href="mailto:root@localhost" />
 </head>
 
 <body style="background-color: white">
 
 
-<!-- INDEX BEGIN -->
-<div name="index">
-<p><a name="__index__"></a></p>
 
-<ul>
-
-	<li><a href="#name">NAME</a></li>
-	<li><a href="#synopsis">SYNOPSIS</a></li>
-	<li><a href="#description">DESCRIPTION</a></li>
-	<li><a href="#return_values">RETURN VALUES</a></li>
-	<li><a href="#options">OPTIONS</a></li>
-	<li><a href="#copyright">COPYRIGHT</a></li>
-	<li><a href="#authors">AUTHORS</a></li>
-	<li><a href="#see_also">SEE ALSO</a></li>
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
+  <li><a href="#RETURN-VALUES">RETURN VALUES</a></li>
+  <li><a href="#OPTIONS">OPTIONS</a></li>
+  <li><a href="#COPYRIGHT">COPYRIGHT</a></li>
+  <li><a href="#AUTHORS">AUTHORS</a></li>
+  <li><a href="#SEE-ALSO">SEE ALSO</a></li>
 </ul>
 
-<hr name="index" />
-</div>
-<!-- INDEX END -->
+<h1 id="NAME">NAME</h1>
 
-<p>
-</p>
-<hr />
-<h1><a name="name">NAME</a></h1>
-<p><strong>dt-libval_check_conf</strong> - command-line program for checking validity of the
-validator configuration files.</p>
-<p>
-</p>
-<hr />
-<h1><a name="synopsis">SYNOPSIS</a></h1>
-<pre>
-    dt-libval_check_conf [options]</pre>
-<p>
-</p>
-<hr />
-<h1><a name="description">DESCRIPTION</a></h1>
-<p>This program checks a given validator configuration file for any syntax errors. 
-If no file is specified as a command line option, the default <strong>dnsval.conf</strong> 
-file is checked.</p>
-<p>
-</p>
-<hr />
-<h1><a name="return_values">RETURN VALUES</a></h1>
+<p><b>dt-libval_check_conf</b> - command-line program for checking validity of the validator configuration files.</p>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<pre><code>    dt-libval_check_conf [options]</code></pre>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p>This program checks a given validator configuration file for any syntax errors. If no file is specified as a command line option, the default <b>dnsval.conf</b> file is checked.</p>
+
+<h1 id="RETURN-VALUES">RETURN VALUES</h1>
+
 <p>The program returns 0 on success and -1 on failure.</p>
-<p>
-</p>
-<hr />
-<h1><a name="options">OPTIONS</a></h1>
+
+<h1 id="OPTIONS">OPTIONS</h1>
+
 <dl>
-<dt><strong><a name="d_dnsval_conf" class="item">-d, --dnsval-conf</a></strong></dt>
 
+<dt id="d---dnsval-conf">-d, --dnsval-conf</dt>
 <dd>
-<p>Specifies the location for the dnsval.conf file.  If this option is not
-specified the default dnsval.conf file recognized by the validator library is
-used instead.</p>
+
+<p>Specifies the location for the dnsval.conf file. If this option is not specified the default dnsval.conf file recognized by the validator library is used instead.</p>
+
 </dd>
-<dt><strong><a name="r_resolv_conf" class="item">-r, --resolv-conf</a></strong></dt>
-
+<dt id="r---resolv-conf">-r, --resolv-conf</dt>
 <dd>
-<p>Specifies the location for the resolv.conf file.  If this option is not
-specified the default resolv.conf file recognized by the validator library is
-used instead.</p>
+
+<p>Specifies the location for the resolv.conf file. If this option is not specified the default resolv.conf file recognized by the validator library is used instead.</p>
+
 </dd>
-<dt><strong><a name="i_root_hints" class="item">-i, --root-hints</a></strong></dt>
-
+<dt id="i---root-hints">-i, --root-hints</dt>
 <dd>
-<p>Specifies the location for the root.hints file.  If this option is not
-specified the default root.hints file recognized by the validator library is
-used instead.</p>
+
+<p>Specifies the location for the root.hints file. If this option is not specified the default root.hints file recognized by the validator library is used instead.</p>
+
 </dd>
-<dt><strong><a name="v_verbose" class="item">-v, --verbose</a></strong></dt>
-
+<dt id="v---verbose">-v, --verbose</dt>
 <dd>
+
 <p>Displays detailed messages and warnings associated with the validator configuration file check process.</p>
-</dd>
-<dt><strong><a name="h_help" class="item">-h, --help</a></strong></dt>
 
+</dd>
+<dt id="h---help">-h, --help</dt>
 <dd>
+
 <p>Displays a usage help message and exits the program.</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<hr />
-<h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2005-2013 SPARTA, Inc.  All rights reserved.
-See the COPYING file included with the DNSSEC-Tools package for details.</p>
-<p>
-</p>
-<hr />
-<h1><a name="authors">AUTHORS</a></h1>
-<p>Suresh Krishnaswamy (<a href="mailto:suresh@tislabs.com">suresh@tislabs.com</a>)</p>
-<p>
-</p>
-<hr />
-<h1><a name="see_also">SEE ALSO</a></h1>
-<p><strong>dnsval.conf(3)</strong></p>
 
-<!--#include virtual="/page-bottom.html" -->
+<h1 id="COPYRIGHT">COPYRIGHT</h1>
+
+<p>Copyright 2005-2013 SPARTA, Inc. All rights reserved. See the COPYING file included with the DNSSEC-Tools package for details.</p>
+
+<h1 id="AUTHORS">AUTHORS</h1>
+
+<p>Suresh Krishnaswamy (suresh@tislabs.com)</p>
+
+<h1 id="SEE-ALSO">SEE ALSO</h1>
+
+<p><b>dnsval.conf(3)</b></p>
+
+
 </body>
 
 </html>
+
+

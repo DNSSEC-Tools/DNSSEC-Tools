@@ -2,7 +2,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>expchk - Check a I&lt;keyrec&gt; file for expired zones</title>
+<title></title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
@@ -10,113 +10,100 @@
 <body style="background-color: white">
 
 
-<!-- INDEX BEGIN -->
-<div name="index">
-<p><a name="__index__"></a></p>
 
-<ul>
-
-	<li><a href="#name">NAME</a></li>
-	<li><a href="#synopsis">SYNOPSIS</a></li>
-	<li><a href="#description">DESCRIPTION</a></li>
-	<li><a href="#options">OPTIONS</a></li>
-	<li><a href="#copyright">COPYRIGHT</a></li>
-	<li><a href="#author">AUTHOR</a></li>
-	<li><a href="#see_also">SEE ALSO</a></li>
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
+  <li><a href="#OPTIONS">OPTIONS</a></li>
+  <li><a href="#COPYRIGHT">COPYRIGHT</a></li>
+  <li><a href="#AUTHOR">AUTHOR</a></li>
+  <li><a href="#SEE-ALSO">SEE ALSO</a></li>
 </ul>
 
-<hr name="index" />
-</div>
-<!-- INDEX END -->
+<h1 id="NAME">NAME</h1>
 
-<p>
-</p>
-<hr />
-<h1><a name="name">NAME</a></h1>
-<p>expchk - Check a <em>keyrec</em> file for expired zones</p>
-<p>
-</p>
-<hr />
-<h1><a name="synopsis">SYNOPSIS</a></h1>
-<pre>
-  expchk -all -expired -valid -warn numdays -zone zonename -count -help keyrec_files</pre>
-<p>
-</p>
-<hr />
-<h1><a name="description">DESCRIPTION</a></h1>
-<p><strong>expchk</strong> checks a set of <em>keyrec</em> files to determine if the zone <em>keyrec</em>s
-are valid or expired.  The type of zones displayed depends on the options
-chosen; if no options are given the expired zones will be listed.</p>
-<p>
-</p>
-<hr />
-<h1><a name="options">OPTIONS</a></h1>
+<p>expchk - Check a <i>keyrec</i> file for expired zones</p>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<pre><code>  expchk -all -expired -valid -warn numdays -zone zonename -count -help keyrec_files</code></pre>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p><b>expchk</b> checks a set of <i>keyrec</i> files to determine if the zone <i>keyrec</i>s are valid or expired. The type of zones displayed depends on the options chosen; if no options are given the expired zones will be listed.</p>
+
+<h1 id="OPTIONS">OPTIONS</h1>
+
 <dl>
-<dt><strong><a name="all" class="item"><strong>-all</strong></a></strong></dt>
 
+<dt id="all"><b>-all</b></dt>
 <dd>
-<p>Display expiration information on all zones, expired or valid, in the
-specified <em>keyrec</em> files.</p>
+
+<p>Display expiration information on all zones, expired or valid, in the specified <i>keyrec</i> files.</p>
+
 </dd>
-<dt><strong><a name="expired" class="item"><strong>-expired</strong></a></strong></dt>
-
+<dt id="expired"><b>-expired</b></dt>
 <dd>
-<p>Display expiration information on the expired zones in the specified
-<em>keyrec</em> files.  This is the default action.</p>
+
+<p>Display expiration information on the expired zones in the specified <i>keyrec</i> files. This is the default action.</p>
+
 </dd>
-<dt><strong><a name="valid" class="item"><strong>-valid</strong></a></strong></dt>
-
+<dt id="valid"><b>-valid</b></dt>
 <dd>
-<p>Display expiration information on the valid zones in the specified
-<em>keyrec</em> files.</p>
+
+<p>Display expiration information on the valid zones in the specified <i>keyrec</i> files.</p>
+
 </dd>
-<dt><strong><a name="warn_numdays" class="item"><strong>-warn numdays</strong></a></strong></dt>
-
+<dt id="warn-numdays"><b>-warn numdays</b></dt>
 <dd>
-<p>A warning will be given for each valid zone that will expire in <em>numdays</em>
-days.  This option has no effect on expired zones.</p>
+
+<p>A warning will be given for each valid zone that will expire in <i>numdays</i> days. This option has no effect on expired zones.</p>
+
 </dd>
-<dt><strong><a name="zone_zonename" class="item"><strong>-zone zonename</strong></a></strong></dt>
-
+<dt id="zone-zonename"><b>-zone zonename</b></dt>
 <dd>
-<p>Display expiration information on the zone specified in <em>zonename</em>.</p>
+
+<p>Display expiration information on the zone specified in <i>zonename</i>.</p>
+
 </dd>
-<dt><strong><a name="count" class="item"><strong>-count</strong></a></strong></dt>
-
+<dt id="count"><b>-count</b></dt>
 <dd>
-<p>Only the count of matching zones (valid or expired) will be given.  If both
-types of zones are selected, then the count will be the number of zones in the
-specified <em>keyrec</em> files.</p>
+
+<p>Only the count of matching zones (valid or expired) will be given. If both types of zones are selected, then the count will be the number of zones in the specified <i>keyrec</i> files.</p>
+
 </dd>
-<dt><strong><a name="help" class="item"><strong>-help</strong></a></strong></dt>
-
+<dt id="help"><b>-help</b></dt>
 <dd>
+
 <p>Display a usage message.</p>
-</dd>
-<dt><strong><a name="version" class="item"><strong>-Version</strong></a></strong></dt>
 
+</dd>
+<dt id="Version"><b>-Version</b></dt>
 <dd>
-<p>Displays the version information for <strong>expchk</strong> and the DNSSEC-Tools package.</p>
+
+<p>Displays the version information for <b>expchk</b> and the DNSSEC-Tools package.</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<hr />
-<h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2004-2013 SPARTA, Inc.  All rights reserved.
-See the COPYING file included with the DNSSEC-Tools package for details.</p>
-<p>
-</p>
-<hr />
-<h1><a name="author">AUTHOR</a></h1>
-<p>Wayne Morrison, <a href="mailto:tewok@tislabs.com">tewok@tislabs.com</a></p>
-<p>
-</p>
-<hr />
-<h1><a name="see_also">SEE ALSO</a></h1>
-<p><strong>zonesigner(8)</strong></p>
-<p><strong>Net::DNS::SEC::Tools::keyrec.pm(3)</strong></p>
+
+<h1 id="COPYRIGHT">COPYRIGHT</h1>
+
+<p>Copyright 2004-2014 SPARTA, Inc. All rights reserved. See the COPYING file included with the DNSSEC-Tools package for details.</p>
+
+<h1 id="AUTHOR">AUTHOR</h1>
+
+<p>Wayne Morrison, tewok@tislabs.com</p>
+
+<h1 id="SEE-ALSO">SEE ALSO</h1>
+
+<p><b>zonesigner(8)</b></p>
+
+<p><b>Net::DNS::SEC::Tools::keyrec.pm(3)</b></p>
+
 
 </body>
 
 </html>
+
+

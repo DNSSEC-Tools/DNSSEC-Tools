@@ -2,7 +2,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>dtreqmods - Checks that all required Perl modules are available</title>
+<title></title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
@@ -10,159 +10,141 @@
 <body style="background-color: white">
 
 
-<!-- INDEX BEGIN -->
-<div name="index">
-<p><a name="__index__"></a></p>
 
-<ul>
-
-	<li><a href="#name">NAME</a></li>
-	<li><a href="#synopsis">SYNOPSIS</a></li>
-	<li><a href="#description">DESCRIPTION</a></li>
-	<li><a href="#module_search_details">Module Search Details</a></li>
-	<li><a href="#options">OPTIONS</a></li>
-	<ul>
-
-		<li><a href="#display_options">Display Options</a></li>
-		<li><a href="#module_type_options">Module-Type Options</a></li>
-		<li><a href="#other_options">Other Options</a></li>
-	</ul>
-
-	<li><a href="#copyright">COPYRIGHT</a></li>
-	<li><a href="#author">AUTHOR</a></li>
-	<li><a href="#see_also">SEE ALSO</a></li>
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
+  <li><a href="#Module-Search-Details">Module Search Details</a></li>
+  <li><a href="#OPTIONS">OPTIONS</a>
+    <ul>
+      <li><a href="#Display-Options">Display Options</a></li>
+      <li><a href="#Module-Type-Options">Module-Type Options</a></li>
+      <li><a href="#Other-Options">Other Options</a></li>
+    </ul>
+  </li>
+  <li><a href="#COPYRIGHT">COPYRIGHT</a></li>
+  <li><a href="#AUTHOR">AUTHOR</a></li>
+  <li><a href="#SEE-ALSO">SEE ALSO</a></li>
 </ul>
 
-<hr name="index" />
-</div>
-<!-- INDEX END -->
+<h1 id="NAME">NAME</h1>
 
-<p>
-</p>
-<hr />
-<h1><a name="name">NAME</a></h1>
 <p>dtreqmods - Checks that all required Perl modules are available</p>
-<p>
-</p>
-<hr />
-<h1><a name="synopsis">SYNOPSIS</a></h1>
-<pre>
-  dtreqmods [options]</pre>
-<p>
-</p>
-<hr />
-<h1><a name="description">DESCRIPTION</a></h1>
-<p><strong>dtreqmods</strong> checks that all Perl modules required by the DNSSEC-Tools scripts
-are available.  This includes modules included by other modules.  The default
-action is to print a list of all the modules that were not found.  This action
-may be modified by a number of options.</p>
-<p>There are several types of modules checked:  DNSSEC Tools modules, DNS
-Resource Record modules, and everything else.  By default, all module types
-are checked, but there are options to narrow <strong>dtreqmods</strong>' checking to a
-subset of these types.</p>
-<p>By default, only information is displayed for those modules that aren't
-found.  The <strong>-verbose</strong> option displays information about all modules.
-The <strong>-quiet</strong> option displays no information.</p>
-<p>The return code for <strong>dtreqmods</strong> is the number of missing modules.</p>
-<p>
-</p>
-<hr />
-<h1><a name="module_search_details">Module Search Details</a></h1>
-<p>Module accessibility is determined by using Perl's <em>require</em> function.  Each
-module is passed to <em>require</em>, and its result determines whether the module
-is consider available or missing.  <em>require</em> looks for the modules in the
-directories stored in Perl's @INC variable.  The contents of this variable,
-as seen by <strong>dtreqmods</strong> may be displayed by use of the <strong>-inc</strong> option.</p>
-<p>
-</p>
-<hr />
-<h1><a name="options">OPTIONS</a></h1>
-<p><strong>dtreqmods</strong> supports several types of options.  These options are detailed
-below.</p>
-<p>
-</p>
-<h2><a name="display_options">Display Options</a></h2>
-<p>These options control the amount of output that is given.  Only one display
-option may be specified in a particular invocation of <strong>dtreqmods</strong>.</p>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<pre><code>  dtreqmods [options]</code></pre>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p><b>dtreqmods</b> checks that all Perl modules required by the DNSSEC-Tools scripts are available. This includes modules included by other modules. The default action is to print a list of all the modules that were not found. This action may be modified by a number of options.</p>
+
+<p>There are several types of modules checked: DNSSEC Tools modules, DNS Resource Record modules, and everything else. By default, all module types are checked, but there are options to narrow <b>dtreqmods</b>&#39; checking to a subset of these types.</p>
+
+<p>By default, only information is displayed for those modules that aren&#39;t found. The <b>-verbose</b> option displays information about all modules. The <b>-quiet</b> option displays no information.</p>
+
+<p>The return code for <b>dtreqmods</b> is the number of missing modules.</p>
+
+<h1 id="Module-Search-Details">Module Search Details</h1>
+
+<p>Module accessibility is determined by using Perl&#39;s <i>require</i> function. Each module is passed to <i>require</i>, and its result determines whether the module is consider available or missing. <i>require</i> looks for the modules in the directories stored in Perl&#39;s @INC variable. The contents of this variable, as seen by <b>dtreqmods</b> may be displayed by use of the <b>-inc</b> option.</p>
+
+<h1 id="OPTIONS">OPTIONS</h1>
+
+<p><b>dtreqmods</b> supports several types of options. These options are detailed below.</p>
+
+<h2 id="Display-Options">Display Options</h2>
+
+<p>These options control the amount of output that is given. Only one display option may be specified in a particular invocation of <b>dtreqmods</b>.</p>
+
 <dl>
-<dt><strong><a name="verbose" class="item"><strong>-verbose</strong></a></strong></dt>
 
+<dt id="verbose"><b>-verbose</b></dt>
 <dd>
-<p>Display information for all modules, missing or found.
-<strong>-verbose</strong> and <strong>-quiet</strong> are mutually exclusive.</p>
+
+<p>Display information for all modules, missing or found. <b>-verbose</b> and <b>-quiet</b> are mutually exclusive.</p>
+
 </dd>
-<dt><strong><a name="quiet" class="item"><strong>-quiet</strong></a></strong></dt>
-
+<dt id="quiet"><b>-quiet</b></dt>
 <dd>
-<p>Display no information.
-<strong>-quiet</strong> and <strong>-verbose</strong> are mutually exclusive.</p>
+
+<p>Display no information. <b>-quiet</b> and <b>-verbose</b> are mutually exclusive.</p>
+
 </dd>
-<dt><strong><a name="list" class="item"><strong>-list</strong></a></strong></dt>
-
+<dt id="list"><b>-list</b></dt>
 <dd>
-<p>Display the modules we check and then exit.
-<strong>-list</strong> may only be used with the module-type options.</p>
+
+<p>Display the modules we check and then exit. <b>-list</b> may only be used with the module-type options.</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<h2><a name="module_type_options">Module-Type Options</a></h2>
+
+<h2 id="Module-Type-Options">Module-Type Options</h2>
+
 <p>These options control the types of modules that are displayed.</p>
-<dl>
-<dt><strong><a name="dnssec" class="item"><strong>-dnssec</strong></a></strong></dt>
 
+<dl>
+
+<dt id="dnssec"><b>-dnssec</b></dt>
 <dd>
+
 <p>Check the DNSSEC Tools-related modules.</p>
-</dd>
-<dt><strong><a name="rr" class="item"><strong>-rr</strong></a></strong></dt>
 
+</dd>
+<dt id="rr"><b>-rr</b></dt>
 <dd>
+
 <p>Check the DNS Resource Record-related modules.</p>
-</dd>
-<dt><strong><a name="misc" class="item"><strong>-misc</strong></a></strong></dt>
 
+</dd>
+<dt id="misc"><b>-misc</b></dt>
 <dd>
-<p>Check the modules that aren't related to DNSSEC Tools or DNS Resource Records.</p>
+
+<p>Check the modules that aren&#39;t related to DNSSEC Tools or DNS Resource Records.</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<h2><a name="other_options">Other Options</a></h2>
+
+<h2 id="Other-Options">Other Options</h2>
+
 <p>The remaining options are detailed here.</p>
+
 <dl>
-<dt><strong><a name="inc" class="item"><strong>-inc</strong></a></strong></dt>
 
+<dt id="inc"><b>-inc</b></dt>
 <dd>
-<p>Display the contents of @INC.  The directories are not sorted, but are given
-in the order listed in @INC.</p>
+
+<p>Display the contents of @INC. The directories are not sorted, but are given in the order listed in @INC.</p>
+
 </dd>
-<dt><strong><a name="version" class="item"><strong>-Version</strong></a></strong></dt>
-
+<dt id="Version"><b>-Version</b></dt>
 <dd>
-<p>Display <strong>dtreqmods</strong>' version information and exit.</p>
+
+<p>Display <b>dtreqmods</b>&#39; version information and exit.</p>
+
 </dd>
-<dt><strong><a name="help" class="item"><strong>-help</strong></a></strong></dt>
-
+<dt id="help"><b>-help</b></dt>
 <dd>
+
 <p>Display a usage message and exit.</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<hr />
-<h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2010-2013 SPARTA, Inc.  All rights reserved.
-See the COPYING file included with the DNSSEC-Tools package for details.</p>
-<p>
-</p>
-<hr />
-<h1><a name="author">AUTHOR</a></h1>
-<p>Wayne Morrison, <a href="mailto:tewok@tislabs.com">tewok@tislabs.com</a></p>
-<p>
-</p>
-<hr />
-<h1><a name="see_also">SEE ALSO</a></h1>
+
+<h1 id="COPYRIGHT">COPYRIGHT</h1>
+
+<p>Copyright 2010-2014 SPARTA, Inc. All rights reserved. See the COPYING file included with the DNSSEC-Tools package for details.</p>
+
+<h1 id="AUTHOR">AUTHOR</h1>
+
+<p>Wayne Morrison, tewok@tislabs.com</p>
+
+<h1 id="SEE-ALSO">SEE ALSO</h1>
+
 
 </body>
 
 </html>
+
+

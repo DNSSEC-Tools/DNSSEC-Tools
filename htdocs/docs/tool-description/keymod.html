@@ -2,7 +2,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>keymod - Modifies key parameters in a DNSSEC-Tools I&lt;keyrec&gt; file</title>
+<title></title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
@@ -10,177 +10,159 @@
 <body style="background-color: white">
 
 
-<!-- INDEX BEGIN -->
-<div name="index">
-<p><a name="__index__"></a></p>
 
-<ul>
-
-	<li><a href="#name">NAME</a></li>
-	<li><a href="#synopsis">SYNOPSIS</a></li>
-	<li><a href="#description">DESCRIPTION</a></li>
-	<li><a href="#options">OPTIONS</a></li>
-	<li><a href="#copyright">COPYRIGHT</a></li>
-	<li><a href="#author">AUTHOR</a></li>
-	<li><a href="#see_also">SEE ALSO</a></li>
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
+  <li><a href="#OPTIONS">OPTIONS</a></li>
+  <li><a href="#COPYRIGHT">COPYRIGHT</a></li>
+  <li><a href="#AUTHOR">AUTHOR</a></li>
+  <li><a href="#SEE-ALSO">SEE ALSO</a></li>
 </ul>
 
-<hr name="index" />
-</div>
-<!-- INDEX END -->
+<h1 id="NAME">NAME</h1>
 
-<p>
-</p>
-<hr />
-<h1><a name="name">NAME</a></h1>
-<p>keymod - Modifies key parameters in a DNSSEC-Tools <em>keyrec</em> file</p>
-<p>
-</p>
-<hr />
-<h1><a name="synopsis">SYNOPSIS</a></h1>
-<pre>
-  keymod [options] keyrec1 ... keyrecN</pre>
-<p>
-</p>
-<hr />
-<h1><a name="description">DESCRIPTION</a></h1>
-<p><strong>keymod</strong> modifies the key parameters in a keyrec file that are used to
-generate cryptographics keys used to sign zones.  The new parameters
-will be used by <strong>zonesigner</strong> when generating <em>new</em> keys.  It has no
-effect on existing keys.</p>
-<p><strong>zonesigner</strong> will use the new parameter for a zone the next time it
-generates a key that requires that parameter.  This means that, for example,
-a new ZSK length will not be used during the <em>next</em> invocation of
-<strong>zonesigner</strong> if that invocation will be performing KSK-rollover actions.</p>
+<p>keymod - Modifies key parameters in a DNSSEC-Tools <i>keyrec</i> file</p>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<pre><code>  keymod [options] keyrec1 ... keyrecN</code></pre>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p><b>keymod</b> modifies the key parameters in a keyrec file that are used to generate cryptographics keys used to sign zones. The new parameters will be used by <b>zonesigner</b> when generating <i>new</i> keys. It has no effect on existing keys.</p>
+
+<p><b>zonesigner</b> will use the new parameter for a zone the next time it generates a key that requires that parameter. This means that, for example, a new ZSK length will not be used during the <i>next</i> invocation of <b>zonesigner</b> if that invocation will be performing KSK-rollover actions.</p>
+
 <p>The following fields may be modified:</p>
-<pre>
-    kskcount - count of KSK keys
+
+<pre><code>    kskcount - count of KSK keys
     ksklength - length of KSK keys
     ksklife - lifetime of KSK keys
     random - random number generator device file
     revperiod - revocation period for KSK keys
     zskcount - count of ZSK keys
     zsklength - length of ZSK keys
-    zsklife - lifetime of ZSK keys</pre>
-<p>New key/value fields will be added to a zone <em>keyrec</em> file to inform
-<strong>zonesigner</strong> that new values should be used.  The key portion of the added
-fields will begin with &quot;new_&quot;.  For example, a new KSK length of 2048 will
-be written to the <em>keyrec</em> file as:</p>
-<pre>
-    new_ksklength        2048</pre>
-<p>All zone records in the specified <em>keyrec</em> file will be modified, unless the
-<strong>-zone</strong> option is given.  In that case, only the named zone will be modified.</p>
-<p>If a zone <em>keyrec</em> already contains a new key/value field, then the value
-will be modified on subsequent runs of <strong>keymod</strong>.</p>
-<p>
-</p>
-<hr />
-<h1><a name="options">OPTIONS</a></h1>
-<p><strong>keymod</strong> recognizes the following options.  Multiple options may be combined
-in a single <strong>keymod</strong> execution.</p>
+    zsklife - lifetime of ZSK keys</code></pre>
+
+<p>New key/value fields will be added to a zone <i>keyrec</i> file to inform <b>zonesigner</b> that new values should be used. The key portion of the added fields will begin with &quot;new_&quot;. For example, a new KSK length of 2048 will be written to the <i>keyrec</i> file as:</p>
+
+<pre><code>    new_ksklength        2048</code></pre>
+
+<p>All zone records in the specified <i>keyrec</i> file will be modified, unless the <b>-zone</b> option is given. In that case, only the named zone will be modified.</p>
+
+<p>If a zone <i>keyrec</i> already contains a new key/value field, then the value will be modified on subsequent runs of <b>keymod</b>.</p>
+
+<h1 id="OPTIONS">OPTIONS</h1>
+
+<p><b>keymod</b> recognizes the following options. Multiple options may be combined in a single <b>keymod</b> execution.</p>
+
 <p>All numeric values must be positive or zero.</p>
-<p>If a new key/value field should be deleted from a zone <em>keyrec</em>, then a
-zero or empty string value should be specified for the appropriate option.</p>
+
+<p>If a new key/value field should be deleted from a zone <i>keyrec</i>, then a zero or empty string value should be specified for the appropriate option.</p>
+
 <dl>
-<dt><strong><a name="zone_zonename" class="item"><strong>-zone zonename</strong></a></strong></dt>
 
+<dt id="zone-zonename"><b>-zone zonename</b></dt>
 <dd>
-<p>The zone <em>keyrec</em> whose name matches <em>zonename</em> is selected as the only
-<em>keyrec</em> that will be modified.  If this name is not given, then all zone
-<em>keyrec</em> records will be modified.</p>
+
+<p>The zone <i>keyrec</i> whose name matches <i>zonename</i> is selected as the only <i>keyrec</i> that will be modified. If this name is not given, then all zone <i>keyrec</i> records will be modified.</p>
+
 </dd>
-<dt><strong><a name="ksklength_ksklength" class="item"><strong>-ksklength ksklength</strong></a></strong></dt>
-
+<dt id="ksklength-ksklength"><b>-ksklength ksklength</b></dt>
 <dd>
-<p>The <em>ksklength</em> field will be modified in the selected <em>keyrec</em> records
-to the given value.  This is a numeric field whose values depend on the
-cryptographic algorithm to be used to generate keys for the zone.</p>
+
+<p>The <i>ksklength</i> field will be modified in the selected <i>keyrec</i> records to the given value. This is a numeric field whose values depend on the cryptographic algorithm to be used to generate keys for the zone.</p>
+
 </dd>
-<dt><strong><a name="kskcount_kskcount" class="item"><strong>-kskcount kskcount</strong></a></strong></dt>
-
+<dt id="kskcount-kskcount"><b>-kskcount kskcount</b></dt>
 <dd>
-<p>The <em>kskcount</em> field will be modified in the selected <em>keyrec</em> records to the
-given value.  This is a numeric field.</p>
+
+<p>The <i>kskcount</i> field will be modified in the selected <i>keyrec</i> records to the given value. This is a numeric field.</p>
+
 </dd>
-<dt><strong><a name="ksklife_ksklife" class="item"><strong>-ksklife ksklife</strong></a></strong></dt>
-
+<dt id="ksklife-ksklife"><b>-ksklife ksklife</b></dt>
 <dd>
-<p>The <em>ksklife</em> field will be modified in the selected <em>keyrec</em> records to the
-given value.  This is a numeric field.</p>
+
+<p>The <i>ksklife</i> field will be modified in the selected <i>keyrec</i> records to the given value. This is a numeric field.</p>
+
 </dd>
-<dt><strong><a name="random_random" class="item"><strong>-random random</strong></a></strong></dt>
-
+<dt id="random-random"><b>-random random</b></dt>
 <dd>
-<p>The <em>random</em> field will be modified in the selected <em>keyrec</em> records to the
-given value.  This is a text field that will be passed to the key generator.</p>
+
+<p>The <i>random</i> field will be modified in the selected <i>keyrec</i> records to the given value. This is a text field that will be passed to the key generator.</p>
+
 </dd>
-<dt><strong><a name="revperiod_revperiod" class="item"><strong>-revperiod revperiod</strong></a></strong></dt>
-
+<dt id="revperiod-revperiod"><b>-revperiod revperiod</b></dt>
 <dd>
-<p>The <em>revperiod</em> field will be modified in the selected <em>keyrec</em> records to
-the given value.  This is a numeric field.</p>
+
+<p>The <i>revperiod</i> field will be modified in the selected <i>keyrec</i> records to the given value. This is a numeric field.</p>
+
 </dd>
-<dt><strong><a name="zskcount_zskcount" class="item"><strong>-zskcount zskcount</strong></a></strong></dt>
-
+<dt id="zskcount-zskcount"><b>-zskcount zskcount</b></dt>
 <dd>
-<p>The <em>zskcount</em> field will be modified in the selected <em>keyrec</em> records to the
-given value.  This is a numeric field.</p>
+
+<p>The <i>zskcount</i> field will be modified in the selected <i>keyrec</i> records to the given value. This is a numeric field.</p>
+
 </dd>
-<dt><strong><a name="zsklength_zsklength" class="item"><strong>-zsklength zsklength</strong></a></strong></dt>
-
+<dt id="zsklength-zsklength"><b>-zsklength zsklength</b></dt>
 <dd>
-<p>The <em>zsklength</em> field will be modified in the selected <em>keyrec</em> records
-to the given value.  This is a numeric field whose values depend on the
-cryptographic algorithm to be used to generate keys for the zone.</p>
+
+<p>The <i>zsklength</i> field will be modified in the selected <i>keyrec</i> records to the given value. This is a numeric field whose values depend on the cryptographic algorithm to be used to generate keys for the zone.</p>
+
 </dd>
-<dt><strong><a name="zsklife_zsklife" class="item"><strong>-zsklife zsklife</strong></a></strong></dt>
-
+<dt id="zsklife-zsklife"><b>-zsklife zsklife</b></dt>
 <dd>
-<p>The <em>zsklife</em> field will be modified in the selected <em>keyrec</em> records to the
-given value.  This is a numeric field.</p>
+
+<p>The <i>zsklife</i> field will be modified in the selected <i>keyrec</i> records to the given value. This is a numeric field.</p>
+
 </dd>
-<dt><strong><a name="nocheck" class="item"><strong>-nocheck</strong></a></strong></dt>
-
+<dt id="nocheck"><b>-nocheck</b></dt>
 <dd>
-<p>If this option is given, the <strong>krfcheck</strong> command will <strong>not</strong> be run on
-the modified <em>keyrec</em> file.</p>
+
+<p>If this option is given, the <b>krfcheck</b> command will <b>not</b> be run on the modified <i>keyrec</i> file.</p>
+
 </dd>
-<dt><strong><a name="verbose" class="item"><strong>-verbose</strong></a></strong></dt>
-
+<dt id="verbose"><b>-verbose</b></dt>
 <dd>
-<p>Display information about every modification made to the <em>keyrec</em> file.</p>
+
+<p>Display information about every modification made to the <i>keyrec</i> file.</p>
+
 </dd>
-<dt><strong><a name="version" class="item"><strong>-Version</strong></a></strong></dt>
-
+<dt id="Version"><b>-Version</b></dt>
 <dd>
-<p>Displays the version information for <strong>keymod</strong> and the DNSSEC-Tools package.</p>
+
+<p>Displays the version information for <b>keymod</b> and the DNSSEC-Tools package.</p>
+
 </dd>
-<dt><strong><a name="help" class="item"><strong>-help</strong></a></strong></dt>
-
+<dt id="help"><b>-help</b></dt>
 <dd>
+
 <p>Display a usage message.</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<hr />
-<h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2012-2013 SPARTA, Inc.  All rights reserved.
-See the COPYING file included with the DNSSEC-Tools package for details.</p>
-<p>
-</p>
-<hr />
-<h1><a name="author">AUTHOR</a></h1>
-<p>Wayne Morrison, <a href="mailto:tewok@tislabs.com">tewok@tislabs.com</a></p>
-<p>
-</p>
-<hr />
-<h1><a name="see_also">SEE ALSO</a></h1>
-<p><strong>zonesigner(8)</strong>,
-<strong>krfcheck(8)</strong></p>
-<p><strong>Net::DNS::SEC::Tools::keyrec.pm(3)</strong></p>
-<p><strong>file-keyrec(5)</strong></p>
+
+<h1 id="COPYRIGHT">COPYRIGHT</h1>
+
+<p>Copyright 2012-2014 SPARTA, Inc. All rights reserved. See the COPYING file included with the DNSSEC-Tools package for details.</p>
+
+<h1 id="AUTHOR">AUTHOR</h1>
+
+<p>Wayne Morrison, tewok@tislabs.com</p>
+
+<h1 id="SEE-ALSO">SEE ALSO</h1>
+
+<p><b>zonesigner(8)</b>, <b>krfcheck(8)</b></p>
+
+<p><b>Net::DNS::SEC::Tools::keyrec.pm(3)</b></p>
+
+<p><b>file-keyrec(5)</b></p>
+
 
 </body>
 
 </html>
+
+

@@ -2,8 +2,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>genkrf - Generate a I&lt;keyrec&gt; file from Key Signing Key
-and/or Zone Signing Key (ZSK) files</title>
+<title></title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
@@ -11,229 +10,202 @@ and/or Zone Signing Key (ZSK) files</title>
 <body style="background-color: white">
 
 
-<!-- INDEX BEGIN -->
-<div name="index">
-<p><a name="__index__"></a></p>
 
-<ul>
-
-	<li><a href="#name">NAME</a></li>
-	<li><a href="#synopsis">SYNOPSIS</a></li>
-	<li><a href="#description">DESCRIPTION</a></li>
-	<li><a href="#options">OPTIONS</a></li>
-	<ul>
-
-		<li><a href="#general_genkrf_options">General <strong>genkrf</strong> Options</a></li>
-		<li><a href="#ksk_related_options">KSK-related Options</a></li>
-		<li><a href="#zsk_related_options">ZSK-related Options</a></li>
-	</ul>
-
-	<li><a href="#copyright">COPYRIGHT</a></li>
-	<li><a href="#author">AUTHOR</a></li>
-	<li><a href="#see_also">SEE ALSO</a></li>
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
+  <li><a href="#OPTIONS">OPTIONS</a>
+    <ul>
+      <li><a href="#General-genkrf-Options">General genkrf Options</a></li>
+      <li><a href="#KSK-related-Options">KSK-related Options</a></li>
+      <li><a href="#ZSK-related-Options">ZSK-related Options</a></li>
+    </ul>
+  </li>
+  <li><a href="#COPYRIGHT">COPYRIGHT</a></li>
+  <li><a href="#AUTHOR">AUTHOR</a></li>
+  <li><a href="#SEE-ALSO">SEE ALSO</a></li>
 </ul>
 
-<hr name="index" />
-</div>
-<!-- INDEX END -->
+<h1 id="NAME">NAME</h1>
 
-<p>
-</p>
-<hr />
-<h1><a name="name">NAME</a></h1>
-<p>genkrf - Generate a <em>keyrec</em> file from Key Signing Key (KSK)
-and/or Zone Signing Key (ZSK) files</p>
-<p>
-</p>
-<hr />
-<h1><a name="synopsis">SYNOPSIS</a></h1>
-<pre>
-  genkrf [options] &lt;zone-file&gt; [&lt;signed-zone-file&gt;]</pre>
-<p>
-</p>
-<hr />
-<h1><a name="description">DESCRIPTION</a></h1>
-<p><strong>genkrf</strong> generates a <em>keyrec</em> file from KSK and/or ZSK files.  It
-generates new KSK and ZSK keys if needed.</p>
-<p>The name of the <em>keyrec</em> file to be generated is given by the <strong>-krfile</strong>
-option.  If this option is not specified, <strong>zone-name.krf</strong> is used as the name
-of the <em>keyrec</em> file.  If the <em>keyrec</em> file already exists, it will be
-overwritten with new <em>keyrec</em> definitions.</p>
-<p>The <em>zone-file</em> argument is required.  It specifies the name of the zone file
-from which the signed zone file was created.  The optional <em>signed-zone-file</em>
-argument specifies the name of the signed zone file.  If it is not given, then
-it defaults to <strong>zone-file.signed</strong>.  The signed zone file field is, in effect,
-a dummy field as the zone file is not actually signed.</p>
-<p>
-</p>
-<hr />
-<h1><a name="options">OPTIONS</a></h1>
-<p><strong>genkrf</strong> has a number of options that assist in creation of the <em>keyrec</em>
-file.  These options will be set to the first value found from this search
-path:</p>
-<pre>
-    command line options
+<p>genkrf - Generate a <i>keyrec</i> file from Key Signing Key (KSK) and/or Zone Signing Key (ZSK) files</p>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<pre><code>  genkrf [options] &lt;zone-file&gt; [&lt;signed-zone-file&gt;]</code></pre>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p><b>genkrf</b> generates a <i>keyrec</i> file from KSK and/or ZSK files. It generates new KSK and ZSK keys if needed.</p>
+
+<p>The name of the <i>keyrec</i> file to be generated is given by the <b>-krfile</b> option. If this option is not specified, <b>zone-name.krf</b> is used as the name of the <i>keyrec</i> file. If the <i>keyrec</i> file already exists, it will be overwritten with new <i>keyrec</i> definitions.</p>
+
+<p>The <i>zone-file</i> argument is required. It specifies the name of the zone file from which the signed zone file was created. The optional <i>signed-zone-file</i> argument specifies the name of the signed zone file. If it is not given, then it defaults to <b>zone-file.signed</b>. The signed zone file field is, in effect, a dummy field as the zone file is not actually signed.</p>
+
+<h1 id="OPTIONS">OPTIONS</h1>
+
+<p><b>genkrf</b> has a number of options that assist in creation of the <i>keyrec</i> file. These options will be set to the first value found from this search path:</p>
+
+<pre><code>    command line options
     DNSSEC-Tools configuration file
-    DNSSEC-Tools defaults</pre>
-<p>See <em>tooloptions.pm(3)</em> for more details.
-Exceptions to this are given in the option descriptions.</p>
-<p>The <strong>genkrf</strong> options are described below.</p>
-<p>
-</p>
-<h2><a name="general_genkrf_options">General <strong>genkrf</strong> Options</a></h2>
+    DNSSEC-Tools defaults</code></pre>
+
+<p>See <i>tooloptions.pm(3)</i> for more details. Exceptions to this are given in the option descriptions.</p>
+
+<p>The <b>genkrf</b> options are described below.</p>
+
+<h2 id="General-genkrf-Options">General <b>genkrf</b> Options</h2>
+
 <dl>
-<dt><strong><a name="zone_zone_name" class="item"><strong>-zone zone-name</strong></a></strong></dt>
 
+<dt id="zone-zone-name"><b>-zone zone-name</b></dt>
 <dd>
-<p>This option specifies the name of the zone.  If it is not given then
-<em>zone-file</em> will be used as the name of the zone.</p>
+
+<p>This option specifies the name of the zone. If it is not given then <i>zone-file</i> will be used as the name of the zone.</p>
+
 </dd>
-<dt><strong><a name="krfile_keyrec_file" class="item"><strong>-krfile keyrec-file</strong></a></strong></dt>
-
+<dt id="krfile-keyrec-file"><b>-krfile keyrec-file</b></dt>
 <dd>
-<p>This option specifies the name of the <em>keyrec</em> file to be generated.
-If it is not given, then <strong>zone-name.krf</strong> will be used.</p>
+
+<p>This option specifies the name of the <i>keyrec</i> file to be generated. If it is not given, then <b>zone-name.krf</b> will be used.</p>
+
 </dd>
-<dt><strong><a name="algorithm_algorithm" class="item"><strong>-algorithm algorithm</strong></a></strong></dt>
-
+<dt id="algorithm-algorithm"><b>-algorithm algorithm</b></dt>
 <dd>
+
 <p>This option specifies the algorithm used to generate encryption keys.</p>
-</dd>
-<dt><strong><a name="endtime_endtime" class="item"><strong>-endtime endtime</strong></a></strong></dt>
 
-<dd>
-<p>This option specifies the time that the signature on the zone expires,
-measured in seconds.</p>
 </dd>
-<dt><strong><a name="random_random_device" class="item"><strong>-random random-device</strong></a></strong></dt>
-
+<dt id="endtime-endtime"><b>-endtime endtime</b></dt>
 <dd>
-<p>Source of randomness used to generate the zone's keys. See the man
-page for <strong>dnssec-signzone</strong> for the valid format of this field.</p>
+
+<p>This option specifies the time that the signature on the zone expires, measured in seconds.</p>
+
 </dd>
-<dt><strong><a name="verbose" class="item"><strong>-verbose</strong></a></strong></dt>
-
+<dt id="random-random-device"><b>-random random-device</b></dt>
 <dd>
-<p>Display additional messages during processing.  If this option is given at
-least once, then a message will be displayed indicating the successful
-generation of the <em>keyrec</em> file.  If it is given twice, then the values of
-all options will also be displayed.</p>
+
+<p>Source of randomness used to generate the zone&#39;s keys. See the man page for <b>dnssec-signzone</b> for the valid format of this field.</p>
+
 </dd>
-<dt><strong><a name="version" class="item"><strong>-Version</strong></a></strong></dt>
-
+<dt id="verbose"><b>-verbose</b></dt>
 <dd>
-<p>Displays the version information for <strong>genkrf</strong> and the DNSSEC-Tools package.</p>
+
+<p>Display additional messages during processing. If this option is given at least once, then a message will be displayed indicating the successful generation of the <i>keyrec</i> file. If it is given twice, then the values of all options will also be displayed.</p>
+
 </dd>
-<dt><strong><a name="help" class="item"><strong>-help</strong></a></strong></dt>
-
+<dt id="Version"><b>-Version</b></dt>
 <dd>
+
+<p>Displays the version information for <b>genkrf</b> and the DNSSEC-Tools package.</p>
+
+</dd>
+<dt id="help"><b>-help</b></dt>
+<dd>
+
 <p>Display a usage message.</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<h2><a name="ksk_related_options">KSK-related Options</a></h2>
+
+<h2 id="KSK-related-Options">KSK-related Options</h2>
+
 <dl>
-<dt><strong><a name="kskcur_ksk_name" class="item"><strong>-kskcur KSK-name</strong></a></strong></dt>
 
+<dt id="kskcur-KSK-name"><b>-kskcur KSK-name</b></dt>
 <dd>
-<p>This option specifies the Current KSK's key file being used to sign the zone.
-If this option is not given, a new KSK will be created.</p>
+
+<p>This option specifies the Current KSK&#39;s key file being used to sign the zone. If this option is not given, a new KSK will be created.</p>
+
 </dd>
-<dt><strong><a name="kskcount_ksk_count" class="item"><strong>-kskcount KSK-count</strong></a></strong></dt>
-
+<dt id="kskcount-KSK-count"><b>-kskcount KSK-count</b></dt>
 <dd>
-<p>This option specifies the number of KSK keys that will be generated.  If this
-option is not given, the default given in the DNSSEC-Tools configuration file
-will be used.</p>
+
+<p>This option specifies the number of KSK keys that will be generated. If this option is not given, the default given in the DNSSEC-Tools configuration file will be used.</p>
+
 </dd>
-<dt><strong><a name="kskdir_ksk_directory" class="item"><strong>-kskdir KSK-directory</strong></a></strong></dt>
-
+<dt id="kskdir-KSK-directory"><b>-kskdir KSK-directory</b></dt>
 <dd>
-<p>This option specifies the absolute or relative path of the directory
-where the KSK resides.  If this option is not given, it defaults to
-the current directory &quot;.&quot;.</p>
+
+<p>This option specifies the absolute or relative path of the directory where the KSK resides. If this option is not given, it defaults to the current directory &quot;.&quot;.</p>
+
 </dd>
-<dt><strong><a name="ksklength_ksk_length" class="item"><strong>-ksklength KSK-length</strong></a></strong></dt>
-
+<dt id="ksklength-KSK-length"><b>-ksklength KSK-length</b></dt>
 <dd>
+
 <p>This option specifies the length of the KSK encryption key.</p>
-</dd>
-<dt><strong><a name="ksklife_ksk_lifespan" class="item"><strong>-ksklife KSK-lifespan</strong></a></strong></dt>
 
+</dd>
+<dt id="ksklife-KSK-lifespan"><b>-ksklife KSK-lifespan</b></dt>
 <dd>
-<p>This option specifies the lifespan of the KSK encryption key.  This lifespan
-is <strong>not</strong> inherent to the key itself.  It is <strong>only</strong> used to determine when
-the KSK must be rolled over.</p>
+
+<p>This option specifies the lifespan of the KSK encryption key. This lifespan is <b>not</b> inherent to the key itself. It is <b>only</b> used to determine when the KSK must be rolled over.</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<h2><a name="zsk_related_options">ZSK-related Options</a></h2>
+
+<h2 id="ZSK-related-Options">ZSK-related Options</h2>
+
 <dl>
-<dt><strong><a name="zskcur_zsk_name" class="item"><strong>-zskcur ZSK-name</strong></a></strong></dt>
 
+<dt id="zskcur-ZSK-name"><b>-zskcur ZSK-name</b></dt>
 <dd>
-<p>This option specifies the current ZSK being used to sign the zone.
-If this option is not given, a new ZSK will be created.</p>
+
+<p>This option specifies the current ZSK being used to sign the zone. If this option is not given, a new ZSK will be created.</p>
+
 </dd>
-<dt><strong><a name="zskpub_zsk_name" class="item"><strong>-zskpub ZSK-name</strong></a></strong></dt>
-
+<dt id="zskpub-ZSK-name"><b>-zskpub ZSK-name</b></dt>
 <dd>
-<p>This option specifies the published ZSK for the zone.  If this option
-is not given, a new ZSK will be created.</p>
+
+<p>This option specifies the published ZSK for the zone. If this option is not given, a new ZSK will be created.</p>
+
 </dd>
-<dt><strong><a name="zskcount_zsk_count" class="item"><strong>-zskcount ZSK-count</strong></a></strong></dt>
-
+<dt id="zskcount-ZSK-count"><b>-zskcount ZSK-count</b></dt>
 <dd>
-<p>This option specifies the number of current and published ZSK keys that will
-be generated.  If this option is not given, the default given in the
-DNSSEC-Tools configuration file will be used.</p>
+
+<p>This option specifies the number of current and published ZSK keys that will be generated. If this option is not given, the default given in the DNSSEC-Tools configuration file will be used.</p>
+
 </dd>
-<dt><strong><a name="zskdir_zsk_directory" class="item"><strong>-zskdir ZSK-directory</strong></a></strong></dt>
-
+<dt id="zskdir-ZSK-directory"><b>-zskdir ZSK-directory</b></dt>
 <dd>
-<p>This option specifies the absolute or relative path of the directory
-where the ZSKs reside.  If this option is not given, it defaults to
-the current directory &quot;.&quot;.</p>
+
+<p>This option specifies the absolute or relative path of the directory where the ZSKs reside. If this option is not given, it defaults to the current directory &quot;.&quot;.</p>
+
 </dd>
-<dt><strong><a name="zsklength_zsk_length" class="item"><strong>-zsklength ZSK-length</strong></a></strong></dt>
-
+<dt id="zsklength-ZSK-length"><b>-zsklength ZSK-length</b></dt>
 <dd>
+
 <p>This option specifies the length of the ZSK encryption key.</p>
-</dd>
-<dt><strong><a name="zsklife_zsk_lifespan" class="item"><strong>-zsklife ZSK-lifespan</strong></a></strong></dt>
 
+</dd>
+<dt id="zsklife-ZSK-lifespan"><b>-zsklife ZSK-lifespan</b></dt>
 <dd>
-<p>This option specifies the lifespan of the ZSK encryption key.  This lifespan
-is <strong>not</strong> inherent to the key itself.  It is <strong>only</strong> used to determine when
-the ZSK must be rolled over.</p>
+
+<p>This option specifies the lifespan of the ZSK encryption key. This lifespan is <b>not</b> inherent to the key itself. It is <b>only</b> used to determine when the ZSK must be rolled over.</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<hr />
-<h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2005-2013 SPARTA, Inc.  All rights reserved.
-See the COPYING file included with the DNSSEC-Tools package for details.</p>
-<p>
-</p>
-<hr />
-<h1><a name="author">AUTHOR</a></h1>
-<p>Wayne Morrison, <a href="mailto:tewok@tislabs.com">tewok@tislabs.com</a></p>
-<p>
-</p>
-<hr />
-<h1><a name="see_also">SEE ALSO</a></h1>
-<p><strong>dnssec-keygen(8)</strong>,
-<strong>dnssec-signzone(8)</strong>,
-<strong>zonesigner(8)</strong></p>
-<p><strong>Net::DNS::SEC::Tools::conf.pm(3)</strong>,
-<strong>Net::DNS::SEC::Tools::defaults.pm(3)</strong>,
-<strong>Net::DNS::SEC::Tools::keyrec.pm(3)</strong></p>
-<p><strong>conf(5)</strong>,
-<strong>keyrec(5)</strong></p>
+
+<h1 id="COPYRIGHT">COPYRIGHT</h1>
+
+<p>Copyright 2005-2014 SPARTA, Inc. All rights reserved. See the COPYING file included with the DNSSEC-Tools package for details.</p>
+
+<h1 id="AUTHOR">AUTHOR</h1>
+
+<p>Wayne Morrison, tewok@tislabs.com</p>
+
+<h1 id="SEE-ALSO">SEE ALSO</h1>
+
+<p><b>dnssec-keygen(8)</b>, <b>dnssec-signzone(8)</b>, <b>zonesigner(8)</b></p>
+
+<p><b>Net::DNS::SEC::Tools::conf.pm(3)</b>, <b>Net::DNS::SEC::Tools::defaults.pm(3)</b>, <b>Net::DNS::SEC::Tools::keyrec.pm(3)</b></p>
+
+<p><b>conf(5)</b>, <b>keyrec(5)</b></p>
+
 
 </body>
 
 </html>
+
+

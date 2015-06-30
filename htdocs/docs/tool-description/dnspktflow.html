@@ -2,7 +2,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>dnspktflow - Analyze and draw DNS flow diagrams from a tcpdump file</title>
+<title></title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
@@ -10,283 +10,328 @@
 <body style="background-color: white">
 
 
-<!-- INDEX BEGIN -->
-<div name="index">
-<p><a name="__index__"></a></p>
 
-<ul>
-
-	<li><a href="#name">NAME</a></li>
-	<li><a href="#synopsis">SYNOPSIS</a></li>
-	<li><a href="#description">DESCRIPTION</a></li>
-	<li><a href="#requirements">REQUIREMENTS</a></li>
-	<li><a href="#options">OPTIONS</a></li>
-	<ul>
-
-		<li><a href="#input_packet_selection">Input Packet Selection</a></li>
-		<li><a href="#output_file_options">Output File Options</a></li>
-		<li><a href="#output_visualization_options_">Output Visualization Options:</a></li>
-		<li><a href="#graphical_options_">Graphical Options:</a></li>
-		<li><a href="#debugging_">Debugging:</a></li>
-	</ul>
-
-	<li><a href="#copyright">COPYRIGHT</a></li>
-	<li><a href="#author">AUTHOR</a></li>
-	<li><a href="#see_also">SEE ALSO</a></li>
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
+  <li><a href="#REQUIREMENTS">REQUIREMENTS</a></li>
+  <li><a href="#OPTIONS">OPTIONS</a>
+    <ul>
+      <li><a href="#Input-Packet-Selection">Input Packet Selection</a></li>
+      <li><a href="#Output-File-Options">Output File Options</a></li>
+      <li><a href="#Output-Visualization-Options">Output Visualization Options:</a></li>
+      <li><a href="#Graphical-Options">Graphical Options:</a></li>
+      <li><a href="#Debugging">Debugging:</a></li>
+    </ul>
+  </li>
+  <li><a href="#COPYRIGHT">COPYRIGHT</a></li>
+  <li><a href="#AUTHOR">AUTHOR</a></li>
+  <li><a href="#SEE-ALSO">SEE ALSO</a></li>
 </ul>
 
-<hr name="index" />
-</div>
-<!-- INDEX END -->
+<h1 id="NAME">NAME</h1>
 
-<p>
-</p>
-<hr />
-<h1><a name="name">NAME</a></h1>
 <p>dnspktflow - Analyze and draw DNS flow diagrams from a tcpdump file</p>
-<p>
-</p>
-<hr />
-<h1><a name="synopsis">SYNOPSIS</a></h1>
-<pre>
-  dnspktflow -o output.png file.tcpdump</pre>
-<pre>
-  dnspktflow -o output.png -x -a -t -q file.tcpdump</pre>
-<p>
-</p>
-<hr />
-<h1><a name="description">DESCRIPTION</a></h1>
-<p>The <strong>dnspktflow</strong> application takes a <strong>tcpdump</strong> network traffic dump
-file, passes it through the <strong>tshark</strong> application and then displays the
-resulting DNS packet flows in a &quot;flow-diagram&quot; image.  <strong>dnspktflow</strong>
-can output a single image or a series of images which can then be
-shown in sequence as an animation.</p>
-<p><strong>dnspktflow</strong> was written as a debugging utility to help trace DNS
-queries and responses, especially as they apply to DNSSEC-enabled lookups.</p>
-<p>
-</p>
-<hr />
-<h1><a name="requirements">REQUIREMENTS</a></h1>
-<p>This application requires the following Perl modules and software
-components to work:</p>
-<pre>
-  graphviz                  (<a href="http://www.graphviz.org/">http://www.graphviz.org/</a>)
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<pre><code>  dnspktflow -o output.png file.tcpdump
+
+  dnspktflow -o output.png -x -a -t -q file.tcpdump</code></pre>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p>The <b>dnspktflow</b> application takes a <b>tcpdump</b> network traffic dump file, passes it through the <b>tshark</b> application and then displays the resulting DNS packet flows in a &quot;flow-diagram&quot; image. <b>dnspktflow</b> can output a single image or a series of images which can then be shown in sequence as an animation.</p>
+
+<p><b>dnspktflow</b> was written as a debugging utility to help trace DNS queries and responses, especially as they apply to DNSSEC-enabled lookups.</p>
+
+<h1 id="REQUIREMENTS">REQUIREMENTS</h1>
+
+<p>This application requires the following Perl modules and software components to work:</p>
+
+<pre><code>  graphviz                  (http://www.graphviz.org/)
   GraphViz                  (Perl module)
-  tshark                    (<a href="http://www.wireshark.org/">http://www.wireshark.org/</a>)</pre>
+  tshark                    (http://www.wireshark.org/)</code></pre>
+
 <p>The following is required for outputting screen presentations:</p>
-<pre>
-  MagicPoint                (<a href="http://member.wide.ad.jp/wg/mgp/">http://member.wide.ad.jp/wg/mgp/</a>)</pre>
-<p>If the following modules are installed, a GUI interface will be enabled for
-communication with <strong>dnspktflow</strong>:</p>
-<pre>
-  QWizard                   (Perl module)
-  Getopt::GUI::Long         (Perl module)</pre>
-<p>
-</p>
-<hr />
-<h1><a name="options">OPTIONS</a></h1>
-<p><strong>dnspktflow</strong> takes a wide variety of command-line options.  These options
-are described below in the following functional groups:  input packet
-selection, output file options, output visualization options, graphical
-options, and debugging.</p>
-<p>
-</p>
-<h2><a name="input_packet_selection">Input Packet Selection</a></h2>
-<p>These options determine the packets that will be selected by <strong>dnspktflow</strong>.</p>
+
+<pre><code>  MagicPoint                (http://member.wide.ad.jp/wg/mgp/)</code></pre>
+
+<p>If the following modules are installed, a GUI interface will be enabled for communication with <b>dnspktflow</b>:</p>
+
+<pre><code>  QWizard                   (Perl module)
+  Getopt::GUI::Long         (Perl module)</code></pre>
+
+<h1 id="OPTIONS">OPTIONS</h1>
+
+<p><b>dnspktflow</b> takes a wide variety of command-line options. These options are described below in the following functional groups: input packet selection, output file options, output visualization options, graphical options, and debugging.</p>
+
+<h2 id="Input-Packet-Selection">Input Packet Selection</h2>
+
+<p>These options determine the packets that will be selected by <b>dnspktflow</b>.</p>
+
 <dl>
-<dt><strong><a name="i_string" class="item">-i STRING</a></strong></dt>
 
-<dt><strong><a name="ignore_hosts_string" class="item">--ignore-hosts=STRING</a></strong></dt>
-
+<dt id="i-STRING">-i STRING</dt>
 <dd>
+
+</dd>
+<dt id="ignore-hosts-STRING">--ignore-hosts=STRING</dt>
+<dd>
+
 <p>A regular expression of host names to ignore in the query/response fields.</p>
+
 </dd>
-<dt><strong><a name="r_string" class="item">-r STRING</a></strong></dt>
-
-<dt><strong><a name="only_hosts_string" class="item">--only-hosts=STRING</a></strong></dt>
-
+<dt id="r-STRING">-r STRING</dt>
 <dd>
+
+</dd>
+<dt id="only-hosts-STRING">--only-hosts=STRING</dt>
+<dd>
+
 <p>A regular expression of host names to analyze in the query/response fields.</p>
+
 </dd>
-<dt><strong><a name="f" class="item">-f</a></strong></dt>
-
-<dt><strong><a name="show_frame_num" class="item">--show-frame-num</a></strong></dt>
-
+<dt id="f">-f</dt>
 <dd>
+
+</dd>
+<dt id="show-frame-num">--show-frame-num</dt>
+<dd>
+
 <p>Display the packet frame numbers.</p>
+
 </dd>
-<dt><strong><a name="b_integer" class="item">-b INTEGER</a></strong></dt>
-
-<dt><strong><a name="begin_frame_integer" class="item">--begin-frame=INTEGER</a></strong></dt>
-
+<dt id="b-INTEGER">-b INTEGER</dt>
 <dd>
+
+</dd>
+<dt id="begin-frame-INTEGER">--begin-frame=INTEGER</dt>
+<dd>
+
 <p>Begin at packet frame NUMBER.</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<h2><a name="output_file_options">Output File Options</a></h2>
-<p>These options determine the type and location of <strong>dnspktflow</strong>'s output.</p>
+
+<h2 id="Output-File-Options">Output File Options</h2>
+
+<p>These options determine the type and location of <b>dnspktflow</b>&#39;s output.</p>
+
 <dl>
-<dt><strong><a name="o_string" class="item">-o STRING</a></strong></dt>
 
-<dt><strong><a name="output_file_string" class="item">--output-file=STRING</a></strong></dt>
-
+<dt id="o-STRING">-o STRING</dt>
 <dd>
+
+</dd>
+<dt id="output-file-STRING">--output-file=STRING</dt>
+<dd>
+
 <p>Output file name (default: out%03d.png as PNG format.)</p>
-</dd>
-<dt><strong><a name="fig" class="item">--fig</a></strong></dt>
 
+</dd>
+<dt id="fig">--fig</dt>
 <dd>
+
 <p>Output format should be fig.</p>
+
 </dd>
-<dt><strong><a name="o_string" class="item">-O STRING</a></strong></dt>
-
-<dt><strong><a name="tshark_out_string" class="item">--tshark-out=STRING</a></strong></dt>
-
+<dt id="O-STRING">-O STRING</dt>
 <dd>
-<p>Save <strong>tshark</strong> output to this file.</p>
+
 </dd>
-<dt><strong><a name="m" class="item">-m</a></strong></dt>
-
-<dt><strong><a name="multiple_outputs" class="item">--multiple-outputs</a></strong></dt>
-
+<dt id="tshark-out-STRING">--tshark-out=STRING</dt>
 <dd>
+
+<p>Save <b>tshark</b> output to this file.</p>
+
+</dd>
+<dt id="m">-m</dt>
+<dd>
+
+</dd>
+<dt id="multiple-outputs">--multiple-outputs</dt>
+<dd>
+
 <p>One picture per request (use %03d in the filename.)</p>
+
 </dd>
-<dt><strong><a name="m_string" class="item">-M STRING</a></strong></dt>
-
-<dt><strong><a name="magic_point_string" class="item">--magic-point=STRING</a></strong></dt>
-
+<dt id="M-STRING">-M STRING</dt>
 <dd>
+
+</dd>
+<dt id="magic-point-STRING">--magic-point=STRING</dt>
+<dd>
+
 <p>Saves a MagicPoint presentation for the output.</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<h2><a name="output_visualization_options_">Output Visualization Options:</a></h2>
-<p>These options determine specifics of <strong>dnspktflow</strong>'s output.</p>
-<dl>
-<dt><strong><a name="layout_style" class="item">--layout-style</a></strong></dt>
 
+<h2 id="Output-Visualization-Options">Output Visualization Options:</h2>
+
+<p>These options determine specifics of <b>dnspktflow</b>&#39;s output.</p>
+
+<dl>
+
+<dt id="layout-style">--layout-style</dt>
 <dd>
+
 <p>Selects the graphviz layout style to use (dot, neato, twopi, circo, or fdp).</p>
+
 </dd>
-<dt><strong><a name="l" class="item">-L</a></strong></dt>
-
-<dt><strong><a name="last_line_labels_only" class="item">--last-line-labels-only</a></strong></dt>
-
+<dt id="L">-L</dt>
 <dd>
+
+</dd>
+<dt id="last-line-labels-only">--last-line-labels-only</dt>
+<dd>
+
 <p>Only show data on the last line drawn.</p>
+
 </dd>
-<dt><strong><a name="z_integer" class="item">-z INTEGER</a></strong></dt>
-
-<dt><strong><a name="most_lines_integer" class="item">--most-lines=INTEGER</a></strong></dt>
-
+<dt id="z-INTEGER">-z INTEGER</dt>
 <dd>
+
+</dd>
+<dt id="most-lines-INTEGER">--most-lines=INTEGER</dt>
+<dd>
+
 <p>Only show at most INTEGER connections.</p>
+
 </dd>
-<dt><strong><a name="t" class="item">-T</a></strong></dt>
-
-<dt><strong><a name="input_is_tshark_out" class="item">--input-is-tshark-out</a></strong></dt>
-
+<dt id="T">-T</dt>
 <dd>
-<p>The input file is already processed by <strong>tshark</strong>.</p>
+
+</dd>
+<dt id="input-is-tshark-out">--input-is-tshark-out</dt>
+<dd>
+
+<p>The input file is already processed by <b>tshark</b>.</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<h2><a name="graphical_options_">Graphical Options:</a></h2>
-<p>These options determine fields included in <strong>dnspktflow</strong>'s output.</p>
+
+<h2 id="Graphical-Options">Graphical Options:</h2>
+
+<p>These options determine fields included in <b>dnspktflow</b>&#39;s output.</p>
+
 <dl>
-<dt><strong><a name="t" class="item">-t</a></strong></dt>
 
-<dt><strong><a name="show_type" class="item">--show-type</a></strong></dt>
-
+<dt id="t">-t</dt>
 <dd>
+
+</dd>
+<dt id="show-type">--show-type</dt>
+<dd>
+
 <p>Shows message type in result image.</p>
+
 </dd>
-<dt><strong><a name="q" class="item">-q</a></strong></dt>
-
-<dt><strong><a name="show_queries" class="item">--show-queries</a></strong></dt>
-
+<dt id="q">-q</dt>
 <dd>
+
+</dd>
+<dt id="show-queries">--show-queries</dt>
+<dd>
+
 <p>Shows query questions in result image.</p>
+
 </dd>
-<dt><strong><a name="a" class="item">-a</a></strong></dt>
-
-<dt><strong><a name="show_answers" class="item">--show-answers</a></strong></dt>
-
+<dt id="a">-a</dt>
 <dd>
+
+</dd>
+<dt id="show-answers">--show-answers</dt>
+<dd>
+
 <p>Shows query answers in result image.</p>
+
 </dd>
-<dt><strong><a name="a" class="item">-A</a></strong></dt>
-
-<dt><strong><a name="show_authoritative" class="item">--show-authoritative</a></strong></dt>
-
+<dt id="A">-A</dt>
 <dd>
+
+</dd>
+<dt id="show-authoritative">--show-authoritative</dt>
+<dd>
+
 <p>Shows authoritative information in result image.</p>
+
 </dd>
-<dt><strong><a name="x" class="item">-x</a></strong></dt>
-
-<dt><strong><a name="show_additional" class="item">--show-additional</a></strong></dt>
-
+<dt id="x">-x</dt>
 <dd>
+
+</dd>
+<dt id="show-additional">--show-additional</dt>
+<dd>
+
 <p>Shows additional information in result image.</p>
+
 </dd>
-<dt><strong><a name="l" class="item">-l</a></strong></dt>
-
-<dt><strong><a name="show_label_lines" class="item">--show-label-lines</a></strong></dt>
-
+<dt id="l">-l</dt>
 <dd>
+
+</dd>
+<dt id="show-label-lines">--show-label-lines</dt>
+<dd>
+
 <p>Shows lines attaching labels to lines.</p>
-</dd>
-<dt><strong><a name="fontsize_integer" class="item">--fontsize=INTEGER</a></strong></dt>
 
+</dd>
+<dt id="fontsize-INTEGER">--fontsize=INTEGER</dt>
 <dd>
+
 <p>Font Size</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<h2><a name="debugging_">Debugging:</a></h2>
-<p>These options may assist in debugging <strong>dnspktflow</strong>.</p>
+
+<h2 id="Debugging">Debugging:</h2>
+
+<p>These options may assist in debugging <b>dnspktflow</b>.</p>
+
 <dl>
-<dt><strong><a name="d" class="item">-d</a></strong></dt>
 
-<dt><strong><a name="dump_pkts" class="item">--dump-pkts</a></strong></dt>
-
+<dt id="d">-d</dt>
 <dd>
-<p>Dump data collected from the packets.</p>
+
 </dd>
-<dt><strong><a name="h" class="item">-h</a></strong></dt>
-
-<dt><strong><a name="help" class="item">--help</a></strong></dt>
-
+<dt id="dump-pkts">--dump-pkts</dt>
 <dd>
+
+<p>Dump data collected from the packets.</p>
+
+</dd>
+<dt id="h">-h</dt>
+<dd>
+
+</dd>
+<dt id="help">--help</dt>
+<dd>
+
 <p>Show help for command line options.</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<hr />
-<h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2004-2013 SPARTA, Inc.  All rights reserved.
-See the COPYING file included with the DNSSEC-Tools package for details.</p>
-<p>
-</p>
-<hr />
-<h1><a name="author">AUTHOR</a></h1>
-<p>Wes Hardaker &lt;<a href="mailto:hardaker@users.sourceforge.net">hardaker@users.sourceforge.net</a>&gt;</p>
-<p>
-</p>
-<hr />
-<h1><a name="see_also">SEE ALSO</a></h1>
-<p><strong>Getopt::GUI::Long(3)</strong>
-<strong>Net::DNS(3)</strong>
-<strong>QWizard.pm(3)</strong></p>
-<p><a href="http://dnssec-tools.sourceforge.net/">http://dnssec-tools.sourceforge.net/</a></p>
+
+<h1 id="COPYRIGHT">COPYRIGHT</h1>
+
+<p>Copyright 2004-2013 SPARTA, Inc. All rights reserved. See the COPYING file included with the DNSSEC-Tools package for details.</p>
+
+<h1 id="AUTHOR">AUTHOR</h1>
+
+<p>Wes Hardaker &lt;hardaker@users.sourceforge.net&gt;</p>
+
+<h1 id="SEE-ALSO">SEE ALSO</h1>
+
+<p><b>Getopt::GUI::Long(3)</b> <b>Net::DNS(3)</b> <b>QWizard.pm(3)</b></p>
+
+<p>http://dnssec-tools.sourceforge.net/</p>
+
 
 </body>
 
 </html>
+
+

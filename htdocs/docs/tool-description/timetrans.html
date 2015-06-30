@@ -2,7 +2,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>timetrans - Converts time into time</title>
+<title></title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
@@ -10,169 +10,165 @@
 <body style="background-color: white">
 
 
-<!-- INDEX BEGIN -->
-<div name="index">
-<p><a name="__index__"></a></p>
 
-<ul>
-
-	<li><a href="#name">NAME</a></li>
-	<li><a href="#synopsis">SYNOPSIS</a></li>
-	<li><a href="#description">DESCRIPTION</a></li>
-	<li><a href="#options">OPTIONS</a></li>
-	<ul>
-
-		<li><a href="#units_options">Units Options</a></li>
-		<li><a href="#count_option">Count Option</a></li>
-		<li><a href="#other_options">Other Options</a></li>
-	</ul>
-
-	<li><a href="#examples">EXAMPLES</a></li>
-	<li><a href="#copyright">COPYRIGHT</a></li>
-	<li><a href="#author">AUTHOR</a></li>
-	<li><a href="#see_also">SEE ALSO</a></li>
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
+  <li><a href="#OPTIONS">OPTIONS</a>
+    <ul>
+      <li><a href="#Units-Options">Units Options</a></li>
+      <li><a href="#Count-Option">Count Option</a></li>
+      <li><a href="#Other-Options">Other Options</a></li>
+    </ul>
+  </li>
+  <li><a href="#EXAMPLES">EXAMPLES</a></li>
+  <li><a href="#COPYRIGHT">COPYRIGHT</a></li>
+  <li><a href="#AUTHOR">AUTHOR</a></li>
+  <li><a href="#SEE-ALSO">SEE ALSO</a></li>
 </ul>
 
-<hr name="index" />
-</div>
-<!-- INDEX END -->
+<h1 id="NAME">NAME</h1>
 
-<p>
-</p>
-<hr />
-<h1><a name="name">NAME</a></h1>
 <p>timetrans - Converts time into time</p>
-<p>
-</p>
-<hr />
-<h1><a name="synopsis">SYNOPSIS</a></h1>
-<pre>
-  timetrans [units-options] [-count]</pre>
-<p>
-</p>
-<hr />
-<h1><a name="description">DESCRIPTION</a></h1>
-<p><strong>timetrans</strong> converts time from one type of unit to another.  If any of the
-units options are specified, then <strong>timetrans</strong> will convert those time units
-into the number of seconds to which they add up.  If given the count option,
-<strong>timetrans</strong> will convert that number of seconds into the appropriate number
-of weeks, days, hours, minutes, and seconds.  The converted result is printed
-out.  Units options cannot be specified in the same execution as the count
-option, and vice versa.</p>
-<p><strong>timetrans</strong> is intended for use with DNSSEC-Tools, for calculating
-a zone's expiration time.</p>
-<p>
-</p>
-<hr />
-<h1><a name="options">OPTIONS</a></h1>
-<p>
-</p>
-<h2><a name="units_options">Units Options</a></h2>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<pre><code>  timetrans [units-options] [-count]</code></pre>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p><b>timetrans</b> converts time from one type of unit to another. If any of the units options are specified, then <b>timetrans</b> will convert those time units into the number of seconds to which they add up. If given the count option, <b>timetrans</b> will convert that number of seconds into the appropriate number of weeks, days, hours, minutes, and seconds. The converted result is printed out. Units options cannot be specified in the same execution as the count option, and vice versa.</p>
+
+<p><b>timetrans</b> is intended for use with DNSSEC-Tools, for calculating a zone&#39;s expiration time.</p>
+
+<h1 id="OPTIONS">OPTIONS</h1>
+
+<h2 id="Units-Options">Units Options</h2>
+
 <p>The converted value of each unit is totaled and a single result printed.</p>
-<dl>
-<dt><strong><a name="seconds_seconds" class="item"><strong>-seconds seconds</strong></a></strong></dt>
 
+<dl>
+
+<dt id="seconds-seconds"><b>-seconds seconds</b></dt>
 <dd>
+
 <p>Count of seconds to convert to seconds.</p>
-</dd>
-<dt><strong><a name="minutes_minutes" class="item"><strong>-minutes minutes</strong></a></strong></dt>
 
+</dd>
+<dt id="minutes-minutes"><b>-minutes minutes</b></dt>
 <dd>
+
 <p>Count of minutes to convert to seconds.</p>
-</dd>
-<dt><strong><a name="hours_hours" class="item"><strong>-hours hours</strong></a></strong></dt>
 
+</dd>
+<dt id="hours-hours"><b>-hours hours</b></dt>
 <dd>
+
 <p>Count of hours to convert to seconds.</p>
-</dd>
-<dt><strong><a name="days_days" class="item"><strong>-days days</strong></a></strong></dt>
 
+</dd>
+<dt id="days-days"><b>-days days</b></dt>
 <dd>
+
 <p>Count of days to convert to seconds.</p>
-</dd>
-<dt><strong><a name="weeks_weeks" class="item"><strong>-weeks weeks</strong></a></strong></dt>
 
+</dd>
+<dt id="weeks-weeks"><b>-weeks weeks</b></dt>
 <dd>
+
 <p>Count of weeks to convert to seconds.</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<h2><a name="count_option">Count Option</a></h2>
-<p>The specified seconds count is converted to the appropriate number of weeks,
-days, hours, minutes, and seconds.</p>
-<dl>
-<dt><strong><a name="count_seconds" class="item"><strong>-count seconds</strong></a></strong></dt>
 
+<h2 id="Count-Option">Count Option</h2>
+
+<p>The specified seconds count is converted to the appropriate number of weeks, days, hours, minutes, and seconds.</p>
+
+<dl>
+
+<dt id="count-seconds"><b>-count seconds</b></dt>
 <dd>
+
 <p>Count of seconds to convert to the appropriate set of units.</p>
-</dd>
-</dl>
-<p>
-</p>
-<h2><a name="other_options">Other Options</a></h2>
-<p><strong>timetrans</strong> has the following miscellaneous options.</p>
-<dl>
-<dt><strong><a name="version" class="item"><strong>-Version</strong></a></strong></dt>
 
-<dd>
-<p>Displays the version information for <strong>timetrans</strong> and the DNSSEC-Tools package.</p>
 </dd>
 </dl>
-<p>
-</p>
-<hr />
-<h1><a name="examples">EXAMPLES</a></h1>
-<p>Example 1:  Converting 5 days into seconds</p>
-<pre>
-    $(42)&gt; timetrans -days 5
-    432000</pre>
-<p>Example 2:  Converting 2 weeks into seconds</p>
-<pre>
-    $(43)&gt; timetrans -w 2
-    1209600</pre>
-<p>Example 3:  Converting 8 days and 8 hours into seconds</p>
-<pre>
-    $(44)&gt; timetrans -d 8 -hours 8
-    720000</pre>
-<p>Example 4:  Converting 1 week, 1 day, and 8 hours into seconds</p>
-<pre>
-    $(46)&gt; timetrans -w 1 -days 1 -h 8
-    720000</pre>
-<p>Example 5:  Converting 14 weeks, 4 days, 21 hours, 8 minutes, and 8 seconds into seconds</p>
-<pre>
-    $(47)&gt; timetrans -w 14 -d 4 -h 21 -m 8 -s 8
-    8888888</pre>
-<p>Example 6:  Converting 720000 seconds into time units</p>
-<pre>
-    $(48)&gt; timetrans -c 720000
-    1 week, 1 day, 8 hours</pre>
-<p>Example 7:  Converting 1814421 seconds into time units</p>
-<pre>
-    $(49)&gt; timetrans -c 1814421
-    3 weeks, 21 seconds</pre>
-<p>Example 8:  Converting 8888888 seconds into time units</p>
-<pre>
-    $(50)&gt; timetrans -c 8888888
-    14 weeks, 4 days, 21 hours, 8 minutes, 8 seconds</pre>
-<p>
-</p>
-<hr />
-<h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2004-2013 SPARTA, Inc.  All rights reserved.
-See the COPYING file included with the DNSSEC-Tools package for details.</p>
-<p>
-</p>
-<hr />
-<h1><a name="author">AUTHOR</a></h1>
-<p>Wayne Morrison, <a href="mailto:tewok@tislabs.com">tewok@tislabs.com</a></p>
-<p>
-</p>
-<hr />
-<h1><a name="see_also">SEE ALSO</a></h1>
-<p><strong>zonesigner(8)</strong></p>
-<p><strong>Net::DNS::SEC::Tools::timetrans.pm(3)</strong></p>
+
+<h2 id="Other-Options">Other Options</h2>
+
+<p><b>timetrans</b> has the following miscellaneous options.</p>
+
+<dl>
+
+<dt id="Version"><b>-Version</b></dt>
+<dd>
+
+<p>Displays the version information for <b>timetrans</b> and the DNSSEC-Tools package.</p>
+
+</dd>
+</dl>
+
+<h1 id="EXAMPLES">EXAMPLES</h1>
+
+<p>Example 1: Converting 5 days into seconds</p>
+
+<pre><code>    $(42)&gt; timetrans -days 5
+    432000</code></pre>
+
+<p>Example 2: Converting 2 weeks into seconds</p>
+
+<pre><code>    $(43)&gt; timetrans -w 2
+    1209600</code></pre>
+
+<p>Example 3: Converting 8 days and 8 hours into seconds</p>
+
+<pre><code>    $(44)&gt; timetrans -d 8 -hours 8
+    720000</code></pre>
+
+<p>Example 4: Converting 1 week, 1 day, and 8 hours into seconds</p>
+
+<pre><code>    $(46)&gt; timetrans -w 1 -days 1 -h 8
+    720000</code></pre>
+
+<p>Example 5: Converting 14 weeks, 4 days, 21 hours, 8 minutes, and 8 seconds into seconds</p>
+
+<pre><code>    $(47)&gt; timetrans -w 14 -d 4 -h 21 -m 8 -s 8
+    8888888</code></pre>
+
+<p>Example 6: Converting 720000 seconds into time units</p>
+
+<pre><code>    $(48)&gt; timetrans -c 720000
+    1 week, 1 day, 8 hours</code></pre>
+
+<p>Example 7: Converting 1814421 seconds into time units</p>
+
+<pre><code>    $(49)&gt; timetrans -c 1814421
+    3 weeks, 21 seconds</code></pre>
+
+<p>Example 8: Converting 8888888 seconds into time units</p>
+
+<pre><code>    $(50)&gt; timetrans -c 8888888
+    14 weeks, 4 days, 21 hours, 8 minutes, 8 seconds</code></pre>
+
+<h1 id="COPYRIGHT">COPYRIGHT</h1>
+
+<p>Copyright 2004-2014 SPARTA, Inc. All rights reserved. See the COPYING file included with the DNSSEC-Tools package for details.</p>
+
+<h1 id="AUTHOR">AUTHOR</h1>
+
+<p>Wayne Morrison, tewok@tislabs.com</p>
+
+<h1 id="SEE-ALSO">SEE ALSO</h1>
+
+<p><b>zonesigner(8)</b></p>
+
+<p><b>Net::DNS::SEC::Tools::timetrans.pm(3)</b></p>
+
 
 </body>
 
 </html>
+
+

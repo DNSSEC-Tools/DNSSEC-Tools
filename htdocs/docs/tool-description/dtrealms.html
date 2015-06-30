@@ -2,7 +2,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>dtrealms - Displays defaults defined for DNSSEC-Tools</title>
+<title></title>
 <meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
@@ -10,195 +10,154 @@
 <body style="background-color: white">
 
 
-<!-- INDEX BEGIN -->
-<div name="index">
-<p><a name="__index__"></a></p>
 
-<ul>
-
-	<li><a href="#name">NAME</a></li>
-	<li><a href="#synopsis">SYNOPSIS</a></li>
-	<li><a href="#description">DESCRIPTION</a></li>
-	<li><a href="#realm_setup">REALM SETUP</a></li>
-	<li><a href="#options">OPTIONS</a></li>
-	<li><a href="#warning">WARNING</a></li>
-	<li><a href="#copyright">COPYRIGHT</a></li>
-	<li><a href="#author">AUTHOR</a></li>
-	<li><a href="#see_also">SEE ALSO</a></li>
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
+  <li><a href="#REALM-SETUP">REALM SETUP</a></li>
+  <li><a href="#OPTIONS">OPTIONS</a></li>
+  <li><a href="#WARNING">WARNING</a></li>
+  <li><a href="#COPYRIGHT">COPYRIGHT</a></li>
+  <li><a href="#AUTHOR">AUTHOR</a></li>
+  <li><a href="#SEE-ALSO">SEE ALSO</a></li>
 </ul>
 
-<hr name="index" />
-</div>
-<!-- INDEX END -->
+<h1 id="NAME">NAME</h1>
 
-<p>
-</p>
-<hr />
-<h1><a name="name">NAME</a></h1>
 <p>dtrealms - Displays defaults defined for DNSSEC-Tools</p>
-<p>
-</p>
-<hr />
-<h1><a name="synopsis">SYNOPSIS</a></h1>
-<pre>
-  dtrealms [options] &lt;realm-file&gt;</pre>
-<p>
-</p>
-<hr />
-<h1><a name="description">DESCRIPTION</a></h1>
-<p><strong>dtrealms</strong> manages multiple distinct DNSSEC-Tools rollover environments
-running simultaneously.  Each rollover environment, called a <strong>realm</strong>, is
-defined in a <strong>realms</strong> file.  <strong>dtrealms</strong> uses this file to determine how the
-rollover environment must be initialized such that it can run independently of
-the other rollover environments on a particular system.  This is useful for
-such things as managing very large collections of zones, segregating customer
-zones, and software tests.</p>
-<p>The <strong>realms</strong> file may be created with <strong>realminit</strong>.  Currently, the distinct
-environment for each realm must be created manually.  It is hoped that a tool
-will soon be available to assist with creating each realm's environment.</p>
-<p><strong>dtrealms</strong> isn't necessary for running multiple realms.  However, it does
-make it easier to manage multiple realms running consecutively.</p>
-<p>
-</p>
-<hr />
-<h1><a name="realm_setup">REALM SETUP</a></h1>
-<p>A realm is primarily defined by its entry in a <strong>realms</strong> file.  Four fields
-in particular describe where the realm's files are located and how it runs.
-These are the realm's configuration directory, state directory, realm
-directory, and <strong>rollrec</strong> file.  These directories are used to set the
-<strong>DT_STATEDIR</strong> and <strong>DT_SYSCONFDIR</strong> environment variables, and the <strong>rollrec</strong>
-file defines which zones are managed by the realm's rollover manager.</p>
-<p><em><a href="https://www.dnssec-tools.org/wiki/index.php/Rollover_Realms:_Multiple,_Simultaneous,_Independent_Rollover_Environments">https://www.dnssec-tools.org/wiki/index.php/Rollover_Realms:_Multiple,_Simultaneous,_Independent_Rollover_Environments</a></em> has more information on creating
-realms.</p>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<pre><code>  dtrealms [options] &lt;realm-file&gt;</code></pre>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p><b>dtrealms</b> manages multiple distinct DNSSEC-Tools rollover environments running simultaneously. Each rollover environment, called a <b>realm</b>, is defined in a <b>realms</b> file. <b>dtrealms</b> uses this file to determine how the rollover environment must be initialized such that it can run independently of the other rollover environments on a particular system. This is useful for such things as managing very large collections of zones, segregating customer zones, and software tests.</p>
+
+<p>The <b>realms</b> file may be created with <b>realminit</b>. Currently, the distinct environment for each realm must be created manually. It is hoped that a tool will soon be available to assist with creating each realm&#39;s environment.</p>
+
+<p><b>dtrealms</b> isn&#39;t necessary for running multiple realms. However, it does make it easier to manage multiple realms running consecutively.</p>
+
+<h1 id="REALM-SETUP">REALM SETUP</h1>
+
+<p>A realm is primarily defined by its entry in a <b>realms</b> file. Four fields in particular describe where the realm&#39;s files are located and how it runs. These are the realm&#39;s configuration directory, state directory, realm directory, and <b>rollrec</b> file. These directories are used to set the <b>DT_STATEDIR</b> and <b>DT_SYSCONFDIR</b> environment variables, and the <b>rollrec</b> file defines which zones are managed by the realm&#39;s rollover manager.</p>
+
+<p><i>https://www.dnssec-tools.org/wiki/index.php/Rollover_Realms:_Multiple,_Simultaneous,_Independent_Rollover_Environments</i> has more information on creating realms.</p>
+
 <dl>
-<dt><strong><a name="configdir" class="item"><strong>configdir</strong></a></strong></dt>
 
+<dt id="configdir"><b>configdir</b></dt>
 <dd>
-<p>The <strong>configdir</strong> field of the <strong>realms</strong> file contains the name of the realm's
-configuration directory.  This file gives command paths and configuration
-values for running the DNSSEC-Tools.  The DNSSEC-Tools modules expects this
-directory hierarchy to contain a <strong>dnssec-tools</strong> subdirectory, and a
-<strong>dnssec-tools.conf</strong> file within that subdirectory.  The path fields in the
-configuration file point to various things, such as commands and key archives.
-It is recommended that these paths only point within the <strong>configdir</strong>
-hierarchy, other than for system utilities.</p>
-<p>The <strong>DT_SYSCONFDIR</strong> environment variable is set to the <strong>configdir</strong> field.
-This will tell the DNSSEC-Tools programs and modules where to find their
-required data.</p>
+
+<p>The <b>configdir</b> field of the <b>realms</b> file contains the name of the realm&#39;s configuration directory. This file gives command paths and configuration values for running the DNSSEC-Tools. The DNSSEC-Tools modules expects this directory hierarchy to contain a <b>dnssec-tools</b> subdirectory, and a <b>dnssec-tools.conf</b> file within that subdirectory. The path fields in the configuration file point to various things, such as commands and key archives. It is recommended that these paths only point within the <b>configdir</b> hierarchy, other than for system utilities.</p>
+
+<p>The <b>DT_SYSCONFDIR</b> environment variable is set to the <b>configdir</b> field. This will tell the DNSSEC-Tools programs and modules where to find their required data.</p>
+
 </dd>
-<dt><strong><a name="statedir" class="item"><strong>statedir</strong></a></strong></dt>
-
+<dt id="statedir"><b>statedir</b></dt>
 <dd>
-<p>The <strong>statedir</strong> field of the <strong>realms</strong> file contains the name of the realm's
-state directory.  This directory contains such files as the <strong>rollrec</strong> lock
-file and the <strong>rollerd</strong> communications socket.  If a realm definition does not
-contain a <strong>statedir</strong> field, then that realm will use the <strong>configdir</strong> field
-as its <strong>statedir</strong> field.</p>
-<p>The <strong>DT_STATEDIR</strong> environment variable is set to the <strong>statedir</strong> field.  This
-will tell the DNSSEC-Tools programs and modules where to find these files.</p>
+
+<p>The <b>statedir</b> field of the <b>realms</b> file contains the name of the realm&#39;s state directory. This directory contains such files as the <b>rollrec</b> lock file and the <b>rollerd</b> communications socket. If a realm definition does not contain a <b>statedir</b> field, then that realm will use the <b>configdir</b> field as its <b>statedir</b> field.</p>
+
+<p>The <b>DT_STATEDIR</b> environment variable is set to the <b>statedir</b> field. This will tell the DNSSEC-Tools programs and modules where to find these files.</p>
+
 </dd>
-<dt><strong><a name="realmdir" class="item"><strong>realmdir</strong></a></strong></dt>
-
+<dt id="realmdir"><b>realmdir</b></dt>
 <dd>
-<p>The <strong>realmdir</strong> field of the <strong>realms</strong> file contains the name of the directory
-in which the realm executes.  This is where the realm's zone, key, and other
-files are located.</p>
+
+<p>The <b>realmdir</b> field of the <b>realms</b> file contains the name of the directory in which the realm executes. This is where the realm&#39;s zone, key, and other files are located.</p>
+
 </dd>
-<dt><strong><a name="rollrec" class="item"><strong>rollrec</strong></a></strong></dt>
-
+<dt id="rollrec"><b>rollrec</b></dt>
 <dd>
-<p>The <strong>rollrec</strong> field of the <strong>realms</strong> file is the name of the file that
-controls zone rollover.  This file points to the various <strong>keyrec</strong> files that
-define the locations of the zone files and their associated key files.  A
-realm's <strong>rollrec</strong> file can locate these files anywhere on the system, but it
-is <em>strongly</em> recommended that they all remain within the realm's <strong>realmdir</strong>
-hierarchy.</p>
+
+<p>The <b>rollrec</b> field of the <b>realms</b> file is the name of the file that controls zone rollover. This file points to the various <b>keyrec</b> files that define the locations of the zone files and their associated key files. A realm&#39;s <b>rollrec</b> file can locate these files anywhere on the system, but it is <i>strongly</i> recommended that they all remain within the realm&#39;s <b>realmdir</b> hierarchy.</p>
+
 </dd>
 </dl>
-<p>While the DNSSEC-Tools programs will work fine if a realm's configuration,
-state, and realm directories are actually one directory, it is recommended
-that at the least the <strong>realmdir</strong> files be separated from the <strong>configdir</strong>
-and <strong>statedir</strong> files.</p>
-<p>It is further recommended that the files for the various realms be segregated
-from each other.</p>
-<p>
-</p>
-<hr />
-<h1><a name="options">OPTIONS</a></h1>
-<p>The following options are handled by <strong>dtrealms</strong>.</p>
+
+<p>While the DNSSEC-Tools programs will work fine if a realm&#39;s configuration, state, and realm directories are actually one directory, it is recommended that at the least the <b>realmdir</b> files be separated from the <b>configdir</b> and <b>statedir</b> files.</p>
+
+<p>It is further recommended that the files for the various realms be segregated from each other.</p>
+
+<h1 id="OPTIONS">OPTIONS</h1>
+
+<p>The following options are handled by <b>dtrealms</b>.</p>
+
 <dl>
-<dt><strong><a name="directory" class="item"><strong>-directory</strong></a></strong></dt>
 
+<dt id="directory"><b>-directory</b></dt>
 <dd>
-<p>Directory in which <strong>dtrealms</strong> will be executed.  Any relative paths given
-in realms configuration files will use this directory as their base.</p>
+
+<p>Directory in which <b>dtrealms</b> will be executed. Any relative paths given in realms configuration files will use this directory as their base.</p>
+
 </dd>
-<dt><strong><a name="display" class="item"><strong>-display</strong></a></strong></dt>
-
+<dt id="display"><b>-display</b></dt>
 <dd>
-<p>Start the <strong>grandvizier</strong> display program to give a graphical indication of
-realm status.</p>
+
+<p>Start the <b>grandvizier</b> display program to give a graphical indication of realm status.</p>
+
 </dd>
-<dt><strong><a name="foreground" class="item"><strong>-foreground</strong></a></strong></dt>
-
+<dt id="foreground"><b>-foreground</b></dt>
 <dd>
-<p>Run <strong>dtrealms</strong> in the foreground instead of as a daemon.</p>
+
+<p>Run <b>dtrealms</b> in the foreground instead of as a daemon.</p>
+
 </dd>
-<dt><strong><a name="logfile" class="item"><strong>-logfile</strong></a></strong></dt>
-
+<dt id="logfile"><b>-logfile</b></dt>
 <dd>
+
 <p>Logging file to use.</p>
-</dd>
-<dt><strong><a name="loglevel" class="item"><strong>-loglevel</strong></a></strong></dt>
 
-<dd>
-<p>Logging level to use when writing to the log file.  See <strong>rolllog(3)</strong> for
-more details.</p>
 </dd>
-<dt><strong><a name="logtz" class="item"><strong>-logtz</strong></a></strong></dt>
-
+<dt id="loglevel"><b>-loglevel</b></dt>
 <dd>
-<p>Time zone to use with the log file.  This must be either &quot;gmt&quot; or &quot;local&quot;.</p>
+
+<p>Logging level to use when writing to the log file. See <b>rolllog(3)</b> for more details.</p>
+
 </dd>
-<dt><strong><a name="version" class="item"><strong>-Version</strong></a></strong></dt>
-
+<dt id="logtz"><b>-logtz</b></dt>
 <dd>
-<p>Displays the version information for <strong>dtrealms</strong> and the DNSSEC-Tools package.</p>
+
+<p>Time zone to use with the log file. This must be either &quot;gmt&quot; or &quot;local&quot;.</p>
+
 </dd>
-<dt><strong><a name="help" class="item"><strong>-help</strong></a></strong></dt>
-
+<dt id="Version"><b>-Version</b></dt>
 <dd>
+
+<p>Displays the version information for <b>dtrealms</b> and the DNSSEC-Tools package.</p>
+
+</dd>
+<dt id="help"><b>-help</b></dt>
+<dd>
+
 <p>Displays a help message and exits.</p>
+
 </dd>
 </dl>
-<p>
-</p>
-<hr />
-<h1><a name="warning">WARNING</a></h1>
-<p>This is an early prototype.  Consider it to be beta quality.</p>
-<p>
-</p>
-<hr />
-<h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2011-2013 SPARTA, Inc.  All rights reserved.
-See the COPYING file included with the DNSSEC-Tools package for details.</p>
-<p>
-</p>
-<hr />
-<h1><a name="author">AUTHOR</a></h1>
-<p>Wayne Morrison, <a href="mailto:tewok@tislabs.com">tewok@tislabs.com</a></p>
-<p>
-</p>
-<hr />
-<h1><a name="see_also">SEE ALSO</a></h1>
-<p><strong>grandvizier(8)</strong>,
-<strong>lsrealm(8)</strong>,
-<strong>realminit(8)</strong>,
-<strong>realmset(8)</strong></p>
-<p><strong>Net::DNS::SEC::Tools::realm.pm(3)</strong>,
-<strong>Net::DNS::SEC::Tools::realmmgr.pm(3)</strong>,
-<strong>Net::DNS::SEC::Tools::rolllog.pm(3)</strong></p>
+
+<h1 id="WARNING">WARNING</h1>
+
+<p>This is an early prototype. Consider it to be beta quality.</p>
+
+<h1 id="COPYRIGHT">COPYRIGHT</h1>
+
+<p>Copyright 2011-2014 SPARTA, Inc. All rights reserved. See the COPYING file included with the DNSSEC-Tools package for details.</p>
+
+<h1 id="AUTHOR">AUTHOR</h1>
+
+<p>Wayne Morrison, tewok@tislabs.com</p>
+
+<h1 id="SEE-ALSO">SEE ALSO</h1>
+
+<p><b>grandvizier(8)</b>, <b>lsrealm(8)</b>, <b>realminit(8)</b>, <b>realmset(8)</b></p>
+
+<p><b>Net::DNS::SEC::Tools::realm.pm(3)</b>, <b>Net::DNS::SEC::Tools::realmmgr.pm(3)</b>, <b>Net::DNS::SEC::Tools::rolllog.pm(3)</b></p>
+
 
 </body>
 
 </html>
+
+
