@@ -47,7 +47,7 @@ my %opts =
     'cname-extra-prefixes' => 'cnametodne',
 # XXX:
 #   newksk: doesn't work because zonesigner requires generation of zsks too
-    'P' => 'insecure-ns,good-ns,badsign-ns,nosig-ns,nods-ns,futuredate-ds,pastdate-ds,reverseddates-ns,rollzsk-ns,newzsk-ns,newkeys-ns,rsamd5keys-ns,nsec3-ns',
+    'P' => 'insecure-ns,good-ns,badsign-ns,nosig-ns,nods-ns,futuredate-ds,pastdate-ds,reverseddates-ns,rollzsk-ns,newzsk-ns,newkeys-ns,rsamd5keys-ns,nsec3-ns,bigkeys-ns',
   );
 
 DTGetOptions(\%opts,
@@ -249,6 +249,7 @@ my %LegendInformation =
  newkeys => 'The KSKs and the ZSKs for this zone are brand new every time the zone is generated',
  rsamd5keys => 'The keys for this zone are of type RSAMD5',
  nsec3 => 'The zone contains NSEC3 proof-of-non-existence records',
+ bigkeys => 'The keys for this zone are 4096 bits',
 
  # record types
  A => 'An A (IPv4) address record',
@@ -274,6 +275,7 @@ my %zonesigner_domain_opts =
    'newzsk-ns.' . $opts{'d'} => '-genzsk',
    'newksk-ns.' . $opts{'d'} => '-genksk',
    'newkeys-ns.' . $opts{'d'} => '-genkeys',
+   'bigkeys-ns' . $opts{'d'} => '-ksklength 4096 -zsklength 496',
    'nsec3-ns.' . $opts{'d'} => '-usensec3',
    'rsamd5keys-ns.' . $opts{'d'} => '-algorithm RSAMD5 -genkeys',
    'insecure-ns.' . $opts{'d'} => 'NOSIGN',
