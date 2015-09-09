@@ -381,6 +381,10 @@ name: DNSSEC_TWO_ZSKS
 ruletype: name
 level: 7
 desc: In order to facilitate future rolling of your zone signing keys (ZSKs) it is recommended that you publish two (but sign with only one).
+minzsks: 2
+minksks: 1
+help: minzsks: minimum number of Zone Signing Keys (ZSKs) expected in the zone
+help: minksks: minimum number of Key Signing Keys (KSKs) expected in the zone
 <test>
   return if ($current_domain ne $recordname);
   return donuts_error("No DNSKEY records associated with $current_domain")
@@ -393,11 +397,11 @@ desc: In order to facilitate future rolling of your zone signing keys (ZSKs) it 
       $zskcount++;
     }
   }
- if ($zskcount < 2) {
+ if ($zskcount < $rule->{'minzsks'}) {
    donuts_error("Only $zskcount ZSKs found for the zone; more than one ZSK is recommended to be in a zone at any given time to provide forfuture proper ZSK rollevers (one 'current' and one 'published').");
  }
 
- if ($kskcount < 1) {
+ if ($kskcount < $rule->{'minksks'}) {
    donuts_error("Only $kskcount KSKs found for the zone; At least one KSK should be published in the zone (and used to sign the DNSKEY record).");
   }
 </test>
