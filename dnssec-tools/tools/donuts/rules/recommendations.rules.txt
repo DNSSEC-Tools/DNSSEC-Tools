@@ -32,8 +32,11 @@ level: 8
 class: Warning
 ruletype: name
 desc: Checks to ensure that the zone contains at least 1 MX record.
+minmx: 2
+help: minmx: minimum number of MX records that should be in a domain
 <test>
-   if ($recordname eq $current_domain && $#{$records->{'MX'}} == -1) {
-       donuts_error("At least one MX record for $current_domain is suggested");
+   if (exists($records->{'MX'}) &&
+      $recordname eq $current_domain && $#{$records->{'MX'}}+1 < $rule->{'minmx'}) {
+       donuts_error("$rule->{'minmx'} MX records are suggested for this zone");
    }
 </test>
