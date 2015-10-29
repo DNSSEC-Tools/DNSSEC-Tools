@@ -32,7 +32,7 @@ level: 8
 class: Warning
 ruletype: name
 desc: Checks to ensure that the zone contains at least 1 MX record.
-minmx: 2
+minmxrecords: 2
 help: minmx: minimum number of MX records that should be in a domain
 <test>
    if (exists($records->{'MX'}) &&
