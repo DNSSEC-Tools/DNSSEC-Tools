@@ -712,6 +712,10 @@ ns_sprintrrf_data(const u_char * msg, size_t msglen,
 nxtbitmaps:
 #endif /* LIBVAL_NSEC3 */
 
+#if !defined(NS_NXT_BIT_ISSET)
+#define	NS_NXT_BITS 8
+#define	NS_NXT_BIT_ISSET(n,p) (p[(n)/NS_NXT_BITS] &   (0x80>>((n)%NS_NXT_BITS)))
+#endif
             /** Type bit map.  */
             while (edata - rdata > 0) {
                 b = *rdata;
