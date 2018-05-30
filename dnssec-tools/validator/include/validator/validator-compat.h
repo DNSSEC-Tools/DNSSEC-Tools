@@ -818,14 +818,6 @@ typedef enum __ns_flag {
         ns_f_max
 } ns_flag;
 
-/* The Algorithm field of the KEY and SIG RR's is an integer, {1..254} */
-#define NS_ALG_MD5RSA           1       /* MD5 with RSA */
-#define NS_ALG_DH               2       /* Diffie Hellman KEY */
-#define NS_ALG_DSA              3       /* DSA KEY */
-#define NS_ALG_DSS              NS_ALG_DSA
-#define NS_ALG_EXPIRE_ONLY      253     /* No alg, no security */
-#define NS_ALG_PRIVATE_OID      254     /* Key begins with OID giving alg */
-
 /* Protocol values  */
 /* value 0 is reserved */
 #define NS_KEY_PROT_TLS         1
@@ -1049,6 +1041,27 @@ struct addrinfo {
 }                               /* extern "C" */
 #endif
 
+
+/* The Algorithm field of the KEY and SIG RR's is an integer, {1..254} */
+#define NS_ALG_MD5RSA           1       /* MD5 with RSA */
+#define NS_ALG_DH               2       /* Diffie Hellman KEY */
+#define NS_ALG_DSA              3       /* DSA KEY */
+#define NS_ALG_DSS              NS_ALG_DSA
+#define NS_ALG_EXPIRE_ONLY      253     /* No alg, no security */
+#define NS_ALG_PRIVATE_OID      254     /* Key begins with OID giving alg */
+#define	ns_t_zxfr 256
+
+#define NS_MD5RSA_MIN_BITS       512    /* Size of a mod or exp in bits */
+#define NS_MD5RSA_MAX_BITS      2552
+        /* Total of binary mod and exp */
+#define NS_MD5RSA_MAX_BYTES     ((NS_MD5RSA_MAX_BITS+7/8)*2+3)
+        /* Max length of text sig block */
+#define NS_MD5RSA_MAX_BASE64    (((NS_MD5RSA_MAX_BYTES+2)/3)*4)
+#define NS_MD5RSA_MIN_SIZE      ((NS_MD5RSA_MIN_BITS+7)/8)
+#define NS_MD5RSA_MAX_SIZE      ((NS_MD5RSA_MAX_BITS+7)/8)
+
+#include "openssl/hmac.h"
+#include "openssl/ossl_typ.h"
 
 #endif /* _VALIDATOR_COMPAT_H */
 
