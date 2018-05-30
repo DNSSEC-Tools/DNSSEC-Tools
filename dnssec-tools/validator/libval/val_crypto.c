@@ -78,7 +78,7 @@ dsasha1_parse_public_key(const u_char *buf, size_t buflen, DSA * dsa)
     bn_y = BN_bin2bn(buf + index, 64 + (T * 8), NULL);
     index += (64 + (T * 8));
 
-    DSA_set0_pgq(dsa, bn_p, bn_g, bn_q);
+    DSA_set0_pqg(dsa, bn_p, bn_q, bn_g);
     DSA_set0_key(dsa, bn_y, NULL);
 
     return VAL_NO_ERROR;        /* success */
