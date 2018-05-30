@@ -16,6 +16,7 @@
  */
 #include "validator-internal.h"
 
+#include <openssl/ossl_typ.h>
 #include <openssl/hmac.h>
 
 #include "res_tsig.h"
@@ -237,7 +238,7 @@ res_tsig_sign(u_char * query,
     u_char *hp;
     HEADER *header;
     struct timeval now;
-    HMAC_CTX ctx;
+    HMAC_CTX *ctx;
     const EVP_MD *md;
     u_char hash[MAX_DIGEST_LENGTH];
     unsigned int len;
@@ -274,8 +275,8 @@ res_tsig_sign(u_char * query,
                return SR_TS_FAIL;
         } 
 
-        HMAC_CTX_init(&ctx);
-        HMAC_Init_ex(&ctx, ns->ns_tsig->key, ns->ns_tsig->keylen,
+        ctx = HMAC_CTX_new();
+        HMAC_Init_ex(ctx, ns->ns_tsig->key, ns->ns_tsig->keylen,
                 md, NULL);
 
         /* Create a TSIG RR and add it to the additional section */
@@ -289,7 +290,7 @@ res_tsig_sign(u_char * query,
         p = cp;
         memcpy(cp, query, query_length * sizeof(u_char));
         cp += query_length;
-        HMAC_Update(&ctx, p, cp-p); 
+        HMAC_Update(ctx, p, cp-p); 
 
         /* Bump up the additional section count */
         header = (HEADER *) p;
@@ -300,7 +301,7 @@ res_tsig_sign(u_char * query,
         p = cp;
         memcpy(cp, ns->ns_tsig->name_n, wire_name_length(ns->ns_tsig->name_n));
         cp += wire_name_length(ns->ns_tsig->name_n);
-        HMAC_Update(&ctx, p, cp-p); 
+        HMAC_Update(ctx, p, cp-p); 
 
         /* don't digest type */
         RES_PUT16(ns_t_tsig, cp);
@@ -308,7 +309,7 @@ res_tsig_sign(u_char * query,
         p = cp;
         RES_PUT16(ns_t_any, cp);
         RES_PUT32(0, cp);
-        HMAC_Update(&ctx, p, cp-p); 
+        HMAC_Update(ctx, p, cp-p); 
 
         /* don't digest rdatalen */
         RES_PUT16(ns->ns_tsig->rdatalen, cp);
@@ -316,13 +317,13 @@ res_tsig_sign(u_char * query,
         p = cp;
         memcpy(cp, ns->ns_tsig->alg_n, wire_name_length(ns->ns_tsig->alg_n));
         cp += wire_name_length(ns->ns_tsig->alg_n);
-        HMAC_Update(&ctx, p, cp-p); 
+        HMAC_Update(ctx, p, cp-p); 
 
         gettimeofday(&now, NULL);
         p = cp;
         RES_PUT48((u_int64_t)now.tv_sec, cp);
         RES_PUT16(ns->ns_tsig->fudge, cp);
-        HMAC_Update(&ctx, p, cp-p); 
+        HMAC_Update(ctx, p, cp-p); 
 
         /* don't digest the mac_size */
         RES_PUT16(ns->ns_tsig->mac_size, cp);
@@ -337,9 +338,9 @@ res_tsig_sign(u_char * query,
         p = cp;
         RES_PUT16(0, cp);
         RES_PUT16(0, cp);
-        HMAC_Update(&ctx, p, cp-p); 
+        HMAC_Update(ctx, p, cp-p); 
 
-        HMAC_Final(&ctx, hash, &len);
+        HMAC_Final(ctx, hash, &len);
 
         if (len != ns->ns_tsig->mac_size) {
             FREE(*signed_query);
@@ -348,7 +349,7 @@ res_tsig_sign(u_char * query,
         }
         memcpy(hp, hash, len);
 
-        HMAC_CTX_cleanup(&ctx);
+        HMAC_CTX_cleanup(ctx);
         return SR_TS_OK;
 
     } else
