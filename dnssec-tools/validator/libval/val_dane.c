@@ -875,7 +875,8 @@ val_X509_peer_cert_verify_cb(X509_STORE_CTX *x509ctx, void *arg)
     if (x509ctx == NULL || ssl_dane_data == NULL)
         return 0;
 
-    cert = x509ctx->cert;
+    
+    cert = X509_STORE_CTX_get_current_cert(x509ctx);
     context = ssl_dane_data->context;
 
     /* 
