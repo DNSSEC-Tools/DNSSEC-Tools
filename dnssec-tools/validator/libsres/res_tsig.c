@@ -349,7 +349,7 @@ res_tsig_sign(u_char * query,
         }
         memcpy(hp, hash, len);
 
-        HMAC_CTX_cleanup(ctx);
+        HMAC_CTX_free(ctx);
         return SR_TS_OK;
 
     } else
