@@ -244,7 +244,7 @@ rsamd5_keytag(const u_char *pubkey, size_t pubkey_len)
         return VAL_BAD_ARGUMENT;
     }
 
-    RSA_get0_key(rsa, &modulus, NULL, NULL);
+    RSA_get0_key(rsa, (const BIGNUM **) &modulus, NULL, NULL);
     modulus_len = BN_num_bytes(modulus);
     modulus_bin =
         (u_char *) MALLOC(modulus_len * sizeof(u_char));
