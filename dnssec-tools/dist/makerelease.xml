@@ -14,7 +14,7 @@
 	The VERSION grep should show the last release version number created.
       </text>
       <commands>
-	<command>svn status -q</command>
+	<command>git status</command>
 	<command>grep 'DNSSEC-Tools Version:' tools/scripts/zonesigner</command>
       </commands>
     </step>
@@ -63,14 +63,14 @@
 
     <step type="system" title="Check the version number changes">
       <commands>
-	<command ignoreerror="1">svn diff | egrep '^[-\+]'</command>
+	<command ignoreerror="1">git diff | egrep '^[-\+]'</command>
       </commands>
     </step>
 
     <step type="system" title="SVN Commit the changes"
     interactive="1">
       <commands>
-	<command>svn commit -m "Update Version Number: {VERSION}"</command>
+	<command>git commit -m "Update Version Number: {VERSION}"</command>
       </commands>
     </step>
 
@@ -106,13 +106,13 @@
 
 	<step type="system" title="Check the version number changes">
 	  <commands>
-	    <command ignoreerror="1">svn diff tools/modules/ZoneFile-Fast/Fast.pm</command>
+	    <command ignoreerror="1">git diff tools/modules/ZoneFile-Fast/Fast.pm</command>
 	  </commands>
 	</step>
 
 	<step type="system" title="SVN Commit the changes" interactive="1">
 	  <commands>
-	    <command>svn commit -m "Update Fast.pm Version Number: {FASTVERSION}" tools/modules/ZoneFile-Fast/Fast.pm</command>
+	    <command>git commit -m "Update Fast.pm Version Number: {FASTVERSION}" tools/modules/ZoneFile-Fast/Fast.pm</command>
 	  </commands>
 	</step>
 
@@ -139,79 +139,45 @@
 
     <step type="system" title="Create the ChangeLog">
       <commands>
-	<command>svn log -v > ChangeLog</command>
+	<command>git log -v > ChangeLog</command>
       </commands>
     </step>
 
     <step type="system" title="Commit the ChangeLog">
       <commands>
-	<command>svn commit -m "Update for verison {VERSION}" ChangeLog</command>
+	<command>git commit -m "Update for verison {VERSION}" ChangeLog</command>
       </commands>
     </step>
 
     <step type="system" title="Update the NEWS file" interactive="1">
       <text>Please update the NEWS file with new details and we'll commit it</text>
       <commands>
-	<command>svn commit -m "Update for verison {VERSION}" NEWS</command>
+	<command>git commit -m "Update for verison {VERSION}" NEWS</command>
       </commands>
     </step>
 
 
-    <step type="system" title="svn tag the release">
+    <step type="system" title="git tag the release">
       <commands>
-	<command>svn copy -m "tag of version {VERSION}" https://www.dnssec-tools.org/svn/dnssec-tools/trunk/dnssec-tools https://www.dnssec-tools.org/svn/dnssec-tools/tags/dnssec-tools-{VERSION}</command>
+	<command>git tag dnssec-tools-{VERSION}</command>
       </commands>
     </step>
 
     <step type="system" title="export the release">
       <commands>
-	<command>svn export https://www.dnssec-tools.org/svn/dnssec-tools/tags/dnssec-tools-{VERSION} dnssec-tools-{VERSION}</command>
-	<command>svn export https://www.dnssec-tools.org/svn/dnssec-tools/tags/dnssec-tools-{VERSION}/validator dnsval-{VERSION}</command>
-	<command>svn export https://www.dnssec-tools.org/svn/dnssec-tools/tags/dnssec-tools-{VERSION}/validator/apps/dnssec-check dnssec-check-{VERSION}</command>
-	<command>svn export https://www.dnssec-tools.org/svn/dnssec-tools/tags/dnssec-tools-{VERSION}/validator/apps/dnssec-nodes dnssec-nodes-{VERSION}</command>
-	<command>svn export https://www.dnssec-tools.org/svn/dnssec-tools/tags/dnssec-tools-{VERSION}/validator/apps/dnssec-system-tray dnssec-system-tray-{VERSION}</command>
-	<command>svn export https://www.dnssec-tools.org/svn/dnssec-tools/tags/dnssec-tools-{VERSION}/validator/apps/lookup lookup-{VERSION}</command>
-
-	<command>svn export https://www.dnssec-tools.org/svn/dnssec-tools/tags/dnssec-tools-{VERSION}/apps/owl-monitor owl-monitor-{VERSION}</command>
-	<command>svn export https://www.dnssec-tools.org/svn/dnssec-tools/tags/dnssec-tools-{VERSION}/apps/owl-monitor owl-sensor-{VERSION}</command>
-	<command>rm -rf owl-sensor-{VERSION}/manager</command>
-	<command>svn export https://www.dnssec-tools.org/svn/dnssec-tools/tags/dnssec-tools-{VERSION}/apps/owl-monitor owl-manager-{VERSION}</command>
-	<command>rm -rf owl-manager-{VERSION}/sensor</command>
-
+	<command>git archive --prefix=dnssec-tools-{VERSION}/ dnssec-tools-{VERSION} | tar xf -</command>
       </commands>
-    </step>
-
-    <step type="system" title="copy in the COPYING file">
-        <commands>
-	<command>cp -p COPYING dnsval-{VERSION}</command>
-        </commands>
     </step>
 
     <step type="system" title="create the tar file">
       <commands>
 	<command>tar czf dnssec-tools-{VERSION}.tar.gz dnssec-tools-{VERSION}</command>
-	<command>tar czf dnsval-{VERSION}.tar.gz dnsval-{VERSION}</command>
-	<command>tar czf dnssec-nodes-{VERSION}.tar.gz dnssec-nodes-{VERSION}</command>
-	<command>tar czf dnssec-check-{VERSION}.tar.gz dnssec-check-{VERSION}</command>
-	<command>tar czf dnssec-system-tray-{VERSION}.tar.gz dnssec-system-tray-{VERSION}</command>
-	<command>tar czf lookup-{VERSION}.tar.gz lookup-{VERSION}</command>
-	<command>tar czf owl-sensor-{VERSION}.tar.gz owl-sensor-{VERSION}</command>
-	<command>tar czf owl-manager-{VERSION}.tar.gz owl-manager-{VERSION}</command>
-	<command>tar czf owl-monitor-{VERSION}.tar.gz owl-monitor-{VERSION}</command>
       </commands>
     </step>
 
     <step type="system" title="sign the files">
       <commands>
 	<command>gpg --use-agent -a --detach-sign -u 47DBB308 dnssec-tools-{VERSION}.tar.gz</command>
-	<command>gpg --use-agent -a --detach-sign -u 47DBB308 dnsval-{VERSION}.tar.gz</command>
-	<command>gpg --use-agent -a --detach-sign -u 47DBB308 dnssec-nodes-{VERSION}.tar.gz</command>
-	<command>gpg --use-agent -a --detach-sign -u 47DBB308 dnssec-check-{VERSION}.tar.gz</command>
-	<command>gpg --use-agent -a --detach-sign -u 47DBB308 dnssec-system-tray-{VERSION}.tar.gz</command>
-	<command>gpg --use-agent -a --detach-sign -u 47DBB308 lookup-{VERSION}.tar.gz</command>
-	<command>gpg --use-agent -a --detach-sign -u 47DBB308 owl-sensor-{VERSION}.tar.gz</command>
-	<command>gpg --use-agent -a --detach-sign -u 47DBB308 owl-manager-{VERSION}.tar.gz</command>
-	<command>gpg --use-agent -a --detach-sign -u 47DBB308 owl-monitor-{VERSION}.tar.gz</command>
       </commands>
     </step>
 
