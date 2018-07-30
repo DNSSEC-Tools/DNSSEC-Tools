@@ -18,7 +18,7 @@ use Net::DNS::SEC::Tools::QWPrimitives;
 #
 my $NAME   = "getdnskeys";
 my $VERS   = "$NAME version: 2.0.0";
-my $DTVERS = "DNSSEC-Tools Version: 2.0";
+my $DTVERS = "DNSSEC-Tools Version: 2.2.1";
 
 ######################################################################
 # detect needed perl module requirements
@@ -29,7 +29,7 @@ my %opts;
 my @origargs = @ARGV;
 
 DTGetOptions(\%opts,
-		['GUI:VERSION',"0.9.1\nDNSSEC-Tools Version: 2.0"],
+		['GUI:VERSION',"0.9.1\nDNSSEC-Tools Version: 2.2.1"],
 		['GUI:separator',"DNS Configuration:"],
 		['k','Only look for key signing keys (KSK) and ignore others'],
 
