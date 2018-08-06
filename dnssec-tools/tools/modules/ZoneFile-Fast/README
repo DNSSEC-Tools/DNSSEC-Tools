@@ -1,34 +1,5 @@
-Usage:
 
-  use Net::DNS::ZoneFile::Fast;
+CRITICAL: Net::DNS::ZoneFile::Fast is DEPRECATED!!
 
-  my $rr = Net::DNS::ZoneFile::Fast::parse($zone_text);
-
-Description:
-
-  The Net::DNS::ZoneFile::Fast module provides an ability to parse zone
-  files that BIND8 and BIND9 use, fast.  Currently it provides a single
-  function, parse(), which returns a reference to an array of
-  traditional Net::DNS::RR objects, so that no new API has to be
-  learned in order to manipulate zone records.
-
-  Great care was taken to ensure that parse() does its job as fast as
-  possible, so it is interesting to use this module to parse huge zones.
-  As an example datapoint, it takes less than 5 seconds to parse a 2.2 MB
-  zone with about 72000 records on an Athlon XP 2600+ box.
-
-  On the other hand, it is likely that Net::DNS::RR objects that
-  parse() returns are going to be further processed.  To make it easier
-  to link any record back to the zone file (say, to report a logical error
-  like infamous `CNAME and other data' back to the user, or to do a zone
-  file modification), parse() inserts line numbering information into
-  Net::DNS::RR objects.
-
-Important Note about DNSSEC:
-
-  If you try to load a ZoneFile with DNSSEC records in it *and* you
-  haven't installed all the other necessary perl modules require to
-  support the Net::DNS::SEC module set, you will get bad results.
-  And, worse they'll be cryptic.  A common problem is failing to
-  install the MIME::Base32 and MIME::Base64 perl modules in addition
-  to the Net::DNS::SEC modules.
+Please use the Net::DNS::ZoneFile module instead, whos speed has been
+improved, making this module no longer necessary.

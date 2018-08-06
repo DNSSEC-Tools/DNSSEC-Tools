@@ -74,69 +74,6 @@
       </commands>
     </step>
 
-    <step type="section" title="Update Net::DNS::ZoneFile::Fast" interactive="1"
-	  prompt="1">
-      <text>
-	If the Net::DNS::ZoneFile::Fast module needs updating this
-	will let you do it...
-      </text>
-      <steps>
-	<step type="system">
-	  <text>Previous version:</text>
-	  <commands>
-	    <command>grep VERSION tools/modules/ZoneFile-Fast/Fast.pm</command>
-	  </commands>
-	</step>
-
-	<step type="prompt" prompt="Enter the new Fast.pm VERSION number:"
-	  title="Pick A Fast.pm Version Number"
-	  parameter="FASTVERSION" values="^[\.\d]+$"/>
-	
-	<step type="modify" title="Modify the Fast module">
-	  <modifications>
-	    <modify
-	      find="(VERSION = ')[\.\d]+"
-	      replace="${1}{FASTVERSION}">
-	      <files>
-		<file>tools/modules/ZoneFile-Fast/Fast.pm</file>
-	      </files>
-	    </modify>
-	  </modifications>
-	</step>
-
-	<step type="system" title="Check the version number changes">
-	  <commands>
-	    <command ignoreerror="1">git diff tools/modules/ZoneFile-Fast/Fast.pm</command>
-	  </commands>
-	</step>
-
-	<step type="system" title="SVN Commit the changes" interactive="1">
-	  <commands>
-	    <command>git commit -m "Update Fast.pm Version Number: {FASTVERSION}" tools/modules/ZoneFile-Fast/Fast.pm</command>
-	  </commands>
-	</step>
-
-	<step type="system" title="Make Test">
-	  <commands>
-	    <command>cd tools/modules/ZoneFile-Fast ; perl Makefile.PL</command>
-	    <command>cd tools/modules/ZoneFile-Fast ; make test</command>
-	  </commands>
-	</step>
-
-	<step type="system" title="make dist">
-	  <commands>
-	    <command>cd tools/modules/ZoneFile-Fast ; make dist</command>
-	  </commands>
-	</step>
-
-	<step type="system" title="upload to cpan">
-	  <commands>
-	    <command>cpan-upload -mailto wjhns117@hardakers.net -user hardaker -verbose tools/modules/ZoneFile-Fast/Net-DNS-ZoneFile-Fast-{FASTVERSION}.tar.gz</command>
-	  </commands>
-	</step>
-      </steps>
-    </step>
-
     <step type="system" title="Create the ChangeLog">
       <commands>
 	<command>git log -v > ChangeLog</command>
@@ -165,7 +102,7 @@
 
     <step type="system" title="export the release">
       <commands>
-        <command>git clone dt-git:git.dnssec-tools.org/dnssec-tools dnssec-tools.makerelease</command>
+        <command>git clone git@github.com:DNSSEC-Tools/DNSSEC-Tools.git/dnssec-tools dnssec-tools.makerelease</command>
         <command>mv dnssec-tools.makerelease/dnssec-tools dnssec-tools-{VERSION}</command>
         <command>rm -rf dnssec-tools-{VERSION}/.git</command>
 	<command>cp -pr dnssec-tools-{VERSION}/validator dnsval-{VERSION}</command>
