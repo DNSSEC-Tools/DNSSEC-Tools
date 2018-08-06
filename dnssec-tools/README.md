@@ -1,5 +1,5 @@
 # DNSSEC-Tools
-/Is your domain secure?/
+*Is your domain secure?*
 
 # Overview
 
