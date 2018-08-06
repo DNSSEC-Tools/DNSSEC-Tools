@@ -1,0 +1,143 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title></title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:root@localhost" />
+</head>
+
+<body>
+
+
+
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
+  <li><a href="#OPTIONS">OPTIONS</a></li>
+  <li><a href="#PRE-REQUISITES">PRE-REQUISITES</a></li>
+  <li><a href="#COPYRIGHT">COPYRIGHT</a></li>
+  <li><a href="#AUTHORS">AUTHORS</a></li>
+  <li><a href="#SEE-ALSO">SEE ALSO</a></li>
+</ul>
+
+<h1 id="NAME">NAME</h1>
+
+<p>dt-danechk - validate TLSA records against SSL certificates.</p>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<pre><code>  dt-danechk [options] DOMAIN_NAME</code></pre>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p><b>dt-danechk</b> is a diagnostic tool that can be used to test the validity of an SSL/TLS certificate against the TLSA record published in the DNS. For more information on TLSA and DANE see RFC 6698.</p>
+
+<h1 id="OPTIONS">OPTIONS</h1>
+
+<dl>
+
+<dt id="h---help">-h, --help</dt>
+<dd>
+
+<p>Display usage and exit.</p>
+
+</dd>
+<dt id="l-label---label-label">-l <i>label</i>, --label=<i>label</i></dt>
+<dd>
+
+<p>This option can be used to specify the validation policy label. If this option is not given, the default validator policy is used.</p>
+
+</dd>
+<dt id="x-proto---proto-proto">-x <i>proto</i>, --proto <i>proto</i></dt>
+<dd>
+
+<p>Specifies the protocol associated with the TLSA certificate. Possible values for the <i>proto</i> field are:</p>
+
+<ul>
+
+<li><p><b>tcp</b> TCP protocol</p>
+
+</li>
+<li><p><b>udp</b> UDP protocol</p>
+
+</li>
+<li><p><b>sc</b> SCTP protocol (not supported)</p>
+
+</li>
+</ul>
+
+<p>The default value for <i>proto</i> is <b>tcp</b>.</p>
+
+</dd>
+<dt id="p-port---port-port">-p <i>port</i>, --port=<i>port</i></dt>
+<dd>
+
+<p>Specifies the port associated with the TLSA certificate. The default value for <i>port</i> is <b>443</b>.</p>
+
+</dd>
+<dt id="o---output-debug-level:dest-type-:dest-options">-o, --output=&lt;debug-level&gt;:&lt;dest-type&gt;[:&lt;dest-options&gt;]</dt>
+<dd>
+
+<p>&lt;debug-level&gt; is 1-7, corresponding to syslog levels ALERT-DEBUG &lt;dest-type&gt; is one of file, net, syslog, stderr, stdout &lt;dest-options&gt; depends on &lt;dest-type&gt; file:&lt;file-name&gt; (opened in append mode) net[:&lt;host-name&gt;:&lt;host-port&gt;] (127.0.0.1:1053 syslog[:facility] (0-23 (default 1 USER))</p>
+
+</dd>
+<dt id="s---sync">-s, --sync</dt>
+<dd>
+
+<p>Perform synchronous lookups. The default is to perform asynchronous lookups.</p>
+
+</dd>
+<dt id="v-FILE---dnsval-conf-FILE">-v <i>FILE</i>, --dnsval-conf=<i>FILE</i></dt>
+<dd>
+
+<p>This option can be used to specify the location of the <b>dnsval.conf</b> configuration file.</p>
+
+</dd>
+<dt id="r-FILE---resolv-conf-FILE">-r <i>FILE</i>, --resolv-conf=<i>FILE</i></dt>
+<dd>
+
+<p>This option can be used to specify the location of the <b>resolv.conf</b> configuration file containing the name servers to use for lookups.</p>
+
+</dd>
+<dt id="i-FILE---root-hints-FILE">-i <i>FILE</i>, --root-hints=<i>FILE</i></dt>
+<dd>
+
+<p>This option can be used to specify the location of the root.hints configuration file, containing the root name servers. This is only used when no name server is found, and <b>dt-validate</b> must do recursive lookups itself.</p>
+
+</dd>
+<dt id="V---version">-V, --version</dt>
+<dd>
+
+<p>Display the version and exit.</p>
+
+</dd>
+</dl>
+
+<h1 id="PRE-REQUISITES">PRE-REQUISITES</h1>
+
+<p><b>libval</b></p>
+
+<h1 id="COPYRIGHT">COPYRIGHT</h1>
+
+<p>Copyright 2005-2013 SPARTA, Inc. All rights reserved. See the COPYING file included with the DNSSEC-Tools package for details.</p>
+
+<h1 id="AUTHORS">AUTHORS</h1>
+
+<p>Suresh Krishnaswamy</p>
+
+<h1 id="SEE-ALSO">SEE ALSO</h1>
+
+<p><b>libval(3)</b></p>
+
+<p><b>dnsval.conf(5)</b></p>
+
+<p>http://www.dnssec-tools.org</p>
+
+
+</body>
+
+</html>
+
+

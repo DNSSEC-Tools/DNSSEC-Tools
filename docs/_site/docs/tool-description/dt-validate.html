@@ -1,0 +1,152 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title></title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:root@localhost" />
+</head>
+
+<body>
+
+
+
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
+  <li><a href="#OPTIONS">OPTIONS</a></li>
+  <li><a href="#PRE-REQUISITES">PRE-REQUISITES</a></li>
+  <li><a href="#COPYRIGHT">COPYRIGHT</a></li>
+  <li><a href="#AUTHORS">AUTHORS</a></li>
+  <li><a href="#SEE-ALSO">SEE ALSO</a></li>
+</ul>
+
+<h1 id="NAME">NAME</h1>
+
+<p>dt-validate - Query the Domain Name System and display results of the DNSSEC validation process</p>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<pre><code>  dt-validate [options] DOMAIN_NAME</code></pre>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p><b>dt-validate</b> is a diagnostic tool built on top of the DNSSEC validator. It takes <i>DOMAIN_NAME</i> as an argument and queries the DNS for that domain name. It outputs the series of responses that were received from the DNS and the DNSSEC validation results for each domain name. An examination of the queries and validation results can help an administrator uncover errors in DNSSEC configuration of DNS zones.</p>
+
+<h1 id="OPTIONS">OPTIONS</h1>
+
+<dl>
+
+<dt id="c-CLASS---class-CLASS">-c <i>CLASS</i>, --class=<i>CLASS</i></dt>
+<dd>
+
+<p>This option can be used to specify the DNS class of the Resource Record queried. If this option is not given, the default class <b>IN</b> is used.</p>
+
+</dd>
+<dt id="h---help">-h, --help</dt>
+<dd>
+
+<p>Display the help and exit.</p>
+
+</dd>
+<dt id="p---print">-p, --print</dt>
+<dd>
+
+<p>Print the answers and validation results. By default, <b>dt-validate</b> just outputs a series of responses and their validation results on <i>stderr</i>. When the <i>-p</i> option is used, <b>dt-validate</b> will also output the final result on <i>stdout</i>.</p>
+
+</dd>
+<dt id="t-TYPE---type-TYPE">-t <i>TYPE</i>, --type=<i>TYPE</i></dt>
+<dd>
+
+<p>This option can be used to specify the DNS type of the Resource Record queried. If this option is not given, <b>dt-validate</b> will query for the <b>A</b> record for the given <i>DOMAIN_NAME</i>.</p>
+
+</dd>
+<dt id="v-FILE---dnsval-conf-FILE">-v <i>FILE</i>, --dnsval-conf=<i>FILE</i></dt>
+<dd>
+
+<p>This option can be used to specify the location of the <b>dnsval.conf</b> configuration file.</p>
+
+</dd>
+<dt id="r-FILE---resolv-conf-FILE">-r <i>FILE</i>, --resolv-conf=<i>FILE</i></dt>
+<dd>
+
+<p>This option can be used to specify the location of the <b>resolv.conf</b> configuration file containing the name servers to use for lookups.</p>
+
+</dd>
+<dt id="i-FILE---root-hints-FILE">-i <i>FILE</i>, --root-hints=<i>FILE</i></dt>
+<dd>
+
+<p>This option can be used to specify the location of the root.hints configuration file, containing the root name servers. This is only used when no name server is found, and <b>dt-validate</b> must do recursive lookups itself.</p>
+
+</dd>
+<dt id="S-suite-:suite---test-suite-suite-:suite">-S <i>suite</i>[:<i>suite</i>], --test-suite=<i>suite</i>[:<i>suite</i>]</dt>
+<dd>
+
+<p>This option specifies the test suite (or range of test suites) to use for the internal tests.</p>
+
+</dd>
+<dt id="s---selftest">-s, --selftest</dt>
+<dd>
+
+<p>This option can be used to specify that the application should perform its self tests using names from the configured test-suite.</p>
+
+</dd>
+<dt id="T-number-:number---testcase-number-:number">-T <i>number</i>[:<i>number</i>], --testcase=<i>number</i>[:<i>number</i>]</dt>
+<dd>
+
+<p>This option can be used to run a specific test (or range of tests) from the test suite.</p>
+
+</dd>
+<dt id="F-file---testcase-conf-file">-F <i>file</i>, --testcase-conf=<i>file</i></dt>
+<dd>
+
+<p>This option is used to specify the file containing the test cases.</p>
+
+</dd>
+<dt id="l-label---label-label">-l <i>label</i>, --label=<i>label</i></dt>
+<dd>
+
+<p>This option can be used to specify the policy from within the <i>dnsval.conf</i> file to use during validation.</p>
+
+</dd>
+<dt id="w-seconds---wait-seconds">-w <i>seconds</i>, --wait=<i>seconds</i></dt>
+<dd>
+
+<p>This option can be used to run the queries specified by other flags in a loop, with the specified interval between successive queries.</p>
+
+</dd>
+<dt id="o---output-debug-level:dest-type-:dest-options">-o, --output=&lt;debug-level&gt;:&lt;dest-type&gt;[:&lt;dest-options&gt;]</dt>
+<dd>
+
+<p>&lt;debug-level&gt; is 1-7, corresponding to syslog levels ALERT-DEBUG &lt;dest-type&gt; is one of file, net, syslog, stderr, stdout &lt;dest-options&gt; depends on &lt;dest-type&gt; file:&lt;file-name&gt; (opened in append mode) net[:&lt;host-name&gt;:&lt;host-port&gt;] (127.0.0.1:1053 syslog[:facility] (0-23 (default 1 USER))</p>
+
+</dd>
+</dl>
+
+<h1 id="PRE-REQUISITES">PRE-REQUISITES</h1>
+
+<p><b>libval</b></p>
+
+<h1 id="COPYRIGHT">COPYRIGHT</h1>
+
+<p>Copyright 2005-2013 SPARTA, Inc. All rights reserved. See the COPYING file included with the DNSSEC-Tools package for details.</p>
+
+<h1 id="AUTHORS">AUTHORS</h1>
+
+<p>Abhijit Hayatnagarkar, Suresh Krishnaswamy, Robert Story</p>
+
+<h1 id="SEE-ALSO">SEE ALSO</h1>
+
+<p><i>syslog(3)</i></p>
+
+<p><b>libval(3)</b></p>
+
+<p>http://www.dnssec-tools.org</p>
+
+
+</body>
+
+</html>
+
+

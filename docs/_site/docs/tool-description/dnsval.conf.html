@@ -1,0 +1,450 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title></title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:root@localhost" />
+</head>
+
+<body>
+
+
+
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
+  <li><a href="#OVERRIDING-resolv.conf-POLICIES">OVERRIDING resolv.conf POLICIES</a></li>
+  <li><a href="#OVERRIDING-dnsval.conf-POLICIES">OVERRIDING dnsval.conf POLICIES</a></li>
+  <li><a href="#FILES">FILES</a></li>
+  <li><a href="#COPYRIGHT">COPYRIGHT</a></li>
+  <li><a href="#SEE-ALSO">SEE ALSO</a></li>
+</ul>
+
+<h1 id="NAME">NAME</h1>
+
+<p>dnsval.conf, resolv.conf, root.hints - Configuration policy for the DNSSEC validator library libval(3)</p>
+
+<p>val_add_valpolicy - Dynamically add a new policy to the validator context</p>
+
+<p>val_remove_valpolicy - Remove a dynamically added policy from the validator context</p>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<pre><code>    int val_add_valpolicy(val_context_t *context, 
+                    void *policy_definition,
+                    val_policy_entry_t **pol);
+
+    int val_remove_valpolicy(val_context_t *context,
+                    val_policy_entry_t *pol);
+
+    typedef struct {
+        char *keyword;
+        char *zone;
+        char *value;
+        long ttl;
+    } libval_policy_definition_t;</code></pre>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p>Applications can use local policy to influence the validation outcome. Examples of local policy elements include trust anchors for different zones and untrusted algorithms for cryptographic keys and hashes. Local policy may vary for different applications and operating scenarios.</p>
+
+<p>The <i>val_add_valpolicy()</i> function can be used to dynamically add a new policy for a given context (the policies are not added persistently to the system configuration). The policy_definition field contains an implementation-specific definition of the validator policy to be added. For the libval library this is represented by the libval_policy_definition_t structure, which contains four fields: <i>keyword</i>, <i>zone</i> and <i>value</i> arguments are identical to <i>keyword</i>, <i>zone</i> and <i>additional-data</i> defined below for <b>dnsval.conf</b>. <i>ttl</i> specifies the duration in seconds for which the policy is kept in effect. A <i>tt</i> value of <b>-1</b> adds to policy to the context indefinitely. A handle to the newly added policy is returned in <i>*pol</i>. This structure is opaque to the applications; applications must not modify the contents of the memory returned in <i>*pol</i>.</p>
+
+<p>Applications may also revoke the effects of a newly added policy, <i>pol</i>, before the expiry of its timeout interval using the <i>val_remove_valpolicy()</i> policy.</p>
+
+<p>The validator library reads configuration information from three separate files, <b>resolv.conf</b>, <b>root.hints</b>, and <b>dnsval.conf</b>.</p>
+
+<dl>
+
+<dt id="resolv.conf">resolv.conf</dt>
+<dd>
+
+<p>The <i>nameserver</i> and <i>search</i> options are supported in the <b>resolv.conf</b> file.</p>
+
+<p>This <i>nameserver</i> option is used to specify the IP address of the name server to which queries must be sent by default. For example,</p>
+
+<pre><code>    nameserver 10.0.0.1</code></pre>
+
+<p>A number of additional fields can be specified to qualify the name server. For example, in the following line:</p>
+
+<pre><code>    nameserver [10.0.0.1][example.tsigkey:hmac-md5.sig-alg.reg.int:300:0jnu3SdsMvzzlmTDPYRceA==]:8053</code></pre>
+
+<p><i>example.tsigkey</i> refers to the TSIG key name; <i>hmac-md5.sig-alg.reg.int</i> refers to the TSIG algorithm, <i>300</i> is the TSIG fudge factor. and the key is specified as a base64 encoded value. The value <i>8053</i> refers to the port number.</p>
+
+<p>The values for the TSIG algorithm and the fudge factor in the above example are the defaults. They may be omitted as follows:</p>
+
+<pre><code>    nameserver [10.0.0.1][example.tsigkey:::0jnu3SdsMvzzlmTDPYRceA==]:8053</code></pre>
+
+<p>The TSIG portion may also be left out entirely, in which case the representation is as follows:</p>
+
+<pre><code>    nameserver [10.0.0.1]:8053</code></pre>
+
+<p>This <i>search</i> option is used to specify the search path for issuing queries. For example,</p>
+
+<pre><code>    search test.dnssec-tools.org dnssec-tools.org</code></pre>
+
+<p>The <i>forward</i> option is used to redirect queries for names that match a given zone name to the provided name server. For example,</p>
+
+<pre><code>    forward 76.216.12.217 test.dnssec-tools.org</code></pre>
+
+<p>If the <b>resolv.conf</b> file contains no name servers, the validator tries to recursively answer the query using information present in <b>root.hints</b>.</p>
+
+</dd>
+<dt id="root.hints">root.hints</dt>
+<dd>
+
+<p>The <b>root.hints</b> file contains bootstrapping information for the resolver while it attempts to recursively answer queries. The contents of this file may be generated by the following command:</p>
+
+<pre><code>    dig @e.root-servers.net . ns &gt; root.hints</code></pre>
+
+</dd>
+<dt id="dnsval.conf">dnsval.conf</dt>
+<dd>
+
+<p>The <b>dnsval.conf</b> file contains the validator policy. It consists of a sequence of the following &quot;policy-fragments&quot;:</p>
+
+<pre><code>    &lt;label&gt; &lt;keyword&gt; &lt;additional-data&gt;; </code></pre>
+
+<p>Policies are identified by simple text strings called labels, which must be unique within the configuration system. For example, &quot;browser&quot; could be used as the label that defines the validator policy for all web-browsers in a system. A label value of &quot;:&quot; identifies the default policy, the policy that is used when a NULL context is specified as the <i>ctx</i> parameter for interfaces listed in <i>libval(3)</i>, <i>val_getaddrinfo(3)</i>, and <i>val_gethostbyname(3)</i>. The default policy must be unique within the configuration system.</p>
+
+<p><i>keyword</i> specifies the policy component within the policy fragment. The format of <i>additional-data</i> depends on the keyword specified.</p>
+
+<p>If multiple policy fragments are defined for the same label and keyword combination then the first definition in the file is used.</p>
+
+<p>The following keywords are defined for <b>dnsval.conf</b>:</p>
+
+<dl>
+
+<dt id="trust-anchor">trust-anchor</dt>
+<dd>
+
+<p>For the &quot;trust-anchor&quot; attribute additional-data is a sequence of ordered pairs, each consisting of the zone name and the RDATA portion for the trust anchor with an optional prefix. Trust anchors may be either DNSKEY or DS records, the prefix in the RDATA is use to indicate what type of record it is. DNSKEY is assumed if no prefix is specified.</p>
+
+<p>An example is given below.</p>
+
+<pre><code>    browser trust-anchor
+        .   DS  19036  8  2  \
+            49AAC11D7B6F6446702E54A1607371607A1A41855200FD2CE\
+            1CDDE32F24E8FB5
+        example.com   257 3 5 AQO8XS4y9r77X 9SHBmrx MoJf1Pf9\
+            AT9Mr/L5BBGtO9/e9f/zl4FFgM2l B6M2 XEm6mp6 mit4tzp\
+            B/sAEQw1McYz6bJdKkTiqtuWTCfDmgQhI6 /Ha0 Ef GPNSqn\
+            Y 99FmbSeWNIRaa4fgSCVFhvbrYq1nXkNVy QPeEVHk oDNCA\
+            lr qOA3lw==
+    ;</code></pre>
+
+</dd>
+<dt id="zone-security-expectation">zone-security-expectation</dt>
+<dd>
+
+<p>For the &quot;zone-security-expectation&quot; attribute additional-data is a sequence of &lt;domain name,value&gt; tuples representing the security expectation for names in that domain, where value can be one of the following:</p>
+
+<dl>
+
+<dt id="ignore">ignore</dt>
+<dd>
+
+<p>Ignore DNSSEC validation for names under this domain.</p>
+
+</dd>
+<dt id="validate">validate</dt>
+<dd>
+
+<p>Perform DNSSEC validation of answers received for names under this domain.</p>
+
+</dd>
+<dt id="untrusted">untrusted</dt>
+<dd>
+
+<p>Reject all answers received for names under this domain.</p>
+
+</dd>
+</dl>
+
+<p>This zone-security-expectation DNSSEC validator policy construct makes it possible to define various islands of trust for DNSSEC-enabled zones and to ignore or validate data from selected zones. The default zone security expectation for a domain is &quot;validate&quot;. In the following example, for DNSSEC validator contexts created with a DNSSEC validator policy label of &quot;browser&quot;, the DNSSEC validation is only performed for names under the example.com domain; names under the somebogus.org domain are always considered to be untrusted and DNSSEC validation for all other domain names is ignored.</p>
+
+<pre><code>    browser zone-security-expectation   
+        example.com  validate      
+        somebogusname.org untrusted
+        . ignore
+    ;</code></pre>
+
+</dd>
+<dt id="provably-insecure-status">provably-insecure-status</dt>
+<dd>
+
+<p>For the &quot;provably-insecure-status&quot; attribute additional-data is a sequence of &lt;domain name,value&gt; tuples representing the validity of the provably insecure condition, where value is one of the following:</p>
+
+<dl>
+
+<dt id="trusted">trusted</dt>
+<dd>
+
+<p>Treat the provably insecure condition as valid.</p>
+
+</dd>
+<dt id="untrusted1">untrusted</dt>
+<dd>
+
+<p>Treat the provably insecure condition as invalid.</p>
+
+</dd>
+</dl>
+
+<p>The default value for the provably insecure status for a domain is &quot;trusted&quot;. In the following example, for DNSSEC validator contexts created with the default label, the provably insecure condition is treated as valid for all domains except the net domain, where this condition is treated as invalid.</p>
+
+<pre><code>    : provably-insecure-status
+        . trusted
+        net untrusted
+    ;</code></pre>
+
+</dd>
+<dt id="clock-skew">clock-skew</dt>
+<dd>
+
+<p>For the &quot;clock-skew&quot; attribute additional-data is a sequence of the domain name and the number of seconds of clock-skew acceptable for signatures on names in that domain. A clock skew value of -1 has the effect of turning off inception and expiration time checks on signatures from that domain. The default clock skew is 0. In the following example, for DNSSEC validator contexts created with the &quot;mta&quot; label, signature inception and expiration checks are disabled for all names under the example.com domain.</p>
+
+<pre><code>    mta clock-skew
+        example.com -1
+    ;</code></pre>
+
+</dd>
+<dt id="nsec3-max-iter-only-if-LIBVAL_NSEC3-is-enabled">nsec3-max-iter [only if LIBVAL_NSEC3 is enabled]</dt>
+<dd>
+
+<p>Specifies the maximum number of iterations allowable while computing the NSEC3 hash for a zone. A value of -1 does not place a maximum limit on the number of iterations. This is also the default setting for a zone.</p>
+
+</dd>
+<dt id="dlv-trust-points-only-if-LIBVAL_DLV-is-enabled">dlv-trust-points [only if LIBVAL_DLV is enabled]</dt>
+<dd>
+
+<p>Specifies the DLV tree for the target zone. In the following example, libval will use the DLV registry defined at dlv.isc.org. for all queries under the root that do not give us a trustworthy answer using the normal DNSSEC mechanism, and have a zone-security-expectation of <b>validate</b>.</p>
+
+<pre><code>    dlv dlv-trust-points
+        .   dlv.isc.org.
+    ;</code></pre>
+
+<p>In order for DLV to be used in the above example, there must also be a trust-anchor policy defined for the dlv registry, with the zone-security-expectation policy for registry set to validate.</p>
+
+<pre><code>    dlv trust-anchor
+        dlv.isc.org DS  19297  5  2  \
+                    A11D16F6733983E159EDF8053B2FB57B479D81A309A5\
+                    0EAA79A81AF48A47C617
+    ;</code></pre>
+
+</dd>
+</dl>
+
+<p>Apart from zone-specific configuration options, it is also possible to configure global options for the validation in <b>dnsval.conf</b>. Global options can be specified using the construct below.</p>
+
+<pre><code>    global-options 
+        keyowrd1 value1
+        keyword2 value2
+        ...
+    ;</code></pre>
+
+<p>There can only be one global-options construct defined for <b>dnsval.conf</b>. If multiple constructs are defined, only the first is used.</p>
+
+<p>The following keywords are defined for global-options in <b>dnsval.conf</b></p>
+
+<dl>
+
+<dt id="trust-local-answers">trust-local-answers</dt>
+<dd>
+
+<p>This option has been deprecated. Use trust-oob-answers instead.</p>
+
+</dd>
+<dt id="trust-oob-answers">trust-oob-answers</dt>
+<dd>
+
+<p>If the value against this option is <b>yes</b> then, for all answers returned using some out-of-band mechanism (e.g. a file store such as /etc/hosts), the value returned from the val_istrusted() function (see <b>libval(3)</b>) is greater than one.</p>
+
+</dd>
+<dt id="edns0-size">edns0-size</dt>
+<dd>
+
+<p>In querying various name servers, libsres will also attempt multiple EDNS0 sizes, ending with a query that has EDNS0 disabled (i.e. no CD bit set). The following EDNS0 sizes are tried by default: 4096, 1492, 512 The &quot;edns0-size&quot; policy knob can be used to change the largest EDNS0 size that is attempted.</p>
+
+</dd>
+<dt id="env-policy">env-policy</dt>
+<dd>
+
+<p>This option allows the administrator of the dnsval.conf to control whether libval uses user-specified values in environmental variables while determining libval policy and log targets. See the section below on overriding dnsval.conf policies for additional details on this option.</p>
+
+</dd>
+<dt id="app-policy">app-policy</dt>
+<dd>
+
+<p>This option allows the administrator of the dnsval.conf file to control whether libval will automatically look for a validation policy with a label equal to the application name in <b>dnsval.conf</b>. See the section below on overriding dnsval.conf policies for additional details on this option.</p>
+
+</dd>
+<dt id="closest-ta-only">closest-ta-only</dt>
+<dd>
+
+<p>The default validation behavior is to look for any authentication chain that validates successfully. Thus if there are trust anchors for example.com and test.example.com the validator will return success if the authentication chain can be anchored to the example.com trust anchor, even if the trust anchor for test.example.com does not match. In cases where this is not desirable, the closest-ta-only option can be used.</p>
+
+<p>If this option is set to <b>yes</b> then the validation algorithm terminates at the closest matching TA.</p>
+
+</dd>
+<dt id="rec-fallback">rec-fallback</dt>
+<dd>
+
+<p>This option is used to control whether libval will attempt to fall back to a recursive lookup of the name if the response from the caching name server returned an error. By default this options is set to <b>yes</b>; it can be turned off by setting this option to <b>no</b>.</p>
+
+</dd>
+<dt id="max-refresh">max-refresh</dt>
+<dd>
+
+<p>This option is used in conjunction with the VAL_QUERY_SKIP_CACHE query flag. When queries have this flag enabled they would normally skip cached entries. However, max-refresh can throttle how often queries are actually sent on the wire. Whe this option is set to a positive value a new query is only sent out if the cached value was stored more than (the value specified by) max-refresh seconds ago. If max-refresh is 0, then the cache is always skipped. If the value is -1 the cache is never skipped. The default value for max-refresh is 60 seconds. That means that two queries sent with the the VAL_QUERY_SKIP_CACHE flag set less than a minute apart will only result in one query seen on the wire.</p>
+
+</dd>
+<dt id="proto">proto</dt>
+<dd>
+
+<p>This option is used to control the network protocol that libval uses to send queries out to various name servers. If the value is set to <b>ipv6</b>, libval uses only IPv6; if it is set to <b>ipv4</b> libval uses only IPv4. The default is <b>any</b>, which causes libval to send over any of the available protocols for the given name server.</p>
+
+</dd>
+<dt id="timeout">timeout</dt>
+<dd>
+
+<p>This option overrides the default resolver timeout value with the value provided.</p>
+
+</dd>
+<dt id="retry">retry</dt>
+<dd>
+
+<p>This option overrides the default resolver retry value with the value provided.</p>
+
+</dd>
+<dt id="log">log</dt>
+<dd>
+
+<p>This option controls the level of logging and the log target for libval. The value expected against this option is the same as that specified for val_add_log_optarg (see <b>libval(3)</b>).</p>
+
+</dd>
+</dl>
+
+<p>An example global-options construct is given below:</p>
+
+<pre><code>    global-options
+        trust-oob-answers yes
+        edns0-size 4096
+        env-policy enable
+        app-policy enable
+        log 5:stderr
+    ;</code></pre>
+
+</dd>
+</dl>
+
+<h1 id="OVERRIDING-resolv.conf-POLICIES">OVERRIDING resolv.conf POLICIES</h1>
+
+<p>libval first looks at resolver options present in the resolv.conf file specfied at the time of running configure. If this file is absent, libval looks at /etc/resolv.conf file for resolver options.</p>
+
+<p>This allows users with a simple way of overriding resolver policies. The system-specific resolv.conf can remain unchanged, while any additional policies that may have to be specified for libval can be used in the configure-supplied resolv.conf file.</p>
+
+<h1 id="OVERRIDING-dnsval.conf-POLICIES">OVERRIDING dnsval.conf POLICIES</h1>
+
+<p>libval provides three ways for tailoring dnsval.conf policies for a given environment.</p>
+
+<dl>
+
+<dt id="Multiple-include-files">Multiple include files</dt>
+<dd>
+
+<p>libval allows additional dnsval.conf files to be included with a given dnsval.conf file. The option is specified as follows:</p>
+
+<pre><code>    include /path/to/override/file/dnsval.conf</code></pre>
+
+<p>The files are read in breadth-first. The policies are evaluated in a manner that gives the last-defined policy more precedence over earlier ones. Therefore, an administrator may supply a dnsval.conf with default policies including another file from the user&#39;s home directory. The included file may be used for overriding policies specified in the base dnsval.conf file.</p>
+
+</dd>
+<dt id="Application-name-policies">Application-name policies</dt>
+<dd>
+
+<p>If the app-policy global option is not disabled, libval automatically looks for a policy in dnsval.conf with a label value constructed from the name of the application. For example, dnsval.conf may be defined with validator policies for the foo label. The foo application, when run, will use the policy defined against the foo label during its validation operation.</p>
+
+</dd>
+<dt id="Policies-through-environment">Policies through environment</dt>
+<dd>
+
+<p>If the env-policy global option is not disabled, libval looks at the VAL_CONTEXT_LABEL and VAL_LOG_TARGET environmental variables in order to determine the validator policy label and log target.</p>
+
+</dd>
+<dt id="Validator-Label-Precedence">Validator Label Precedence</dt>
+<dd>
+
+<p>There are effectively four different types of polic-labels that can be applied by libval: application-name policies, policies through VAL_CONTEXT_LABEL, and labels specified by the application (either NULL or non-NULL). The precedence of applying these labels is defined with the following rules:</p>
+
+<p>1. If env-policy is &quot;override&quot;, use the label specified in the VAL_CONTEXT_LABEL env variable (if defined).</p>
+
+<p>2. If env-policy is &quot;enable&quot; and the policy specified by the application is NULL, use the label specified in the VAL_CONTEXT_LABEL env variable (if defined).</p>
+
+<p>3. if app-policy is &quot;override&quot;, use the label generated from the application name. If this policy label does not exist in the configuration system, use the default policy.</p>
+
+<p>4. if app-policy is &quot;enable&quot; and the policy specified by the application is NULL, use the label generated from the application name.</p>
+
+<p>5. If policy specified by the application is not NULL, use this label.</p>
+
+<p>6. Use default policy</p>
+
+<p>The following use-cases can therefore be defined</p>
+
+<dl>
+
+<dt id="locked-down-system-with-single-policy">locked-down system with single policy</dt>
+<dd>
+
+<p>An administrator that wants to (and is able to) lock down a system to a particular validator policy, must set the env-policy and app-policy global options to disable. This also requires that administrators are able to lock down the system to specific applications and that these applications are not written in a way that would allow them to specify non-NULL policy labels during context creation. (see val_create_context in libval(3)).</p>
+
+</dd>
+<dt id="locked-down-system-with-app-specific-policies">locked-down system with app-specific policies</dt>
+<dd>
+
+<p>An administrator that wants to (and is able to) lock down a system to a particular dnsval.conf file, but wishes to use different policies for different applications must set the app-policy to override and the env-policy to disable. The administrator must also define policies for various application names in dnval.conf; for applications that don&#39;t have a policy with a label corresponding to its name, the default policy is used.</p>
+
+<p>The administrator may set the app-policy to enable if non-NULL policies specified by the application during validator context creation is deemed acceptable.</p>
+
+</dd>
+<dt id="User-controlled">User controlled</dt>
+<dd>
+
+<p>An administrator can set env-policy to override to give the user complete control over which policy label is used during validation. The validation policy is read through the VAL_CONTEXT_LABEL environment variable.</p>
+
+<p>If VAL_CONTEXT_LABEL is specified globally for the system, the administrator may instead choose the env-policy global option to be enable instead of override. In this case, the label given in VAL_CONTEXT_LABEL is used only when the policy specified by the application is non-NULL.</p>
+
+<p>The label in VAL_CONTEXT_LABEL is used only if it is defined. If this value is NULL, libval will read other policy labels as guided by the precedence rules listed above.</p>
+
+</dd>
+</dl>
+
+</dd>
+</dl>
+
+<h1 id="FILES">FILES</h1>
+
+<p>resolv.conf</p>
+
+<p>root.hints</p>
+
+<p>dnsval.conf</p>
+
+<h1 id="COPYRIGHT">COPYRIGHT</h1>
+
+<p>Copyright 2004-2013 SPARTA, Inc. All rights reserved. See the COPYING file included with the dnssec-tools package for details.</p>
+
+<h1 id="SEE-ALSO">SEE ALSO</h1>
+
+<p><b>libval(3)</b></p>
+
+<p>http://www.dnssec-tools.org http://www.dnssec-tools.org</p>
+
+
+</body>
+
+</html>
+
+

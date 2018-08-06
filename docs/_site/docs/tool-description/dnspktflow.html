@@ -1,0 +1,337 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title></title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:root@localhost" />
+</head>
+
+<body>
+
+
+
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
+  <li><a href="#REQUIREMENTS">REQUIREMENTS</a></li>
+  <li><a href="#OPTIONS">OPTIONS</a>
+    <ul>
+      <li><a href="#Input-Packet-Selection">Input Packet Selection</a></li>
+      <li><a href="#Output-File-Options">Output File Options</a></li>
+      <li><a href="#Output-Visualization-Options">Output Visualization Options:</a></li>
+      <li><a href="#Graphical-Options">Graphical Options:</a></li>
+      <li><a href="#Debugging">Debugging:</a></li>
+    </ul>
+  </li>
+  <li><a href="#COPYRIGHT">COPYRIGHT</a></li>
+  <li><a href="#AUTHOR">AUTHOR</a></li>
+  <li><a href="#SEE-ALSO">SEE ALSO</a></li>
+</ul>
+
+<h1 id="NAME">NAME</h1>
+
+<p>dnspktflow - Analyze and draw DNS flow diagrams from a tcpdump file</p>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<pre><code>  dnspktflow -o output.png file.tcpdump
+
+  dnspktflow -o output.png -x -a -t -q file.tcpdump</code></pre>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p>The <b>dnspktflow</b> application takes a <b>tcpdump</b> network traffic dump file, passes it through the <b>tshark</b> application and then displays the resulting DNS packet flows in a &quot;flow-diagram&quot; image. <b>dnspktflow</b> can output a single image or a series of images which can then be shown in sequence as an animation.</p>
+
+<p><b>dnspktflow</b> was written as a debugging utility to help trace DNS queries and responses, especially as they apply to DNSSEC-enabled lookups.</p>
+
+<h1 id="REQUIREMENTS">REQUIREMENTS</h1>
+
+<p>This application requires the following Perl modules and software components to work:</p>
+
+<pre><code>  graphviz                  (http://www.graphviz.org/)
+  GraphViz                  (Perl module)
+  tshark                    (http://www.wireshark.org/)</code></pre>
+
+<p>The following is required for outputting screen presentations:</p>
+
+<pre><code>  MagicPoint                (http://member.wide.ad.jp/wg/mgp/)</code></pre>
+
+<p>If the following modules are installed, a GUI interface will be enabled for communication with <b>dnspktflow</b>:</p>
+
+<pre><code>  QWizard                   (Perl module)
+  Getopt::GUI::Long         (Perl module)</code></pre>
+
+<h1 id="OPTIONS">OPTIONS</h1>
+
+<p><b>dnspktflow</b> takes a wide variety of command-line options. These options are described below in the following functional groups: input packet selection, output file options, output visualization options, graphical options, and debugging.</p>
+
+<h2 id="Input-Packet-Selection">Input Packet Selection</h2>
+
+<p>These options determine the packets that will be selected by <b>dnspktflow</b>.</p>
+
+<dl>
+
+<dt id="i-STRING">-i STRING</dt>
+<dd>
+
+</dd>
+<dt id="ignore-hosts-STRING">--ignore-hosts=STRING</dt>
+<dd>
+
+<p>A regular expression of host names to ignore in the query/response fields.</p>
+
+</dd>
+<dt id="r-STRING">-r STRING</dt>
+<dd>
+
+</dd>
+<dt id="only-hosts-STRING">--only-hosts=STRING</dt>
+<dd>
+
+<p>A regular expression of host names to analyze in the query/response fields.</p>
+
+</dd>
+<dt id="f">-f</dt>
+<dd>
+
+</dd>
+<dt id="show-frame-num">--show-frame-num</dt>
+<dd>
+
+<p>Display the packet frame numbers.</p>
+
+</dd>
+<dt id="b-INTEGER">-b INTEGER</dt>
+<dd>
+
+</dd>
+<dt id="begin-frame-INTEGER">--begin-frame=INTEGER</dt>
+<dd>
+
+<p>Begin at packet frame NUMBER.</p>
+
+</dd>
+</dl>
+
+<h2 id="Output-File-Options">Output File Options</h2>
+
+<p>These options determine the type and location of <b>dnspktflow</b>&#39;s output.</p>
+
+<dl>
+
+<dt id="o-STRING">-o STRING</dt>
+<dd>
+
+</dd>
+<dt id="output-file-STRING">--output-file=STRING</dt>
+<dd>
+
+<p>Output file name (default: out%03d.png as PNG format.)</p>
+
+</dd>
+<dt id="fig">--fig</dt>
+<dd>
+
+<p>Output format should be fig.</p>
+
+</dd>
+<dt id="O-STRING">-O STRING</dt>
+<dd>
+
+</dd>
+<dt id="tshark-out-STRING">--tshark-out=STRING</dt>
+<dd>
+
+<p>Save <b>tshark</b> output to this file.</p>
+
+</dd>
+<dt id="m">-m</dt>
+<dd>
+
+</dd>
+<dt id="multiple-outputs">--multiple-outputs</dt>
+<dd>
+
+<p>One picture per request (use %03d in the filename.)</p>
+
+</dd>
+<dt id="M-STRING">-M STRING</dt>
+<dd>
+
+</dd>
+<dt id="magic-point-STRING">--magic-point=STRING</dt>
+<dd>
+
+<p>Saves a MagicPoint presentation for the output.</p>
+
+</dd>
+</dl>
+
+<h2 id="Output-Visualization-Options">Output Visualization Options:</h2>
+
+<p>These options determine specifics of <b>dnspktflow</b>&#39;s output.</p>
+
+<dl>
+
+<dt id="layout-style">--layout-style</dt>
+<dd>
+
+<p>Selects the graphviz layout style to use (dot, neato, twopi, circo, or fdp).</p>
+
+</dd>
+<dt id="L">-L</dt>
+<dd>
+
+</dd>
+<dt id="last-line-labels-only">--last-line-labels-only</dt>
+<dd>
+
+<p>Only show data on the last line drawn.</p>
+
+</dd>
+<dt id="z-INTEGER">-z INTEGER</dt>
+<dd>
+
+</dd>
+<dt id="most-lines-INTEGER">--most-lines=INTEGER</dt>
+<dd>
+
+<p>Only show at most INTEGER connections.</p>
+
+</dd>
+<dt id="T">-T</dt>
+<dd>
+
+</dd>
+<dt id="input-is-tshark-out">--input-is-tshark-out</dt>
+<dd>
+
+<p>The input file is already processed by <b>tshark</b>.</p>
+
+</dd>
+</dl>
+
+<h2 id="Graphical-Options">Graphical Options:</h2>
+
+<p>These options determine fields included in <b>dnspktflow</b>&#39;s output.</p>
+
+<dl>
+
+<dt id="t">-t</dt>
+<dd>
+
+</dd>
+<dt id="show-type">--show-type</dt>
+<dd>
+
+<p>Shows message type in result image.</p>
+
+</dd>
+<dt id="q">-q</dt>
+<dd>
+
+</dd>
+<dt id="show-queries">--show-queries</dt>
+<dd>
+
+<p>Shows query questions in result image.</p>
+
+</dd>
+<dt id="a">-a</dt>
+<dd>
+
+</dd>
+<dt id="show-answers">--show-answers</dt>
+<dd>
+
+<p>Shows query answers in result image.</p>
+
+</dd>
+<dt id="A">-A</dt>
+<dd>
+
+</dd>
+<dt id="show-authoritative">--show-authoritative</dt>
+<dd>
+
+<p>Shows authoritative information in result image.</p>
+
+</dd>
+<dt id="x">-x</dt>
+<dd>
+
+</dd>
+<dt id="show-additional">--show-additional</dt>
+<dd>
+
+<p>Shows additional information in result image.</p>
+
+</dd>
+<dt id="l">-l</dt>
+<dd>
+
+</dd>
+<dt id="show-label-lines">--show-label-lines</dt>
+<dd>
+
+<p>Shows lines attaching labels to lines.</p>
+
+</dd>
+<dt id="fontsize-INTEGER">--fontsize=INTEGER</dt>
+<dd>
+
+<p>Font Size</p>
+
+</dd>
+</dl>
+
+<h2 id="Debugging">Debugging:</h2>
+
+<p>These options may assist in debugging <b>dnspktflow</b>.</p>
+
+<dl>
+
+<dt id="d">-d</dt>
+<dd>
+
+</dd>
+<dt id="dump-pkts">--dump-pkts</dt>
+<dd>
+
+<p>Dump data collected from the packets.</p>
+
+</dd>
+<dt id="h">-h</dt>
+<dd>
+
+</dd>
+<dt id="help">--help</dt>
+<dd>
+
+<p>Show help for command line options.</p>
+
+</dd>
+</dl>
+
+<h1 id="COPYRIGHT">COPYRIGHT</h1>
+
+<p>Copyright 2004-2013 SPARTA, Inc. All rights reserved. See the COPYING file included with the DNSSEC-Tools package for details.</p>
+
+<h1 id="AUTHOR">AUTHOR</h1>
+
+<p>Wes Hardaker &lt;hardaker@users.sourceforge.net&gt;</p>
+
+<h1 id="SEE-ALSO">SEE ALSO</h1>
+
+<p><b>Getopt::GUI::Long(3)</b> <b>Net::DNS(3)</b> <b>QWizard.pm(3)</b></p>
+
+<p>http://dnssec-tools.sourceforge.net/</p>
+
+
+</body>
+
+</html>
+
+

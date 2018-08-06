@@ -1,0 +1,223 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title></title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:root@localhost" />
+</head>
+
+<body>
+
+
+
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
+  <li><a href="#OPTIONS">OPTIONS</a></li>
+  <li><a href="#COPYRIGHT">COPYRIGHT</a></li>
+  <li><a href="#AUTHOR">AUTHOR</a></li>
+  <li><a href="#SEE-ALSO">SEE ALSO</a></li>
+</ul>
+
+<h1 id="NAME">NAME</h1>
+
+<p>rollset - Modifies entries in a DNSSEC-Tools <i>rollrec</i> file</p>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<pre><code>  rollset [options] rollrec-file</code></pre>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p><b>rollset</b> modifies fields in the <i>rollrec</i> file specified by <i>rollrec-file</i>. Multiple options may be combined in a single <b>rollset</b> execution. <b>rollset</b> operates quietly unless it is given the <i>-verbose</i> option.</p>
+
+<p>All records in the specified <i>rollrec</i> file will be modified, unless the <b>-name</b> option is given. In that case, only the named zone will be modified.</p>
+
+<h1 id="OPTIONS">OPTIONS</h1>
+
+<dl>
+
+<dt id="admin-addr"><b>-admin addr</b></dt>
+<dd>
+
+<p>The zone administrator&#39;s email address is set to <i>addr</i>.</p>
+
+</dd>
+<dt id="check"><b>-check</b></dt>
+<dd>
+
+<p>If this option is given, the <b>rollchk</b> command will be run on the modified <i>rollrec</i> file.</p>
+
+</dd>
+<dt id="del-admin"><b>-del-admin</b></dt>
+<dd>
+
+<p>The <i>administrator</i> line is deleted. The <b>-admin</b> and <b>-del-admin</b> options are mutually exclusive.</p>
+
+</dd>
+<dt id="del-directory"><b>-del-directory</b></dt>
+<dd>
+
+<p>The <i>directory</i> line is deleted. The <b>-directory</b> and <b>-del-directory</b> options are mutually exclusive.</p>
+
+</dd>
+<dt id="del-loglevel"><b>-del-loglevel</b></dt>
+<dd>
+
+<p>The <i>loglevel</i> line is deleted. The <b>-loglevel</b> and <b>-del-loglevel</b> options are mutually exclusive.</p>
+
+</dd>
+<dt id="del-zg"><b>-del-zg</b></dt>
+<dd>
+
+<p>The <i>zonegroup</i> line is deleted. The <b>-zg</b> and <b>-del-zg</b> options are mutually exclusive.</p>
+
+</dd>
+<dt id="del-zsargs"><b>-del-zsargs</b></dt>
+<dd>
+
+<p>The <i>zsargs</i> line is deleted. The <b>-zsargs</b> and <b>-delzsargs</b> options are mutually exclusive.</p>
+
+</dd>
+<dt id="directory-dir"><b>-directory dir</b></dt>
+<dd>
+
+<p>The directory to hold the zone&#39;s files is set to <i>dir</i>.</p>
+
+</dd>
+<dt id="display"><b>-display</b></dt>
+<dd>
+
+<p>Turn on the GUI display of the zones in the selected <i>rollrec</i>s. This option is mutually exclusive of the <i>-nodisplay</i> option.</p>
+
+</dd>
+<dt id="file-zone-file"><b>-file zone-file</b></dt>
+<dd>
+
+<p>The zone file in the selected <i>rollrec</i> records is modified to be <i>zone-file</i>.</p>
+
+</dd>
+<dt id="keyrec-keyrec-file"><b>-keyrec keyrec-file</b></dt>
+<dd>
+
+<p>The <i>keyrec</i> file in the selected <i>rollrec</i> records is modified to be <i>keyrec-file</i>.</p>
+
+</dd>
+<dt id="loglevel-logging-level"><b>-loglevel logging-level</b></dt>
+<dd>
+
+<p>The logging level of the selected <i>rollrec</i> records is set to <i>logging-level</i>. The valid logging levels are defined in <i>rollmgr.pm(3)</i>.</p>
+
+</dd>
+<dt id="name-rollrec-name"><b>-name rollrec-name</b></dt>
+<dd>
+
+<p>The <i>rollrec</i> whose name matches <i>zonename</i> is selected as the only rollrec that will be modified. If this name is not given, then all <i>rollrec</i> records will be modified.</p>
+
+</dd>
+<dt id="nodisplay"><b>-nodisplay</b></dt>
+<dd>
+
+<p>Turn off the GUI display of the zones in the selected <i>rollrec</i>s. This option is mutually exclusive of the <b>-display</b> option.</p>
+
+</dd>
+<dt id="rename"><b>-rename</b></dt>
+<dd>
+
+<p>The <i>rollrec</i>&#39;s name is changed to match the specified name. The new name cannot be the name of an existing <i>rollrec</i> in the file. This option must be used in conjunction with the <b>-name</b> option.</p>
+
+</dd>
+<dt id="reset-zonename"><b>-reset-zonename</b></dt>
+<dd>
+
+<p>The <i>zonename</i> field is set to match the name of the <i>rollrec</i> record. This option is mutually exclusive of the <b>-zonename</b> option.</p>
+
+</dd>
+<dt id="roll"><b>-roll</b></dt>
+<dd>
+
+<p>Convert the selected <i>rollrec</i>s to be active (&quot;roll&quot;) records. This option is mutually exclusive of the <b>-skip</b> option.</p>
+
+</dd>
+<dt id="skip"><b>-skip</b></dt>
+<dd>
+
+<p>Convert the selected <i>rollrec</i>s to be inactive (&quot;skip&quot;) records. This option is mutually exclusive of the <b>-roll</b> option.</p>
+
+</dd>
+<dt id="zg-zonegroup-name"><b>-zg zonegroup-name</b></dt>
+<dd>
+
+<p>The zonegroup in the selected <i>rollrec</i> records is modified to be <i>zonegroup-name</i>. This field may contain a single zonegroup name or a comma-separated list of names. If a list is given, then there may be whitespace before or after each name, but it is not recognized as being part of the zonegroup name itself. Whitespace <i>within</i> the name is considered part of the name. Zonegroup names are considered case insensitive. The names may be given with whatever case the user desires, but names whose only differences are the case of the letters are considered to be the same name.</p>
+
+</dd>
+<dt id="zonename-zone-name"><b>-zonename zone-name</b></dt>
+<dd>
+
+<p>The zone name in the selected <i>rollrec</i> records is modified to be <i>zone-name</i>.</p>
+
+</dd>
+<dt id="zsargs-arglist"><b>-zsargs arglist</b></dt>
+<dd>
+
+<p>Provides additional <b>zonesigner</b> arguments. These arguments will override the arguments in the DNSSEC-Tools defaults file, the DNSSEC-Tools configuration file, and the zones&#39; <i>keyrec</i> files. The <b>zonesigner</b> argument list is given in <i>arglist</i>. If more than one argument is given, the set of arguments should be enclosed in quotes.</p>
+
+<p>Given the <b>rollset</b> argument processing, the new arguments for <b>zonesigner</b> cannot be specified as expected. Instead, the arguments should be given in the following manner. The leading dash should be replaced with an equals sign. If the option takes an argument, the space that would separate the option from the option&#39;s argument should also be replaced by an equals sign. <b>rollset</b> translates these arguments to the appropriate format for <b>zonesigner</b>. These examples should clarify the argument modifications:</p>
+
+<pre><code>    normal zonesigner option            -zsargs options
+    ------------------------            ---------------
+        -nokrfile                          =nokrfile
+        -zskcount 5                        =zskcount=5</code></pre>
+
+<p>The following are valid uses of <i>-zsargs</i>:</p>
+
+<pre><code>    # rollset -zsargs =ksklength=2048 example.rollrec
+    # rollset -zsargs &quot;=ksklen=2048 =zsklen=2048&quot; example.rollrec</code></pre>
+
+<p>The <b>-zsargs</b> and <b>-delzsargs</b> options are mutually exclusive.</p>
+
+</dd>
+<dt id="verbose"><b>-verbose</b></dt>
+<dd>
+
+<p>Display information about every modification made to the <i>rollrec</i> file.</p>
+
+</dd>
+<dt id="Version"><b>-Version</b></dt>
+<dd>
+
+<p>Displays the version information for <b>rollset</b> and the DNSSEC-Tools package.</p>
+
+</dd>
+<dt id="help"><b>-help</b></dt>
+<dd>
+
+<p>Display a usage message.</p>
+
+</dd>
+</dl>
+
+<h1 id="COPYRIGHT">COPYRIGHT</h1>
+
+<p>Copyright 2006-2014 SPARTA, Inc. All rights reserved. See the COPYING file included with the DNSSEC-Tools package for details.</p>
+
+<h1 id="AUTHOR">AUTHOR</h1>
+
+<p>Wayne Morrison, tewok@tislabs.com</p>
+
+<h1 id="SEE-ALSO">SEE ALSO</h1>
+
+<p><b>lsroll(8)</b>, <b>rollchk(8)</b>, <b>rollerd(8)</b>, <b>rollinit(8)</b></p>
+
+<p><b>Net::DNS::SEC::Tools::rollmgr.pm(3)</b>, <b>Net::DNS::SEC::Tools::rollrec.pm(3)</b></p>
+
+<p><b>file-rollrec(5)</b></p>
+
+
+</body>
+
+</html>
+
+

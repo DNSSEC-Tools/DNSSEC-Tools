@@ -1,0 +1,179 @@
+<html>
+
+<head>
+<title>Owl Monitoring System -- Manager Installation Manual -- Defining Graphs</title>
+</head>
+
+<body>
+
+<p>
+
+<table>
+<tr>
+<td>
+<img align=left src="owl-logo.jpg"><br>
+<td width=30>&nbsp;
+<td align=center valign=top>
+<br>
+<center><h2>Owl Monitoring System</h2></center>
+<center><h2>Manager Installation Manual</h2></center>
+</tr>
+</table>
+
+<p>
+
+<!*****************************************************************************>
+
+<a name="5."></a>
+<h3>5. Defining Graphs</h3>
+
+<p>
+
+<!------------------------------------------------------------>
+
+<table align=right width="35%">
+
+<tr><td>&nbsp;<td><a href="install-manager-5-define-graphs.html#5.1.">5.1.</a><td>&nbsp;<td>Graphing with <b>nagiosgraph</b></tr>
+<tr><td>&nbsp;<td><a href="install-manager-5-define-graphs.html#5.2.">5.2.</a><td>&nbsp;<td>Graphing with <b>drraw.cgi</b></tr>
+<tr><td>&nbsp;<td><a href="install-manager-5-define-graphs.html#5.3.">5.3.</a><td>&nbsp;<td>Adding Graphs to the Nagios Sidebar</tr>
+<tr><td width="10%">&nbsp;<td>&nbsp;<td>&nbsp;<td>&nbsp;</tr>
+
+</table>
+
+<p>
+
+<!------------------------------------------------------------>
+
+After Owl sensor data has been gathered for several hours and <b>rrdtool</b>
+has been adding it to the RRD databases, you can consider how you will graph
+the data.  Graphing capabilities are provided by <b>nagiosgraph</b> and
+<b>drraw.cgi</b>.  Both are very useful and have their place in your Owl
+monitor.  It isn't a question of which to use; the question is how you want
+to use each and how you want to display your monitoring data.
+
+<p>
+
+<!----------------------------------->
+
+<a name="5.1."></a>
+<h3>5.1. Graphing with <b>nagiosgraph</b></h3>
+
+<b>nagiosgraph</b> provides menus for easy selection of data, available
+through three CGI scripts.  These are simple graphs that only display a
+single sensor/root server/DNS record per graph.  For these scripts, the
+host is an Owl sensor and the service is a root server/DNS record type.
+Links for these scripts are included in the <b>example-side.php</b> file.
+
+<ul>
+<li><b>show.cgi</b> - Provides graphs for a user-selected host/service pair.
+A graph is provided for the current day, week, month, and year.
+<p>
+
+<li><b>showhost.cgi</b> - Provides graphs for a user-selected host.
+A graph will be displayed for any service with that host.
+A graph is provided for the current day, week, and month.
+<p>
+
+<li><b>showservice.cgi</b> - Provides graphs for a user-selected service.
+A graph will be displayed for any host with that service.
+A graph is provided for the current day, week, and month.
+<p>
+
+</ul>
+
+<!----------------------------------->
+
+<a name="5.2."></a>
+<h3>5.2. Graphing with <b>drraw.cgi</b></h3>
+
+<p>
+
+<b>drraw.cgi</b> provides a much more complex graphing capability than is
+available through <b>nagiosgraph</b>.  It allows data from multiple
+sensor/root server/DNS record groups to be displayed on a single graph.
+Set-up for the graphs is not difficult and is done through a browser-based
+interface.  However,  there are a number of things that must be specified
+before the graph can be displayed.
+
+<p>
+
+The graph-definition webpage talks about selecting data sources to be
+displayed.  This is referring to the group of RRD databases you want
+<b>drraw.cgi</b> to use for this particular graph.
+
+<p>
+
+Defining simple graphs, even those with multiple data sources, is not
+complicated.  However, you can define fairly involved graphs (e.g.,
+averaging data from different databases) with <b>drraw.cgi</b>.
+
+<p>
+
+<!----------------------------------->
+
+<a name="5.3."></a>
+<h3>5.3. Adding Graphs to the Nagios Sidebar</h3>
+
+The <b>share/side.php</b> script builds the left sidebar of links on
+the Nagios page.  Several simple modifications will improve access to
+the graphing facilities.  Obviously, this step must wait until after
+the system has been set up and site-specific graphs have been defined.
+
+<p>
+
+The <b>example-side.php</b> file (in the Owl manager distribution) contains
+sample lines for both <b>drraw.cgi</b> and <b>nagiosgraph</b>.  Add the
+contents of this file to the <b>share/side.php</b> file after the "Quick
+Search" text-entry box.
+
+<p>
+
+The sample lines must be modified for your installation in the following ways:
+
+<ul>
+<li>The paths in the links must match the way you installed it.
+
+<p>
+
+<li>If links to specific <b>drraw.cgi</b> graphs are to be included in the
+sidebar, then the graph id in the link must be set.  The id for a particular
+graph may be found from the graph's URL, and is the field following "Graph=".
+
+<p>
+
+</ul>
+
+<p>
+
+<!*****************************************************************************>
+
+<br><br>
+
+<center>
+
+<hr width="70%">
+
+<p>
+
+<!-------------------------------------->
+<table width="100%">
+<tr>
+<td width="33%" align=left>
+<a href="install-manager-4-adding-sensor.html">Section 4.<br>Adding Sensors</a>
+<td width="33%" align=center>
+<a href="install-manager.html">Owl Monitoring System<br>Manager Installation Manual</a>
+<td width="33%" align=right>
+<a href="install-manager-6-mod-queries.html">Section 6.<br>Changing Queries on<br>Existing Owl Sensors</a>
+</tr>
+</table>
+<p>
+<!-------------------------------------->
+
+<a href="http:www.dnssec-tools.org">DNSSEC Tools</a>
+
+</center>
+
+<p>
+
+</body>
+</html>

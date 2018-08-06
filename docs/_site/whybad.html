@@ -1,0 +1,329 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN">
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="shortcut icon" href="../../assets/ico/favicon.ico">
+
+    <title>DNSSEC-Tools</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/dnssec-tools.css" rel="stylesheet">
+    <link href="http://badsign-a.test.dnssec-tools.org/broken.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+      <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+  </head>
+
+  <body>
+        <div class="page-header dtbanner">
+      <div class="container">
+	    <a href="/"><img class="logo" src="/images/dnssec-tools-Army-Knife.png" alt="DNSSEC-Tools" /></a>
+	    <div class="slogan">Is your domain secure?</div>
+      </div>
+    </div>
+
+    <nav class="navbar navbar-inverse" role="navigation">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse-1">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <!-- <a class="navbar-brand" href="#">DNSSEC-Tools</a> -->
+        </div>
+        <!--
+        -->
+        <div class="collapse navbar-collapse" id="navbar-collapse-1">
+          <ul class="nav navbar-nav">
+            <li><a href="http://www.dnssec-tools.org/wiki/index.php/Sign_Your_Zone">Sign Your Zone</a></li>
+            <li><a href="http://www.dnssec-tools.org/wiki/index.php/Tutorials">Tutorials</a></li>
+            <li class="dropdown"><a class="dropdown-toggle" data-toggle="dropdown" href="#">Install
+                <span class="caret"></span> </a>
+              <ul class="dropdown-menu">
+                <li><a href="http://www.dnssec-tools.org/wiki/index.php/Installing_DNSSEC-Tools">Instructions</a></li>
+                <li class="divider" />
+                <li><a href="http://www.dnssec-tools.org/download/#gotoSources">Source Code</a></li>
+                <li><a href="http://www.dnssec-tools.org/download/#gotoBinaries">Binaries</a></li>
+                <li><a href="http://www.dnssec-tools.org/download/#gotodnsval">Libraries</a></li>
+                <li class="divider" />
+                <li><a href="http://www.dnssec-tools.org/download/#gotoGraphical Applications">GUI Applictations:</a></li>
+                <li><a href="http://www.dnssec-tools.org/download/#gotoBloodhound">The Bloodhound Web Browser</a></li>
+                <li><a href="http://dnssec-tools.org/download/#gotoDNSSEC-Check">DNSSEC-Check</a></li>
+	            <li><a href="http://dnssec-tools.org/download/#gotoLookup">Lookup</a></li>
+	            <li><a href="http://dnssec-tools.org/download/#gotoDNSSEC-Nodes">DNSSEC-Nodes</a></li>
+              </ul>
+            </li>
+          </ul>
+        </div><!-- /.navbar-collapse-1 -->
+      </div><!-- /.container-fluid -->
+    </nav>
+
+<div class="container">
+   <div class="row">
+      <div class="col-md-9" role="main">
+
+
+         <h2>Your DNS resolution is insecure</h2>
+
+    <h3>So you told me, but why?</h3>
+
+    <p>Because the bumper image is loaded from a domain name
+    which is insecure.  It has dnssec data for the A record
+    for the web server, but the A record actually contains a bad
+    signature.  A browser that was properly protected, either within
+    the browser itself or because your site's recursive validating
+    resolver was secured, would prevent you from retrieving this
+    image since the zone date for the web server was known to be bad.
+    For a list of our test records, see our <a
+    href="http://www.dnssec-tools.org/testzone/">Test Zone</a> page.
+
+    <h3>What would it look like if I was secure?</h3>
+      <p>Here's a screen shot from a secured version of firefox
+      looking at the same page:</p>
+      <div class="centered">
+      <img border=4 src="images/firefox-secured.png" />
+      </div>
+      <p>The firefox extension bundled with dnssec-tools
+      enables you to see how many links were untrusted after 
+      DNSSEC processing:</p>
+
+      <div class="centered">
+      <img border=4 src="images/firefox-extension.png" />
+      </div>
+
+
+    </div> <!-- end the main col-md-9 -->
+	  <div class="col-md-3">
+<div class="rightmenu hidden-print" role="complementary">
+
+<div class="panel panel-primary">
+  <div class="panel-heading">
+    <h4 class="panel-title">Learn To...</h4>
+  </div>
+  <div class="panel-body">
+    <!-- <a href="http://www.dnssec-tools.org/wiki/index.php/Sign_Your_Zone"> -->
+    <!--   <img class="centered" src="/images/lockcrop.png" alt="Sign Your Zone" /> -->
+    <!-- </a> -->
+    <ul class="nav dtnav">
+      <li class="lititle"><a class="toplink" href="/wiki/index.php/Installing_DNSSEC-Tools">
+          Install DNSSEC-Tools</a></li>
+      <li class="lititle"><a href="http://www.dnssec-tools.org/wiki/index.php/Sign_Your_Zone">Sign
+      Your Zone!</a></li>
+    </ul>        
+  </div>
+</div>
+
+<div class="panel panel-primary">
+  <div class="panel-heading">
+    <h4 class="panel-title">DNSSEC-Tools Resources</h4>
+  </div>
+<div class="panel-body">
+ <ul class="nav dtnav">
+  <li class="lititle">
+  </li>
+  <li class="lilinks">
+    <a class="toplink" href="/">
+      Main Page
+    </a>
+  </li>
+
+  <li class="lilinks">
+    <a class="toplink" href="/NEWS.html">
+      News
+    </a>
+  </li>
+
+    <li class="lilinks">
+      <a class="toplink" href="/wiki/index.php/Tutorials">
+	Tutorials
+      </a>
+    </li>
+
+  <li class="lilinks">
+    <a class="toplink" href="/wiki/index.php/DNSSEC-Tools_Components">
+      Tool Descriptions
+      <br />
+      And Screen-Shots
+    </a>
+  </li>
+
+  <li class="lilinks">
+    <a class="toplink" href="/wiki/index.php/Installing_DNSSEC-Tools">
+      Download
+    </a>
+    <ul style="margin-left: 1em;">
+      <li><a href="https://dnssec-tools.org/download/#gotoSources">Everything</a></li>
+      <li><a href="http://dnssec-tools.org/download/#gotodnsval">Libval</a></li>
+      <li><a href="http://dnssec-tools.org/download/#gotoGraphical Applications">GUI Apps</a></li>
+      <ul style="margin-left: 1em;">
+	<li><a href="http://dnssec-tools.org/download/#gotoDNSSEC-Check">DNSSEC-Check</a></li>
+	<li><a href="http://dnssec-tools.org/download/#gotoLookup">Lookup</a></li>
+	<li><a href="http://dnssec-tools.org/download/#gotoDNSSEC-Nodes">DNSSEC-Nodes</a></li>
+      </ul>
+    </ul>
+
+  <li class="lilinks">
+    <a class="toplink" href="/resources/documentation.html">
+      Additional Documentation
+    </a>
+  </li>
+
+  <li class="lilinks">
+    <a class="toplink" href="/testzone/index.html">
+      Test Zone
+    </a>
+  </li>
+</ul>
+</div>
+</div>
+
+<div class="panel panel-primary">
+  <div class="panel-heading">
+    <h4 class="panel-title"> Tools For... </h4>
+  </div>
+<div class="panel-body">
+<ul class="nav dtnav">
+  <li class="lilinks">
+    <a class="toplink" href="/wiki/index.php/Authoritative_Zone_Administrator">
+      Authoritative Zones
+    </a>
+  </li>
+
+  <li class="lilinks">
+    <a class="toplink" href="/wiki/index.php/Authoritative_Server">
+      Authoritative Servers
+    </a>
+  </li>
+
+  <li class="lilinks">
+    <a class="toplink" href="/wiki/index.php/Recursive_Server">
+      Recursive Servers
+    </a>
+  </li>
+
+  <li class="lilinks">
+    <a class="toplink" href="/wiki/index.php/DNSSEC_Applications">
+      Applications
+    </a>
+  </li>
+
+  <li class="lilinks">
+    <a class="toplink" href="/wiki/index.php/DNSSEC_Application_Development">
+      Application Developers
+    </a>
+  </li>
+</ul>
+</div>
+</div>
+
+<div class="panel panel-primary">
+  <div class="panel-heading">
+  <h4 class="panel-title"> Project Links </h4>
+  </div>
+<div class="panel-body">
+
+<ul class="nav dtnav">
+  <li class="lilinks">
+    <a class="toplink" href="/wiki/">
+      Wiki
+    </a>
+  </li>
+
+
+  <li class="lilinks">
+    <a class="toplink"
+      href="https://www.dnssec-tools.org/mailman/listinfo/">
+      Mailing Lists
+    </a>
+  </li>
+
+  <li class="lilinks">
+    <a class="toplink"
+      href="https://www.dnssec-tools.org/trac/">
+      Bug Database
+    </a>
+  </li>
+
+  <li class="lilinks">
+    <a class="toplink"
+      href="https://www.dnssec-tools.org/svn/dnssec-tools/">
+      SVN Repository
+    </a>
+  </li>
+</ul>
+</div>
+</div>
+
+
+<div class="panel panel-primary">
+  <div class="panel-heading">
+  <h4 class="panel-title"> Other Useful Sites </h4>
+  </div>
+<div class="panel-body">
+
+<ul class="nav dtnav">
+  <li class="lilinks">
+    <a class="toplink" href="http://www.isc.org/sw/bind/">
+      Bind DNS Software
+    </a>
+  </li>
+
+  <li class="lilinks">
+    <a class="toplink" href="http://www.net-dns.org/">
+      Net::DNS for Perl
+    </a>
+  </li>
+
+  <li class="lilinks">
+    <a class="toplink" href="http://www.dnssec-deployment.org/">
+      dnssec-deployment.org
+    </a>
+  </li>
+
+  <li class="lilinks">
+    <a class="toplink" href="http://www.dnssec.net/">
+      dnssec.net
+    </a>
+  </li>
+
+  <li class="lilinks">
+    <a class="toplink" href="http://www.ietf.org/html.charters/dnsext-charter.html">
+      IETF's dnsext WG
+    </a>
+  </li>
+
+  <li class="lilinks">
+    <a class="toplink" href="http://www.ietf.org/html.charters/dnsop-charter.html">
+      IETF's dnsop WG
+    </a>
+  </li>
+
+  <li class="lilinks">
+    <a class="toplink" href="http://www.dnsops.gov/">
+      Secure Naming Infrastructure Pilot (SNIP) 
+    </a>
+  </li>
+ </ul>
+</div>
+</div>
+
+</div> <!-- ends the right menu -->
+</div> <!-- ends col-md-3 -->
+
+    </div> <!-- end the row content -->
+    </div> <!-- end the main container content -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+    <script src="/js/bootstrap.min.js"></script>
+  </body>
+</html>
+

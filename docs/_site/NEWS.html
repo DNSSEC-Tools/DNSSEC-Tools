@@ -1,0 +1,1192 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN">
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="shortcut icon" href="../../assets/ico/favicon.ico">
+
+    <title>DNSSEC-Tools</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/dnssec-tools.css" rel="stylesheet">
+    <link href="http://badsign-a.test.dnssec-tools.org/broken.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+      <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+  </head>
+
+  <body>
+        <div class="page-header dtbanner">
+      <div class="container">
+	    <a href="/"><img class="logo" src="/images/dnssec-tools-Army-Knife.png" alt="DNSSEC-Tools" /></a>
+	    <div class="slogan">Is your domain secure?</div>
+      </div>
+    </div>
+
+    <nav class="navbar navbar-inverse" role="navigation">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse-1">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <!-- <a class="navbar-brand" href="#">DNSSEC-Tools</a> -->
+        </div>
+        <!--
+        -->
+        <div class="collapse navbar-collapse" id="navbar-collapse-1">
+          <ul class="nav navbar-nav">
+            <li><a href="http://www.dnssec-tools.org/wiki/index.php/Sign_Your_Zone">Sign Your Zone</a></li>
+            <li><a href="http://www.dnssec-tools.org/wiki/index.php/Tutorials">Tutorials</a></li>
+            <li class="dropdown"><a class="dropdown-toggle" data-toggle="dropdown" href="#">Install
+                <span class="caret"></span> </a>
+              <ul class="dropdown-menu">
+                <li><a href="http://www.dnssec-tools.org/wiki/index.php/Installing_DNSSEC-Tools">Instructions</a></li>
+                <li class="divider" />
+                <li><a href="http://www.dnssec-tools.org/download/#gotoSources">Source Code</a></li>
+                <li><a href="http://www.dnssec-tools.org/download/#gotoBinaries">Binaries</a></li>
+                <li><a href="http://www.dnssec-tools.org/download/#gotodnsval">Libraries</a></li>
+                <li class="divider" />
+                <li><a href="http://www.dnssec-tools.org/download/#gotoGraphical Applications">GUI Applictations:</a></li>
+                <li><a href="http://www.dnssec-tools.org/download/#gotoBloodhound">The Bloodhound Web Browser</a></li>
+                <li><a href="http://dnssec-tools.org/download/#gotoDNSSEC-Check">DNSSEC-Check</a></li>
+	            <li><a href="http://dnssec-tools.org/download/#gotoLookup">Lookup</a></li>
+	            <li><a href="http://dnssec-tools.org/download/#gotoDNSSEC-Nodes">DNSSEC-Nodes</a></li>
+              </ul>
+            </li>
+          </ul>
+        </div><!-- /.navbar-collapse-1 -->
+      </div><!-- /.container-fluid -->
+    </nav>
+
+<div class="container">
+   <div class="row">
+      <div class="col-md-9" role="main">
+
+
+     This file contains a list of major changes per release.  See the
+ChangeLog file for a complete set of changes and their details
+details.
+
+<h2>2.1</h2>
+<h3>New Features</h3>
+<pre>
+    - donuts:       - Added the ability to summarize information
+                      about a zone in the output, such as the upcoming
+                      entire zone expiry time, etc
+                    - Added the ability to query live zones for
+                      records to analyze.  EG:
+                      donuts live:good-a,badsign-a test.dnssec-tools.org
+                    - Added a -V switch to dump records analyzed
+    - libval:       - Add support for conditionally checking all RRSIGs
+                      on an assertion even if one that validates is
+                      already found.
+                    - Look for zonecuts based on NS records, not SOA
+                    - Added initial support for TSIG in order to enable
+                      libval to query recursive name servers that
+                      authorized recursive lookup for only those hosts
+                      that used a particular TSIG key.
+    - Validator.pm  - Store respondent name server information in result
+                      structure.
+    - Owl           - additional sensor modules
+                    - additional data analysis on manager
+                    - logging to the Owl sensors modules
+                    - optimized sensor data organization
+                     (requires software upgrades on both sensor and
+                      manager at the same time)
+                    - added -restart option to owl-sensord for
+                      restarting sensor modules
+                    - improvements to the installation guide
+    - rollerd       - generalized zonegroup entry in rollecs to be lists of tags
+                    - rndc option support added
+    - dnssec-check  - Ported to Qt5
+    - dnssec-nodes  - Ported to Qt5
+    - lookup        - Ported to Qt5
+    - dnssec-system-tray
+                    - Ported to Qt5
+</pre>
+<h3>Bug Fixes</h3>
+<pre>
+                    - Fixed bugs in libval, rollerd, blinkenlights, Owl
+                      sensor modules, and Owl manager
+                    - Use rlimits to try and limit file descriptor use in
+                      libsres so we don't run out of available sockets.
+                    - Eliminate a few hardcoded paths in various perl modules
+                    - Fix various compiler warnings
+                    - Update autoconf and related files
+</pre>
+
+<h2>2.0</h2>
+<h3>New Features</h3>
+<h4>Bloodhound</h4>
+<p> A mozilla-based DNSSEC-enabled browser with DANE support
+                    - Added support for validation of SSL certificates
+                      using the DANE protocol.
+<h4>Owl</h4>
+<p>The Owl Monitoring System uses timed DNS queries
+   to monitor basic network functionality.  The system
+   consists of a manager host and a set of sensor hosts.
+   The Owl sensors perform periodic DNS queries and
+   report to the Owl manager the time taken for each
+   query.  Over time, this shows the responsiveness of
+   the DNS infrastructure.
+<h4>dnssec-nodes</h4>
+<p> Many new features have been added:
+    - The validation tree now supports clicking on
+    boxes to highlight it and the arrows that derive
+    from it.  Great for use when teaching about
+    DNSSEC.
+    - An extensive filter/effect editor now lets you
+    tailor the look of a graph to color-code, set
+    the alpha levels, etc of nodes based on their
+    names, status, data types, etc.
+    - Right clicking on a node lets you center the
+    graph on that node.
+    - More data types are collected and shown in the
+    data view.
+    - Support for arguments on the command line for
+    parsing log files, pcap files and domain names.
+    - The validation view has received a visual clean-up
+    - Many other bug fixes
+<h4>curl</h4>
+<p> - Added support for validation of SSL certificates
+                      using the DANE protocol.
+<h4>libval</h4>
+<p> - Added support for local DANE validation
+    - Extended the dt-danechk commandline tool to check
+    the X509 cert provided over the SSL connection
+    against the TLSA record.
+    - Optimized glue record lookup when the only ip
+    addresses configured for the host are for a single
+    address family (ipv4 or ipv6)
+    - fine tune res_io source management
+<h4>dnssec-check</h4>
+<p> dnssec-check now checks DNAME support
+<h4>rollerd</h4>
+<p> A new set of steps for KSK rollover has been
+    implemented.  A cache-expiration wait phase has
+    been moved after the publication of DS records in
+    order to allow name caches to reflect the changes.
+    In addition to rollerd, supporting program have
+    been modified to recognize this change.
+<h4>rollrec files</h4>
+<p> A new "information rollrec" has been added to the
+    rollrec files.  This will allow infomration to be
+    specified for the collection of rollrecs.  At this
+    time, the only information stored in this rollrec
+    is the version number of the rollrec file.
+    In addition to the rollrec.pm Perl module, programs
+    which use this module have been modified to recognize
+    this change.
+    If you use the rollrec.pm module, you should test
+    to see if your code is affected.  The modifications
+    for the info rollrec have been made to minimize
+    affected programs.  If you parse the rollrec files
+    yourself, you will have to account for this change.
+<h4>multiple</h4>
+<p> The perl-based tools can now use either the
+    ZoneFile::Fast or the Net::DNS zone file parser,
+    thanks to a patch from Sebastian Schmidt (yath@yath.de).
+<h4>ZoneFile:Fast</h4>
+<p> - Support for TLSA
+    - Made it compatible with newer Net::DNS releases
+<h4>Qt5</h4>
+<p> - A patch to support DNSSEC checks in Qt5 DNS lookups
+<h3>Bug Fixes</h3>
+<h4>zonesigner<h4>
+<p> - Fixed SOA parsing and serial number update issues
+<h4>libval<h4>
+<p> - Properly initialize memory in sockaddr structures
+    before use.
+
+
+
+<h2>1.14</h2>
+<h3>New Features</h3>
+<h4>dnssec-nodes</h4>
+<p>Many new features, including validation tree
+
+                      graphing, on-the-wire traffic display, pcap dump
+                      file display, increased data logging and
+                      display, improved simultaneous updating, etc.
+<h4>Libval:</h4>
+<p>Added initial support for the TLSA rrtype 
+
+                    - Added support for ECDSA
+                    - Implemented checking for AI_ADDRCONFIG in getaddrinfo
+                    - Memory optimizations to improve speed-up
+<h4>dnssec-check</h4>
+<p>increased stability across all platforms.
+
+
+    - All Around:   - Many bug fixes and other minor improvements
+
+<h2>1.13</h2>
+<h3>New Features</h3>
+
+<h4>rollerd:</h4>
+<p>Added support for the signzone command. Allow
+
+                      zones to be signed while in the midst of a
+                      rollover wait.
+                    - Added autosigning of modified zone files.  Zone
+                      files are considered modified when their "last
+                      modification" timestamp is more recent than that
+                      of the associated signed zone file.  This
+                      functionality includes adding the -autosign option
+                      and config field.
+                    - Added additional commands (via rollctl) to allow
+                      greater control over zone rollover actions.
+                    - Added -zsargs option to allow global options to
+                      be passed to zonesigner.
+
+<h4>realms:</h4>
+<p>Added the realms feature to manage multiple
+
+                      simultaneous rollover environments.  Several
+                      commands and modules (e.g., dtrealms, realms.pm,
+                      buildrealms) were added for the realms feature.
+
+<h4>zonesigner:</h4>
+<p>Added the -threshold option to specify a signing
+
+                      threshold.
+                    - Better handling of serial numbers in zone files.
+
+<h4>keymod:</h4>
+<p>New tool that can be used to modify key
+
+                      generation parameters in a keyrec file.
+
+<h4>dnssec-check</h4>
+<p>significant rewrite since the 1.12 release, though
+
+                      individual updates have been available already.
+                    - Asynchronous support for non-interrupting GUI support 
+                    - Letter grades assigned to each resolver
+                    - Various user-interface improvements
+
+<h4>libval:</h4>
+<p>Bug fixes
+
+                    - Renamed all validator command-line apps to have
+                      a dt- prefix in order to avoid conflicts with
+                      pre-existing executables in certain platforms. 
+
+    - dnsval python module
+                    - Add python wrapper module for the validator
+                      library. Code contributed by Bob Novas. 
+                      
+<h4>trustman:</h4>
+<p>Added an option for use by monitoring systems.
+
+
+<h4>nagios</h4>
+<p>Added the dt_donuts plugin for running trustman on
+
+                      remote machines.
+                    - Added the dt_trustman plugin for monitoring trust
+                      anchors.
+
+<h4>firefox</h4>
+<p>updated nspr and firefox patches to work with
+
+                      mozilla-central and nspr-4.9
+
+
+<h4>webmin:</h4>
+<p>Added the ability to perform DNSSEC 
+
+                      operations on DNSSEC-Tools managed signed 
+                      zones using the Webmin front-end. 
+
+<h4>ssh:</h4>
+<p>Update the patch for enabling local DNSSEC
+
+                      validation to work with OpenSSH 6.0p1.
+
+
+
+
+<h2>1.12.2</h2>
+<h3>Bux fix release</h3>
+<h4>Rollerd's</h4>
+<p>alwayssign flag logic had a critical error that could
+
+        have caused a zone to be signed with the wrong ZSK at particular
+        points of the ZSK key rolling process.
+   
+
+<h2>1.12.1</h2>
+<h3>Minor bug fix release</h3>
+      - Fix perl Validator module so it compiles after a header move
+
+
+<h2>1.12</h2>
+<h3>New Features:</h3>
+
+<h4>libval:</h4>
+<p>Made improvements to support IPv6,
+
+                      added the ability to fetch IPv6 glue
+                    - Fixed the EDNS0 fallback behavior.
+                    - Tidied up the locking semantics in libval. 
+                    - Added support for hard-coding validator configuration 
+                      information that gets used in the absence of other 
+                      configuration data. This feature allows the 
+                      validator library to be self-contained in 
+                      environments where setting up configuration data at
+                      specific locations in the file system is not always 
+                      feasible.
+                    - The library has been ported to the Android OS
+
+<h4>rollerd:</h4>
+<p>Added support for phase-specific commands. This allows
+
+                      the zone operator to customize processing of the rollerd
+                      utility during different rollerd phases. 
+                    - Added support for zone groups.  This allows a collection
+                      of zones to be controlled as a group, rather each of
+                      those zones individually.
+                    - Improved the manner in which rollerd indexes the zones
+                      being managed, with the significantly decreased access
+                      times for rollerd's data files.  This results in rollerd
+                      being able to support a lot more zones with a single
+                      rollerd instance.
+                    - rollctl and the rollover GUI programs may have new
+                      commands to allow for immediate termination of rollerd.
+
+<h4>apps</h4>
+<p>Added patch to enable local validation in NTP, with
+
+                      the ability to handle a specific chicken and egg problem 
+                      related to the interdependency between DNSSEC and an
+                      accurate system clock.
+
+                    - Added a patch to enable DNSSEC validation in Qt
+                      based applications
+
+<h4>dnssec-check</h4>
+<p>Completely rewritten GUI with many new features
+
+                    - Now contains the ability to submit the results
+                      to a central DNSSEC-Tools repository.  The
+                      results will be analyzed and published on a
+                      regular basis.  Please help us get started by
+                      running dnssec-check on your networks!  Note
+                      that it explains that it only sends hashed IP
+                      addresses to our servers and the reports
+                      generated will be aggregation summaries of the
+                      data collected.
+                    - It now runs on both Android and Harmattan (N9) devices
+
+<h4>maketestzone</h4>
+<p>Now produces zones with wildcards and changes to
+
+                      NSEC  record signatures
+
+<h4>dnssec-nodes</h4>
+<p>parses unbound log files
+
+                    - Initial work porting to Android
+
+<h4>dnssec-system</h4>
+<p>tray
+
+                    - parses unbound log files
+
+<h2>1.11</h2>
+<h3>New Features:</h3>
+
+<h4>libval:</h4>
+<p>Significant improvements and bug fixes to the 
+
+                      asynchronous support.
+                    - Added asynchronous version of val_getaddr_info.
+                    - Some reworking of the asynchronous API and callbacks.
+                      Note the asynchronous api is still under development and
+                      subject to changes that break backwards compatibility.
+
+<h4>rollerd:</h4>
+<p>Added an experimental time-based method for queuing
+
+                      rollover operations.  This original method (full list
+                      of all zones) is the default queuing method, but the
+                      new method can be used by editing the rollerd script.
+                      rollctl and rollrec.pm were also modified to support
+                      this change.
+                    - Added support for merging a set of rollrec files.
+                      rollctl and rollrec.pm were also modified to support
+                      this change.
+
+<h4>dnssec-nodes</h4>
+<p>This graphical DNS debugging utility was greatly enhanced
+
+                    - Now parses both bind and libval log files
+                    - Multiple log files can be watched
+                    - Node's represent multiple data sets
+                      internally, which are independently displayed
+                      and tracked.
+                    - Added support for searching for and
+                      highlighting DNS data and DNSSEC status
+                      results
+
+<h4>dnssec-system</h4>
+<p>tray
+
+                    - This utility can now report on BOGUS responses
+                      detected in both libval and bind log files.
+                    - Summary window revamped to group similar
+                      messages together.
+
+ Plus many more minor features and bug fixes
+
+<h2>1.10</h2>
+<h3>New Features:</h3>
+    - New Apps:     (see the validator/apps directory for details)
+                    - dnssec-check: check dnssec support from your ISP
+                    - dnssec-nodes: graphically displays a DNS
+                      hierarchy, color coded by each node's DNSSEC status
+                    - dnssec-system-tray: displays pop-up
+                      notifications when a libval-enabled application
+                      triggers a DNSSEC error
+                    - lookup: a graphical DNS lookup utility that
+                      displays the results in a hierarchical tree and
+                      color codes the window according to DNSSEC status
+<h4>libval:</h4>
+<p>Added support for building on Windows.
+
+      & libsres     - added support for falling back to recursion when
+                      the caching name server does not appear to 
+                      support DNSSEC. This also works as a mechanism
+                      to work around a poisoned or misbehaving cache. 
+                    - Significant improvements to the asynchronous support. 
+<h4>lsdnssec:</h4>
+<p>Improvements to lsdnssec to display different
+
+                      output depending on whether a zone is a
+                      stand-alone zone or under control of rollerd.
+<h4>nagios:</h4>
+<p>Plugins for the nagios monitoring system which
+
+                      enable monitoring of zone rollover states.
+<h4>firefox:</h4>
+<p>Updated patches that work with the most recent firefox
+
+
+ Plus many more minor features and bug fixes
+
+<h2>1.9</h2>
+<h3>New Features:</h3>
+<h4>lsdnssec:</h4>
+<p>Added a new flag (-p) to show only zones in a
+
+                      particular rollerd phase.
+                    - fixed bugs to align timing output with rollerd.
+<h4>rollerd:</h4>
+<p>Added a -logtz flag for logging timezones
+
+                    - fixed bugs related to the -alwayssign flag.
+                    - zonesigner's path is taken from the config file.
+<h4>rollctl:</h4>
+<p>Added -rollall and -rollzone options.
+
+<h4>zonesigner:</h4>
+<p>Assumes keys need to be generated for new zones
+
+                      (Assumes -genkeys option was given if a keyrec file
+                      can't be found.)
+                    - Exits with unique exit codes if a failure occurs.
+                      ("zonesigner -xc CODE" can lookup a description for it.")
+                    - Added the -phase option so rollover options could be
+                      more easily specified.
+<h4>lights:</h4>
+<p>A simple GUI to check the status of rollover states
+
+<h4>blinkenlights:</h4>
+<p>Added hide/show commands for rollrec names and zone
+
+                      names, for split-zone support
+<h4>cleankrf:	</h4>
+<p>Fixed deletion of obsolete set keyrecs.
+
+    - GUI commands: - Fixed how the Exit command works so they don't coredump.
+    - libsres
+      & libval:     - New beta support for issuing asynchronous requests.
+                      This can speed up queries by up to 4 times if used.
+                      (see example code in validator/apps/validator_selftest.c)
+                    - NSEC3, DLV and IPv6 are enabled by default.
+                    - improved logging and logging-callback support.
+<h4>drawvalmap</h4>
+<p>Can output PNG files now
+
+
+<h3>Packaging:</h3>
+                    - Our download page now allows you to download
+                      the C validator libraries independently of the
+                      full DNNSEC-Tools tool-suite.
+
+<h3>Many bugs were also fixed in the 240+ changes.</h3>
+
+<h2>1.8</h2>
+<h3>New Features:</h3>
+    - zonesigner, rollerd
+                    - Made changes so that these tools are more compatible 
+                      with recent versions of Bind
+                    - The zone_errors configuration parameter allows a zone-
+                      specific maximum to be set.  Once exceeded, that zone
+                      will be skipped rather than allowing rollover to continue.
+    - blinkenlights
+                    - Recognizes when rollerd abruptly quits, so error messages
+                      aren't spewed interminably.
+<h4>ZonFile::Fast</h4>
+<p>Fixed parsing of DS records containing spaces and 
+
+                      parsing of mname and rname SOA fields
+                    - Added support for parsing KEY records
+<h4>keyrec.pm</h4>
+<p>Made changes to properly lock keyrec files before 
+
+                      writing to them.
+                    - Begun process of deprecating keyrec_open().
+<h4>mapper:</h4>
+<p>added a new option: --node-size for mapping
+
+                      complex zones.
+<h4>dnspktflow:</h4>
+<p>added two new options:
+
+                      --layout-style for selecting the layout style to use
+                      --node-size for mapping complex zones.
+                    - Add new (default) option to cluster
+                      authoritative nodes together to help better
+                      understand the relationships between traffic
+                      patterns and authoritative name server/zone arrangement.
+<h4>libval:</h4>
+<p>Now distributed with the Root TA.
+
+                    - Added stricter checks for openssl SHA-256 support in 
+                      configure. 
+                    - Added several improvements that allow the validator to 
+                      lookup information within provably insecure zones that 
+                      do not handle EDNS0 requests nicely. This includes 
+                      adding support for turning off EDNS0 when traversing a 
+                      name hierarchy that leads to a provably insecure zone, 
+                      EDNS0 fallback support, and additional checks to check 
+                      the sanity of response data.
+                    - Fixed certain bugs in CNAME handling and in the 
+                      validation of proofs accompanying wildcard responses, 
+                      referrals and alias chains.
+                    - Fixed support for RSADSA and RSASHA-512 signature 
+                      validation.
+    - Mac OSX:      - Added a Ports file for mac ports
+                    - updated the fink build spec
+
+<h3>many other miscellaneous bug fixes and improvements.</h3>
+
+<h2>1.7</h2>
+<h3>New Features:</h3>
+<h4>zonesigner:</h4>
+<p>Added support for split-views. 
+
+<h4>rollerd:</h4>
+<p>supports the ability to run as a given (non-root) user-id.
+
+                    - Refined the status messages generated for various 
+                      rollover phases.
+                    - logging  more information when an error is returned 
+                      by various rollerd functions and sub-processes.
+<h4>libval:</h4>
+<p>Added support for RSA/SHA256-512 validation 
+
+    - test suite:   - Added new test cases for trustman
+                    - Many other refinements. 
+<h4>applications:</h4>
+<p>Most application patches updated so that they apply 
+
+                      to the current upstream release version.
+<h4>convertar:</h4>
+<p>added a --tods flag for converting keys to DS records
+
+
+<h3>Bug Fixes</h3>
+<h4>libval:</h4>
+<p>Fixed a number of issues in the validator library 
+
+                      for NSEC3 validation, execution on 64-bit
+                      machines, and in the treatment of NODATA and 
+                      referral conditions. 
+                    - Fixed an issue in the where it was not correctly 
+                      down-casing the names prior to validating DNSSEC
+                      signatures. 
+<h4>trustman:</h4>
+<p>Fixed trustman's operation when revoking and 
+
+                      replacing keys during a RFC 5011 revoke
+                      operation.
+<h4>rollerd:</h4>
+<p>Fixed a problem where the path exceeded the maximum 
+
+                      length for Unix socket names. 
+                    - Modified the rollerd GUI so that it did not
+                      print out error messages when it was invoked
+                      when rollerd wasn't running.
+                    - fixed rollerd support for nsec3 zones
+
+<h2>1.6</h2>
+<h3>New Features:</h3>
+<h4>convertar:</h4>
+<p>A new tool to translate a trust-anchor-repository
+
+                      (TAR) from one format to another.  Supports
+                      itar, xml, csv, bind, and libval TA formats.
+<h4>rollerd:</h4>
+<p>A new -noreload option to rollerd to not call rndc
+
+<h4>dtconfchk</h4>
+<p>Improved support for checking dnssec-tools.conf
+
+                      content validity
+<h4>dtinitconf:</h4>
+<p>-genroothints supports fetching root.hints from the web
+
+<h4>zonesigner:</h4>
+<p>Supports setting the revoke bit
+
+<h4>rollmgr:</h4>
+<p>Supports Solaris now
+
+<h4>lskrf</h4>
+<p>Supports output of revoked keys
+
+    - test suite:   - A new test suite for testing the tools (cd testing;
+                      make test)
+<h4>binaries:</h4>
+<p>Support for producing self-contained
+
+                      packed-binaries of the tools.  You can download
+                      ones we build from http://www.dnssec-tools.org/download/
+<h4>dtreqmods:</h4>
+<p>A new script to check for DNSSEC-Tools required
+
+                      perl modules.
+
+    - libval changes:
+                     - Changed function prototypes and error codes to keep 
+                       them compliant with the current (-07) Validator API 
+                       draft 
+                     - Added initial RFC 5155 NSEC3 support 
+                       (configure --with-nsec3)
+                     - Optimized the referral processing and glue fetching 
+                       logic so that libval does a better job in trying to 
+                       determine the referral zonecut, and so that it is less 
+                       aggressive in fetching missing glue. Also allow for glue 
+                       to be fetched on demand. 
+                     - Miscellaneous bug fixes 
+
+<h3>Many miscellaneous small enhancements and bug fixes</h3>
+
+<h2>1.5</h2>
+<h3>New Features:</h3>
+<h4>zonesigner:</h4>
+<p>NSEC3 support: --usensec3     (requires bind 9.6)
+
+<h4>donuts:</h4>
+<p>NSEC3 support
+
+<h4>rollerd:</h4>
+<p>Added a -pidfile option
+
+                   - Added a -singlerun option
+                   - Added a -foreground option
+                   - Added a -alwayssign flag
+                   - New rollrec fields to partial-support RFC5011 rolling:
+                     'istrustanchor' and 'holddowntime'
+<h4>lsdnssec:</h4>
+<p>A new tool to display DNSSEC keying/rolling status
+
+<h4>mapper:</h4>
+<p>added two new options: --edge-style and --node-style
+
+<h4>getds:</h4>
+<p>a new tool to calculate a DS record from a key lookup
+
+                     (also checks the parent for proper publication)
+<h4>dnspktflow:</h4>
+<p>Added output options for svg, svgz, and postscript
+
+
+<h3>Bug fixes</h3>
+<h4>libval:</h4>
+<p>should compile better on more OSes
+
+<h4>rollerd:</h4>
+<p>Fixed the -zsargs option in most rollerd related tools
+
+                   - Other minor fixes
+<h4>zonesigner:</h4>
+<p>fixed serial number auto-incrementing
+
+            
+
+<h2>1.4.1</h2>
+<h3>Security Issue:</h3>
+   The DNSSEC-Tools libval validating resolver library does suffer
+   from the same issues that the other DNS resolvers were faced with
+   as described by:    http://www.kb.cert.org/vuls/id/800113
+
+   Although DNSSEC will prevent the issues, it is assumed that not
+   everyone is using libval with only 100% DNSSEC protected zones.
+
+   The supporting tools that do not use libval are not affected by
+   this problem (eg, zonesigner, rollerd, donuts, etc are just fine).
+
+<h3>NSEC3 value change</h3>
+
+   Now that the NSEC3 RFC has been published we've changed the
+   internal numeric RR code to the assigned value.  The NSEC3 code,
+   however, is still considered experimental and not fully tested.
+
+<h2>1.4</h2>
+
+ 
+<h3>Documentation:</h3>
+   - Much more extensive documentation has been written about the
+     tools and how to get started using them.  See the following web
+     page for details:
+
+     http://www.dnssec-tools.org/wiki/index.php/Tutorials
+
+<h3>Applications:</h3>
+   - trustman has seen a lot of usability improvements and now has
+     more extensive documentation.
+   - rollerd and it's controlling scripts can now handle user
+     initiated KSK rollovers.
+   - zonesigner handles keys stored in other directories better.
+   - donuts output has been made more user friendly and the verbosity
+     level can now be more finely tuned.
+   - donuts rule definitions have been cleaned up and the API for
+     writing rules has been simplified.
+
+<h3>libval</h3>
+   - There have been a number of minor API changes in libval
+   - Support was added for environment and app name-based policies in libval
+   - Initial release of the libval_shim library (LD_PRELOAD-based
+     approach for transparently enabling validation for various
+     applications)
+   - The perl Net::DNS::SEC::Validator binding has been updated to
+     accomodate the libval changes.
+
+<h3>Many more minor changes and improvements</h3>
+
+<h2>1.3</h2>
+
+  This release contains a bunch of changes but unfortunately aren't
+  well summarized here.  Nearly every tool got at least some update
+  in one way or another.
+
+<h3>general</h3>
+                         - Significant libval improvements
+     			 - Minor build improvements
+    			 - New datatypes for the Net::DNS::ZoneFile::Fast module
+
+<h2>1.2</h2>
+
+  - New default path for configuration files: $(prefix)/etc/dnssec-tools/
+
+  - libval
+    - paths/names of resolv.conf, root.hints and dnsval.conf now configurable
+    - configure will search for an existing root.hints file and use it.
+    - new libval-config script for finding configuration/compile/link options
+    - added new policies: for setting the trust status of the provably insecure
+      condition and for setting the allowable clock skew on signatures.
+    - Added new function to dynamically add validation policy to a validation
+      context. 
+    - Implemented thread-safe context sharing
+    - Added experimental support for DLV (draft-weiler-dnssec-dlv-02.txt)
+    - Initial support for NSEC3
+    - perl Validator support module for binding perl to libval
+
+  - key rolling
+    - improved support in zonesigner
+    - improved support in rollerd
+
+  - trustman
+    - First support for the timers draft from the DNSEXT IETF working group
+
+  - validate
+    - selftest testcases now read from configuration file
+    - ability to configure/run 'suites' of testcases
+
+  - maketestzone
+    - extremely long-length records added
+
+<h4>DNSSEC</h4>
+<p>aware application patches available (multiple states of stability):
+
+    - firefox (improved drastically since 1.1)
+    - thunderbird
+    - ssh
+    - wget
+    - sendmail
+    - postfix
+    - libsp2
+    - proftpd
+    - ncftp
+    - lftp
+<h4>jabberd</h4>
+<p>2
+
+
+<h2>1.1</h2>
+
+  - zonesigner
+    - Support for one method of KSK rollover (double signing period)
+    - Group keys into signing sets.
+    - Allow multiple KSKs to be used in a single signing set. 
+    - Other keyrec-related tools were updated to accomodate
+      zonesigner changes.
+    - Bug fixes.
+
+  - trustman
+    - now at version 0.9
+    - new keys are now added to named.conf and dnsval.conf
+      when holddown time has been reached
+    - storage of data in order to survive reboots/restarts has
+      been started
+
+  - libval
+    - A threaded or non-threaded version can now be created
+         (--without-threads)
+    - Added support for anti-pollution rules; libval no longer caches out- 
+      of-bailiwick answers
+    - Made return values for validation status consistent across all
+      high-level API functions. It is now possible to detect in
+      val_getaddrinfo() if an RRset is provably missing
+    - fix val_res_query() to properly return the size of the received
+      response;
+
+<h2>1.0</h2>
+
+  - zonesigner 
+    - Support for simultaneous signing with multiple keys
+        
+  - Key Rollover Tools
+    - Support for automated/manual ZSK rollover operations
+        
+  - trustman (different from TrustMan.pl)
+    - Initial support of the IETF "Timers" draft for
+      automated monitoring of DNSSEC keys used as trust
+      anchors.
+
+  - Added more test case resource records to the test zone at 
+    test.dnssec-tools.org (see http://www.dnssec-tools.org/testzone/ )
+        
+  - An improved validator library (dnssec-tools/validator)
+    - The apps/validate utility provides many more features for
+      controlling logging levels and redirection of its output
+    - Supports ability to selectively trust and not trust specific 
+      zones during the validation process
+    - Support for NSEC3
+    - Ported to many more platforms, including Solaris
+    - Added support for checking expiration time on cached rrsets
+    - Many bug and memory-leak fixes
+        
+  - A perl module (Net::DNS::SEC::Validator) for DNSSEC-aware query resolution
+    - Binds with the validator library above and exports 
+      DNSSEC-aware query resolution functions such as 
+      val_gethostbyname, val_res_query, etc. 
+
+  - Updated RPMs for DNSSEC-enabled Firefox 
+
+  - Updated Operator Guides
+    - Step by Step Guide for zone maintenance operations using 
+      the utilities from DNSSEC-Tools
+    - Step by Step Guide for zone maintenance operations using 
+      the utilities provided with the BIND distribution.
+    - Developers guide for DNSSEC-aware application development
+    - DNSSEC Troubleshooting Guide 
+
+  - Miscellaneous:
+        - Many other bug fixes.  See the ChangeLog file for full details.
+
+<h2>0.9.1</h2>
+  - validator library (dnssec-tools/validator):
+    - code has been re-structured within the following 
+      sub-directories: 
+      libsres/ libval/ doc/ etc/ apps/ and include/
+    - configures and builds cleanly on the following systems: 
+      Fedora, MacOSX, FreeBSD
+      (should configure and build on Solaris -- not actually tested)   
+    - includes support for tuning "off" DNSSEC using the
+      "zone-security-expectation" policy construct. 
+    - APIs modified to comply with (upcoming version of) 
+      draft-draft-hayatnagarkar-dnsext-validator-api
+ 
+  - dtinitconf, dtconfchk, dtdefs:
+    - these tools are used to create, check and consult the 
+      file dnssec-tools.conf which is used by many of the
+      dnssec tools. dtconfchk was previously known as confchk.
+     
+    - modules/defaults.pm was also added to provide defaults
+      for the above tools.
+
+  - rollinit, rollctl, rollchk, rollerd, lsroll:
+    - these tools are used to create, check, and list the roll
+      rec files to be used by rollerd and rollctl.
+
+    - rollerd is a daemon to manage DNSSEC key roll-over.
+
+    - rollctl is used to send commands to a rollerd daemon.
+
+  - TrustMan:
+    - manages keys used as trust anchors in named.conf and
+      dnsval.conf
+    - can be run as a daemon or as a one-time check
+    - configuration is placed in dnssec-tools.conf
+
+  - donuts:
+    - supports a --show-gui flag to display a graphical
+      error browser (requires perl QWizard and Gtk2 modules).
+    - A better (optional) GUI interface for new users
+
+  - Most tools should report a --version flag. 
+
+  - Other minor improvements have been made to other tools and
+    supporting files.
+
+
+    </div> <!-- end the main col-md-9 -->
+	  <div class="col-md-3">
+<div class="rightmenu hidden-print" role="complementary">
+
+<div class="panel panel-primary">
+  <div class="panel-heading">
+    <h4 class="panel-title">Learn To...</h4>
+  </div>
+  <div class="panel-body">
+    <!-- <a href="http://www.dnssec-tools.org/wiki/index.php/Sign_Your_Zone"> -->
+    <!--   <img class="centered" src="/images/lockcrop.png" alt="Sign Your Zone" /> -->
+    <!-- </a> -->
+    <ul class="nav dtnav">
+      <li class="lititle"><a class="toplink" href="/wiki/index.php/Installing_DNSSEC-Tools">
+          Install DNSSEC-Tools</a></li>
+      <li class="lititle"><a href="http://www.dnssec-tools.org/wiki/index.php/Sign_Your_Zone">Sign
+      Your Zone!</a></li>
+    </ul>        
+  </div>
+</div>
+
+<div class="panel panel-primary">
+  <div class="panel-heading">
+    <h4 class="panel-title">DNSSEC-Tools Resources</h4>
+  </div>
+<div class="panel-body">
+ <ul class="nav dtnav">
+  <li class="lititle">
+  </li>
+  <li class="lilinks">
+    <a class="toplink" href="/">
+      Main Page
+    </a>
+  </li>
+
+  <li class="lilinks">
+    <a class="toplink" href="/NEWS.html">
+      News
+    </a>
+  </li>
+
+    <li class="lilinks">
+      <a class="toplink" href="/wiki/index.php/Tutorials">
+	Tutorials
+      </a>
+    </li>
+
+  <li class="lilinks">
+    <a class="toplink" href="/wiki/index.php/DNSSEC-Tools_Components">
+      Tool Descriptions
+      <br />
+      And Screen-Shots
+    </a>
+  </li>
+
+  <li class="lilinks">
+    <a class="toplink" href="/wiki/index.php/Installing_DNSSEC-Tools">
+      Download
+    </a>
+    <ul style="margin-left: 1em;">
+      <li><a href="https://dnssec-tools.org/download/#gotoSources">Everything</a></li>
+      <li><a href="http://dnssec-tools.org/download/#gotodnsval">Libval</a></li>
+      <li><a href="http://dnssec-tools.org/download/#gotoGraphical Applications">GUI Apps</a></li>
+      <ul style="margin-left: 1em;">
+	<li><a href="http://dnssec-tools.org/download/#gotoDNSSEC-Check">DNSSEC-Check</a></li>
+	<li><a href="http://dnssec-tools.org/download/#gotoLookup">Lookup</a></li>
+	<li><a href="http://dnssec-tools.org/download/#gotoDNSSEC-Nodes">DNSSEC-Nodes</a></li>
+      </ul>
+    </ul>
+
+  <li class="lilinks">
+    <a class="toplink" href="/resources/documentation.html">
+      Additional Documentation
+    </a>
+  </li>
+
+  <li class="lilinks">
+    <a class="toplink" href="/testzone/index.html">
+      Test Zone
+    </a>
+  </li>
+</ul>
+</div>
+</div>
+
+<div class="panel panel-primary">
+  <div class="panel-heading">
+    <h4 class="panel-title"> Tools For... </h4>
+  </div>
+<div class="panel-body">
+<ul class="nav dtnav">
+  <li class="lilinks">
+    <a class="toplink" href="/wiki/index.php/Authoritative_Zone_Administrator">
+      Authoritative Zones
+    </a>
+  </li>
+
+  <li class="lilinks">
+    <a class="toplink" href="/wiki/index.php/Authoritative_Server">
+      Authoritative Servers
+    </a>
+  </li>
+
+  <li class="lilinks">
+    <a class="toplink" href="/wiki/index.php/Recursive_Server">
+      Recursive Servers
+    </a>
+  </li>
+
+  <li class="lilinks">
+    <a class="toplink" href="/wiki/index.php/DNSSEC_Applications">
+      Applications
+    </a>
+  </li>
+
+  <li class="lilinks">
+    <a class="toplink" href="/wiki/index.php/DNSSEC_Application_Development">
+      Application Developers
+    </a>
+  </li>
+</ul>
+</div>
+</div>
+
+<div class="panel panel-primary">
+  <div class="panel-heading">
+  <h4 class="panel-title"> Project Links </h4>
+  </div>
+<div class="panel-body">
+
+<ul class="nav dtnav">
+  <li class="lilinks">
+    <a class="toplink" href="/wiki/">
+      Wiki
+    </a>
+  </li>
+
+
+  <li class="lilinks">
+    <a class="toplink"
+      href="https://www.dnssec-tools.org/mailman/listinfo/">
+      Mailing Lists
+    </a>
+  </li>
+
+  <li class="lilinks">
+    <a class="toplink"
+      href="https://www.dnssec-tools.org/trac/">
+      Bug Database
+    </a>
+  </li>
+
+  <li class="lilinks">
+    <a class="toplink"
+      href="https://www.dnssec-tools.org/svn/dnssec-tools/">
+      SVN Repository
+    </a>
+  </li>
+</ul>
+</div>
+</div>
+
+
+<div class="panel panel-primary">
+  <div class="panel-heading">
+  <h4 class="panel-title"> Other Useful Sites </h4>
+  </div>
+<div class="panel-body">
+
+<ul class="nav dtnav">
+  <li class="lilinks">
+    <a class="toplink" href="http://www.isc.org/sw/bind/">
+      Bind DNS Software
+    </a>
+  </li>
+
+  <li class="lilinks">
+    <a class="toplink" href="http://www.net-dns.org/">
+      Net::DNS for Perl
+    </a>
+  </li>
+
+  <li class="lilinks">
+    <a class="toplink" href="http://www.dnssec-deployment.org/">
+      dnssec-deployment.org
+    </a>
+  </li>
+
+  <li class="lilinks">
+    <a class="toplink" href="http://www.dnssec.net/">
+      dnssec.net
+    </a>
+  </li>
+
+  <li class="lilinks">
+    <a class="toplink" href="http://www.ietf.org/html.charters/dnsext-charter.html">
+      IETF's dnsext WG
+    </a>
+  </li>
+
+  <li class="lilinks">
+    <a class="toplink" href="http://www.ietf.org/html.charters/dnsop-charter.html">
+      IETF's dnsop WG
+    </a>
+  </li>
+
+  <li class="lilinks">
+    <a class="toplink" href="http://www.dnsops.gov/">
+      Secure Naming Infrastructure Pilot (SNIP) 
+    </a>
+  </li>
+ </ul>
+</div>
+</div>
+
+</div> <!-- ends the right menu -->
+</div> <!-- ends col-md-3 -->
+
+    </div> <!-- end the row content -->
+    </div> <!-- end the main container content -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+    <script src="/js/bootstrap.min.js"></script>
+  </body>
+</html>
+

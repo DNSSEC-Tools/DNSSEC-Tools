@@ -1,0 +1,163 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title></title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:root@localhost" />
+</head>
+
+<body>
+
+
+
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
+  <li><a href="#OPTIONS">OPTIONS</a></li>
+  <li><a href="#COPYRIGHT">COPYRIGHT</a></li>
+  <li><a href="#AUTHOR">AUTHOR</a></li>
+  <li><a href="#SEE-ALSO">SEE ALSO</a></li>
+</ul>
+
+<h1 id="NAME">NAME</h1>
+
+<p>lsdnssec - List DNSSEC components of zones from files or directories</p>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<pre><code>  lsdnssec [-d 1-9] [OPTIONS] [FILES OR DIRECTORIES...]</code></pre>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p>The <b>lsdnssec</b> program summarizes information about DNSSEC-related files. These files may be specified on the command line or found in directories that were given on the command line. The <b>-d</b> flag controls the amount of detail in the <b>lsdnssec</b> output.</p>
+
+<p><b>lsdnssec</b> displays the following information about each zone for which it collects information:</p>
+
+<dl>
+
+<dt id="keys">keys</dt>
+<dd>
+
+<p>Key information is shown about the keys currently in use. A bar graph is included that shows the age of the key with respect to the configured expected key lifetime.</p>
+
+<p>This information is collected from any <b>.krf</b> files <b>lsdnssec</b> finds.</p>
+
+</dd>
+<dt id="rolling-status">rolling status</dt>
+<dd>
+
+<p>If any zone keys are being rolled via <b>rollerd</b>, then the status of the rolling state is shown. The time needed to reach the next state is also displayed.</p>
+
+<p>This information is collected from any <b>.rollrec</b> or <b>.rrf</b> files found by <b>lsdnssec</b>.</p>
+
+</dd>
+</dl>
+
+<h1 id="OPTIONS">OPTIONS</h1>
+
+<dl>
+
+<dt id="z-ZONENAME1-ZONENAME2"><b>-z ZONENAME1[,ZONENAME2]</b></dt>
+<dd>
+
+</dd>
+<dt id="zone-ZONENAME1-ZONENAME2"><b>--zone=ZONENAME1[,ZONENAME2]</b></dt>
+<dd>
+
+<p>Only prints information about the named zone(s).</p>
+
+</dd>
+<dt id="p-NUMBER"><b>-p NUMBER</b></dt>
+<dd>
+
+</dd>
+<dt id="phase-NUMBER"><b>--phase=NUMBER</b></dt>
+<dd>
+
+<p>Only prints information about zones currently being rolled by <b>rollerd</b> and where either a zsk or a ksk rollover is taking place and is in phase NUMBER.</p>
+
+<p>If the phase NUMBER is specified as 0, then any zone in any rolling phase will be printed (but not zones that aren&#39;t being rolled at all).</p>
+
+<p>This flag is especially useful to find all of your zones that are currently in KSK rolling phase 6, which requires operator intervention to propagate the new DS records into the parent zone.</p>
+
+</dd>
+<dt id="r"><b>-r</b></dt>
+<dd>
+
+</dd>
+<dt id="roll-status"><b>--roll-status</b></dt>
+<dd>
+
+<p>Show only rolling information from the rollrec files. By default both roll-state and key information is shown.</p>
+
+</dd>
+<dt id="k"><b>-k</b></dt>
+<dd>
+
+</dd>
+<dt id="key-data"><b>--key-data</b></dt>
+<dd>
+
+<p>Show only keying information from the krf files. By default both roll-state and key information is shown.</p>
+
+</dd>
+<dt id="K"><b>-K</b></dt>
+<dd>
+
+</dd>
+<dt id="key-gen-time"><b>--key-gen-time</b></dt>
+<dd>
+
+<p>Normally <b>rollerd</b> calculates the age of a key based on the last time a key was rolled. However, it&#39;s also possible to calculate the age of a key based on the difference between the time of execution and when the key was created (which was typically before the rolling began). The <i>-K</i> flag switches to this second mode of key age calculation (which will not match how <b>rollerd</b> actually performs).</p>
+
+</dd>
+<dt id="M"><b>-M</b></dt>
+<dd>
+
+</dd>
+<dt id="monitor"><b>--monitor</b></dt>
+<dd>
+
+<p>The <i>-M</i> flag gives an abbreviated version of <b>lsdnssec</b> output that is intended for use by monitoring systems. It displays the zone name, the rollover phase, and the time remaining in that phase. This option implicitly sets the <i>-r</i> flag on and sets the detail level to 1.</p>
+
+</dd>
+<dt id="d-1-9"><b>-d 1-9</b></dt>
+<dd>
+
+</dd>
+<dt id="detail-1-9"><b>--detail 1-9</b></dt>
+<dd>
+
+<p>Controls the amount of information shown in the output. A level of 9 shows everything; a level of 1 shows a minimal amount. The default level is 5.</p>
+
+</dd>
+<dt id="debug"><b>--debug</b></dt>
+<dd>
+
+<p>Turns on extra debugging information.</p>
+
+</dd>
+</dl>
+
+<h1 id="COPYRIGHT">COPYRIGHT</h1>
+
+<p>Copyright 2009-2014 SPARTA, Inc. All rights reserved. See the COPYING file included with the DNSSEC-Tools package for details.</p>
+
+<h1 id="AUTHOR">AUTHOR</h1>
+
+<p>Wes Hardaker &lt;hardaker AT AT AT users.sourceforge.net&gt;</p>
+
+<h1 id="SEE-ALSO">SEE ALSO</h1>
+
+<p><b>lskrf(1)</b></p>
+
+<p><b>zonesigner(8)</b>, <b>rollerd(8)</b></p>
+
+
+</body>
+
+</html>
+
+

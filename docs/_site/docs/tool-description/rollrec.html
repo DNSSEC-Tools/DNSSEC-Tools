@@ -1,0 +1,186 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>B&lt;rollrec&gt; - Rollover-related zone data used by DNSSEC-Tools programs.</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:suresh@localhost.localdomain" />
+</head>
+
+<body style="background-color: white">
+
+<p><a name="__index__"></a></p>
+<!-- INDEX BEGIN -->
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#description">DESCRIPTION</a></li>
+	<li><a href="#fields">FIELDS</a></li>
+	<li><a href="#examples">EXAMPLES</a></li>
+	<li><a href="#copyright">COPYRIGHT</a></li>
+	<li><a href="#author">AUTHOR</a></li>
+	<li><a href="#see_also">SEE ALSO</a></li>
+</ul>
+<!-- INDEX END -->
+
+<hr />
+<p>
+</p>
+<hr />
+<h1><a name="name">NAME</a></h1>
+<p><strong>rollrec</strong> - Rollover-related zone data used by DNSSEC-Tools programs.</p>
+<p>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p><em>rollrec</em> files contain data used by the DNSSEC-Tools to manage key rollover.
+A <em>rollrec</em> file is organized in sets of <em>rollrec</em> records.  Each <em>rollrec</em>
+record describes the rollover state of a single zone and must be either of
+<em>roll</em> type or <em>skip</em> type.  Zone <em>rollrec</em>s record information about
+currently rolling zones.  Skip <em>rollrec</em>s record information about zones that
+are not being rolled.  A <em>rollrec</em> consists of a set of keyword/value
+entries.</p>
+<p>The DNSSEC-Tools <strong>rollrec.pm</strong> module manipulates the contents of a <em>rollrec</em>
+file.  Module interfaces exist for looking up <em>rollrec</em> records, creating
+new records, and modifying existing records.</p>
+<p>Comment lines and blank lines are ignored by the DNSSEC-Tools programs.
+Comment lines start with either a '#' character or a ';' character.</p>
+<p>A <em>rollrec</em>'s name may consist of alphabetic characters, numbers, and several
+special characters.  The special characters are the minus sign, the plus sign,
+the underscore, the comma, the period, the colon, the forward-slash, the
+space, and the tab.</p>
+<p>The values in a <em>rollrec</em>'s entries may consist of alphabetic characters,
+numbers, and several special characters.  The special characters are the minus
+sign, the plus sign, the underscore, the comma, the period, the colon, the
+forward-slash, the space, and the tab.</p>
+<p>
+</p>
+<hr />
+<h1><a name="fields">FIELDS</a></h1>
+<p>The fields in a <em>rollrec</em> record are:</p>
+<pre>
+ * administrator</pre>
+<p>This is the email address for the zone's administrative user.  If it is not
+set, the default from the DNSSEC-Tools configuration file will be used.</p>
+<pre>
+ * directory</pre>
+<p>This field contains the name of the directory in which <strong>rollerd</strong> will
+execute for the <em>rollrec</em>'s zone.  If it is not specified, then the
+normal <strong>rollerd</strong> execution directory will be used.</p>
+<pre>
+ * display</pre>
+<p>This boolean field indicates whether or not the zone should be displayed by
+the <strong>blinkenlights</strong> program.</p>
+<pre>
+ * keyrec</pre>
+<p>The zone's <em>keyrec</em> file.</p>
+<pre>
+ * kskphase</pre>
+<p>The zone's current KSK rollover phase.  A value of zero indicates that the
+zone is not in rollover, but is in normal operation.  A numeric value of 1-7
+indicates that the zone is in that phase of KSK rollover.</p>
+<pre>
+ * ksk_rolldate</pre>
+<p>The time at which the zone's last KSK rollover completed.  This is only used
+to provide a human-readable format of the timestamp.  It is derived from the
+<em>ksk_rollsecs</em> field.</p>
+<pre>
+ * ksk_rollsecs</pre>
+<p>The time at which the zone's last KSK rollover completed.  This value is used
+to derive the <em>ksk_rolldate</em> field.</p>
+<pre>
+ * loglevel</pre>
+<p>The <strong>rollerd</strong> logging level for this zone.</p>
+<pre>
+ * maxttl</pre>
+<p>The maximum time-to-live for the zone.  This is measured in seconds.</p>
+<pre>
+ * phasestart</pre>
+<p>The time-stamp of the beginning of the zone's current phase.</p>
+<pre>
+ * zonefile</pre>
+<p>The zone's zone file.</p>
+<pre>
+ * zsargs</pre>
+<p>The user-specified arguments for <strong>zonesigner</strong>.  This field is set by the
+<strong>rollctl -zsargs</strong> command to allow modification of a zone's rollover options
+without having to restart <strong>rollerd</strong>.</p>
+<pre>
+ * zskphase</pre>
+<p>The zone's current ZSK rollover phase.  A value of zero indicates that the zone
+is not in rollover, but is in normal operation.  A value of 1, 2, 3, 4
+indicates that the zone is in that phase of ZSK rollover.</p>
+<pre>
+ * zsk_rolldate</pre>
+<p>The time at which the zone's last ZSK rollover completed.  This is only used
+to provide a human-readable format of the timestamp.  It is derived from the
+<em>ksk_rollsecs</em> field.</p>
+<pre>
+ * zsk_rollsecs</pre>
+<p>The time at which the zone's last ZSK rollover completed.  This value is used
+to derive the <em>ksk_rolldate</em> field.</p>
+<p>
+</p>
+<hr />
+<h1><a name="examples">EXAMPLES</a></h1>
+<p>The following is an example of a roll <em>rollrec</em>:</p>
+<pre>
+    roll &quot;example.com&quot;
+            zonefile        &quot;example.signed&quot;
+            keyrec          &quot;example.krf&quot;
+            kskphase        &quot;1&quot;
+            zskphase        &quot;0&quot;
+            administrator   &quot;bob@bobbox.example.com&quot;
+            loglevel        &quot;info&quot;
+            maxttl          &quot;60&quot;
+            display         &quot;1&quot;
+            zsargs          &quot;-zsklength 1024&quot;
+            ksk_rollsecs    &quot;1172614842&quot;
+            ksk_rolldate    &quot;Tue Feb 27 22:20:42 2007&quot;
+            zsk_rollsecs    &quot;1172615087&quot;
+            zsk_rolldate    &quot;Tue Feb 27 22:24:47 2007&quot;
+            phasestart      &quot;Mon Feb 20 12:34:56 2007&quot;</pre>
+<p>The following is an example of a skip <em>rollrec</em>:</p>
+<pre>
+    skip &quot;test.com&quot;
+            zonefile        &quot;test.com.signed&quot;
+            keyrec          &quot;test.com.krf&quot;
+            kskphase        &quot;0&quot;
+            zskphase        &quot;2&quot;
+            administrator   &quot;tess@test.com&quot;
+            loglevel        &quot;info&quot;
+            maxttl          &quot;60&quot;
+            display         &quot;1&quot;
+            ksk_rollsecs    &quot;1172614800&quot;
+            ksk_rolldate    &quot;Tue Feb 27 22:20:00 2007&quot;
+            zsk_rollsecs    &quot;1172615070&quot;
+            zsk_rolldate    &quot;Tue Feb 27 22:24:30 2007&quot;
+            phasestart      &quot;Mon Feb 20 12:34:56 2007&quot;</pre>
+<p>
+</p>
+<hr />
+<h1><a name="copyright">COPYRIGHT</a></h1>
+<p>Copyright 2006-2008 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.</p>
+<p>
+</p>
+<hr />
+<h1><a name="author">AUTHOR</a></h1>
+<p>Wayne Morrison, <a href="mailto:tewok@users.sourceforge.net">tewok@users.sourceforge.net</a></p>
+<p>
+</p>
+<hr />
+<h1><a name="see_also">SEE ALSO</a></h1>
+<p><strong>lsroll(1)</strong></p>
+<p><strong>blinkenlights(8)</strong>,
+<strong>rollctl(8)</strong>,
+<strong>rollerd(8)</strong>,
+<strong>zonesigner(8)</strong></p>
+<p><strong>Net::DNS::SEC::Tools::keyrec(3)</strong>,
+<strong>Net::DNS::SEC::Tools::rollrec(3)</strong></p>
+<p><strong>keyrec(5)</strong></p>
+
+</body>
+
+</html>

@@ -1,0 +1,165 @@
+<html>
+
+<head>
+<title>Owl Monitoring System -- Sensor Installation Manual -- Owl Commands</title>
+</head>
+
+<body>
+
+<p>
+
+<table>
+<tr>
+<td>
+<img align=left src="owl-logo.jpg"><br>
+<td width=30>&nbsp;
+<td align=center valign=top>
+<br>
+<center><h2>Owl Monitoring System</h2></center>
+<center><h2>Sensor Installation Manual</h2></center>
+</tr>
+</table>
+
+<p>
+
+<!*****************************************************************************>
+
+<a name="6."></a>
+<h3>6. Owl Sensor Commands</h3>
+
+<p>
+
+<!------------------------------------------------------------>
+
+The Owl sensor has a number of Owl-specific commands required for its
+operation.  This section provides a brief overview of the available commands.
+These are all Perl scripts and have self-contained man pages, which contain
+greater details about their use.  These scripts are intended to run as an
+unprivileged user.
+
+<p>
+
+This section briefly describes the software used on the Owl sensor hosts.
+
+<ul>
+
+<li><b>owl-archold</b><br>
+This script archives previously archived Owl sensor data into monthly
+archives.  A compressed <b>tar</b> file is created that contains the archived
+data files from a particular month.  It should only be run on a particular
+month's archive after the month has been completed.  This script is exactly
+the same as the <b>owl-archold</b> on the Owl manager host.
+<br>
+This script is assumed to live in the Owl user's home or <b>bin</b> directory.
+
+<p>
+
+<!--------------------------------------------->
+
+<li><b>owl-dataarch</b><br>
+This script moves data from the Owl sensor's active data directory to a
+year/month-specific archive directory.  This script archives Owl sensor
+data by moving old data from the Owl data directory to an archive directory.
+<br>
+This script is assumed to live in the Owl user's home or <b>bin</b> directory.
+
+<p>
+
+<!--------------------------------------------->
+
+<li><b>owl-dnstimer</b><br>
+This script is the primary part of the Owl sensor.  It sends periodic DNS
+requests to the root nameservers and records the time each request takes.
+These query records are provided to the Owl manager for aggregation and
+display.
+<br>
+This script is assumed to live in the Owl user's home or <b>bin</b> directory.
+
+<p>
+
+<!--------------------------------------------->
+
+<li><b>owl-heartbeat</b><br>
+This script periodically contacts the Owl manager to let it know the sensor
+is still alive.  <b>owl-heartbeat</b> is an optional service for the benefit
+of the Owl manager's administrators; the Owl sensor will run just fine if a
+sensor's administrator elects not to run it.  This is intended to be a
+<b>cron</b> job that runs once a minute, but other time periods may be chosen.
+<br>
+This script is assumed to live in the Owl user's home or <b>bin</b> directory.
+
+<p>
+
+<!--------------------------------------------->
+
+<li><b>owl-sensord</b><br>
+This script executes the <b>owl-dnstimer</b> and <b>owl-transfer</b> daemons
+and monitors their execution.  If either of the daemons exits unexpectedly,
+then <b>owl-sensord</b> will restart it.  In order to keep configuration or
+other problems from causing rapid re-executions, <b>owl-sensord</b> will
+temporarily suspend execution of one of the daemons if a certain number of
+execution attempts fail within a short period of time.
+<br>
+This script is assumed to live in the Owl user's home or <b>bin</b> directory.
+
+<p>
+
+<!--------------------------------------------->
+
+<li><b>owl-status</b><br>
+This script gives the user a simple view of the status of the three primary
+Owl sensor components.  It reports whether or not <b>owl-dnstimer</b>,
+<b>owl-sensord</b>, and <b>owl-transfer</b> are running.  An additional
+option shows the query parameters used by <b>owl-dnstimer</b> and the time
+that each root nameserver was last queried.
+<br>
+This script is assumed to live in the Owl user's home or <b>bin</b> directory.
+
+<p>
+
+<!--------------------------------------------->
+
+<li><b>owl-transfer</b><br>
+This script periodically transfers Owl sensor data from the sensor host to
+the manager host.
+<br>
+This script is assumed to live in the Owl user's home or <b>bin</b> directory.
+
+<p>
+
+</ul>
+
+<p>
+
+<!*****************************************************************************>
+
+<br><br>
+
+<center>
+
+<hr width="70%">
+
+<p>
+
+<!-------------------------------------->
+<table width="100%">
+<tr>
+<td width="33%" align=left>
+<a href="install-sensor-5-adding-queries.html">Section 5.<br>Adding New Queries to<br>Existing Owl Sensors</a>
+<td width="33%" align=center>
+<a href="install-sensor.html">Owl Monitoring System<br>Sensor Installation Manual</a>
+<td width="33%" align=right>
+&nbsp;
+</tr>
+</table>
+<p>
+<!-------------------------------------->
+
+<a href="http:www.dnssec-tools.org">DNSSEC Tools</a>
+
+</center>
+
+<p>
+
+</body>
+</html>

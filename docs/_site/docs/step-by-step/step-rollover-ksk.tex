@@ -1,0 +1,267 @@
+
+\clearpage
+\subsection{KSK Roll-Over}
+\label{roll-ksk}
+
+This section gives the steps necessary for the double-signature scheme for
+KSK roll-over.  The alternative, the pre-publish method, is used for rolling
+over ZSKs.  Double signatures for records signed by the ZSK can increase the
+size of the zone many times.  The pre-publish scheme, although requiring more
+steps for the roll-over, does not suffer from this problem. The size argument
+does not apply during KSK roll-over since the DNSKEY RRset is the only record
+doubly signed by the KSK.
+
+See Figure~\ref{fig:kskroll}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Ensure that Sufficient Time has Elapsed Since the Last Roll-Over}
+
+The time between roll-overs has to be at least twice the maximum zone TTL
+period.  This is the largest TTL in the entire zone file multiplied by two.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Generate a New KSK}
+
+Generate a new KSK, as described in section~\ref{genksk}.
+
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|}
+\hline
+{\bf Zone} &
+\multicolumn{4}{c|}{{\bf ZSK}} &
+\multicolumn{4}{c|}{{\bf KSK}} &
+{\bf Exp} \\
+\cline{2-9}
+
+ & Tag & Size & Creat & S & Tag & Size & Creat & S & \\
+\hline
+
+\underline{zone.name}	&
+\underline{zsktag-cur}	&
+512			&
+\underline{date}	&
+C			&
+\underline{ksktag}	&
+1024			&
+\underline{date}	&
+C			&
+\underline{date}	\\
+
+\cline{2-9}
+
+				&
+\underline{zsktag-pub}		&
+512				&
+\underline{date}		&
+P				&
+{\bf \underline{ksktag}}	&
+{\bf 1024}			&
+{\bf \underline{date}}		&
+{\bf P}				&
+				\\
+
+\hline
+\end{tabular}
+\end{center}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Modify the Zone File}
+
+The zone file must be modified to account for the new KSK.  The SOA serial
+number also must be changed so that the zone file's new contents will be
+recognized.
+
+\begin{tabbing}
+\hspace{0.5in} \= 12345678 \= 12345678 \= 12345678 \= 12345678 \kill \\
+\hspace{0.5in}\$ {\bf vi \underline{zonefile}} $[$ENTER$]$ \\
+\hspace{0.5in}\underline{zone.name}        IN     SOA        servername contact ( \\
+\hspace{3.5in}{\bf 2005092103} ; Increase current value by 1. \\
+\hspace{4.4in};  This value may be different \\
+\hspace{4.4in}; in your zone file. \\
+\hspace{0.5in}\>           \>         ... \\
+\hspace{0.5in}\>              ) \\
+\hspace{0.5in}... \\
+\hspace{0.5in};; cur ksk \\
+\hspace{0.5in}\$INCLUDE ``/path/to/K\underline{zone.name}.+005+\underline{ksktag}.key'' \\
+\hspace{0.5in}{\bf ;; new ksk} \\
+\hspace{0.5in}{\bf \$INCLUDE ``/path/to/K\underline{zone.name}.+005+\underline{ksktag-pub}.key}'' \\
+\hspace{0.5in};; cur zsk \\
+\hspace{0.5in}\$INCLUDE ``/path/to/K\underline{zone.name}.+005+\underline{zsktag-cur}.key'' \\
+\hspace{0.5in};; pub zsk \\
+\hspace{0.5in}\$INCLUDE ``/path/to/K\underline{zone.name}.+005+\underline{zsktag-pub}.key'' \\
+\hspace{0.5in}... \\
+\hspace{0.5in}\$ \\
+\end{tabbing}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\input{signzone-ksk-new}
+
+Record the signature expiry date in the key-tag table.
+
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|}
+\hline
+{\bf Zone} &
+\multicolumn{4}{c|}{{\bf ZSK}} &
+\multicolumn{4}{c|}{{\bf KSK}} &
+{\bf Exp} \\
+\cline{2-9}
+
+ & Tag & Size & Creat & S & Tag & Size & Creat & S & \\
+\hline
+
+\underline{zone.name}		&
+\underline{zsktag-cur}		&
+512			&
+\underline{date}			&
+C			&
+\underline{ksktag-cur}		&
+1024			&
+\underline{date}			&
+C			&
+{\bf\underline{date}}	\\
+
+\cline{2-9}
+
+			&
+\underline{zsktag-pub}	&
+512			&
+\underline{date}	&
+P			&
+\underline{ksktag-pub}		&
+1024			&
+\underline{date}			&
+P			&
+			\\
+
+\hline
+\end{tabular}
+\end{center}
+
+Although the keyset has changed, it {\bf must not} be sent to the parent yet.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\input{zone-reload}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Wait for Old DNSKEY RRset to Expire from Caches}
+
+Wait at least twice the maximum zone TTL period for the old DNSKEY RRset to
+expire from name server caches.  This is the largest TTL in the entire zone
+file multiplied by two.  This will also allow the new data to propagate.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Modify the Zone File}
+
+The zone file must be modified to account for the key changes.  The Current
+ZSK must be deleted and the New ZSK must be added.  Also, the SOA serial
+number must be changed so that the zone file's new contents will be recognized.
+
+\begin{tabbing}
+\hspace{0.5in} \= 12345678 \= 12345678 \= 12345678 \= 12345678 \kill \\
+\hspace{0.5in}\$ {\bf vi \underline{zonefile}} $[$ENTER$]$ \\
+\hspace{0.5in}\underline{zone.name}        IN     SOA        servername contact ( \\
+\hspace{3.5in}{\bf 2005092104} ; Increase current value by 1. \\
+\hspace{4.4in};  This value may be different \\
+\hspace{4.4in}; in your zone file. \\
+\hspace{0.5in}\>           \>         ... \\
+\hspace{0.5in}\>              ) \\
+\hspace{0.5in}... \\
+\hspace{0.5in}{\bf \sout{;; cur ksk}} \\
+\hspace{0.5in}{\bf \sout{\$INCLUDE ``/path/to/K\underline{zone.name}.+005+\underline{ksktag-cur}.key''}} \\
+\hspace{0.5in};; new ksk \\
+\hspace{0.5in}\$INCLUDE ``/path/to/K\underline{zone.name}.+005+\underline{ksktag-pub}.key'' \\
+\hspace{0.5in};; pub zsk \\
+\hspace{0.5in}\$INCLUDE ``/path/to/K\underline{zone.name}.+005+\underline{zsktag-pub}.key'' \\
+\hspace{0.5in}{\bf ;; new zsk} \\
+\hspace{0.5in}{\bf \$INCLUDE ``/path/to/K\underline{zone.name}.+005+\underline{zsktag-new}.key}'' \\
+\hspace{0.5in}... \\
+\hspace{0.5in}\$ \\
+\end{tabbing}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\input{signzone-ksk-new}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\label{kskroll-new-keyset}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Update the Key-Tags Table with the Latest KSK}
+
+Delete the Current KSK and change the status of the new KSK from Published
+(P) to Current (C).  Record the signature expiry date in the key-tag table.
+
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|}
+\hline
+{\bf Zone} &
+\multicolumn{4}{c|}{{\bf ZSK}} &
+\multicolumn{4}{c|}{{\bf KSK}} &
+{\bf Exp} \\
+\cline{2-9}
+
+ & Tag & Size & Creat & S & Tag & Size & Creat & S & \\
+\hline
+
+					&
+\underline{zsktag-cur}			&
+512					&
+\underline{date}			&
+C					&
+{\bf \sout{\underline{ksktag-cur}}}	&
+{\bf \sout{1024}}			&
+{\bf \sout{\underline{date}}}		&
+{\bf \sout{C}}				&
+					\\
+
+\cline{2-9}
+
+\underline{zone.name}	&
+\underline{zsktag-pub}	&
+512			&
+\underline{date}	&
+P			&
+\underline{ksktag-pub}	&
+1024			&
+\underline{date}	&
+{\bf \sout{C}}		&
+{\bf\underline{date}}	\\
+
+			&
+			&
+			&
+			&
+			&
+			&
+			&
+			&
+{\bf P}			&
+			\\
+
+\hline
+\end{tabular}
+\end{center}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Perform Steps in Section~\ref{delegation-child} if this Zone
+is a Secure Delegation from Another Zone}
+
+The keyset generated in~\ref{kskroll-new-keyset} contains only the new KSK.
+This keyset must be sent to the parent in order to complete the secure
+delegation.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\input{zone-reload}
+\input{delete-old-ksk}

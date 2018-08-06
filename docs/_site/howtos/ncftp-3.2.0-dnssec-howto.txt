@@ -1,0 +1,8 @@
+Patch to add local validation to ncftp.
+
+1) Apply patch
+2) run autoheader and autoconf to regenerate several important files. I had
+   to use autoconf version 2.13.
+3) Configure with: ./configure --with-dnssec-local-validation
+4) make
+5) sudo make install

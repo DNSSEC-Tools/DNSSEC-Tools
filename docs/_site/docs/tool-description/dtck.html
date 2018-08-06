@@ -1,0 +1,165 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title></title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:root@localhost" />
+</head>
+
+<body>
+
+
+
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
+  <li><a href="#DTCK-CONFIGURATION-FILE">DTCK CONFIGURATION FILE</a></li>
+  <li><a href="#OPTIONS">OPTIONS</a>
+    <ul>
+      <li><a href="#Options-Handled-by-dtck">Options Handled by dtck</a></li>
+      <li><a href="#Options-Not-Handled-by-dtck">Options Not Handled by dtck</a></li>
+    </ul>
+  </li>
+  <li><a href="#COPYRIGHT">COPYRIGHT</a></li>
+  <li><a href="#AUTHOR">AUTHOR</a></li>
+  <li><a href="#SEE-ALSO">SEE ALSO</a></li>
+</ul>
+
+<h1 id="NAME">NAME</h1>
+
+<p>dtck - Check the DNSSEC-Tools data files for sanity.</p>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<pre><code>  dtck [options] [dtck_config_file]</code></pre>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p><b>dtck</b> checks DNSSEC-Tools data files to determine if the entries are valid. <b>dtck</b> checks the validity of DNSSEC-Tools configuration files, <i>rollrec</i> files, and <i>keyrec</i> files. It does not perform the file checking itself, but runs checking programs specific to each type of data file.</p>
+
+<p>A <b>dtck</b> configuration file is consulted to determine the files to check. This file lists the DNSSEC-Tools data files and their types. If a <b>dtck</b> configuration file is not given on the command line, <b>dtck</b> will only check the DNSSEC-Tools configuration file. This is equivalent to running <b>dtconfchk</b> directly.</p>
+
+<h1 id="DTCK-CONFIGURATION-FILE">DTCK CONFIGURATION FILE</h1>
+
+<p>A <b>dtck</b> configuration file contains a list of the files to be checked by <b>dtck</b>. Except for comments, each line has the following format:</p>
+
+<pre><code>    keyword file directory</code></pre>
+
+<p><i>keyword</i> is one of &quot;config&quot;, &quot;rollrec&quot;, or &quot;keyrec&quot;. <i>file</i> is the pathname of the file to be checked. <i>directory</i> is the name of the directory that holds <i>file</i> and is optional.</p>
+
+<p>The <b>dtck</b> configuration file contains the following types of records:</p>
+
+<dl>
+
+<dt id="config"><b>config</b></dt>
+<dd>
+
+<p>These lines define the DNSSEC-Tools configuration files that will be checked. The <b>dtconfchk</b> program will be used to verify these files.</p>
+
+</dd>
+<dt id="rollrec"><b>rollrec</b></dt>
+<dd>
+
+<p>These lines define the <i>rollrec</i> files that will be checked. The <b>rollchk</b> program will be used to verify these files.</p>
+
+</dd>
+<dt id="keyrec"><b>keyrec</b></dt>
+<dd>
+
+<p>These lines define the <i>keyrec</i> files that will be checked. The <b>krfcheck</b> program will be used to verify these files.</p>
+
+</dd>
+<dt id="comments">comments</dt>
+<dd>
+
+<p>Any lines starting with an octothorpe (#) are comment lines and are ignored.</p>
+
+</dd>
+</dl>
+
+<h1 id="OPTIONS">OPTIONS</h1>
+
+<p><b>dtck</b> takes two types of options. Options of the first type are handled directly by <b>dtck</b>, controlling its output and processing. Options of the second type are passed to the file-checking programs and are not further handled by <b>dtck</b>.</p>
+
+<h2 id="Options-Handled-by-dtck">Options Handled by <b>dtck</b></h2>
+
+<dl>
+
+<dt id="defcon"><b>-defcon</b></dt>
+<dd>
+
+<p>This option directs <b>dtck</b> to add the default DNSSEC-Tools configuration file to the list of configuration files to be checked.</p>
+
+</dd>
+<dt id="list"><b>-list</b></dt>
+<dd>
+
+<p>The names of the files will be listed as they are checked.</p>
+
+</dd>
+<dt id="pretty"><b>-pretty</b></dt>
+<dd>
+
+<p>Clarifying output is added to the output from <b>dtck</b> and the file-checking programs.</p>
+
+</dd>
+<dt id="help"><b>-help</b></dt>
+<dd>
+
+<p>Display a usage message.</p>
+
+</dd>
+</dl>
+
+<h2 id="Options-Not-Handled-by-dtck">Options Not Handled by <b>dtck</b></h2>
+
+<dl>
+
+<dt id="count"><b>-count</b></dt>
+<dd>
+
+<p>The file-checking programs will display a final error count.</p>
+
+</dd>
+<dt id="quiet"><b>-quiet</b></dt>
+<dd>
+
+<p>No output will be given by the file-checking program.</p>
+
+</dd>
+<dt id="verbose"><b>-verbose</b></dt>
+<dd>
+
+<p>Verbose output will be given by the file-checking program.</p>
+
+</dd>
+<dt id="Version"><b>-Version</b></dt>
+<dd>
+
+<p>Displays the version information for <b>dtck</b> and the DNSSEC-Tools package.</p>
+
+</dd>
+</dl>
+
+<h1 id="COPYRIGHT">COPYRIGHT</h1>
+
+<p>Copyright 2007-2014 SPARTA, Inc. All rights reserved. See the COPYING file included with the DNSSEC-Tools package for details.</p>
+
+<h1 id="AUTHOR">AUTHOR</h1>
+
+<p>Wayne Morrison, tewok@tislabs.com</p>
+
+<h1 id="SEE-ALSO">SEE ALSO</h1>
+
+<p><b>dtconfchk(8)</b>, <b>krfcheck(8)</b>, <b>rollchk(8)</b></p>
+
+<p><b>dnssec-tools.conf(5)</b>, <b>keyrec(5)</b>, <b>rollrec(5)</b></p>
+
+
+</body>
+
+</html>
+
+

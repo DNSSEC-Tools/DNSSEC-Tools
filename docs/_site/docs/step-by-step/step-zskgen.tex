@@ -1,0 +1,42 @@
+
+\clearpage
+\subsection{Zone-Signing Key (ZSK) Generation}
+\label{genzsk}
+
+This section provides the steps required to generate a new Zey-Signing Key   
+(ZSK).  See Figure~\ref{fig:keygen}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\input{keygen-zsk}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Update the Key-Tags Table}
+
+Keep a record of the key-tags that currently refer to ZSKs.
+
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|}
+\hline
+{\bf Zone} &
+\multicolumn{4}{c|}{{\bf ZSK}} &
+\multicolumn{4}{c|}{{\bf KSK}} &
+{\bf Exp} \\
+\cline{2-9}
+
+ & Tag & Size & Creat & S & Tag & Size & Creat & S & \\
+\hline
+
+\underline{zone.name} & \underline{zsktag} & 512 & \underline{date} & & & & & & \\
+
+\hline
+\end{tabular}
+\end{center}
+
+Leave the status field (S) empty for now.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\input{keys-separation}
+

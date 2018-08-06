@@ -1,0 +1,167 @@
+<html>
+
+<head>
+<title>Owl Monitoring System -- Installation Manual -- Setting Up the Owl Monitoring System</title>
+</head>
+
+<body>
+
+<p>
+
+<table>
+<tr>
+<td>
+<img align=left src="owl-logo.jpg"><br>
+<td width=30>&nbsp;
+<td align=center valign=top>
+<br>
+<center><h2>Owl Monitoring System</h2></center>
+<center><h2>Installation Manual</h2></center>
+</tr>
+</table>
+
+<p>
+
+<!*****************************************************************************>
+
+<a name="0."></a>
+<h3>Setting Up the Owl Monitoring System</h3>
+
+<!--------------------------------------------------------------------------->
+
+The Owl Monitoring System uses timed Domain Name System (DNS) queries to
+monitor basic network functionality.  The system consists of a manager host
+and a set of sensor hosts.  The Owl sensors perform periodic DNS queries and
+report to the Owl manager the time taken for each query.  Over time, this
+shows the responsiveness of the DNS infrastructure.
+
+<p>
+
+The Owl Monitoring System was designed such that the Owl sensor hosts need
+not be under the same administrative control as the Owl manager host.  In
+fact, each sensor in a set of Owl sensors may be under administrative control
+of different organizations and still report to a single Owl manager.
+
+<p>
+
+An Owl sensor may provide its data to more than one Owl manager.  In such
+situations, the managers operate independently of each other and do not know
+of each other's existence.  Throughout the installation manuals, it will be
+assumed that an installation will have a single manager.  Special instructions
+for multiple-manager environments will be given where needed.
+
+<p>
+
+Contact between sensors and their manager may be initiated and performed by
+the sensor or the manager.  This is a configuration decision that must be made
+on a case by case basis.  The push or pull model may cover all of an Owl
+manager's sensors.  For example, a particular manager may initiate sensor data
+retrieval from all of its sensors.  Also, the push/pull model may be specific
+to each sensor, so a particular manager could retrieve data from one sensor
+but wait for another sensor to provide its data.
+
+<p>
+
+This document provides an operational overview of the Owl system, installation
+instructions for the Owl and supporting third-party software.  Configuration
+instructions for the Owl software are also provided, along with configuration
+information for the required third-party software.
+
+<p>
+
+<!----------------------------------------------------------------->
+
+<h3>How To Use This Manual</h3>
+
+<p>
+
+There are two installation manuals, one for the manager and one for the sensor.
+Sensor administrators only need to read the 
+<a href="install-sensor.html">Owl Sensor Installation Manual</a>.
+Manager administrators only need to read the 
+<a href="install-manager.html">Owl Manager Installation Manual</a>
+As you might expect, those who are administrators for both manager and sensor
+hosts must read both installation guides.
+
+<p>
+
+<center>
+<table>
+<tr>
+<td width="5%">&nbsp;
+<td width="35%"><a href="install-manager.html">Owl Manager Installation Manual</a>
+<td width="20%">&nbsp;
+<td width="35%"><a href="install-sensor.html">Owl Sensor Installation Manual</a>
+<td width="5%">&nbsp;
+</tr>
+</table>
+</center>
+
+<p>
+
+<!*****************************************************************************>
+
+<br><br>
+<hr width="70%">
+
+<p>
+
+<h3>Sponsors:</h3>
+
+<p>
+
+This work was implemented by the following organizations:
+
+<p>
+
+&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="http://www.parsons.com/markets/Pages/sparta.aspx">Parsons</a>
+
+<p>
+
+This work is funded in part by the following organizations:<br>
+
+<p>
+
+&nbsp;&nbsp;&nbsp;&nbsp;
+<a href="http://www.dhs.gov">U.S. Department of Homeland Security/Science & Technology (S&T)</a>
+
+<p>
+
+The Owl logo is copyright &copy; 2012 by Wayne Morrison (Wayne@WayneMorrison.com).
+All Rights Reserved.<br>
+This logo is used for the Owl Monitoring System by the DNSSEC-Tools Project
+(dnssec-tools.org) by permission.
+
+<p>
+
+<!-------------------------------------->
+
+<center>
+
+<hr width="70%">
+
+<p>
+
+<!-------------------------------------->
+<table width="100%">
+<tr>
+<td width="33%" align=left>
+&nbsp;
+<td width="33%" align=center>
+<a href="install-guide.html">Owl Monitoring System<br>Installation Manual</a>
+<td width="33%" align=right>
+&nbsp;
+</tr>
+</table>
+<p>
+<!-------------------------------------->
+
+<a href="http:www.dnssec-tools.org">DNSSEC Tools</a>
+
+</center>
+
+<p>
+
+</body>
+</html>

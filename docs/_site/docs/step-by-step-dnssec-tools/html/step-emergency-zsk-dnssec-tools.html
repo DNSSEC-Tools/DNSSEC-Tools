@@ -1,0 +1,56 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Emergency Current and Published ZSK Rollover Using
+        DNSSEC-Tools</title><meta name="generator" content="DocBook XSL Stylesheets V1.70.1"><link rel="start" href="index.html" title="Step-by-Step DNSSEC-Tools Operator Guidance Document"><link rel="up" href="step-emergency-zsk.html" title="Chapter 13. Emergency ZSK Rollover (Published and Current ZSK
+    Compromise)"><link rel="prev" href="step-emergency-zsk.html" title="Chapter 13. Emergency ZSK Rollover (Published and Current ZSK
+    Compromise)"><link rel="next" href="step-rollover-zsk-emergency-zsks.html" title="Manual Emergency Rollover of Current and Published ZSKs"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Emergency Current and Published ZSK Rollover Using
+        DNSSEC-Tools</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="step-emergency-zsk.html">Prev</a> </td><th width="60%" align="center">Chapter 13. Emergency ZSK Rollover (Published and Current ZSK
+    Compromise)</th><td width="20%" align="right"> <a accesskey="n" href="step-rollover-zsk-emergency-zsks.html">Next</a></td></tr></table><hr></div><div class="section" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="step-emergency-zsk-dnssec-tools"></a>Emergency Current and Published ZSK Rollover Using
+        DNSSEC-Tools</h2></div></div></div><p>The steps given below detail the steps that must be taken during
+        emergency ZSK rollover when using DNSSEC-Tools to assist in
+        rollover.</p><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="step-rollover-zsk-emergency-zsks-1"></a>Stop Automatic Zone Rollover</h3></div></div></div><p>The <span class="bold"><strong>rollerd</strong></span> command must
+            not be executing during this procedure.</p><table class="simplelist" border="0" summary="Simple list"><tr><td><span><strong class="command"># rollctl -halt</strong></span>
+                <strong class="userinput"><code>[ENTER]</code></strong></td></tr><tr><td><span><strong class="command">#</strong></span></td></tr></table></div><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="step-rollover-zsk-emergency-zsks-2"></a>Generate New Current and Published Keys</h3></div></div></div><p>Creating new Current and Published ZSKs may be done with a
+            single <span class="bold"><strong>zonesigner</strong></span>
+            execution.</p><table class="simplelist" border="0" summary="Simple list"><tr><td><span><strong class="command"># zonesigner -genzsk zone.name</strong></span>
+                <strong class="userinput"><code>[ENTER]</code></strong></td></tr><tr><td><span><strong class="command">#</strong></span></td></tr></table></div><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="step-rollover-zsk-emergency-zsks-3"></a>Fix the Keyrec File</h3></div></div></div><p>The <span class="bold"><strong>zonesigner</strong></span> command in
+            the previous step will have left the compromised zone's keyrec
+            file in an inconsistent state. Consequently, the keyrec file must
+            be edited to return it to a valid state.</p><p>The steps below should be followed to fix the keyrec file
+            for the Current ZSK keys.</p><div class="orderedlist"><ol type="1"><li><p>Find the name of the zone's keyrec file. This may be
+                    done with the following command:</p><table class="simplelist" border="0" summary="Simple list"><tr><td><span><strong class="command"># lsroll -keyrec -terse
+                        rollrec-file</strong></span>
+                        <strong class="userinput"><code>[ENTER]</code></strong></td></tr><tr><td><span><strong class="command">#</strong></span></td></tr></table></li><li><p>Find the name of the zone's Current ZSK signing set.
+                    Look for the <span class="emphasis"><em>zone</em></span> keyrec entry for
+                    the compromised zone, and find its
+                    <span class="emphasis"><em>zskcur</em></span> entry. This holds the name of
+                    the Current ZSK signing set.</p></li><li><p>Get the names of the keys in the Current ZSK signing
+                    set. Look for the <span class="emphasis"><em>set</em></span> keyrec entry
+                    for the Current ZSK signing set. The keys listed in that
+                    set's <span class="emphasis"><em>keys</em></span> entry are the ZSK keys in
+                    the Current ZSK signing set.</p></li><li><p>Edit the keyrec file and search for all
+                    <span class="emphasis"><em>key</em></span> keyrec entries with a
+                    <span class="emphasis"><em>keyrec_type</em></span> of "<span class="bold"><strong>zskcur</strong></span>". Any keys with this type
+                    that are not in the Current signing set should be given
+                    the type "<span class="bold"><strong>zskobs</strong></span>".</p></li></ol></div><p>The steps below should be followed to fix the keyrec file
+            for the Published KSK keys.</p><div class="orderedlist"><ol type="1"><li><p>Find the name of the zone's keyrec file. This may be
+                    done with the following command:</p><table class="simplelist" border="0" summary="Simple list"><tr><td><span><strong class="command"># lsroll -keyrec -terse
+                        rollrec-file</strong></span>
+                        <strong class="userinput"><code>[ENTER]</code></strong></td></tr><tr><td><span><strong class="command">#</strong></span></td></tr></table></li><li><p>Find the name of the zone's Published signing set.
+                    Look for the <span class="emphasis"><em>zone</em></span> keyrec entry for
+                    the compromised zone, and find its
+                    <span class="emphasis"><em>zskpub</em></span> entry. This holds the name of
+                    the Published ZSK signing set.</p></li><li><p>Get the names of the keys in the Published signing
+                    set. Look for the <span class="emphasis"><em>set</em></span> keyrec entry
+                    for the Published ZSK signing set. The keys listed in that
+                    set's <span class="emphasis"><em>keys</em></span> entry are the ZSK keys in
+                    the Published ZSK signing set.</p></li><li><p>Edit the keyrec file and search for all
+                    <span class="emphasis"><em>key</em></span> keyrec entries with a
+                    <span class="emphasis"><em>keyrec_type</em></span> of "<span class="bold"><strong>zskpub</strong></span>". Any keys with this type
+                    that are not in the Published signing set should be given
+                    the type "<span class="bold"><strong>zskobs</strong></span>".</p></li></ol></div></div><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="step-rollover-zsk-emergency-zsks-4"></a>Reload the Zone</h3></div></div></div><p>The <span><strong class="command">rndc</strong></span> will reload the name server
+            configuration files and the zone contents. The name server process
+            is assumed to be already running.</p><table class="simplelist" border="0" summary="Simple list"><tr><td><span><strong class="command"># rndc reload zone-name</strong></span>
+                <strong class="userinput"><code>[ENTER]</code></strong></td></tr><tr><td><span><strong class="command">#</strong></span></td></tr></table></div><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="step-rollover-zsk-emergency-zsks-5"></a>Dispose of the Old Zone Key</h3></div></div></div><p>Delete the old ZSK's <span class="emphasis"><em>.private</em></span> and
+            <span class="emphasis"><em>.key</em></span> files.</p></div><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id941301"></a>Restart Automatic Zone Rollover</h3></div></div></div><p>Automatic rollover may be restarted by executing the
+            <span class="bold"><strong>rollerd</strong></span> command. It should be
+            given the same options as when it was originally started.</p></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="step-emergency-zsk.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="step-emergency-zsk.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="step-rollover-zsk-emergency-zsks.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 13. Emergency ZSK Rollover (Published and Current ZSK
+    Compromise) </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Manual Emergency Rollover of Current and Published ZSKs</td></tr></table></div></body></html>

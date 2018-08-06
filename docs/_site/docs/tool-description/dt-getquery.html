@@ -1,0 +1,88 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title></title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:root@localhost" />
+</head>
+
+<body>
+
+
+
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
+  <li><a href="#OPTIONS">OPTIONS</a></li>
+  <li><a href="#PRE-REQUISITES">PRE-REQUISITES</a></li>
+  <li><a href="#COPYRIGHT">COPYRIGHT</a></li>
+  <li><a href="#AUTHORS">AUTHORS</a></li>
+  <li><a href="#SEE-ALSO">SEE ALSO</a></li>
+</ul>
+
+<h1 id="NAME">NAME</h1>
+
+<p>dt-getquery - command-line test program for the <i>val_res_query()</i> function</p>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<pre><code>   dt-getquery [options] name </code></pre>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p>This utility is a command-line wrapper around the <i>val_res_query()</i> function. It invokes the <i>val_res_query()</i> function with the given command-line arguments and displays the returned data as a DNS-style response. It also displays the validation status value for the records returned for the query.</p>
+
+<p>The exit status for this program is 1 if the answer received is trusted, 2 if the answer received is validated, and -1 for an error. The program returns 0 if the result was neither trusted nor validated. The trusted and validated status values are obtained using the <i>val_istrusted()</i> and <i>val_isvalidated()</i> functions from <i>libval(3)</i>.</p>
+
+<h1 id="OPTIONS">OPTIONS</h1>
+
+<dl>
+
+<dt id="t-type">-t &lt;type&gt;</dt>
+<dd>
+
+<p>Perform the query for the given DNS record type</p>
+
+</dd>
+<dt id="o---output-debug-level:dest-type-:dest-options">-o, --output=&lt;debug-level&gt;:&lt;dest-type&gt;[:&lt;dest-options&gt;]</dt>
+<dd>
+
+<p>&lt;debug-level&gt; is 1-7, corresponding to syslog levels ALERT-DEBUG &lt;dest-type&gt; is one of file, net, syslog, stderr, stdout &lt;dest-options&gt; depends on &lt;dest-type&gt; file:&lt;file-name&gt; (opened in append mode) net[:&lt;host-name&gt;:&lt;host-port&gt;] (127.0.0.1:1053 syslog[:facility] (0-23 (default 1 USER))</p>
+
+</dd>
+<dt id="h---help">-h, --help</dt>
+<dd>
+
+<p>Display the help and exit.</p>
+
+</dd>
+</dl>
+
+<h1 id="PRE-REQUISITES">PRE-REQUISITES</h1>
+
+<p>libval</p>
+
+<h1 id="COPYRIGHT">COPYRIGHT</h1>
+
+<p>Copyright 2005-2013 SPARTA, Inc. All rights reserved. See the COPYING file included with the DNSSEC-Tools package for details.</p>
+
+<h1 id="AUTHORS">AUTHORS</h1>
+
+<p>Abhijit Hayatnagarkar, Suresh Krishnaswamy, Robert Story, Michael Baer</p>
+
+<h1 id="SEE-ALSO">SEE ALSO</h1>
+
+<p><b>val_res_query(3)</b></p>
+
+<p><b>libval(3)</b></p>
+
+<p>http://www.dnssec-tools.org</p>
+
+
+</body>
+
+</html>
+
+

@@ -1,0 +1,1402 @@
+
+
+
+
+DNS Extensions                                           S. Krishnaswamy
+Internet-Draft                                          A. Hayatnagarkar
+Expires: December 26, 2006                                  SPARTA, Inc.
+                                                           June 24, 2006
+
+
+                          DNSSEC Validator API
+              draft-hayatnagarkar-dnsext-validator-api-01
+
+Status of this Memo
+
+   By submitting this Internet-Draft, each author represents that any
+   applicable patent or other IPR claims of which he or she is aware
+   have been or will be disclosed, and any of which he or she becomes
+   aware will be disclosed, in accordance with Section 6 of BCP 79.
+
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF), its areas, and its working groups.  Note that
+   other groups may also distribute working documents as Internet-
+   Drafts.
+
+   Internet-Drafts are draft documents valid for a maximum of six months
+   and may be updated, replaced, or obsoleted by other documents at any
+   time.  It is inappropriate to use Internet-Drafts as reference
+   material or to cite them other than as "work in progress."
+
+   The list of current Internet-Drafts can be accessed at
+   http://www.ietf.org/ietf/1id-abstracts.txt.
+
+   The list of Internet-Draft Shadow Directories can be accessed at
+   http://www.ietf.org/shadow.html.
+
+   This Internet-Draft will expire on December 26, 2006.
+
+Copyright Notice
+
+   Copyright (C) The Internet Society (2006).
+
+Abstract
+
+   The DNS Security Extensions (DNSSEC) provide origin authentication
+   and integrity of DNS data.  However, the current resolver Application
+   Programming Interface (API) does not allow a security-aware resolver
+   to communicate detailed results of DNSSEC processing back to the
+   application.  This document describes an API between applications and
+   a validating security-aware stub resolver that allows applications to
+   control the validation process and obtain results of DNSSEC
+   processing.
+
+
+
+Krishnaswamy & Hayatnagarkar  Expires December 26, 2006         [Page 1]
+
+Internet-Draft            DNSSEC Validator API                 June 2006
+
+
+Table of Contents
+
+   1.  Introduction . . . . . . . . . . . . . . . . . . . . . . . . .  3
+   2.  Terminology  . . . . . . . . . . . . . . . . . . . . . . . . .  3
+   3.  High-level Validator API . . . . . . . . . . . . . . . . . . .  4
+     3.1.  val_gethostbyname, val_gethostbyname_r,
+           val_gethostbyaddr, val_gethostbyaddr_r . . . . . . . . . .  5
+     3.2.  val_getaddrinfo, val_getnameinfo, val_freeaddrinfo . . . .  7
+     3.3.  val_query, val_res_query . . . . . . . . . . . . . . . . .  8
+     3.4.  p_val_error  . . . . . . . . . . . . . . . . . . . . . . .  9
+   4.  Low-level Validator API  . . . . . . . . . . . . . . . . . . . 10
+     4.1.  val_resolve_and_check, val_free_result . . . . . . . . . . 10
+     4.2.  Assertion Status Codes . . . . . . . . . . . . . . . . . . 13
+   5.  Context Management and Validator Policy API  . . . . . . . . . 17
+     5.1.  val_create_context, val_free_context . . . . . . . . . . . 18
+     5.2.  val_switch_policy_scope  . . . . . . . . . . . . . . . . . 18
+     5.3.  val_get_scopes_within_context  . . . . . . . . . . . . . . 18
+     5.4.  val_get_scope_definition, val_set_scope_definition . . . . 19
+   6.  Validation Status Codes and Return Values  . . . . . . . . . . 19
+     6.1.  Return Values  . . . . . . . . . . . . . . . . . . . . . . 19
+     6.2.  Validation Status Codes  . . . . . . . . . . . . . . . . . 20
+   7.  IANA Considerations  . . . . . . . . . . . . . . . . . . . . . 21
+   8.  Security Considerations  . . . . . . . . . . . . . . . . . . . 21
+   9.  Acknowledgements . . . . . . . . . . . . . . . . . . . . . . . 22
+   10. References . . . . . . . . . . . . . . . . . . . . . . . . . . 22
+     10.1. Normative References . . . . . . . . . . . . . . . . . . . 22
+     10.2. Informative References . . . . . . . . . . . . . . . . . . 23
+   Authors' Addresses . . . . . . . . . . . . . . . . . . . . . . . . 24
+   Intellectual Property and Copyright Statements . . . . . . . . . . 25
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Krishnaswamy & Hayatnagarkar  Expires December 26, 2006         [Page 2]
+
+Internet-Draft            DNSSEC Validator API                 June 2006
+
+
+1.  Introduction
+
+   The DNS Security Extensions (RFC 4033 [2], RFC 4034 [3], RFC 4035
+   [4]) allow resolvers to test the origin authenticity and integrity of
+   data returned by the DNS.  A validator, or more formally, a
+   validating security-aware stub resolver, is a piece of software that
+   performs these tests by checking the cryptographic signatures that
+   cover DNS records and by verifying a sequence of such records from a
+   trust anchor [2] to these returned records.  This document presents
+   an API between an application and a validator.  The API functions
+   provide a convenient way for applications to control the DNSSEC
+   validation process, and to obtain and use results of the validation
+   process to control their behavior.
+
+   The API can be broadly divided into three groups: the high-Level
+   validator API, the low-Level validator API and the context management
+   API.
+
+   The high-level validator API is designed for ease of use and mirrors
+   existing DNS-related functions.  This API is best suited for existing
+   applications that already use legacy DNS-related functions such as
+   gethostbyname(), getaddrinfo() and res_query(), or for applications
+   that have no requirement for detailed validation status information.
+
+   The low-level validator API gives more control over the validation
+   process and allows detailed inspection of validation status for each
+   element of the authentication chain [2].
+
+   Results returned by the validator can be guided by local policy
+   decisions.  The context management API provides functions for
+   applications to control which policies are used during DNSSEC
+   validation.
+
+   The range of functions provided in this API allows for the creation
+   of applications that are either only interested in basic results such
+   as "validated" or "not-validated", or more sophisticated applications
+   that can look for specific errors as a sign of a network abnormality
+   or attack.
+
+   Section 3, Section 4, and Section 5 describe these interfaces in
+   greater detail.
+
+
+2.  Terminology
+
+   Some of the terminology used in this specification are defined below:
+
+
+
+
+
+Krishnaswamy & Hayatnagarkar  Expires December 26, 2006         [Page 3]
+
+Internet-Draft            DNSSEC Validator API                 June 2006
+
+
+
+   validator policy: a set of configuration parameters for the validator
+      that can influence the eventual outcome of the validation process.
+
+   policy attribute:  a particular configurable component of the
+      validator policy; for instance a trust anchor setting or an
+      untrusted algorithm definition.
+
+   validator context: an opaque structure encapsulating the validator
+      policy.  The validator context is the application's handle to the
+      validator policy.
+
+   base policy: the default policy definition that is associated with a
+      validator context.  The base policy can be different for different
+      validator contexts.
+
+   policy scope:  a customization within the base policy to address the
+      requirements of a particular operating scenario.  Policy scopes
+      are useful when it becomes necessary to override certain policy
+      attributes in specific environments.  As an example, an
+      application may require different validator policies for a web
+      browser and a mail client.  In such cases the application may
+      define a common base policy for the system and have overrides for
+      specific scopes: one for the web browser and one for the mail
+      client.
+
+
+3.  High-level Validator API
+
+   The high-level validator API provides DNSSEC-aware substitutes for
+   commonly used DNS functions such as gethostbyname(), getaddrinfo(),
+   and res_query().  This API provides an easy path for applications
+   already using these legacy functions to transition towards becoming
+   DNSSEC-aware.
+
+   The ctx parameter of type val_context_t* used in the following
+   functions points to the validator context.  An application may
+   explicitly create a context using the val_create_context() function
+   described in Section 5, or allow the API to create one internally by
+   specifying the value of NULL for the ctx parameter.
+
+
+
+
+
+
+
+
+
+
+
+Krishnaswamy & Hayatnagarkar  Expires December 26, 2006         [Page 4]
+
+Internet-Draft            DNSSEC Validator API                 June 2006
+
+
+3.1.  val_gethostbyname, val_gethostbyname_r, val_gethostbyaddr,
+      val_gethostbyaddr_r
+
+   struct hostent *val_gethostbyname( const val_context_t *ctx,
+                                      const char          *name,
+                                      val_status_t        *val_status );
+
+   int val_gethostbyname_r( const val_context_t *ctx,
+                            const char          *name,
+                            struct hostent      *ret,
+                            char                *buf,
+                            size_t              buflen,
+                            struct hostent      **result,
+                            int                 *h_errnop,
+                            val_status_t        *val_status );
+
+   struct hostent *val_gethostbyaddr( const val_context_t *ctx,
+                                      const char          *addr,
+                                      int                 len,
+                                      int                 type,
+                                      val_status_t        *val_status );
+
+   int val_gethostbyaddr_r( const val_context_t *ctx,
+                            const char          *addr,
+                            int                 len,
+                            int                 type,
+                            struct hostent      *ret,
+                            char                *buf,
+                            int                 buflen,
+                            struct hostent      **result,
+                            int                 *h_errnop,
+                            val_status_t        *val_status );
+
+   The val_gethostbyname() and val_gethostbyname_r() functions perform
+   name-to-address translation while the val_gethostbyaddr() and
+   val_gethostbyaddr_r() functions perform the address-to-name
+   translation.  These functions are DNSSEC-aware versions of the
+   gethostbyname(), gethostbyname_r(), gethostbyaddr() and
+   gethostbyaddr_r() functions and can be used by applications to get
+   the validation status of DNS queries performed during the name-to-
+   address or address-to-name translations.  The parameters to the above
+   functions closely mirror the legacy functions and must be only used
+   when replacing such functions with their DNSSEC-aware counterparts.
+   For applications that do not already use these older functions it is
+   instead recommended to use functions from Section 3.2 to perform
+   address-to-name and name-to-address translations.
+
+   The val_gethostbyname() function returns a pointer to a structure of
+
+
+
+Krishnaswamy & Hayatnagarkar  Expires December 26, 2006         [Page 5]
+
+Internet-Draft            DNSSEC Validator API                 June 2006
+
+
+   type hostent for the host name provided in the name parameter.  The
+   name can also be an IPv4 address in standard dot notation, or an IPv6
+   address in colon (and possibly dot) notation.  If name is an IPv4 or
+   IPv6 address, no lookup is performed and val_gethostbyname() simply
+   copies name into the h_name field and its struct in-addr equivalent
+   into the h_addr_list[0] of the returned hostnet structure.
+
+   The val_gethostbyaddr() function returns a pointer to a structure of
+   type hostent for the given host address addr whose length is given by
+   the len parameter and address type is given by the type parameter.
+   Valid address types are AF_INET and AF_INET6.
+
+   As with gethostbyname() and gethostbyaddr(), the val_gethostbyname()
+   and val_gethostbyaddr() functions set the value of the global h_errno
+   variable.  These functions return a pointer to a struct hostent value
+   on success, and NULL on error.  Their return value may point to
+   static data, and it may be overwritten by subsequent calls.  Copying
+   the struct hostent does not suffice since it contains pointers - a
+   deep copy is required.
+
+   The val_gethostbyname_r() and val_gethostbyaddr_r() functions are
+   reentrant and thread-safe versions of the val_gethostbyname() and
+   val_gethostbyaddr() functions.  These functions return 0 on success,
+   and a non-zero value on error.  The result of the call is stored in
+   the ret parameter.  These functions do not modify the global h_errno
+   variable, but return the error numbers in the h_errnop parameter.
+   After the call, the value of result will be NULL on error or point to
+   the ret paramter on success.  Auxiliary data is stored in the buffer
+   buf of length buflen.  If the buffer is too small, these functions
+   will return the error ERANGE.
+
+   The val_status parameter, which has the type val_status_t, contains
+   the status of DNSSEC validation.  Possible values for val_status_t
+   are defined in Section 6.2.  A validation status of VAL_SUCCESS will
+   be returned only if both the address and canonical name(s) within the
+   hostent structure, if any, have been validated successfully.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Krishnaswamy & Hayatnagarkar  Expires December 26, 2006         [Page 6]
+
+Internet-Draft            DNSSEC Validator API                 June 2006
+
+
+3.2.  val_getaddrinfo, val_getnameinfo, val_freeaddrinfo
+
+   int val_getaddrinfo( const val_context_t   *ctx,
+                        const char            *nodename,
+                        const char            *servname,
+                        const struct addrinfo *hints,
+                        struct val_addrinfo   **res );
+
+   int val_getnameinfo( const val_context_t   *ctx,
+                        const struct sockaddr *sa,
+                        socklen_t             salen,
+                        char                  *host,
+                        size_t                hostlen,
+                        char                  *serv,
+                        size_t                servlen,
+                        int                   flags,
+                        val_status_t          *val_status );
+
+   void val_freeaddrinfo( struct val_addrinfo *ainfo );
+
+
+   struct val_addrinfo {
+              int                 ai_flags;
+              int                 ai_family;
+              int                 ai_socktype;
+              int                 ai_protocol;
+              size_t              ai_addrlen;
+              struct sockaddr     *ai_addr;
+              char                *ai_canonname;
+              struct val_addrinfo *ai_next;
+              val_status_t        ai_val_status;
+   }
+
+   The val_getaddrinfo() function returns the address and service
+   information for the specified domain name and service.  It is a
+   DNSSEC-aware version of the getaddrinfo() function (RFC 3493 [1]).
+   This function supports both IPv4 and IPv6 addresses.  It returns a
+   pointer to a value of type val_addrinfo in the value of the res field
+   on success, and NULL on error.  The val_addrinfo structure is an
+   augmented form of the addrinfo structure.  It contains an additional
+   ai_val_status field that represents the status of DNSSEC validation
+   for that particular answer.  The memory for the value of res is
+   dynamically allocated by this function.  The caller should release it
+   after use with the val_freeaddrinfo() function.  The syntax and
+   semantics of other parameters in val_getaddrinfo() are identical to
+   that specified in [1].
+
+   The val_getnameinfo() function performs an address-to-name
+
+
+
+Krishnaswamy & Hayatnagarkar  Expires December 26, 2006         [Page 7]
+
+Internet-Draft            DNSSEC Validator API                 June 2006
+
+
+   translation in a protocol independent manner.  It is a DNSSEC-aware
+   version of the getnameinfo() function (RFC 3493 [1]).  In addition to
+   the values returned by the getnameinfo() function, it returns the
+   DNSSEC validation status via the val_status parameter.  The syntax
+   and semantics of other parameters in val_getnameinfo() are identical
+   to that specified in [1].
+
+   val_status will contain a validation status of VAL_SUCCESS only if
+   both the address and canonical name within the val_addrinfo
+   structure, if present, have been validated successfully.  The
+   validation status value can be displayed in a human-understandable
+   format using the p_val_error() function as described in Section 3.4.
+
+   The val_getaddrinfo() and val_getnameinfo() functions return 0 on
+   success and a non-zero value on error.
+
+3.3.  val_query, val_res_query
+
+   int val_query( const val_context_t *ctx,
+                  const char          *domain_name,
+                  const u_int16_t     class,
+                  const u_int16_t     type,
+                  const u_int8_t      flags,
+                  struct val_response **resp);
+
+   int val_free_response(struct val_response *resp);
+
+   int val_res_query(const val_context_t *ctx,
+           const char *domain_name, int class, int type,
+           u_char *answer, int anslen, val_status_t *val_status);
+
+   struct val_response {
+           unsigned char       *vr_response;
+           int                 vr_length;
+           val_status_t        vr_val_status;
+           struct val_response *vr_next;
+   };
+
+   The val_query() and val_res_query() functions query the name server
+   for the fully qualified domain name present in the domain_name field
+   of the given class and type.  In addition to the answers to the
+   query, they give the status of DNSSEC validation.  They are intended
+   as DNSSEC-aware replacements for the res_query() function.
+
+   val_query() is provided to return the individual validation status
+   values for multiple RRsets returned in response to a query.  Multiple
+   RRsets may be returned if the query is for a type of ANY or when a
+   proof of non-existence is returned, in which case, RRsets of type
+
+
+
+Krishnaswamy & Hayatnagarkar  Expires December 26, 2006         [Page 8]
+
+Internet-Draft            DNSSEC Validator API                 June 2006
+
+
+   NSEC and SOA may also be returned.
+
+   The val_query() function returns 0 on success and a non-zero error
+   code on failure.  When a success value is returned, the memory
+   pointed to by resp contains a linked-list of responses returned by
+   the validator.  The memory for the value of resp is internally
+   allocated and must be released after a successful invocation of
+   val_query() using the val_free_response() function.
+
+   By default, each val_response structure in the linked-list within
+   resp holds a single RRset response.  The format of the vr_response
+   field within the val_response structure is similar to the format of
+   the answer returned by res_query() and is of length vr_length.  The
+   vr_val_status field contains the status of DNSSEC validation for that
+   particular RRset and may be displayed in a human-understandable
+   format using the p_val_error() function as described in Section 3.4.
+   Elements within the resp linked-list may be accessed by traversing
+   the list using the vr_next field.
+
+   The flags parameter controls the scope of validation and the output
+   format.  At present only one flag is defined: VAL_QUERY_MERGE_RRSETS.
+   When this flag is specified, all RRsets in the answer are merged into
+   a single response and returned in the first (and only) element of the
+   resp linked list.  The vr_response field of this element will have a
+   format similar to the answer returned by res_query().  The validation
+   status will be VAL_SUCCESS only if all the individual RRsets have
+   been successfully validated.  If this flag is used and a value other
+   than VAL_SUCCESS is returned with multiple RRsets in the answer, it
+   will not be possible to know which RRset resulted in the error
+   status.
+
+   The val_res_query() function is semantically closer to the
+   res_query(3) function than val_query().  It internally invokes the
+   val_query() function supplying it with the proper set of arguments
+   and returning the final response in the answer field.  The number of
+   bytes available in the answer field is returned in the anslen field.
+   The val_res_query() function returns the value of anslen on success
+   and -1 on failure.
+
+3.4.  p_val_error
+
+   char *p_val_error(val_status_t err);
+
+   The p_val_error() function can be used to display the validation
+   status information contained in the parameter with type val_status_t
+   in a human-understandable format.  The returned values are
+   essentially string representations of the definitions given in
+   Section 6.2.
+
+
+
+Krishnaswamy & Hayatnagarkar  Expires December 26, 2006         [Page 9]
+
+Internet-Draft            DNSSEC Validator API                 June 2006
+
+
+4.  Low-level Validator API
+
+   The low-level validator API provides the application with greater
+   control and visibility into the validation process.  The functions
+   and data structures defined in the low-level validator API are
+   summarized below.
+
+4.1.  val_resolve_and_check, val_free_result
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Krishnaswamy & Hayatnagarkar  Expires December 26, 2006        [Page 10]
+
+Internet-Draft            DNSSEC Validator API                 June 2006
+
+
+   int val_resolve_and_check( const val_context_t        *context,
+                              const char                 *domain_name,
+                              const u_int16_t            class,
+                              const u_int16_t            type,
+                              const u_int8_t             flags,
+                              struct val_result_chain    **results);
+
+   void val_free_result( struct val_result_chain *results );
+
+   struct val_result_chain {
+       val_status_t               val_rc_status;
+       struct val_authentication_chain *val_rc_trust;
+       struct val_result_chain    *val_rc_next;
+   };
+
+   struct val_authentication_chain {
+       val_astatus_t              val_ac_status;
+       struct val_rrset           *val_ac_rrset;
+       struct val_authentication_chain *val_ac_trust;
+       struct val_authentication_chain *val_ac_rrset_next;
+   };
+
+   struct val_rrset {
+       u_int8_t  *val_msg_header;
+       u_int16_t val_msg_headerlen;
+       u_int8_t  *val_queryset_data;
+       u_int16_t val_queryset_datalen;
+       u_int8_t  *val_rrset_name_n;
+       u_int16_t val_rrset_class_h;
+       u_int16_t val_rrset_type_h;
+       u_int32_t val_rrset_ttl_h;
+       u_int8_t  val_rrset_section;
+       struct rr_rec *val_rrset_data;
+       struct rr_rec *val_rrset_sig;
+   };
+
+   struct rr_rec {
+       u_int16_t       rr_rdata_length_h;
+       u_int8_t        *rr_rdata;
+       val_astatus     rr_status;
+       struct rr_rec   *rr_next;
+   };
+
+   char *p_as_error(val_astatus_t err);
+
+   The val_resolve_and_check() function queries a set of name servers
+   for the <domain_name, class, type> tuple and then verifies and
+   validates the responses received.  The verification step checks
+
+
+
+Krishnaswamy & Hayatnagarkar  Expires December 26, 2006        [Page 11]
+
+Internet-Draft            DNSSEC Validator API                 June 2006
+
+
+   RRSIGs and the validation step performs verification down the
+   authentication chain from a trust anchor.  All the information
+   necessary for inspecting the authentication chain is available
+   through the results parameter.  The context parameter points to the
+   validator context.  An application may explicitly create a context
+   using the val_create_context() function described in Section 5, or
+   allow the validator to create one internally by specifying the value
+   of NULL for this parameter.  The flags field is currently unused.
+
+   val_resolve_and_check() returns 0 on success and an error code from
+   Section 6.1 on failure.  The val_resolve_and_check() function
+   internally allocates memory for the value of the result parameter,
+   which must be released after a successful call to this function using
+   the val_free_result() function.
+
+   Answers to the query are returned in results, which is a linked-list
+   of val_result_chain structures.  Each element in the linked-list
+   corresponds to a distinct RRset.  Multiple RRs within the RRset are
+   all part of the same answer.  Multiple answers are possible when the
+   query type is ANY or when a proof of non-existence is returned, in
+   which case RRsets of type NSEC and SOA may also be returned.  The
+   val_rc_next field can be used to iterate through the list of all
+   results returned by the validator.  The consolidated validation
+   status value for an RRset in the DNS response based on the individual
+   status values for all components in the authentication chain is
+   stored in the val_rc_status field, which is of type val_status_t.
+   Possible values for this type are listed in Section 6.2 and can be
+   displayed in a human-understandable format using the p_val_error()
+   function as described in Section 3.4.  Members of the authentication
+   chain sequence are encapsulated in the val_authentication_chain
+   structure, which provides greater detail about the validation status
+   for each component in the chain.  The val_rc_trust field in the
+   val_result_chain structure points to the first element in the
+   inverted authentication chain sequence.
+
+   Within the val_authentication_chain structure, the val_ac_status
+   field returns the validation status for the specified RRset.
+   Possible values for this field are defined in Section 4.2.  These
+   values can be displayed in a human-understandable format using the
+   p_as_error() function.  The val_ac_rrset_next field points to the
+   next RRset within the set of responses returned for a query.  The
+   val_ac_trust field points to the next element in the inverted
+   authentication chain.  For a element with type DNSKEY, this would
+   correspond to a DS record in the parent zone and for a DS record this
+   would correspond to the DNSKEY in the current zone.  Its value is
+   NULL when the current element in the linked list points to a valid
+   trust anchor or in case of an error when the next node in the
+   authentication chain cannot be constructed.  The val_ac_status field
+
+
+
+Krishnaswamy & Hayatnagarkar  Expires December 26, 2006        [Page 12]
+
+Internet-Draft            DNSSEC Validator API                 June 2006
+
+
+   can be used to differentiate between these two cases.
+
+   The val_ac_rrset field in the val_authentication_chain structure
+   contains the actual RRset data.  The information stored in this
+   structure includes the header of the DNS response in which the RRset
+   was received (in the val_msg_header field with length given by the
+   val_msg_headerlen field), the query section of the DNS response in
+   which the RRset was received (in the val_queryset_data field with
+   length given by the val_queryset_datalen field), and the DNS response
+   "envelope" comprising of the name, class, type and time-to-live tuple
+   (in the val_rrset_name_n, val_rrset_class_h, val_rrset_type_h and
+   val_rrset_ttl_h fields respectively).
+
+   The response RDATA is stored within val_rrset_data.  Any RRSIGs that
+   are applicable to the response RDATA are stored within val_rrset_sig.
+   Both of these variables are of type rr_rec, which is essentially a
+   list of name-value pairs corresponding to each resource-record within
+   the RRset.  Members of the val_rrset_sig linked list also have an
+   rr_status field which indicates whether the signature verified
+   succesfully over the corresponding RRset or not.  Although rr_status
+   is of type val_astatus_t, this field only takes on a subset of status
+   values defined in Section 4.2), specifically those pertaining to
+   signature verification.
+
+   The section where the RRset appears in the DNS response is saved in
+   the val_rrset_section field within the val_rrset structure and may
+   contain one of the following values,
+
+
+   VAL_FROM_ANS: returned if the RRset was present in the answer section
+      of the DNS response.
+
+   VAL_FROM_AUT: returned if the RRset was present in the authority
+      section of the DNS response.
+
+   VAL_FROM_ADD: returned if the RRset was present in the additional
+      section of the DNS response.
+
+4.2.  Assertion Status Codes
+
+   The verification status value stored in the val_ac_status member of
+   the val_authentication_chain structure can have one of the following
+   values:
+
+
+
+
+
+
+
+
+Krishnaswamy & Hayatnagarkar  Expires December 26, 2006        [Page 13]
+
+Internet-Draft            DNSSEC Validator API                 June 2006
+
+
+
+   VAL_A_DATA_MISSING: returned if there was no data returned for a
+      query and the DNS did not indicate an error.
+
+   VAL_A_RRSIG_MISSING: returned if RRSIG data could not be retrieved
+      for a resource record.
+
+   VAL_A_DNSKEY_MISSING: returned if the DNSKEY for an RRSIG covering a
+      resource record was not available.
+
+   VAL_A_DS_MISSING: returned if the DS record covering a DNSKEY record
+      was not available.
+
+   VAL_A_NO_TRUST_ANCHOR: returned if there was no trust anchor
+      configured for a given authentication chain.
+
+   VAL_A_UNTRUSTED_ZONE: returned if local policy defines a given zone
+      to be untrusted.
+
+   VAL_A_IRRELEVANT_PROOF: returned if the proof of nonexistence
+      returned for a query is ambiguous.
+
+   VAL_A_DNSSEC_VERSION_ERROR: returned if the DNSSEC version is
+      unrecognized.
+
+   VAL_A_TOO_MANY_LINKS: returned if local policy identifies a given
+      authentication chain to be too long.
+
+   VAL_A_UNKNOWN_DNSKEY_PROTO: returned if the DNSKEY protocol number is
+      unrecognized.
+
+   VAL_A_DNSKEY_NOMATCH: returned if an RRSIG was created by a DNSKEY
+      that does not exist in the apex keyset.
+
+   VAL_A_WRONG_LABEL_COUNT: returned if the number of labels on the
+      signature is greater than the the count given in the RRSIG RDATA.
+
+   VAL_A_SECURITY_LAME: returned if an was RRSIG created with a key that
+      does not exist in the parent DS record set.
+
+   VAL_A_NOT_A_ZONE_KEY: returned if the key used to verify the RRSIG is
+      not valid DNSKEY.
+
+   VAL_A_RRSIG_NOTYETACTIVE: returned if the RRSIG's inception time is
+      in the future.
+
+
+
+
+
+
+Krishnaswamy & Hayatnagarkar  Expires December 26, 2006        [Page 14]
+
+Internet-Draft            DNSSEC Validator API                 June 2006
+
+
+
+   VAL_A_RRSIG_EXPIRED: returned if the RRSIG has expired.
+
+   VAL_A_ALGO_NOT_SUPPORTED: returned if the algorithm in the DNSKEY,
+      RRSIG or DS resource record is not supported.
+
+   VAL_A_UNKNOWN_ALGO: returned if the DNSKEY, RRSIG or DS algorithm is
+      unknown.
+
+   VAL_A_RRSIG_VERIFIED: returned if the RRSIG verified successfully.
+
+   VAL_A_RRSIG_VERIFY_FAILED: returned if the RRSIG did not verify.
+
+   VAL_A_NOT_VERIFIED: returned if different RRSIGs covering the same
+      resource record failed for different reasons.
+
+   VAL_A_KEY_TOO_LARGE: returned if local policy has identified the key
+      size as being too large.
+
+   VAL_A_KEY_TOO_SMALL: returned if local policy has identified the key
+      size as being too small.
+
+   VAL_A_KEY_NOT_AUTHORIZED: returned if local policy has identified the
+      key to be unauthorized for validation.
+
+   VAL_A_ALGO_REFUSED: returned if the algorithm in the DNSKEY, RRSIG or
+      DS is not allowed as per local policy.
+
+   VAL_A_CLOCK_SKEW: returned if the signature over the resource record
+      could only be verified after clock skew is taken into account
+
+   VAL_A_DUPLICATE_KEYTAG: returned if two different DNSKEYs in a zone
+      have the same keytag.
+
+   VAL_A_NO_PREFERRED_SEP: returned if there is no DNSKEY in the parent
+      DS set that local policy permits the validator to build its
+      authentication chain from.
+
+   VAL_A_WRONG_RRSIG_OWNER: returned if the RRSIG and the data that it
+      purportedly covers have differing notions of owner name
+
+   VAL_A_RRSIG_ALGO_MISMATCH: returned if the DNSKEY and RRSIG pair have
+      a mismatch in their algorithm.
+
+
+
+
+
+
+
+
+Krishnaswamy & Hayatnagarkar  Expires December 26, 2006        [Page 15]
+
+Internet-Draft            DNSSEC Validator API                 June 2006
+
+
+   VAL_A_KEYTAG_MISMATCH: returned if the DNSKEY and RRSIG pair have a
+      mismatch in their key tags
+
+   VAL_A_VERIFIED: returned if at least one RRSIG covering a resource
+      record had a status of VAL_A_RRSIG_VERIFIED.
+
+   VAL_A_LOCAL_ANSWER: returned if the answer was obtained locally (for
+      example, a file such as /etc/hosts).
+
+   VAL_A_TRUST_KEY: returned if a given DNSKEY or a DS record has been
+      locally defined to be a trust anchor.
+
+   VAL_A_TRUST_ZONE: returned if local policy defines a given zone to be
+      trusted.
+
+   VAL_A_BARE_RRSIG: returned if the response was for a query of type
+      RRSIG.  RRSIGs contain the cryptographic signatures for other DNS
+      data and cannot themselves be validated.
+
+   Resolver-related status values in val_ac_status are reflected by one
+   of the following values, offset by the value of VAL_A_DNS_ERROR_BASE
+   :
+
+
+   SR_TSIG_ERROR: returned if there was an error in TSIG processing.
+
+   SR_NO_ANSWER: returned if no answer was received for a query.
+
+   SR_INTERNAL_ERROR: returned if an internal error was encountered in
+      the resolver.
+
+   SR_WRONG_ANSWER: returned if a message received was not a valid
+      response to a query.
+
+   SR_HEADER_BADSIZE: returned if the message size was not consistent
+      with header values.
+
+   SR_DNS_GENERIC_ERROR: returned if the response was received with the
+      rcode set to one of the well-known error values such as NXDOMAIN,
+      FORMERR, etc.
+
+   SR_EDNS_VERSION_ERROR: returned if the EDNS0 version was not
+      recognized.
+
+
+
+
+
+
+
+
+Krishnaswamy & Hayatnagarkar  Expires December 26, 2006        [Page 16]
+
+Internet-Draft            DNSSEC Validator API                 June 2006
+
+
+   SR_UNSUPP_EDNS0_LABEL: returned if the EDNS0 label is not supported.
+
+   SR_SUSPICIOUS_BIT: returned if some bit in the response headers is
+      unexpectedly set or unset.
+
+   SR_NAME_EXPANSION_FAILURE: returned if DNS name uncompression failed.
+
+   SR_MISSING_GLUE: returned if glue records are not available for a
+      referral.
+
+   SR_CONFLICTING_ANSWERS: returned if multiple answers are returned for
+      a query, and they are inconsistent with each other.
+
+
+5.  Context Management and Validator Policy API
+
+   Applications can use local policy to influence the decision about
+   when the validator must break out from the process of constructing
+   the authentication chain with either a success or failure condition.
+   Examples of local policy elements include trust anchors for different
+   zones and untrusted algorithms for cryptographic keys and hashes.
+   Local policy may be different for different applications and
+   operating scenarios.
+
+   Local policy for the validator is stored in the local configration
+   system (typically the configuration file, /etc/dnsval.conf).
+   Policies are identified by labels or simple text strings, which must
+   be unique within the configuration system.  As an example, "browser"
+   could be used as the label for a policy that defines the base policy
+   for all web-browsers in a system.  A label value of ":" identifies
+   the "default" base policy, or the policy that is used when a NULL
+   context is specified as the ctx parameter for functions in Section 4
+   and Section 3.
+
+   Policy definitions have the following structure.
+
+   <label> <attribute> <additional-data>;
+
+   Currently the only defined value for <attribute> is "trust-anchor".
+   The value for <additional-data> depends on the type of attribute
+   specified.  For the "trust-anchor" attribute this is a sequence of
+   the zone name and a quoted string containing the RDATA portion for
+   the trust anchor's DNSKEY.  An example is given below.
+
+
+
+
+
+
+
+
+Krishnaswamy & Hayatnagarkar  Expires December 26, 2006        [Page 17]
+
+Internet-Draft            DNSSEC Validator API                 June 2006
+
+
+   browser trust-anchor example.com   "257 3 5 AQO8XS4y9r77X9SHBmrx \
+                   MoJf1Pf9AT9Mr/L5BBGtO9/e9f/zl4FFgM2l B6M2XEm6mp6 \
+                   mit4tzpB/sAEQw1McYz6bJdKkTiqtuWTCfDmgQhI6/Ha0 Ef \
+                   GPNSqnY 99FmbSeWNIRaa4fgSCVFhvbrYq1nXkNVyQPeEVHk \
+                   oDNCAlr qOA3lw==" ;
+
+5.1.  val_create_context, val_free_context
+
+   int val_create_context( const char    *label,
+                        val_context_t **newcontext );
+
+   void val_free_context( val_context_t *context );
+
+   The val_create_context() creates a handle to a validator policy
+   context.  The label parameter identifies the particular policy to be
+   used as the base policy for the context during validation.  The label
+   parameter in val_create_context() must be uniquely defined within the
+   configuration system.  A NULL label creates a context with the
+   "default" base policy (the policy identified by the ":" label in the
+   configuration system).  The val_create_context() function returns 0
+   on success, and an error code from Section 6.1 on failure.  The newly
+   created context is returned in the newcontext field.  A NULL context
+   is returned if an error is encountered.  The application must release
+   the memory allocated after a successful call to the
+   val_create_context() function using the val_free_context() function.
+
+5.2.  val_switch_policy_scope
+
+   int val_switch_policy_scope( val_context_t *ctx,
+                                const char    *scope );
+
+   This function allows applications to switch their current validator
+   context to a particular policy scope.  The validator context supplied
+   in ctx must not be NULL and the scope must be valid for the context.
+   The semantics of what constitutes a valid switch is implementation-
+   specific.  A NULL scope switches the context's current policy scope
+   to its base policy.
+
+   The val_switch_policy_scope() function returns 0 on success, and an
+   error code from Section 6.1 on failure.
+
+5.3.  val_get_scopes_within_context
+
+   int val_get_scopes_within_context( val_context *ctx,
+                                      char        **scopes,
+                                      int         *count );
+
+   This function allows applications to obtain the list of valid policy
+
+
+
+Krishnaswamy & Hayatnagarkar  Expires December 26, 2006        [Page 18]
+
+Internet-Draft            DNSSEC Validator API                 June 2006
+
+
+   scopes available within a given context.  The validator context
+   supplied in the ctx parameter for this function must not be NULL.
+   The function returns 0 on success and sets count to the number of
+   scopes available.  It returns one of the error codes from Section 6.1
+   on failure.  The memory for the scopes parameter is internally
+   allocated after a successful call to this function; application must
+   release the memory allocated to each of the count elements returned
+   in scopes after use.
+
+5.4.  val_get_scope_definition, val_set_scope_definition
+
+   int val_get_scope_definition( val_context *ctx,
+                                 char        *scope,
+                                 char        **pol_def );
+
+   int val_set_scope_definition( val_context *ctx,
+                                 const char  *scope,
+                                 char        *policy_string );
+
+   The val_get_scope_definition() function allows applications to obtain
+   the policy definition for a given scope identifier.  Memory for
+   pol_def, if the definition for scope exists, is internally allocated
+   and must be released by the application after use.
+
+   The val_set_scope_definition() function allows an application to
+   modify the definition of an existing policy scope or define a new
+   policy scope within a context.  A NULL scope updates the base policy
+   within the context.
+
+   The validator context supplied in the ctx parameter for the
+   val_get_scope_definition() and val_set_scope_definition() functions
+   must not be NULL.  The above functions return 0 on success and an
+   error code from Section 6.1 on failure.
+
+
+6.  Validation Status Codes and Return Values
+
+   The following sections specify the values that may be returned as the
+   validation status value for the val_status_t parameter type in the
+   high-level and low-level APIs, and the return values for the low-
+   level and context-management APIs.  The High-level API mirrors
+   existing DNS-related functions, so the return values from these
+   functions are identical to their predecessors.
+
+6.1.  Return Values
+
+   The following values may be returned by functions in the low-level
+   and context-management APIs.
+
+
+
+Krishnaswamy & Hayatnagarkar  Expires December 26, 2006        [Page 19]
+
+Internet-Draft            DNSSEC Validator API                 June 2006
+
+
+
+   VAL_NOT_IMPLEMENTED: returned if the implementation does not support
+      a particular feature.
+
+   VAL_BAD_ARGUMENT: returned if an unexpected value was passed as an
+      argument to a function.
+
+   VAL_INTERNAL_ERROR: returned if an internal error was encountered in
+      the validator library.
+
+   VAL_NO_PERMISSION: returned if the application lacked sufficient
+      privileges to perform an operation.
+
+   VAL_RESOURCE_UNAVAILABLE: returned if some resource necessary for an
+      operation was unavailable.
+
+   VAL_CONF_PARSE_ERROR: returned if the validator configuration was
+      improperly specified in the configuration system.
+
+   VAL_CONF_NOT_FOUND: returned if the validator configuration could not
+      be located in the configuration system.
+
+   VAL_NO_POLICY: returned if the policy identifier being referenced
+      could not be located or was invalid for the current context.
+
+6.2.  Validation Status Codes
+
+   Possible values for the validator status codes as returned in the
+   variable of type val_status_t are listed below.
+
+
+   VAL_LOCAL_ANSWER: returned if the response was obtained locally (for
+      example, a file such as /etc/hosts).
+
+   VAL_BARE_RRSIG: returned if the response was for a query of type
+      RRSIG.  RRSIGs contain the cryptographic signatures for other DNS
+      data and cannot themselves be validated.
+
+   VAL_NONEXISTENT_NAME: returned if the proof for denial of existence
+      for a domain name was validated.
+
+   VAL_NONEXISTENT_TYPE: returned if the proof for denial of existence
+      for the resource record type for the name queried was validated.
+
+
+
+
+
+
+
+
+Krishnaswamy & Hayatnagarkar  Expires December 26, 2006        [Page 20]
+
+Internet-Draft            DNSSEC Validator API                 June 2006
+
+
+   VAL_ERROR: returned if the an error was encountered while validating
+      the authentication chain.
+
+   VAL_PROVABLY_UNSECURE: returned if the authetication chain from a
+      trust anchor to a given zone cannot be constructed due to the
+      provable absence of a DS record for this zone in the parent.  This
+      condition is generally treated as equivalent to an (unsigned) zone
+      for which validation is to be ignored.
+
+   VAL_INDETERMINATE: returned if the validator lacked data required to
+      complete validation down the authentication chain.
+
+   VAL_BOGUS: returned if the response could not be validated due to
+      signature verification failures.
+
+   VAL_NOTRUST: returned if all available components in the
+      authentication chain were successfully verified but there was no
+      trust anchor available.
+
+   VAL_SUCCESS: returned if the response was verified and validated.
+
+   In cases where a DNS error is returned for the initial query, the
+   resolver-related error values listed in Section 4.2 are also returned
+   in val_status_t, offset by the value of VAL_DNS_ERROR_BASE.
+
+
+7.  IANA Considerations
+
+   This document has no actions for IANA.
+
+
+8.  Security Considerations
+
+   The validator API functions return a status of VAL_LOCAL_ANSWER if
+   they are returned an answer to a given query from the local
+   configuration system (for example, from the /etc/hosts file).  The
+   application cannot assume that these answers can be trusted, unless
+   the application is certain that local data (such the /etc/hosts file)
+   is trustworthy.  If this information is modified during a DHCP
+   lookup, for example, the client system should ensure that the DHCP
+   server is a trusted source, and that the communication path between
+   the DHCP server and the client system is secured.  If these
+   conditions are not satisfied and if the application chooses to trust
+   a validation status of VAL_LOCAL_ANSWER, there exists a potential
+   attack vector whereby an attacker can poison the configuration system
+   and an application using this API may trust the result.
+
+   The DNS search path may affect the result of validation, especially
+
+
+
+Krishnaswamy & Hayatnagarkar  Expires December 26, 2006        [Page 21]
+
+Internet-Draft            DNSSEC Validator API                 June 2006
+
+
+   in the current Internet environment where not all DNS name servers
+   are expected to be DNSSEC-aware.  If the name server pointed to by
+   the configuration system is not DNSSEC-aware (i.e. it does not return
+   DNSSEC records), validation will not be performed.  The list of
+   default name servers (such as in the file /etc/resolv.conf file) is
+   typically modified by DHCP clients.  Hence, if the client system uses
+   DHCP, it must ensure that the DHCP server is a trusted source, and
+   that the communication path between the DHCP server and the client
+   system is secured.
+
+   The validator configuration information needs to be protected
+   similarly so that it cannot be overwritten by unauthorized users or
+   processes.  Access to the val_set_scope_definition() function must
+   similarly be controlled to prevent malicious changes to the validator
+   policy.  Configuration for the validator also contains the trust
+   anchors for classes of applications.  The system administrator must
+   ensure that the list of trust anchors are kept up-to-date in the
+   event of key-rollovers.  If the trust anchors are outdated, the
+   validator may not be able to perform validation or may create the
+   false impression of having successfully validated a response when it
+   should have been flagged as bogus.
+
+
+9.  Acknowledgements
+
+   We would like to acknowledge the following individuals who have
+   provided valuable feedback and suggestions for improving this
+   document: Lindy Foster, Wayne Morrison, Russ Mundy, Bill Sommerfeld,
+   Robert Story, Wes Hardaker.  We would like to acknowledge our other
+   team members at SPARTA for their inputs and suggestions while
+   developing the validator API.  The list of authentication status
+   codes listed in Section 4.2 was generated through multiple
+   brainstorming sessions by the "apps" sub-working group at the IETF
+   meetings.  This draft draws on the results from that effort.
+
+
+10.  References
+
+10.1.  Normative References
+
+   [1]  Gilligan, R., Thomson, S., Bound, J., McCann, J., and W.
+        Stevens, "Basic Socket Interface Extensions for IPv6", RFC 3493,
+        February 2003.
+
+   [2]  Arends, R., Austein, R., Larson, M., Massey, D., and S. Rose,
+        "DNS Security Introduction and Requirements", RFC 4033,
+        March 2005.
+
+
+
+
+Krishnaswamy & Hayatnagarkar  Expires December 26, 2006        [Page 22]
+
+Internet-Draft            DNSSEC Validator API                 June 2006
+
+
+   [3]  Arends, R., Austein, R., Larson, M., Massey, D., and S. Rose,
+        "Resource Records for the DNS Security Extensions", RFC 4034,
+        March 2005.
+
+   [4]  Arends, R., Austein, R., Larson, M., Massey, D., and S. Rose,
+        "Protocol Modifications for the DNS Security Extensions",
+        RFC 4035, March 2005.
+
+10.2.  Informative References
+
+   [5]  "DNSSEC-Tools", <http://www.dnssec-tools.org>.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Krishnaswamy & Hayatnagarkar  Expires December 26, 2006        [Page 23]
+
+Internet-Draft            DNSSEC Validator API                 June 2006
+
+
+Authors' Addresses
+
+   Suresh Krishnaswamy
+   SPARTA, Inc.
+   7110 Samuel Morse Dr.
+   Columbia, MD  21046
+   US
+
+   Email: suresh AT sparta.com
+
+
+   Abhijit Hayatnagarkar
+   SPARTA, Inc.
+   7110 Samuel Morse Dr.
+   Columbia, MD  21046
+   US
+
+   Email: abhijit AT sparta.com
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Krishnaswamy & Hayatnagarkar  Expires December 26, 2006        [Page 24]
+
+Internet-Draft            DNSSEC Validator API                 June 2006
+
+
+Intellectual Property Statement
+
+   The IETF takes no position regarding the validity or scope of any
+   Intellectual Property Rights or other rights that might be claimed to
+   pertain to the implementation or use of the technology described in
+   this document or the extent to which any license under such rights
+   might or might not be available; nor does it represent that it has
+   made any independent effort to identify any such rights.  Information
+   on the procedures with respect to rights in RFC documents can be
+   found in BCP 78 and BCP 79.
+
+   Copies of IPR disclosures made to the IETF Secretariat and any
+   assurances of licenses to be made available, or the result of an
+   attempt made to obtain a general license or permission for the use of
+   such proprietary rights by implementers or users of this
+   specification can be obtained from the IETF on-line IPR repository at
+   http://www.ietf.org/ipr.
+
+   The IETF invites any interested party to bring to its attention any
+   copyrights, patents or patent applications, or other proprietary
+   rights that may cover technology that may be required to implement
+   this standard.  Please address the information to the IETF at
+   ietf-ipr@ietf.org.
+
+
+Disclaimer of Validity
+
+   This document and the information contained herein are provided on an
+   "AS IS" basis and THE CONTRIBUTOR, THE ORGANIZATION HE/SHE REPRESENTS
+   OR IS SPONSORED BY (IF ANY), THE INTERNET SOCIETY AND THE INTERNET
+   ENGINEERING TASK FORCE DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED,
+   INCLUDING BUT NOT LIMITED TO ANY WARRANTY THAT THE USE OF THE
+   INFORMATION HEREIN WILL NOT INFRINGE ANY RIGHTS OR ANY IMPLIED
+   WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
+
+
+Copyright Statement
+
+   Copyright (C) The Internet Society (2006).  This document is subject
+   to the rights, licenses and restrictions contained in BCP 78, and
+   except as set forth therein, the authors retain all their rights.
+
+
+Acknowledgment
+
+   Funding for the RFC Editor function is currently provided by the
+   Internet Society.
+
+
+
+
+Krishnaswamy & Hayatnagarkar  Expires December 26, 2006        [Page 25]
+
+

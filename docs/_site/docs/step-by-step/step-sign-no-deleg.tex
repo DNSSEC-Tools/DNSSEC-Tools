@@ -1,0 +1,73 @@
+
+\clearpage
+\subsection{Signing a Zone with No Delegations}
+\label{signzone-nodel}
+
+A zone needs to be re-signed when \underline{any} change is made to it.
+Steps~\ref{keygen-set-nodel} and~\ref{signzone-nodeleg-updzf}
+must be followed if the zone has not been previously signed.
+Steps~\ref{check-zonefile-unsigned-nodeleg}~-~\ref{signzone-nodel-last}
+must be followed when re-signing a zone file that has no
+delegations.
+
+\input{keygen-set}		\label{keygen-set-nodel}
+\input{update-zonefile}		\label{signzone-nodeleg-updzf}
+
+\input{check-zonefile-unsigned}	\label{check-zonefile-unsigned-nodeleg}
+
+\input{key-perms}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Sign the Zone}
+\label{signzone-no-deleg}
+
+Use the \cmd{dnssec-signzone} command to sign the zone file.
+
+\begin{tabbing}
+\hspace{0.5in}\$ {\bf dnssec-signzone -k \underline{/path/to}/K\underline{zone.name}.+005+\underline{ksktag}.key} \\
+\hspace{0.5in} {\bf -o \underline{zone.name} -e +2592000 \underline{zonefile}} \\
+\hspace{0.5in} {\bf \underline{/path/to}/K\underline{zone.name}.+005+\underline{zsktag-cur}.key} $[$ENTER$]$ \\
+\hspace{0.5in} \underline{zonefile}.signed \\
+\hspace{0.5in}\$ \\
+\end{tabbing}
+
+Signature generation may take a few minutes to complete, depending on the size
+of the zone file. If the above operation appears to be unresponsive for an
+unreasonable length of time, use pseudorandom numbers (using the {\it -p}
+option) instead.
+
+\begin{tabbing}
+\hspace{0.5in}\$ {\bf dnssec-signzone -k \underline{/path/to}/K\underline{zone.name}.+005+\underline{ksktag}.key} \\
+\hspace{0.5in} {\bf -o \underline{zone.name} -p -e +2592000 \underline{zonefile}} \\
+\hspace{0.5in} {\bf \underline{/path/to}/K\underline{zone.name}.+005+\underline{zsktag-cur}.key} $[$ENTER$]$ \\
+\hspace{0.5in} \underline{zonefile}.signed \\
+\hspace{0.5in}\$ \\
+\end{tabbing}
+
+Three files are created by \cmd{dnssec-signzone}:
+\begin{itemize}
+\item Signed zone file in \underline{zonefile}.signed.
+The {\it .signed} suffix is appended by default.
+
+\item Keyset file in keyset-\underline{zone.name}.
+May have to be sent to the parent zone; see Section~\ref{delegation-child}.
+
+\item DS-set file in dsset-\underline{zone.name}.
+Used to verify that the correct DS record was generated at the parent;
+see Section~\ref{delegation-child}.
+
+\end{itemize}
+
+This \cmd{dnssec-signzone} command generates signatures for the records that
+are valid for 30 days (2,592,000 seconds) from the current time.  This
+is offset by -1 hour to account for clock skew between the name server and
+DNSSEC validators.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\input{check-zonefile-signed}
+\input{keytag-expire}
+
+\label{signzone-nodel-last}
+

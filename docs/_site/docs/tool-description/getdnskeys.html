@@ -1,0 +1,119 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title></title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:root@localhost" />
+</head>
+
+<body>
+
+
+
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
+  <li><a href="#OPTIONS">OPTIONS</a></li>
+  <li><a href="#EXAMPLES">EXAMPLES</a></li>
+  <li><a href="#SECURITY-ISSUES">SECURITY ISSUES</a></li>
+</ul>
+
+<h1 id="NAME">NAME</h1>
+
+<p>getdnskeys - Manage lists of DNSKEYs from DNS zones</p>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<pre><code>    getdnskeys [-i file] [-o file] [-k] [-T] [-t] [-v] [zones]</code></pre>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p><b>getdnskeys</b> manages lists of DNSKEYs from DNS zones. It may be used to retrieve and compare DNSKEYs. The output from <b>getdnskeys</b> may be included (directly or indirectly) in a <b>named.conf</b> file.</p>
+
+<h1 id="OPTIONS">OPTIONS</h1>
+
+<p><b>getdnskeys</b> takes the following options:</p>
+
+<dl>
+
+<dt id="i-path"><b>-i path</b></dt>
+<dd>
+
+<p>Reads <i>path</i> as a <b>named.conf</b> with which to compare key lists.</p>
+
+</dd>
+<dt id="k"><b>-k</b></dt>
+<dd>
+
+<p>Only looks for Key Signing Keys (KSKs); all other keys are ignored.</p>
+
+</dd>
+<dt id="o-file"><b>-o file</b></dt>
+<dd>
+
+<p>Writes the results to <i>file</i>.</p>
+
+</dd>
+<dt id="T"><b>-T</b></dt>
+<dd>
+
+<p>Checks the current trusted key list from <b>named.conf</b>.</p>
+
+</dd>
+<dt id="t"><b>-t</b></dt>
+<dd>
+
+<p>Encloses output in needed <b>named.conf</b> syntax markers.</p>
+
+</dd>
+<dt id="v"><b>-v</b></dt>
+<dd>
+
+<p>Turns on verbose mode for additional output.</p>
+
+</dd>
+<dt id="Version"><b>-Version</b></dt>
+<dd>
+
+<p>Displays the version information for <b>getdnskeys</b> and the DNSSEC-Tools package.</p>
+
+</dd>
+<dt id="h"><b>-h</b></dt>
+<dd>
+
+<p>Gives a help message.</p>
+
+</dd>
+</dl>
+
+<h1 id="EXAMPLES">EXAMPLES</h1>
+
+<p>This <b>getdnskeys</b> will retrieve the KSK for example.com:</p>
+
+<pre><code>    getdnskeys -o /etc/named.trustkeys.conf -k -v -t example.com</code></pre>
+
+<p>This <b>getdnskeys</b> will check saved keys against a live set of keys:</p>
+
+<pre><code>    getdnskeys -i /etc/named.trustkeys.conf -T -k -v -t</code></pre>
+
+<p>This <b>getdnskeys</b> will automatically update a set of saved keys:</p>
+
+<pre><code>    getdnskeys -i /etc/named.trustkeys.conf -k -t -T -v
+               -o /etc/named.trustkeys.conf</code></pre>
+
+<h1 id="SECURITY-ISSUES">SECURITY ISSUES</h1>
+
+<p>Currently this does not validate new keys placed in the file in any way, nor does it validate change over keys which have been added.</p>
+
+<p>It also does not handle revocation of keys.</p>
+
+<p>It should prompt you before adding a new key so that you can always run the auto-update feature.</p>
+
+
+</body>
+
+</html>
+
+

@@ -1,0 +1,451 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title></title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:root@localhost" />
+</head>
+
+<body>
+
+
+
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a>
+    <ul>
+      <li><a href="#Boolean-Values">Boolean Values</a></li>
+      <li><a href="#Key-related-Checks">Key-related Checks</a></li>
+      <li><a href="#Zone-related-Checks">Zone-related Checks</a></li>
+      <li><a href="#Path-Checks">Path Checks</a></li>
+      <li><a href="#Rollover-Daemon-Checks">Rollover Daemon Checks</a></li>
+      <li><a href="#NSEC3-Checks">NSEC3 Checks</a></li>
+      <li><a href="#Miscellaneous-Checks">Miscellaneous Checks</a></li>
+    </ul>
+  </li>
+  <li><a href="#OPTIONS">OPTIONS</a></li>
+  <li><a href="#COPYRIGHT">COPYRIGHT</a></li>
+  <li><a href="#AUTHOR">AUTHOR</a></li>
+  <li><a href="#SEE-ALSO">SEE ALSO</a></li>
+</ul>
+
+<h1 id="NAME">NAME</h1>
+
+<p>dtconfchk - Check a DNSSEC-Tools configuration file for sanity</p>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<pre><code>  dtconfchk [options] [config_file]</code></pre>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p><b>dtconfchk</b> checks a DNSSEC-Tools configuration file to determine if the entries are valid. If a configuration file isn&#39;t specified, the system configuration file will be verified.</p>
+
+<p>Without any display options, <b>dtconfchk</b> displays error messages for problems found, followed by a summary line. Display options will increase or decrease the amount of detail about the configuration file&#39;s sanity. In all cases, the exit code is the count of errors found in the file.</p>
+
+<p>The tests are divided into five groups: key-related checks, zone-related checks, path checks, rollover checks, and miscellaneous checks. The checks in each of these self-explanatory groups are described below.</p>
+
+<p>The <i>default_keyrec</i> configuration entry is not checked. This entry specifies the default <i>keyrec</i> file name and isn&#39;t necessarily expected to exist in any particular place.</p>
+
+<h2 id="Boolean-Values">Boolean Values</h2>
+
+<p>The DNSSEC-Tools configuration file has a number of fields that are expected to hold boolean values. The recognized values for booleans are as follows:</p>
+
+<pre><code>    true values  - 1, true,  t, yes, y
+    false values - 0, false, f, no,  n</code></pre>
+
+<p>Positive values greater than 1 are recognized as true values, but it probably would be best to use 1.</p>
+
+<p>Text values that aren&#39;t in the set above are not valid and will translate to false values.</p>
+
+<h2 id="Key-related-Checks">Key-related Checks</h2>
+
+<p>The following key-related checks are performed:</p>
+
+<dl>
+
+<dt id="algorithm"><i>algorithm</i></dt>
+<dd>
+
+<p>Ensure the <i>algorithm</i> field is valid. The acceptable values may be found in the <b>dnssec-keygen</b> man page.</p>
+
+</dd>
+<dt id="ksklength"><i>ksklength</i></dt>
+<dd>
+
+<p>Ensure the <i>ksklength</i> field is valid. The acceptable values may be found in the <b>dnssec-keygen</b> man page. This may also be specified as <i>ksklen</i>.</p>
+
+</dd>
+<dt id="ksklife"><i>ksklife</i></dt>
+<dd>
+
+<p>Ensure the <i>ksklife</i> field is valid. The acceptable values may be found in the <b>defaults.pm</b> man page.</p>
+
+</dd>
+<dt id="zskcount"><i>zskcount</i></dt>
+<dd>
+
+<p>Ensure the <i>zskcount</i> field is valid. The ZSK count must be positive.</p>
+
+</dd>
+<dt id="zsklength"><i>zsklength</i></dt>
+<dd>
+
+<p>Ensure the <i>zsklength</i> field is valid. The acceptable values may be found in the <b>dnssec-keygen</b> man page. This may also be specified as <i>zsklen</i>.</p>
+
+</dd>
+<dt id="zsklife"><i>zsklife</i></dt>
+<dd>
+
+<p>Ensure the <i>zsklife</i> field is valid. The acceptable values may be found in the <b>defaults.pm</b> man page.</p>
+
+</dd>
+<dt id="random"><i>random</i></dt>
+<dd>
+
+<p>Ensure the <i>random</i> field is valid. This file must be a character device file.</p>
+
+</dd>
+</dl>
+
+<h2 id="Zone-related-Checks">Zone-related Checks</h2>
+
+<p>The following zone-related checks are performed:</p>
+
+<dl>
+
+<dt id="endtime"><i>endtime</i></dt>
+<dd>
+
+<p>Ensure the <i>endtime</i> field is valid. This value is assumed to be in the &quot;+NNNNNN&quot; format. There is a lower limit of two hours. (This is an artificial limit under which it <i>may</i> not make sense to have an end-time.)</p>
+
+</dd>
+</dl>
+
+<h2 id="Path-Checks">Path Checks</h2>
+
+<p>Path checks are performed for several DNSSEC-Tools commands, several BIND commands, and a few miscellaneous files.</p>
+
+<p>The following path checks are performed for DNSSEC-Tools commands:</p>
+
+<dl>
+
+<dt id="genkrf"><i>genkrf</i></dt>
+<dd>
+
+<p>Ensure the <i>genkrf</i> field is valid. If the filename starts with a &#39;/&#39;, the file must be a regular executable file.</p>
+
+</dd>
+<dt id="keyarch"><i>keyarch</i></dt>
+<dd>
+
+<p>Ensure the <i>keyarch</i> field is valid. If the filename starts with a &#39;/&#39;, the file must be a regular executable file.</p>
+
+</dd>
+<dt id="rollchk"><i>rollchk</i></dt>
+<dd>
+
+<p>Ensure the <i>rollchk</i> field is valid. If the filename starts with a &#39;/&#39;, the file must be a regular executable file.</p>
+
+</dd>
+<dt id="rollctl"><i>rollctl</i></dt>
+<dd>
+
+<p>Ensure the <i>rollctl</i> field is valid. If the filename starts with a &#39;/&#39;, the file must be a regular executable file.</p>
+
+</dd>
+<dt id="zonesigner"><i>zonesigner</i></dt>
+<dd>
+
+<p>Ensure the <i>zonesigner</i> field is valid. If the filename starts with a &#39;/&#39;, the file must be a regular executable file.</p>
+
+</dd>
+</dl>
+
+<p>The following path checks are performed for BIND tools:</p>
+
+<dl>
+
+<dt id="keygen"><i>keygen</i></dt>
+<dd>
+
+<p>Ensure the <i>keygen</i> field is valid. If the filename starts with a &#39;/&#39;, the file must be a regular executable file.</p>
+
+</dd>
+<dt id="rndc"><i>rndc</i></dt>
+<dd>
+
+<p>Ensure the <i>rndc</i> field is valid. If the filename starts with a &#39;/&#39;, the file must be a regular executable file.</p>
+
+</dd>
+<dt id="zonecheck"><i>zonecheck</i></dt>
+<dd>
+
+<p>Ensure the <i>zonecheck</i> field is valid. If the filename starts with a &#39;/&#39;, the file must be a regular executable file.</p>
+
+</dd>
+<dt id="zonesign"><i>zonesign</i></dt>
+<dd>
+
+<p>Ensure the <i>zonesign</i> field is valid. If the filename starts with a &#39;/&#39;, the file must be a regular executable file.</p>
+
+</dd>
+</dl>
+
+<p>The following path checks are performed for miscellaneous files and directories:</p>
+
+<dl>
+
+<dt id="random1"><i>random</i></dt>
+<dd>
+
+<p>Ensure the <i>random</i> field is valid. The file must be a character device file.</p>
+
+</dd>
+<dt id="roll_logfile"><i>roll_logfile</i></dt>
+<dd>
+
+<p>Ensure the <i>roll_logfile</i> field is a regular file.</p>
+
+</dd>
+<dt id="taresolvconf"><i>taresolvconf</i></dt>
+<dd>
+
+<p>Ensure the <i>taresolvconf</i> field is a regular file.</p>
+
+</dd>
+<dt id="tatmpdir"><i>tatmpdir</i></dt>
+<dd>
+
+<p>Ensure the <i>tatmpdir</i> field is a directory.</p>
+
+</dd>
+</dl>
+
+<h2 id="Rollover-Daemon-Checks">Rollover Daemon Checks</h2>
+
+<p>The following checks are performed for <b>rollerd</b> values:</p>
+
+<dl>
+
+<dt id="autosign"><i>autosign</i></dt>
+<dd>
+
+<p>Ensure that the <i>autosign</i> flag is a valid boolean.</p>
+
+</dd>
+<dt id="log_tz"><i>log_tz</i></dt>
+<dd>
+
+<p>Ensure the <i>log_tz</i> field is either &#39;gmt&#39; or &#39;local&#39;.</p>
+
+</dd>
+<dt id="prog_normal"><i>prog_normal</i></dt>
+<dd>
+
+</dd>
+<dt id="prog_ksk1-...-prog_ksk7"><i>prog_ksk1</i> ... <i>prog_ksk7</i></dt>
+<dd>
+
+</dd>
+<dt id="prog_zsk1-...-prog_zsk4"><i>prog_zsk1</i> ... <i>prog_zsk4</i></dt>
+<dd>
+
+<p>Ensure that the rollover phase commands are valid paths. Each of these fields is a semicolon-separated command list. The file checks are run on the commands to ensure the commands exist and are executable. Options and arguments to the commands are ignored, as is the <i>default</i> keyword.</p>
+
+</dd>
+<dt id="roll_loadzone"><i>roll_loadzone</i></dt>
+<dd>
+
+<p>Ensure that the <i>roll_loadzone</i> flag is a valid boolean.</p>
+
+</dd>
+<dt id="roll_logfile1"><i>roll_logfile</i></dt>
+<dd>
+
+<p>Ensure that the log file for the <b>rollerd</b> is valid. If the file exists, it must be a regular file.</p>
+
+</dd>
+<dt id="roll_loglevel"><i>roll_loglevel</i></dt>
+<dd>
+
+<p>Ensure that the logging level for the <b>rollerd</b> is reasonable. The log level must be one of the following text or numeric values:</p>
+
+<pre><code>    tmi        1       Overly verbose informational messages.
+    expire     3       A verbose countdown of zone expiration is given.
+    info       4       Informational messages.
+    phase      6       Current state of zone.
+    err        8       Error messages.
+    fatal      9       Fatal errors.</code></pre>
+
+<p>Specifying a particular log level will causes messages of a higher numeric value to also be displayed.</p>
+
+</dd>
+<dt id="roll_sleeptime"><i>roll_sleeptime</i></dt>
+<dd>
+
+<p>Ensure that the <b>rollerd</b>&#39;s sleep-time is reasonable. <b>rollerd</b>&#39;s sleep-time must be at least one minute.</p>
+
+</dd>
+<dt id="roll_username"><i>roll_username</i></dt>
+<dd>
+
+<p>Ensure that the username for <b>rollerd</b> is valid. If it&#39;s a username, it must be translatable to a uid; if it&#39;s a uid, it must translate to a known username.</p>
+
+</dd>
+<dt id="zone_errors"><i>zone_errors</i></dt>
+<dd>
+
+<p>Ensure that the zone error count is numeric and 0 or greater.</p>
+
+</dd>
+</dl>
+
+<h2 id="NSEC3-Checks">NSEC3 Checks</h2>
+
+<p>The following checks are performed for NSEC3-related values:</p>
+
+<dl>
+
+<dt id="nsec3iter"><i>nsec3iter</i></dt>
+<dd>
+
+<p>Ensure that the <i>nsec3iter</i> iteration count falls within the range used by <b>dnssec-signzone</b>. The current values are from 1 - 65535.</p>
+
+</dd>
+<dt id="nsec3optout"><i>nsec3optout</i></dt>
+<dd>
+
+<p>Ensure that the <i>nsec3optout</i> flag is a valid boolean.</p>
+
+</dd>
+<dt id="usensec3"><i>usensec3</i></dt>
+<dd>
+
+<p>Ensure that the <i>usensec3</i> flag is a valid boolean.</p>
+
+</dd>
+</dl>
+
+<h2 id="Miscellaneous-Checks">Miscellaneous Checks</h2>
+
+<p>The following miscellaneous checks are performed:</p>
+
+<dl>
+
+<dt id="admin-email"><i>admin-email</i></dt>
+<dd>
+
+<p>Ensure that the <i>admin-email</i> field is defined and has a value. <b>dtconfchk</b> does not try to validate the email address itself.</p>
+
+</dd>
+<dt id="archivedir"><i>archivedir</i></dt>
+<dd>
+
+<p>Ensure that the <i>archivedir</i> directory is actually a directory. This check is only performed if the <i>savekeys</i> flag is set on.</p>
+
+</dd>
+<dt id="entropy_msg"><i>entropy_msg</i></dt>
+<dd>
+
+<p>Ensure that the <i>entropy_msg</i> flag is a valid boolean.</p>
+
+</dd>
+<dt id="savekeys"><i>savekeys</i></dt>
+<dd>
+
+<p>Ensure that the <i>savekeys</i> flag is a valid boolean. If this flag is set to 1, then the <i>archivedir</i> field will also be checked.</p>
+
+</dd>
+<dt id="usegui"><i>usegui</i></dt>
+<dd>
+
+<p>Ensure that the <i>usegui</i> flag is a valid boolean.</p>
+
+</dd>
+<dt id="zonefile-parser"><i>zonefile-parser</i></dt>
+<dd>
+
+<p>Ensure that the <i>zonefile-parser</i> flag is a valid Perl module. This is checked by using the Perl &quot;require&quot; facility to load the specified module.</p>
+
+</dd>
+</dl>
+
+<h1 id="OPTIONS">OPTIONS</h1>
+
+<dl>
+
+<dt id="expert"><b>-expert</b></dt>
+<dd>
+
+<p>This option will bypass the following checks:</p>
+
+<pre><code>    - KSK has a longer lifespan than the configuration
+      file&#39;s default minimum lifespan
+
+    - KSK has a shorter lifespan than the configuration
+      file&#39;s default maximum lifespan
+
+    - ZSKs have a longer lifespan than the configuration
+      file&#39;s default minimum lifespan
+
+    - ZSKs have a shorter lifespan than the configuration
+      file&#39;s default maximum lifespan</code></pre>
+
+</dd>
+<dt id="quiet"><b>-quiet</b></dt>
+<dd>
+
+<p>No output will be given. The number of errors will be used as the exit code.</p>
+
+</dd>
+<dt id="summary"><b>-summary</b></dt>
+<dd>
+
+<p>A final summary of success or failure will be printed. The number of errors will be used as the exit code.</p>
+
+</dd>
+<dt id="verbose"><b>-verbose</b></dt>
+<dd>
+
+<p>Success or failure status of each check will be given. A <b>+</b> or <b>-</b> prefix will be given for each valid and invalid entry. The number of errors will be used as the exit code.</p>
+
+</dd>
+<dt id="Version"><b>-Version</b></dt>
+<dd>
+
+<p>Displays the version information for <b>dtconfchk</b> and the DNSSEC-Tools package.</p>
+
+</dd>
+<dt id="help"><b>-help</b></dt>
+<dd>
+
+<p>Display a usage message.</p>
+
+</dd>
+</dl>
+
+<h1 id="COPYRIGHT">COPYRIGHT</h1>
+
+<p>Copyright 2004-2014 SPARTA, Inc. All rights reserved. See the COPYING file included with the DNSSEC-Tools package for details.</p>
+
+<h1 id="AUTHOR">AUTHOR</h1>
+
+<p>Wayne Morrison, tewok@tislabs.com</p>
+
+<h1 id="SEE-ALSO">SEE ALSO</h1>
+
+<p><b>dtdefs(8)</b>, <b>dtinitconf(8)</b>, <b>rollerd(8)</b>, <b>zonesigner(8)</b></p>
+
+<p><b>Net::DNS::SEC::Tools::conf.pm(3)</b>, <b>Net::DNS::SEC::Tools::defaults.pm(3)</b></p>
+
+<p><b>dnssec-tools.conf(5)</b></p>
+
+
+</body>
+
+</html>
+
+

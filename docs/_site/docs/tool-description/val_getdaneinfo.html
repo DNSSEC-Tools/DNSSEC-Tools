@@ -1,0 +1,146 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title></title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:root@localhost" />
+</head>
+
+<body>
+
+
+
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
+  <li><a href="#RETURN-VALUES">RETURN VALUES</a></li>
+  <li><a href="#COPYRIGHT">COPYRIGHT</a></li>
+  <li><a href="#AUTHORS">AUTHORS</a></li>
+  <li><a href="#SEE-ALSO">SEE ALSO</a></li>
+</ul>
+
+<h1 id="NAME">NAME</h1>
+
+<p><i>val_getdaneinfo()</i> - Perform synchronous validation of TLSA records</p>
+
+<p><i>val_dane_submit()</i> - Perform asynchronous validation of TLSA records</p>
+
+<p><i>val_dane_match()</i> - Validate TLSA information against provided data.</p>
+
+<p><i>val_dane_check()</i> - Validate TLSA information for SSL connection (OpenSSL only)</p>
+
+<p><i>val_free_dane()</i> - Release memory associated with DANE result structure.</p>
+
+<p><i>p_dane_error()</i> - Return error string for given DANE error code.</p>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<pre><code>  #include &lt;validator/validator.h&gt;
+  #include &lt;validator/val_dane.h&gt;
+
+  int val_getdaneinfo(val_context_t *ctx,
+                    const char *name,
+                    struct val_daneparams *params,
+                    struct val_danestatus **dres);
+
+  int val_dane_submit(val_context_t *ctx,
+                    const char *name,
+                    struct val_daneparams *params,
+                    val_dane_callback callback,
+                    void *callback_data,
+                    val_async_status **status);
+
+  int val_dane_match(val_context_t *ctx,
+                   struct val_danestatus *dane_cur,
+                   const unsigned char *databytes,
+                   int databyteslen);
+
+  #include &lt;openssl/ssl.h&gt;
+  int val_dane_check(val_context_t *ctx,
+                   SSL *con,
+                   struct val_danestatus *danestatus,
+                   int *do_pathval);
+
+  void val_free_dane(struct val_danestatus *dres);
+
+  const char *p_dane_error(int rc);</code></pre>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p><i>val_getdaneinfo()</i> performs a synchronous lookup of the TLSA record associated with a given <i>name</i> and returns a linked list of all such <b>validated</b> records. <i>val_dane_submit()</i> performs the same lookup in an asynchronous manner and invokes the <i>callback</i> function with the <i>callback_data</i> arguments on lookup completion. The callback function has the following type definition:</p>
+
+<pre><code>  typedef int (*val_dane_callback)(void *callback_data,
+                                 int retval,
+                                 struct val_danestatus **dres);</code></pre>
+
+<p>The <i>status</i> argument provides a handle to the asynchronous request to enable future operators (such as canceling the request). For more information on the <i>val_async_status</i> object see draft-hayatnagarkar-dnsext-validator-api.</p>
+
+<p>The actual DNS name that owns the TLSA record in the DNS has a prefix of the form _&lt;port&gt;._&lt;proto&gt;. <i>val_getdaneinfo()</i> will construct the above prefix automatically; so the value of <i>name</i> suppplied by the user should not contain this prefix. The</p>
+
+<p>The parameters for the TLSA lookup must be supplied in the <i>params</i> argument, which is a pointer to the following structure:</p>
+
+<pre><code>  struct val_daneparams {
+    int port;
+    int proto;
+  };</code></pre>
+
+<p>The <i>port</i> and <i>proto</i> fields are used in constructing the TLSA name prefix described above.</p>
+
+<p>The results of the TLSA lookup are returned in the <i>dres</i> argument, which is a pointer to a linked list of structures of the form below:</p>
+
+<pre><code>  struct val_danestatus {
+    long ttl;
+    int usage;
+    int selector;
+    int type;
+    size_t datalen;
+    unsigned char *data;
+    struct val_danestatus *next;
+  };</code></pre>
+
+<p>The <i>ttl</i> field is the time-to-live associated with the TLSA record. An application must not cache (and use) this TLSA record beyond its TTL. The <i>usage</i>, <i>selector</i> and <i>type</i> fields correspond to the first three fields of the TLSA RDATA as described in rfc6698. The TLSA certificate association data is returned in the <i>data</i> field and has a length of <i>datalen</i> bytes. There can be more than one TLSA record associated with a given name, and the <i>next</i> field points to the next record in this list.</p>
+
+<p>Given a linked list of TLSA structures in <i>dres</i>, the <i>val_dane_match()</i> can be used to check if the certificate association data for a given element in this list matches the DER encoded data provided in <i>databytes</i> of the length <i>databyteslen</i>.</p>
+
+<p>The <i>val_dane_check()</i> function simplifies the match operation when OpenSSL is used to provide SSL/TLS support within the application. This function automatically iterates over all elements in <i>dres</i> and compares the certificate association data against the SSL/TLS certificates associated with the SSL connection <i>con</i>. The DANE protocol enables certain use cases that allows new trust anchors to be introduced via DNSSEC. The value of <i>do_pathval</i> indicates whether the application must proceed with X509 path validation for this connection in accordance with the usage that was encoded in the TLSA record.</p>
+
+<p>The <i>val_free_dane()</i> function frees the memory associated with with the linked list pointed to by <i>dres</i>.</p>
+
+<p>The <i>ctx</i> parameter in all the above functions specifies the validation context, which can be set to NULL for default values (see <i>libval(3)</i> and <i>dnsval.conf</i> for more details on validation contexts and validation policy).</p>
+
+<h1 id="RETURN-VALUES">RETURN VALUES</h1>
+
+<p><i>val_getdaneinfo()</i> and <i>val_dane_submit()</i> return <b>VAL_DANE_NOERROR</b> on success, and <b>VAL_DANE_MALFORMED_TLSA</b> or <b>VAL_DANE_INTERNAL_ERROR</b> for error conditions. A value of <b>VAL_DANE_NOTVALIDATED</b> is returned if the TLSA record cannot be validated via DNSSEC. A value of <b>VAL_DANE_IGNORE_TLSA</b> is returned if the TLSA record for the given name is provably absent.</p>
+
+<p>The <i>retval</i> value returned as an argument to <i>val_dane_callback()</i> can contain one of <b>VAL_DANE_NOERROR</b> (for success), <b>VAL_DANE_INTERNAL_ERROR</b> (for error conditions) or <b>VAL_DANE_CANCELLED</b> (when the asynchronous request is canceled).</p>
+
+<p><i>val_dane_match()</i> and <i>val_dane_check()</i> return <b>VAL_DANE_NOERROR</b> on success, <b>VAL_DANE_INTERNAL_ERROR</b> for general error conditions, and <b>VAL_DANE_CHECK_FAILED</b> if the TLSA record cannot be successfully matched against the certificate association data provided.</p>
+
+<p>The <i>p_dane_error()</i> function can be used to convert the DANE-related error codes to an error string value.</p>
+
+<h1 id="COPYRIGHT">COPYRIGHT</h1>
+
+<p>Copyright 2004-2013 SPARTA, Inc. All rights reserved. See the COPYING file included with the DNSSEC-Tools package for details.</p>
+
+<h1 id="AUTHORS">AUTHORS</h1>
+
+<p>Suresh Krishnaswamy</p>
+
+<h1 id="SEE-ALSO">SEE ALSO</h1>
+
+<p><i>libval(3)</i></p>
+
+<p>RFC 6698 (DANE)</p>
+
+<p>draft-hayatnagarkar-dnsext-validator-api</p>
+
+<p>http://www.dnssec-tools.org</p>
+
+
+</body>
+
+</html>
+
+

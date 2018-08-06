@@ -1,0 +1,369 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN">
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="shortcut icon" href="../../assets/ico/favicon.ico">
+
+    <title>DNSSEC-Tools</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/dnssec-tools.css" rel="stylesheet">
+    <link href="http://badsign-a.test.dnssec-tools.org/broken.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+      <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+  </head>
+
+  <body>
+        <div class="page-header dtbanner">
+      <div class="container">
+	    <a href="/"><img class="logo" src="/images/dnssec-tools-Army-Knife.png" alt="DNSSEC-Tools" /></a>
+	    <div class="slogan">Is your domain secure?</div>
+      </div>
+    </div>
+
+    <nav class="navbar navbar-inverse" role="navigation">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse-1">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <!-- <a class="navbar-brand" href="#">DNSSEC-Tools</a> -->
+        </div>
+        <!--
+        -->
+        <div class="collapse navbar-collapse" id="navbar-collapse-1">
+          <ul class="nav navbar-nav">
+            <li><a href="http://www.dnssec-tools.org/wiki/index.php/Sign_Your_Zone">Sign Your Zone</a></li>
+            <li><a href="http://www.dnssec-tools.org/wiki/index.php/Tutorials">Tutorials</a></li>
+            <li class="dropdown"><a class="dropdown-toggle" data-toggle="dropdown" href="#">Install
+                <span class="caret"></span> </a>
+              <ul class="dropdown-menu">
+                <li><a href="http://www.dnssec-tools.org/wiki/index.php/Installing_DNSSEC-Tools">Instructions</a></li>
+                <li class="divider" />
+                <li><a href="http://www.dnssec-tools.org/download/#gotoSources">Source Code</a></li>
+                <li><a href="http://www.dnssec-tools.org/download/#gotoBinaries">Binaries</a></li>
+                <li><a href="http://www.dnssec-tools.org/download/#gotodnsval">Libraries</a></li>
+                <li class="divider" />
+                <li><a href="http://www.dnssec-tools.org/download/#gotoGraphical Applications">GUI Applictations:</a></li>
+                <li><a href="http://www.dnssec-tools.org/download/#gotoBloodhound">The Bloodhound Web Browser</a></li>
+                <li><a href="http://dnssec-tools.org/download/#gotoDNSSEC-Check">DNSSEC-Check</a></li>
+	            <li><a href="http://dnssec-tools.org/download/#gotoLookup">Lookup</a></li>
+	            <li><a href="http://dnssec-tools.org/download/#gotoDNSSEC-Nodes">DNSSEC-Nodes</a></li>
+              </ul>
+            </li>
+          </ul>
+        </div><!-- /.navbar-collapse-1 -->
+      </div><!-- /.container-fluid -->
+    </nav>
+
+<div class="container">
+   <div class="row">
+      <div class="col-md-9" role="main">
+
+
+     <h2>DNSSEC and DNSSEC-Tools Documentation</h2>
+
+    <div class="indent">
+      <p>The following is a list of useful documentation that is provided
+	either by the DNSSEC-Tools team or by third parties:</p>
+    </div>
+      <h2>DNSSEC Operator Guidance Documentation</h2>
+      <div class="indent">
+      <li>DNSSEC-Tools Software User Manual 
+        <a href="/docs/software-users-manual/SUM.pdf">[PDF]</a> </li>
+      <li>DNSSEC-Tools HOWTO and Step-by-Step Guide To Signing Your Zone 
+	    <a href="/docs/step-by-step-dnssec-tools/sbs-dt.pdf">[PDF]</a> </li> 
+      <li>Step-by-Step DNS Security Operator Guidance Document (using BIND Tools) 
+        <a href="/docs/step-by-step/sbs.pdf">[PDF]</a> </li>
+      <li>DNSSEC Troubleshooting guide
+            <a href="/docs/troubleshooting/DNS-Security-Troubleshooting-Guide.pdf">[PDF]</a></li>
+      <li>Developers guide
+            <a href="/docs/developers_guide/dg.pdf">[PDF]</a></li>
+      </div>
+
+	<h2>Other DNSSEC-Related Documentation</h2>
+    <div class="indent">
+	<ul>
+		<li>DNSSEC-101 documents</li>
+	</ul>
+	<ul>
+		<ul>
+			<li><a href="/docs/DNSSEC-101/DNSSECSIGNEDv4.doc">Domain Information Signing for DNS</a></li>
+    		<li><a href="/docs/DNSSEC-101/Transaction_Authentic.doc">Transaction Authentication for DNS</a></li>
+			<br />
+  		</ul>
+	</ul>
+	<ul>
+		<li>DNSSEC Presentations</li>
+	</ul>
+	<ul>
+  		<ul>
+			<li><a href="/docs/DNSSEC-ppt/050405DNSSECovICANNws.ppt">DNS Security Technical Overview</a> (ICANN Workshop, Apr 2005)</li>
+    		<li><a href="/docs/DNSSEC-ppt/DNSSEC%20Intro.ppt">DNSSEC Specification and Operational Overview</a> </li>
+			<li><a href="/docs/DNSSEC-ppt/NANOG32slides-10-15.pdf">DNSSEC Deployment: Big Steps Forward; Several Steps to Go</a> (NANOG-32 Meeting, Oct 2004) </li>
+    		<li><a href="/docs/DNSSEC-ppt/20041130.CapeTown-DNSSEC-SamWeiler.ps">Planning for DNSSEC deployment</a>  (wwTLD
+Community Meeting, Cape Town, Nov 2004)</li>
+    		<li><a href="/docs/DNSSEC-ppt/Browser-MTA-Hardaker-022105.pdf">DNSSEC: Browser and MTA Support</a> (APRICOT, Feb 2005)</li>
+			<br />
+  		</ul>
+	</ul>
+	<ul>
+  		<li>Demos and Experiments</li>
+	</ul>
+	<ul>
+  		<ul>
+	        <li><a href="/testzone/">Our testzone full of bad DNSSEC
+	        data for testing DNSSEC software</a></li>
+    		<li><a href="/docs/demos_experiments/20040826%20Demo.ppt">DNS spoofing demo</a></li>
+		    <li><a href="/docs/demos_experiments/split-DNSSEC-experiment-0107.ppt">Split-view DNSSEC</a></li>
+			<br />
+	  	</ul>
+	</ul>
+
+	<ul>
+		<li> <a href="/docs">Other hosted documents</a></li>
+		<ul>
+			[Such as IETF working documents, etc]
+	    </ul>
+    </ul>
+	<br />
+    </div>
+
+
+    </div> <!-- end the main col-md-9 -->
+	  <div class="col-md-3">
+<div class="rightmenu hidden-print" role="complementary">
+
+<div class="panel panel-primary">
+  <div class="panel-heading">
+    <h4 class="panel-title">Learn To...</h4>
+  </div>
+  <div class="panel-body">
+    <!-- <a href="http://www.dnssec-tools.org/wiki/index.php/Sign_Your_Zone"> -->
+    <!--   <img class="centered" src="/images/lockcrop.png" alt="Sign Your Zone" /> -->
+    <!-- </a> -->
+    <ul class="nav dtnav">
+      <li class="lititle"><a class="toplink" href="/wiki/index.php/Installing_DNSSEC-Tools">
+          Install DNSSEC-Tools</a></li>
+      <li class="lititle"><a href="http://www.dnssec-tools.org/wiki/index.php/Sign_Your_Zone">Sign
+      Your Zone!</a></li>
+    </ul>        
+  </div>
+</div>
+
+<div class="panel panel-primary">
+  <div class="panel-heading">
+    <h4 class="panel-title">DNSSEC-Tools Resources</h4>
+  </div>
+<div class="panel-body">
+ <ul class="nav dtnav">
+  <li class="lititle">
+  </li>
+  <li class="lilinks">
+    <a class="toplink" href="/">
+      Main Page
+    </a>
+  </li>
+
+  <li class="lilinks">
+    <a class="toplink" href="/NEWS.html">
+      News
+    </a>
+  </li>
+
+    <li class="lilinks">
+      <a class="toplink" href="/wiki/index.php/Tutorials">
+	Tutorials
+      </a>
+    </li>
+
+  <li class="lilinks">
+    <a class="toplink" href="/wiki/index.php/DNSSEC-Tools_Components">
+      Tool Descriptions
+      <br />
+      And Screen-Shots
+    </a>
+  </li>
+
+  <li class="lilinks">
+    <a class="toplink" href="/wiki/index.php/Installing_DNSSEC-Tools">
+      Download
+    </a>
+    <ul style="margin-left: 1em;">
+      <li><a href="https://dnssec-tools.org/download/#gotoSources">Everything</a></li>
+      <li><a href="http://dnssec-tools.org/download/#gotodnsval">Libval</a></li>
+      <li><a href="http://dnssec-tools.org/download/#gotoGraphical Applications">GUI Apps</a></li>
+      <ul style="margin-left: 1em;">
+	<li><a href="http://dnssec-tools.org/download/#gotoDNSSEC-Check">DNSSEC-Check</a></li>
+	<li><a href="http://dnssec-tools.org/download/#gotoLookup">Lookup</a></li>
+	<li><a href="http://dnssec-tools.org/download/#gotoDNSSEC-Nodes">DNSSEC-Nodes</a></li>
+      </ul>
+    </ul>
+
+  <li class="lilinks">
+    <a class="toplink" href="/resources/documentation.html">
+      Additional Documentation
+    </a>
+  </li>
+
+  <li class="lilinks">
+    <a class="toplink" href="/testzone/index.html">
+      Test Zone
+    </a>
+  </li>
+</ul>
+</div>
+</div>
+
+<div class="panel panel-primary">
+  <div class="panel-heading">
+    <h4 class="panel-title"> Tools For... </h4>
+  </div>
+<div class="panel-body">
+<ul class="nav dtnav">
+  <li class="lilinks">
+    <a class="toplink" href="/wiki/index.php/Authoritative_Zone_Administrator">
+      Authoritative Zones
+    </a>
+  </li>
+
+  <li class="lilinks">
+    <a class="toplink" href="/wiki/index.php/Authoritative_Server">
+      Authoritative Servers
+    </a>
+  </li>
+
+  <li class="lilinks">
+    <a class="toplink" href="/wiki/index.php/Recursive_Server">
+      Recursive Servers
+    </a>
+  </li>
+
+  <li class="lilinks">
+    <a class="toplink" href="/wiki/index.php/DNSSEC_Applications">
+      Applications
+    </a>
+  </li>
+
+  <li class="lilinks">
+    <a class="toplink" href="/wiki/index.php/DNSSEC_Application_Development">
+      Application Developers
+    </a>
+  </li>
+</ul>
+</div>
+</div>
+
+<div class="panel panel-primary">
+  <div class="panel-heading">
+  <h4 class="panel-title"> Project Links </h4>
+  </div>
+<div class="panel-body">
+
+<ul class="nav dtnav">
+  <li class="lilinks">
+    <a class="toplink" href="/wiki/">
+      Wiki
+    </a>
+  </li>
+
+
+  <li class="lilinks">
+    <a class="toplink"
+      href="https://www.dnssec-tools.org/mailman/listinfo/">
+      Mailing Lists
+    </a>
+  </li>
+
+  <li class="lilinks">
+    <a class="toplink"
+      href="https://www.dnssec-tools.org/trac/">
+      Bug Database
+    </a>
+  </li>
+
+  <li class="lilinks">
+    <a class="toplink"
+      href="https://www.dnssec-tools.org/svn/dnssec-tools/">
+      SVN Repository
+    </a>
+  </li>
+</ul>
+</div>
+</div>
+
+
+<div class="panel panel-primary">
+  <div class="panel-heading">
+  <h4 class="panel-title"> Other Useful Sites </h4>
+  </div>
+<div class="panel-body">
+
+<ul class="nav dtnav">
+  <li class="lilinks">
+    <a class="toplink" href="http://www.isc.org/sw/bind/">
+      Bind DNS Software
+    </a>
+  </li>
+
+  <li class="lilinks">
+    <a class="toplink" href="http://www.net-dns.org/">
+      Net::DNS for Perl
+    </a>
+  </li>
+
+  <li class="lilinks">
+    <a class="toplink" href="http://www.dnssec-deployment.org/">
+      dnssec-deployment.org
+    </a>
+  </li>
+
+  <li class="lilinks">
+    <a class="toplink" href="http://www.dnssec.net/">
+      dnssec.net
+    </a>
+  </li>
+
+  <li class="lilinks">
+    <a class="toplink" href="http://www.ietf.org/html.charters/dnsext-charter.html">
+      IETF's dnsext WG
+    </a>
+  </li>
+
+  <li class="lilinks">
+    <a class="toplink" href="http://www.ietf.org/html.charters/dnsop-charter.html">
+      IETF's dnsop WG
+    </a>
+  </li>
+
+  <li class="lilinks">
+    <a class="toplink" href="http://www.dnsops.gov/">
+      Secure Naming Infrastructure Pilot (SNIP) 
+    </a>
+  </li>
+ </ul>
+</div>
+</div>
+
+</div> <!-- ends the right menu -->
+</div> <!-- ends col-md-3 -->
+
+    </div> <!-- end the row content -->
+    </div> <!-- end the main container content -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+    <script src="/js/bootstrap.min.js"></script>
+  </body>
+</html>
+

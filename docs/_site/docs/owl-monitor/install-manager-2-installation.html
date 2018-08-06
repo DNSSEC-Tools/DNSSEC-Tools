@@ -1,0 +1,1080 @@
+<html>
+
+<head>
+<title>Owl Monitoring System -- Manager Installation Manual -- Installation</title>
+</head>
+
+<body>
+
+<table>
+<tr>
+<td>
+<img align=left src="owl-logo.jpg"><br>
+<td width=30>&nbsp;
+<td align=center valign=top>
+<br>
+<center><h2>Owl Monitoring System</h2></center>
+<center><h2>Manager Installation Manual</h2></center>
+</tr>
+</table>
+<p>
+
+
+<p>
+
+<!*****************************************************************************>
+
+<a name="2."></a>
+<h3>2. Owl Manager Installation</h3>
+
+<!------------------------------------------------------------>
+
+<table align=right>
+
+<tr valign=top>
+<td valign=top>
+
+<tr><td>&nbsp;<td><a href="install-manager-2-installation.html#2.1.">2.1.</a><td>&nbsp;<td>Manager Installation</tr>
+<tr><td>&nbsp;<td><a href="install-manager-2-installation.html#2.1.1.">2.1.1.</a><td>&nbsp;<td>Preparatory Steps</tr>
+<tr><td>&nbsp;<td><a href="install-manager-2-installation.html#2.1.2.">2.1.2.</a><td>&nbsp;<td>Installing Third-Party Software</tr>
+<tr><td>&nbsp;<td><a href="install-manager-2-installation.html#2.1.2.1.">2.1.2.1.</a><td>&nbsp;<td>Nagios Core and Plugins</tr>
+<tr><td>&nbsp;<td><a href="install-manager-2-installation.html#2.1.2.2.">2.1.2.2.</a><td>&nbsp;<td><b>nagiosgraph</b></tr>
+<tr><td>&nbsp;<td><a href="install-manager-2-installation.html#2.1.2.3.">2.1.2.3.</a><td>&nbsp;<td><b>rrdtool</b></tr>
+<tr><td>&nbsp;<td><a href="install-manager-2-installation.html#2.1.2.4.">2.1.2.4.</a><td>&nbsp;<td><b>drraw.cgi</b></tr>
+<tr><td>&nbsp;<td><a href="install-manager-2-installation.html#2.1.2.5.">2.1.2.5.</a><td>&nbsp;<td>Perl modules</tr>
+<tr><td>&nbsp;<td><a href="install-manager-2-installation.html#2.1.3.">2.1.3.</a><td>&nbsp;<td>Installing the Owl Monitor Software</tr>
+<tr><td>&nbsp;<td><a href="install-manager-2-installation.html#2.1.3.1.">2.1.3.1.</a><td>&nbsp;<td>Unpacking the Owl Monitor Software</tr>
+<tr><td>&nbsp;<td><a href="install-manager-2-installation.html#2.1.3.2.">2.1.3.2.</a><td>&nbsp;<td><b>owl-dnswatch</b></tr>
+<tr><td>&nbsp;<td><a href="install-manager-2-installation.html#2.1.3.3.">2.1.3.3.</a><td>&nbsp;<td><b>owl-perfdata</b></tr>
+<tr><td>&nbsp;<td><a href="install-manager-2-installation.html#2.1.3.4.">2.1.3.4.</a><td>&nbsp;<td><b>owl-newsensor</b></tr>
+<tr><td>&nbsp;<td><a href="install-manager-2-installation.html#2.1.3.5.">2.1.3.5.</a><td>&nbsp;<td><b>owl-transfer-mgr</b></tr>
+<tr><td>&nbsp;<td><a href="install-manager-2-installation.html#2.1.3.6.">2.1.3.6.</a><td>&nbsp;<td>Data-Archiving Programs</tr>
+<tr><td>&nbsp;<td>&nbsp;<td>&nbsp;<td>&nbsp;</tr>
+<tr><td>&nbsp;<td><a href="install-manager-2-installation.html#2.2.">2.2.</a><td>&nbsp;<td>Modifying Configuration Files</tr>
+<tr><td>&nbsp;<td><a href="install-manager-2-installation.html#2.2.1.">2.2.1.</a><td>&nbsp;<td>Save Files!</tr>
+<tr><td>&nbsp;<td><a href="install-manager-2-installation.html#2.2.2.">2.2.2.</a><td>&nbsp;<td><b>nagios.cfg</b> (Nagios)</tr>
+<tr><td>&nbsp;<td><a href="install-manager-2-installation.html#2.2.3.">2.2.3.</a><td>&nbsp;<td><b>cgi.cfg</b> (Nagios)</tr>
+<tr><td>&nbsp;<td><a href="install-manager-2-installation.html#2.2.4.">2.2.4.</a><td>&nbsp;<td><b>resource.cfg</b> (Nagios)</tr>
+<tr><td>&nbsp;<td><a href="install-manager-2-installation.html#2.2.5.">2.2.5.</a><td>&nbsp;<td><b>share/config.inc.php (Nagios)</tr>
+<tr><td>&nbsp;<td><a href="install-manager-2-installation.html#2.2.6.">2.2.6.</a><td>&nbsp;<td><b>nagiosgraph.conf</b> (nagiosgraph)</tr>
+<tr><td>&nbsp;<td><a href="install-manager-2-installation.html#2.2.7.">2.2.7.</a><td>&nbsp;<td><b>map</b> (nagiosgraph)</tr>
+<tr><td>&nbsp;<td><a href="install-manager-2-installation.html#2.2.8.">2.2.8.</a><td>&nbsp;<td><b>htpasswd.users</b> (Apache)</tr>
+<tr><td width=25>&nbsp;<td>&nbsp;<td>&nbsp;<td>&nbsp;</tr>
+
+</tr>
+</table>
+
+<p>
+
+<!------------------------------------------------------------>
+
+<p>
+
+This section gives installation procedures for setting up the Owl Monitoring
+software on manager hosts.  There are two sections, an installation section
+and a configuration section.  The installation instructions discuss software
+installation of Owl software and supporting third-party software packages.
+System configuration is also detailed in this section, but only for
+non-Owl-specific configuration.  There are a number of Owl-specific
+configuration actions that must be performed and these are detailed in <a
+href="install-manager-4-adding-sensor.html">section 4</a>.
+
+<p>
+
+The Owl manager <b>requires</b> Perl.  You must install it on your system
+if it isn't already available.
+
+<p>
+
+
+<!------------------------------------------------------->
+
+<a name="2.1."></a>
+<h3>2.1. Manager Installation</h3>
+
+The basic Owl manager configuration consists of the Owl software and the
+Nagios monitoring system.  This configuration allows for monitoring of current
+sensor status, but does not provide any view into past monitoring data.  In
+order to get the historical view, especially as provided by a graphing
+capability, several additional software packages must be installed on the
+manager.  Since the historical view provides a great deal of useful
+information, these instructions will assume that you will be installing the
+additional software.
+
+<p>
+
+It is possible (and not too difficult) to run multiple instances of the
+third-party software packages (e.g., Nagios, <b>nagiosgraph</b>) on a single
+host, but care must be taken when configuring, building, and installing the
+software.  Without careful work, an existing installation may be overwritten
+by a later installation.  These instructions assume that only one instance of
+each package will be installed on the manager host.
+
+<p>
+
+Below is a diagram of the flow of Owl sensor data on the Owl manager.  The
+details may not make sense at this stage, but this will show how the various
+pieces fit together.
+
+<p>
+
+<center>
+<img src="owl-manager-data.png">
+</center>
+
+<p>
+
+<!----------------------------------->
+
+<a name="2.1.1."></a>
+<h3>2.1.1. Preparatory Steps</h3>
+
+Several actions must be taken on the manager host to prepare it for installing
+the required software.  These steps are listed below.  During the installation
+procedures, don't be shy about backing up things; it might not be necessary,
+but better safe than sorry.
+
+<p>
+
+<ul>
+
+<li>It is advisable to run a backup of your system before starting.  Depending
+on your level of paranoia, it couldn't hurt to run an incremental backup after
+completing each step of the installation.
+
+<p>
+
+<li>An unprivileged user account must be created for the Owl manager software.
+An existing account may be used, but it would probably be best to use a new
+account as this will segregate files and processes from existing users.  The
+user's name and group are not required to be any particular values.
+
+<p>
+
+You may want to create two unprivileged users for use by the Owl manager.
+One would run the various Owl commands, and the other would be used for
+sensor data transfers (in the case that the sensor is to initiate transfers.)
+The first user will need <i>rwx</i> permission to all the Owl directories and
+files.  The second user will need to be able to write data into the Owl data
+directories.
+
+<p>
+
+In the following instructions, it is assumed that a single user will created
+for the Owl manager and it will be referred to as the Owl User.
+
+<p>
+
+<li>SSH utilities and a web server must be installed on the manager host.
+These instructions assume that the OpenSSH and the Apache web server will be
+used.  Others may be used instead, but the you must determine the appropriate
+commands and options to use.  Apache support is included in Nagios.
+
+<p>
+
+<li>Install the <b>rrsync</b> utility.  This is a front-end to <b>rsync</b> that restricts the locations to which <b>rsync</b> may copy data.  This tool is available here:  <b>http://ftp.samba.org/pub/unpacked/rsync/support/rrsync</b>
+
+<p>
+
+<li>Create the directories required for each sensor.  There must be a data
+repository and a data archive.  Each sensor will have their own subdirectory
+in the repository and in the archive.  There must be a <b>data</b> and a
+<b>history</b> directory within each sensor's repository directory.
+
+<p>
+
+The following is a possible set of directories:
+<table>
+<tr><td width=40>&nbsp;<td><b>/owl/data</b><td>top-level data repository
+<tr><td width=40>&nbsp;<td><b>/owl/old.data</b><td>top-level data archive
+<tr><td width=40>&nbsp;<td><b>/owl/data/sensor-portland/dnstimer</b>&nbsp;&nbsp;<td>sensor-portland's DNS timer-data directory
+<tr><td width=40>&nbsp;<td><b>/owl/data/sensor-portland/history</b><td>sensor-portland's monitoring history (for Nagios)
+<tr><td width=40>&nbsp;<td><b>/owl/old.data/sensor-portland</b><td>sensor-portland's data archive
+<tr><td width=40>&nbsp;<td><b>/owl/data/sensor-oslo/dnstimer</b><td>sensor-oslo's DNS timer-data directory
+<tr><td width=40>&nbsp;<td><b>/owl/data/sensor-oslo/history</b><td>sensor-oslo's monitoring history (for Nagios)
+<tr><td width=40>&nbsp;<td><b>/owl/old.data/sensor-oslo</b><td>sensor-oslo's data archive
+</table>
+
+<p>
+
+<li>Create an SSH key for the Owl user.  This is commonly done with the
+<b>ssh-keygen</b> command.
+
+<p>
+
+<li>Consider the users you want to access your Owl monitor, as well as the
+types of access they should be allowed.  These users will be added to the
+Owl-specific password file used by Apache and the users and access rights
+will be added to a Nagios configuration file.  These users are web-based
+users only, and are not (necessarily) related to users on the Owl manager
+host.
+
+<p>
+
+<li>Install the software as described in the following sections.  The Owl
+software will be installed <i>after</i> all the third-party software, since
+some of the Owl software will be installed in directories created by the
+third-party software.
+
+<p>
+
+</ul>
+
+<!----------------------------------->
+
+<a name="2.1.2."></a>
+<h3>2.1.2. Installing Third-Party Software</h3>
+
+The third-party software packages should be built and installed as specified
+by each package.  Owl-specific notes for each will be given below.  While many
+of these packages are available as pre-built distributions, configuring and
+building them yourself will provide for additional control that may be useful.
+This includes the installation location and the user and group that will be
+used for executing the commands.
+
+<p>
+
+Nagios, along with a web server, should be installed such that they will be
+restarted at system boot time.
+
+<p>
+
+This table shows the most recent software versions that were tested with the
+Owl Monitor. 
+<table>
+<tr>
+   <td width=80>&nbsp;
+   <td width=120><b>Package</b>
+   <td><b>Version Tested with Owl</b>
+</tr>
+<tr><td>&nbsp;<td>Nagios Core<td align=center>3.4.1</tr>
+<tr><td>&nbsp;<td>Nagios Plugins<td align=center>1.4.16</tr>
+<tr><td>&nbsp;<td>nagiosgraph<td align=center>1.4.4</tr>
+<tr><td>&nbsp;<td>rrdtool<td align=center>1.4.7</tr>
+<tr><td>&nbsp;<td>drraw.cgi<td align=center>2.2b2</tr>
+</table>
+
+<p>
+
+<!------------------------->
+
+<a name="2.1.2.1."></a>
+<h3>2.1.2.1. Nagios Core and Plugins</h3>
+
+If building Nagios Core and Nagios Plugins from source, it is recommended that
+the <b>configure</b> command be given arguments that will allow specification
+of the installation-path prefix, the Nagios user, and the Nagios group.  A
+possible command line could be:
+
+<pre>
+    $ ./configure --with-command-group --prefix=/owl --with-nagios-user=owl-monitor --with-nagios-group=owl-monitor
+</pre>
+
+<p>
+
+The same prefix, username, and groupname must be used when building Nagios
+Core and Nagios Plugins.
+
+<p>
+
+Multiple instances of Nagios can be installed on a single machine.  This can
+be useful for segregating different things being monitored.  However, you must
+be careful when doing this.  In particular, even if the <i>--prefix</i> option
+was given to <b>configure</b>, the "make install-init" and "make
+install-webconf" commands will overwrite existing Nagios files.
+
+<p>
+
+<!------------------------->
+
+<a name="2.1.2.2."></a>
+<h3>2.1.2.2. <b>nagiosgraph</b></h3>
+
+The <b>README</b> file for <b>nagiosgraph</b> contains instructions for
+automated installation (using <b>install.pl</b>) and for manual installation.
+You should read this file and decide which method you want to use.
+
+<p>
+
+If you choose the manual installation, you may skip most of this section and
+pick up at the discussion of the <b>map</b> file.
+
+<p>
+
+If you choose to install with <b>install.pl</b>, you must know that it looks
+like several of the steps are not performed by the script.  After running
+<b>install.pl</b> you must verify that the manual steps from "Restart nagios"
+to the end have actually been taken.
+
+<p>
+
+<b>install.pl</b> will configure the package, install its files in the
+appropriate places, and modify Nagios and <b>httpd</b> files as needed.
+A variety of options allow for site-specific installation layouts.  In
+addition, you will be prompted for many directory and file names prior to
+<b>install.pl</b> completing its work.  If it can't find one or another file
+that it must update, then at the end of execution it will provide a set of
+steps that you must manually perform in order to complete the installation.
+
+<p>
+
+The <i>--dry-run</i> option will show you what <b>install.pl</b> would do, so
+that you may verify where things are being copied.  It isn't required, but it
+wouldn't be a bad idea to use this option prior to the actual install.
+
+<p>
+
+One thing <b>install.pl</b> is likely to say is that you must add a Nagios
+command file.  This file probably already exists, and you must find it.  It
+is likely to be called something like <b>commands.cfg</b> and be located in
+the <b>etc/objects</b> directory in your Nagios installation.  Check names
+carefully when making this modification, as <b>commands.cfg</b> already has
+a <i>process-service-perfdata</i> command and <b>install.pl</b> will have
+you add a <i>process-service-perfdata-by-nagiosgraph</i> command.
+
+<p>
+
+<b>install.pl</b> logs all its actions, including the manual-intervention
+actions, in the <b>install-log</b> file.  Unfortunately, the command line is
+not recorded in the log file, so it might be useful to save that somewhere
+yourself.
+
+<p>
+
+I have used this command to successfully install <b>nagiosgraph</b>:
+
+<pre>
+    $ install.pl --prefix /owl/nagiosgraph --nagios-user owl-manager --nagios-cgi-url /nagios-owl/cgi-bin \
+    --nagios-perfdata-file /owl/var/service-perfdata.out --log-dir /owl/var --layout standalone
+</pre>
+
+I do not let <b>install.pl</b> update the Nagios or Apache configurations,
+which it will prompt for; I prefer to make those modifications myself.
+Refer to the <b>install-log</b> file to see what remains to be done.
+
+<p>
+
+The <b>README</b> file contains steps for manual installation and it looks
+like several of the steps are not performed by <b>install.pl</b>.  If you use
+<b>install.pl</b> to install <b>nagiosgraph</b>, verify that the manual steps
+from "Restart nagios" to the end have actually been taken.
+
+<p>
+
+You may have to manually copy the <b>nagiosgraph.ssi</b> file into place.
+This file is in <b>.../nagiosgraph/examples/nagiosgraph.ssi</b> and it
+should be copied into your equivalent of <b>/owl/share/nagiosgraph.ssi</b>.
+
+<p>
+
+Before <b>nagiosgraph</b> can be used by the Owl manager, the <b>map</b>
+file must be modified to recognize data from the Owl plugins for Nagios.
+The required modifications are discussed in
+<a href="install-manager-2-installation.html#2.2.7.">section 2.2.7</a>.
+
+<p>
+
+<!------------------------->
+
+<a name="2.1.2.3."></a>
+<h3>2.1.2.3. <b>rrdtool</b></h3>
+
+No Owl-specific configuration or actions were required for building and
+installing <b>rrdtool</b>.
+
+<p>
+
+<!------------------------->
+
+<a name="2.1.2.4."></a>
+<h3>2.1.2.4. <b>drraw.cgi</b></h3>
+
+To install <b>drraw.cgi</b>, copy the <b>drraw.cgi</b> and the
+<b>drraw.conf</b> files into the Nagios <b>sbin/</b> directory.  So, if you
+have installed Nagios in <b>/owl/nagios</b>, then you should copy the two
+<b>drraw</b> files into <b>/owl/nagios/sbin</b>.
+
+<p>
+
+The <b>drraw.conf</b> must be edited for this installation.  Some of these
+edits are required and some are optional.  Each will be marked as to whether
+or not you must make the change.  This file is a Perl file, so the
+configuration values are set according to Perl's language rules.
+
+<p>
+
+<ul>
+
+<li>Set the <i>$title</i> variable if you don't want the default page title
+in the Nagios-displayed graphing pages.
+<br><i>(optional)</i>
+
+<p>
+
+<li>Set the <i>%datadirs</i> variable to hold the paths to your sensors' RRD
+databases.  There are two fields required for each entry.  The first is the
+path to that sensor's database files, and should not have a terminating
+slash.  The second is a name by which those databases will be identified when
+defining new graphs.
+
+<pre>
+    '/owl/nagiosgraph/var/rrd/sensor1%20h-root%20foo.com%20A'  => '[Kyoto H foo A]',
+    '/owl/nagiosgraph/var/rrd/sensor1%20h-root%20foo.com%20NS' => '[Kyoto H foo NS]',
+    '/owl/nagiosgraph/var/rrd/sensor5%20h-root%20foo.com%20A'  => '[Cairo H foo A]',
+</pre>
+
+The identifier should be unique for each database directory.
+<br><i>(required)</i>
+
+<p>
+
+<li>Set the <i>vrefresh</i> variable for the number of seconds the graph
+viewer will wait before automatically refreshing its display.
+<br><i>(optional)</i>
+
+<p>
+
+<li>Set the <i>drefresh</i> variable for the number of seconds the dashboard
+viewer will wait before automatically refreshing its display.
+<br><i>(optional)</i>
+
+<p>
+
+<li>Set the <i>@dv_def</i>, @<i>dv_name</i>, and @<i>dv_secs</i> array
+variables for the graphs that will be generated each time a predefined graph
+is displayed.  These are time based values and a particular element of one
+array is directly related to that same element in the other arrays.
+
+<p>
+
+The <i>@dv_def</i> array is used to select data from the database.
+The <i>@dv_name</i> array is used to provide titles for each graph.
+The <i>@dv_secs</i> array is used to provide the count of seconds for
+each graph.
+
+<p>
+
+The following example values show the relation between the three arrays.
+<pre>
+    @dv_def  = ( 'end - 15 minutes', 'end - 60 minutes', 'end - 4 hours',
+		 'end - 12 hours',   'end - 24 hours',   'end - 1 week' ,
+		 'end - 1 month',    'end - 1 year');
+
+    @dv_name = (
+	'Past&nbsp;15&nbsp;Minutes',
+	'Past&nbsp;60&nbsp;Minutes',
+	'Past&nbsp;4&nbsp;Hours',
+	'Past&nbsp;12&nbsp;hours',
+	'Past&nbsp;24&nbsp;Hours',
+	'Past&nbsp;Week',
+	'Past&nbsp;Month',
+	'Past&nbsp;Year'
+    );
+
+    @dv_secs = ( 900, 3600, 14400, 43200, 86400, 604800, 2419200, 31536000 );
+</pre>
+<i>(optional)</i>
+
+<p>
+
+<li>The <i>$saved_dir</i> variable defines where definitions for your
+predefined graphs will be stored.  It must be set to match your path
+configuration and it must exist and be writable by the web server.
+It might be something like:
+
+<pre>
+    $saved_dir = '/owl/nagios/var/drraw/saved';
+</pre>
+<i>(required)</i>
+
+<p>
+
+<li>The <i>$tmp_dir</i> variable defines where cached graphing file will be
+stored until they time out and are deleted.  It must be set to match your path
+configuration and it must exist and be writable by the web server.  It might
+be something like:
+
+<pre>
+    $tmp_dir = '/owl/nagios/var/drraw/tmp';
+</pre>
+<i>(required)</i>
+
+<p>
+
+<li>The <i>$ERRLOG</i> variable defines where graphing errors will be logged.
+It must be set to match your path configuration and it must exist and be
+writable by the web server.  It might be something like:
+
+<pre>
+    $ERRLOG = '/owl/nagios/var/drraw/errors.log';
+</pre>
+<i>(required)</i>
+
+<p>
+
+</ul>
+
+<p>
+
+<!------------------------->
+
+<a name="2.1.2.5."></a>
+<h3>2.1.2.5. Perl modules</h3>
+
+There is a set of Perl modules required by the Owl manager and the third-party
+software packages.  Some of the software packages may install these packages
+themselves, but you must ensure that these are available.  These should be
+available through CPAN.
+
+<p>
+
+Modules required by the Owl manager:
+<ul>
+<li>Cwd.pm
+<li>Fcntl.pm
+<li>File::Path.pm
+<li>Getopt::Long.pm
+<li>Time::Local.pm
+</ul>
+
+<p>
+
+It is likely that some of the third-party software may require other Perl
+modules.  The installation documentation or process <i>should</i> inform you
+of what must be installed on your system.
+
+<p>
+
+<!----------------------------------->
+
+<a name="2.1.3."></a>
+<h3>2.1.3. Installing the Owl Monitor Software</h3>
+
+There is a small amount of manager-specific software in the Owl Monitor.  Most
+of the work on the manager is performed by Nagios and the other third-party
+software.  The Owl Monitor software on the manager host consists of two Nagios
+plugins that will interpret Owl sensor data for Nagios and add Owl sensor data
+to graphing databases.  There is also a small number of administrator
+programs for managing the large amounts of Owl sensor data.
+
+<p>
+
+<!------------------------->
+
+<a name="2.1.3.1."></a>
+<h3>2.1.3.1. Unpacking the Owl Monitor Software</h3>
+
+The Owl Monitor software comes in a <b>bzip2</b>'d <b>tar</b> file.  In most
+modern Unix systems, this can be unpacked with this command:
+
+<pre>
+        $ tar xzf owl-monitor.tar.gz
+</pre>
+
+This command unpacks the Owl distribution in the current directory.  This
+can be unpacked anywhere you want, but it is a good idea to do it in the Owl
+manager's home directory.
+
+<p>
+
+Most of the Owl commands will be in the <b>owl-manager/bin</b> directory.
+These commands can stay in that directory or be moved elsewhere.  If they
+remain in their own directory, it would be helpful to add the directory
+to your shell's path.
+
+<p>
+
+<!------------------------->
+
+<a name="2.1.3.2."></a>
+<h3>2.1.3.2. <b>owl-dnswatch</b></h3>
+
+The <b>owl-dnswatch</b> command is a Nagios plugin that reads Owl monitoring
+data and reports the latest results to Nagios.  Each execution of
+<b>owl-dnswatch</b> requires an Owl sensor name, a target host, a DNS server,
+and a DNS query type.  The appropriate monitor datafile is consulted based on
+those inputs.  The following actions must be taken to install
+<b>owl-dnswatch</b>.
+
+<p>
+
+<ul>
+
+<li>Set the <i>$OWLDATA</i> value in <b>owl-dnswatch</b> to the top-level
+directory that holds the Owl monitoring data.  This path will depend on
+your installation hierarchy, but it will likely look something like:
+
+<pre>
+        my $OWLDATA = "/owl/data";
+</pre>
+
+<p>
+
+<li>Copy <b>owl-dnswatch</b> to the Nagios plugin directory.  This directory
+is probably something like <b>/owl/nagios/libexec</b>.
+
+<p>
+
+</ul>
+
+<p>
+
+<!------------------------->
+
+<a name="2.1.3.3."></a>
+<h3>2.1.3.3. <b>owl-perfdata</b></h3>
+
+The <b>owl-perfdata</b> command is a Nagios plugin that acts as a front-end
+for inserting Owl monitoring data into an RRD database.  These databases are
+used for graphing the monitoring data.  The following actions must be taken
+to install <b>owl-perfdata</b>.
+
+<ul>
+
+<li>Set the <i>$GRAPHINSERT</i> value in <b>owl-perfdata</b> to the path
+to the <b>insert.pl</b> command.  This path will depend on where you have
+installed <b>nagiosgraph</b>, but it will likely look something like:
+
+<pre>
+        my $GRAPHINSERT = "/owl/nagiosgraph/bin/insert.pl";
+</pre>
+
+<p>
+
+<li>Copy <b>owl-perfdata</b> to the Nagios plugin directory.  This directory
+is probably something like <b>/owl/nagios/libexec</b>.
+
+<p>
+
+</ul>
+
+<p>
+
+<!------------------------->
+
+<a name="2.1.3.4."></a>
+<h3>2.1.3.4. <b>owl-newsensor</b></h3>
+
+There are a set of Nagios objects that must be created for each Owl
+sensor.  Once the Owl manager has sensor data files in its data directory,
+the <b>owl-newsensor</b> program can be used to create these objects.
+The actions required for this are described in
+<a href="install-manager-4-adding-sensor.html#4.7.">section 4.7</a>.
+
+<p>
+
+No local modifications are required for <b>owl-newsensor</b>.
+
+<p>
+
+Copy <b>owl-newsensor</b> to a directory which will be its home.
+This could be anything that is convenient for you; e.g., <b>/usr/bin</b>,
+<b>/usr/local/bin</b>, <b>~/mystuff</b>, or <b>/owl/scripts</b>.
+
+<p>
+
+<!------------------------->
+
+<a name="2.1.3.5."></a>
+<h3>2.1.3.5. <b>owl-transfer-mgr</b></h3>
+
+If the Owl manager transfers data from a sensor, it will use the
+<b>owl-transfer-mgr</b> to retrieve the data.
+
+<p>
+
+No local modifications are required for <b>owl-newsensor</b>.
+
+<p>
+
+<!------------------------->
+
+<a name="2.1.3.6."></a>
+<h3>2.1.3.6. Data-Archiving Programs</h3>
+
+The following programs assist the administrator with managing the large amount
+of Owl monitoring data that accumulates on the Owl manager host.  These
+programs work together to create a two-stage archival process.  It is helpful
+to have <b>cron</b> run these programs, though this is not essential.
+
+<p>
+
+The first stage of the archive process moves old data from the sensor's data
+directory to the sensor's archive directory.  Data is considered old if the
+file's timestamp (in its name) is older than two days.  This part of the data
+archiving should be performed once per day, depending on how frequently the
+sensors perform their own data archiving.
+
+<p>
+
+The second stage of the archive process combines a month's worth of sensor
+data into a single compressed tarfile.  This should be performed several days
+after the end of the previous month.
+
+<p>
+
+The Owl data-archival programs assume that all sensor data are stored in a
+common directory and all the archived data are stored in a common directory.
+They will segregate data by sensor in order to prevent it from getting mixed
+together.  For example, when handling data for the sensors <b>dresden</b> and
+<b>kvothe</b>, these programs might expect the following directories to exist:
+
+<p>
+
+<pre>
+    /owl/data/dresden
+    /owl/data/kvothe
+    /owl/data-archive/dresden
+    /owl/data-archive/kvothe
+</pre>
+
+<p>
+
+This first set of programs will archive data for all the sensors that report
+to an Owl manager.  They must be told where the sensor data are stored and
+where the data archive is kept.
+
+<ul>
+
+<li><b>owl-archdata</b> - Archives data for all sensors without having to name
+them explicitly.  The sensors in the given data directory will be archived.
+The data are stored in year-month subdirectories in the sensor's archive.
+<b>owl-archdata</b> is used in the first stage of the archival process.
+
+<p>
+
+<li><b>owl-monthly</b> - Archives all sensors' archived data in a compressed
+tarfile, in order to minimize space taken by the archive.  The tarfiles are
+stored in another subdirectory, divided by year.
+<b>owl-monthly</b> is used in the second stage of the archival process.
+
+<p>
+
+</ul>
+
+<p>
+
+This second set of programs will archive data for a single sensor that reports
+to an Owl manager.  They must be told where the sensor data are stored and
+where the data archive is kept.
+
+<ul>
+<li><b>owl-dataarch-mgr</b> - Archives data for a single sensor.  This is
+intended to be run by <b>owl-archdata</b>, and it is a slightly modified
+version of the Owl sensor's <b>owl-dataarch</b> utility.
+
+<p>
+
+<li><b>owl-archold</b> - Archives a sensor's archive data in a compressed
+tarfile.  This is intended to be run by <b>owl-monthly</b>.  The Owl manager's
+version of <b>owl-archold</b> is exactly same as the Owl sensor's utility of
+the same name.
+
+<p>
+
+</ul>
+
+<p>
+
+More information about each of these programs is available in their man pages.
+
+<p>
+
+Copy these archiving programs to a directory which will be their home.
+This could be anything that is convenient for you; e.g., <b>/usr/bin</b>,
+<b>/usr/local/bin</b>, <b>~/mystuff</b>, or <b>/owl/scripts</b>.
+
+<p>
+
+<!------------------------------------------------------->
+
+<a name="2.2."></a>
+<h3>2.2. Modifying Configuration Files</h3>
+
+Several files must be modified in order to provide Nagios monitoring and
+graphing.  These files belong to Nagios, Apache, and <b>nagiosgraph</b>.
+This section describes the required modifications.  These modifications
+do not provide any monitoring of Owl sensor data; further steps to supply
+that functionality will be given later.
+
+<p>
+
+In the basic Nagios installation, <b>/nagios/etc</b> holds sample
+configuration files, which can be modified for use.
+
+<p>
+
+<!----------------------------------->
+
+<a name="2.2.1."></a>
+<h3>2.2.1. Save Files!</h3>
+
+Before starting to modify any existing file -- e.g., Nagios object files and
+Apache configuration files -- it would be a <i>very</i> good idea to make a
+back-up copy of the files.  This will provide reference copies of the files
+in case they might be needed later.
+
+<p>
+
+<!----------------------------------->
+
+<a name="2.2.2."></a>
+<h3>2.2.2. <b>nagios.cfg</b> (Nagios)</h3>
+
+This file is the primary configuration file for Nagios.  There are quite a
+few changes that must be made to this file.  The modifications listed in this
+section will not incorporate monitoring of Owl sensor data.  That will be
+described in
+<a href="install-manager-4-adding-sensor.html#4.8.1.">section 4.8.1</a>.
+
+<p>
+
+The various configuration parameters for Nagios could be included in a small
+number of files, but the standard arrangement groups the parameters into
+separate files.  The <b>nagios.cfg</b> file is the primary configuration file
+for Nagios, and at run-time it acts as the focal point to collect the disparate
+configuration files for the Nagios daemon.
+
+<p>
+
+A <i>cfg_file</i> line is used to tell Nagios to include the specified line.
+Adding or deleting these lines will control which files are included in the
+Nagios configuration.
+
+<p>
+
+As a result of the Nagios build and installation process, the <b>nagios.cfg</b>
+file should be mostly configured already.  The Nagios configuration file is
+well-documented, so figuring out how to adjust its fields shouldn't be too
+difficult.  There are a few things that must be done to prepare it for Owl
+monitoring.  These directions assume that Owl monitoring is the only
+monitoring that will be performed by this installation.
+
+<ul>
+
+<p>
+
+<li>Make sure these <i>cfg_file</i> lines are deleted or commented out:
+<ul>
+<li><b>localhost.cfg</b>
+<li><b>printer.cfg</b>
+<li><b>switch.cfg</b>
+<li><b>windows.cfg</b>
+</ul>
+(This is not strictly necessary.  These files may provide some monitoring
+information that you would find useful.)
+
+<p>
+
+</ul>
+
+To allow for graphing of monitoring results, several performance-processing
+fields must be set in <b>nagios.cfg</b>.  Unless otherwise stated, do not
+include the double quotes when setting these fields.
+
+<ul>
+
+<li>Find the <i>process_performance_data</i> line and change it to:
+"process_performance_data=1"
+
+<p>
+
+<li>Find the <i>service_perfdata_file</i> line and change it to:
+"service_perfdata_file=/owl/var/service-perfdata.out"
+
+<p>
+
+<li>Add this line:  "service_perfdata_file_template=$LASTSERVICECHECK$||$HOSTNAME$||$SERVICEDESC$||$SERVICEOUTPUT$||$SERVICEPERFDATA$"
+
+<p>
+
+<li>Find the <i>service_perfdata_file_mode</i> line and change it to:
+"service_perfdata_file_mode=a"
+
+<p>
+
+<li>Add this line:  "service_perfdata_file_processing_interval=30"
+
+</ul>
+
+<!----------------------------------->
+
+<a name="2.2.3."></a>
+<h3>2.2.3. <b>cgi.cfg</b> (Nagios)</h3>
+
+This is the configuration file for CGI scripts run by Nagios.  Most of it is
+set up during the Nagios configuration process.  The following things must be
+set to ensure your installation's needs are met.
+
+<ul>
+
+<li>The <i>url_html_path</i> field contains the path portion of the URL
+for the Nagios monitor.  For example, if the desired URL to reach your
+Nagios monitor is <b>http://www.example.com/owl-dns-monitor</b>, then
+<i>url_html_path</i> must be set to <b>/owl-dns-monitor</b>.
+Check this field to ensure it is set as required.
+
+<p>
+
+<li>The <b>cgi.cfg</b> file allows you to specify different types of
+information and actions that can be taken by different users.  The
+<i>authorized_for_</i> values may be set for multiple users.  The user
+names are those in the <b>htpasswd.users</b> file.
+
+</ul>
+
+<p>
+
+<!----------------------------------->
+
+<a name="2.2.4."></a>
+<h3>2.2.4. <b>resource.cfg</b> (Nagios)</h3>
+
+Ensure USER1 points to the plugins directory.  This should be something
+like <b>/owl/libexec</b>.
+
+<p>
+
+<!----------------------------------->
+
+<a name="2.2.5."></a>
+<h3>2.2.5. <b>share/config.inc.php</b> (Nagios)</h3>
+
+<p>
+
+Nagios uses this file to hold a small amount of file-location data.  
+The following actions must be taken:
+
+<ul>
+
+<li>Ensure that has the correct path for the <i>$cfg[]</i> fields.  If your
+configuration doesn't use the default paths, this may not be set properly.
+<p>
+
+<li>Add an entry for the <i>$cfg['ng_cgi_base_url']</i> field to be set to
+the path of the <b>nagiosgraph</b> CGI directory.  This will depend on how
+you installed <b>nagiosgraph</b>, and should look something like this:
+<pre>
+    $cfg['ng_cgi_base_url']='/nagiosgraph/cgi-bin';
+    $cfg['ng_cgi_base_url']='/nagiosgraph-owl/cgi-bin';
+</pre>
+<p>
+
+</ul>
+
+<p>
+
+<!----------------------------------->
+
+<a name="2.2.6."></a>
+<h3>2.2.6. <b>nagiosgraph.conf</b> (nagiosgraph)</h3>
+
+<p>
+
+This is the configuration file for Nagiosgraph.  Several settings must be
+checked and some Owl-specific setting copied in.  The following actions
+must be taken:
+
+<ul>
+
+<p>
+
+<li>Copy the contents of <b>ng-owl-conf</b> After the lines setting
+<i>xffs</i>.  These are reasonable values, but don't change them unless
+you know what you're doing.
+<p>
+
+<li>Ensure that <i>nagiosgraphcgiurl</i> path points to the appropriate
+directory, as defined by your web server's configuration.
+<p>
+
+<li>Ensure that <i>javascript</i> path points to the appropriate
+directory, as defined by your web server's configuration.
+<p>
+
+<li>Ensure that <i>stylesheet</i> path points to the appropriate
+directory, as defined by your web server's configuration.
+<p>
+
+</ul>
+
+<p>
+
+<!----------------------------------->
+
+<a name="2.2.7."></a>
+<h3>2.2.7. <b>map</b> (nagiosgraph)</h3>
+
+<p>
+
+<b>nagiosgraph</b> uses a file of data definitions that describe how to
+extract data from Nagios plugins and how to handle the extracted data.
+The file is a collection of Perl expressions that are evaluated by
+<b>nagiosgraph</b>.  This file is named something like
+<b>/owl/nagiosgraph/etc/map</b>.
+
+<p>
+
+The Owl manager distribution contains a set of additional, Owl-specific
+definitions that must be added to the <b>map</b> file.  These definitions
+are in <b>ng-owl-map</b>.  Copy the contents of this file into the
+<b>map</b>.
+
+<p>
+
+<!----------------------------------->
+
+<a name="2.2.8."></a>
+<h3>2.2.8. <b>htpasswd.users</b> (Apache)</h3>
+
+<p>
+
+Strictly speaking, this file is not a Nagios file, but is instead an
+<b>httpd</b> file.  The Nagios configuration file for <b>httpd</b> gives the
+name of an <b>htpasswd.users</b> file.  Use the <b>htpasswd</b> command to
+create and populate this file with the users that should be allowed to access
+the Owl monitor.  These users must have their permissions defined in the
+Nagios <b>cgi.cfg</b> file.
+
+<p>
+
+Proceed to <a href="install-manager-3-about-queries.html">Section 3. An Interlude on
+Sensor Queries</a> for important information about defining the queries
+gathered by your Owl manager.<br>If you have already read Section&nbsp;3,
+you may continue on with <a href="install-manager-4-adding-sensor.html">Section 4.
+Adding Sensors</a> to complete the installation of the manager.
+
+<p>
+
+<!*****************************************************************************>
+
+<br><br>
+
+<center>
+
+<hr width="70%">
+
+<p>
+
+<!-------------------------------------->
+<table width="100%">
+<tr>
+<td width="33%" align=left>
+<a href="install-manager-1-overview.html">Section 1.<br>Operational Overview</a>
+<td width="33%" align=center>
+<a href="install-manager.html">Owl Monitoring System<br>Manager Installation Manual</a>
+<td width="33%" align=right>
+<a href="install-manager-3-about-queries.html">Section 3.<br>An Interlude on<br>Sensor Queries</a>
+</tr>
+</table>
+<p>
+<!-------------------------------------->
+
+<a href="http:www.dnssec-tools.org">DNSSEC Tools</a>
+
+</center>
+
+<p>
+
+</body>
+</html>

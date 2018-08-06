@@ -1,0 +1,155 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>Net::DNS::SEC::Tools::dnssectools - General routines for the DNSSEC-Tools package.</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:tewok@leodhas.local" />
+</head>
+
+<body style="background-color: white">
+
+
+<!-- INDEX BEGIN -->
+<div name="index">
+<p><a name="__index__"></a></p>
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<li><a href="#description">DESCRIPTION</a></li>
+	<li><a href="#interfaces">INTERFACES</a></li>
+	<li><a href="#copyright">COPYRIGHT</a></li>
+	<li><a href="#author">AUTHOR</a></li>
+	<li><a href="#see_also">SEE ALSO</a></li>
+</ul>
+
+<hr name="index" />
+</div>
+<!-- INDEX END -->
+
+<p>
+</p>
+<hr />
+<h1><a name="name">NAME</a></h1>
+<p>Net::DNS::SEC::Tools::dnssectools - General routines for the DNSSEC-Tools package.</p>
+<p>
+</p>
+<hr />
+<h1><a name="synopsis">SYNOPSIS</a></h1>
+<pre>
+  use Net::DNS::SEC::Tools::dnssectools;</pre>
+<pre>
+  dt_adminmail($subject,$msgbody,$recipient);</pre>
+<pre>
+  $zspath = dt_cmdpath('zonesigner');</pre>
+<pre>
+  $ftype = dt_findtype($path);</pre>
+<p>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p>The <strong>dnssectools</strong> module provides a general set of methods for use with
+DNSSEC-Tools utilities.</p>
+<p>
+</p>
+<hr />
+<h1><a name="interfaces">INTERFACES</a></h1>
+<p>The interfaces to the <strong>dnssectools</strong> module are given below.</p>
+<dl>
+<dt><strong><a name="dt_adminmail" class="item"><em>dt_adminmail(subject,msgbody,recipient)</em></a></strong></dt>
+
+<dd>
+<p>This routine emails a message to the administrative user listed in the
+DNSSEC-Tools configuration file.</p>
+<p><em>dt_adminmail()</em> requires two parameters, both scalars.
+The <em>subject</em> parameter is the subject for the mail message.
+The <em>msgbody</em> parameter is the body of the mail message.</p>
+<p>A third parameter, <em>recipient</em>, may be given to specify the message's
+recipient.  If this is not given, then the recipient will be taken from
+the <em>admin-email</em> record of the DNSSEC-Tools configuration file.
+If <em>recipient</em> is &quot;nomail&quot;, then no message will be sent and success
+will be returned.</p>
+<p>Return values:</p>
+<pre>
+        1 - the message was created and sent.
+        0 - an invalid recipient was specified.</pre>
+</dd>
+</dl>
+<p>It relies on the the following dnssec-tools.conf configuration parameters:</p>
+<dl>
+<dt><strong><a name="admin_email" class="item"><em>admin-email</em></a></strong></dt>
+
+<dd>
+<p>The email address that the mail should come from.</p>
+</dd>
+<dt><strong><a name="mailer_type" class="item"><em>mailer-type</em></a></strong></dt>
+
+<dd>
+<p>Should be one of: <em>sendmail, smtp, qmail</em>.  This option is not
+required and will default to trying sendmail and qmail to deliever the
+mail.  If <em>mailer-server</em> is set to a defined value but <em>mailer-type</em> is not, then <em>mailer-type</em> will default to</p>
+</dd>
+<dt><strong><a name="mailer_server" class="item"><em>mailer-server</em></a></strong></dt>
+
+<dd>
+<p>The server, if <em>admin-mail</em> is set to <em>smtp</em>, that the mail should
+be delivered to.</p>
+</dd>
+<dt><strong><a name="dt_cmdpath" class="item"><em>dt_cmdpath(command)</em></a></strong></dt>
+
+<dd>
+<p>This routine returns the path to a specified DNSSEC-Tools command.
+<em>command</em> should be the name only, without any leading directories.
+The command name is checked to ensure that it is a valid DNSEC-Tools command,</p>
+<p>Return values:</p>
+<pre>
+        The absolute path to the command is returned if the command
+        is valid.
+        Null is returned if the command is not valid.</pre>
+</dd>
+<dt><strong><a name="dt_filetype" class="item"><em>dt_filetype(path)</em></a></strong></dt>
+
+<dd>
+<p>This routine returns the type of the file named in <em>path</em>.  The rollrec and
+keyrec records contained therein are counted and a type determination is made.</p>
+<p>Return values:</p>
+<pre>
+        &quot;keyrec&quot; -  At least one keyrec record was found and no
+                    rollrec records were found.</pre>
+<pre>
+        &quot;rollrec&quot; - At least one rollrec record was found and
+                    no keyrec records were found.</pre>
+<pre>
+        &quot;mixed&quot; -   At least one rollrec record and at least one
+                    keyrec record were found.
+                    This is most likely an erroneous file.</pre>
+<pre>
+        &quot;unknown&quot; - No rollrec records nor keyrec records
+                    were found.</pre>
+<pre>
+        &quot;nofile&quot;  - The specified file does not exist.</pre>
+</dd>
+</dl>
+<p>
+</p>
+<hr />
+<h1><a name="copyright">COPYRIGHT</a></h1>
+<p>Copyright 2006-2012 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.</p>
+<p>
+</p>
+<hr />
+<h1><a name="author">AUTHOR</a></h1>
+<p>Wayne Morrison, <a href="mailto:tewok@users.sourceforge.net">tewok@users.sourceforge.net</a></p>
+<p>
+</p>
+<hr />
+<h1><a name="see_also">SEE ALSO</a></h1>
+<p><strong>Mail::Send.pm(3)</strong>,
+<strong>Net::DNS::SEC::Tools::conf.pm(3)</strong></p>
+
+</body>
+
+</html>

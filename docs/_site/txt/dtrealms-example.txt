@@ -1,0 +1,23 @@
+
+/usr/local/bin/dtrealms -display sample.realm
+
+
+Mar 20 15:39:45 2012: dtrealms starting ----------------------------------------
+Mar 20 15:39:45 2012: dtrealms parameters:
+Mar 20 15:39:45 2012:      realm file    "sample.realm"
+Mar 20 15:39:45 2012:      directory       "."
+Mar 20 15:39:45 2012:      config file     "/usr/local/etc/dnssec-tools/dnssec-tools.conf"
+Mar 20 15:39:45 2012:      logfile         "log.dtrealms"
+Mar 20 15:39:45 2012:      loglevel        "4"
+Mar 20 15:39:45 2012:      logtz           "gmt"
+Mar 20 15:39:45 2012:      running as      "realm-manager"
+Mar 20 15:39:45 2012:  
+Mar 20 15:39:45 2012: creating realms list
+Mar 20 15:39:45 2012: adding realm "example" to list
+Mar 20 15:39:45 2012: adding realm "test" to list
+Mar 20 15:39:45 2012: starting realms
+Mar 20 15:39:45 2012: test: realm definition is valid
+Mar 20 15:39:45 2012: test: starting realm "rollerd -foreground -sleep 30 -loglevel tmi -logfile log.test -rrf /dnssec/realms/r-test/demo-test.rollrec"
+Mar 20 15:39:45 2012: example: realm definition is valid
+Mar 20 15:39:45 2012: example: starting realm "rollerd -foreground -sleep 60 -loglevel phase -logfile log.example -display -rrf /dnssec/realms/r-example/demo-example.rollrec"
+Mar 20 15:39:45 2012: starting grandvizier

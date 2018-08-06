@@ -1,0 +1,16 @@
+This patch adds DANE support to curl.
+
+Local validation of the TLSA record is enabled through dnsval (libval,
+libsres) from the dnssec-tools package. The validation of the SSL/TLS
+certificate against the certificate provided in the TLSA record is 
+currently enabled only when openssl is used as the crypto engine.
+
+The DANE support can be tested as follows:
+$ curl -v https://www.dnssec-tools.org/readme/README.curl
+...
+* DANE: TLSA record for www.dnssec-tools.org exists.
+...
+* DANE: SSL certificate verified using DANE.
+* DANE: Skipping additional ceritificate checks.
+...
+

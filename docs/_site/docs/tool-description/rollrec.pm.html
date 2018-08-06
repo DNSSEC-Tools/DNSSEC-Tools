@@ -1,0 +1,532 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>Net::DNS::SEC::Tools::rollrec - Manipulate a DNSSEC-Tools rollrec file.</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:tewok@leodhas.local" />
+</head>
+
+<body style="background-color: white">
+
+
+<!-- INDEX BEGIN -->
+<div name="index">
+<p><a name="__index__"></a></p>
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<li><a href="#description">DESCRIPTION</a></li>
+	<li><a href="#rollrec_locking">ROLLREC LOCKING</a></li>
+	<li><a href="#rollrec_interfaces">ROLLREC INTERFACES</a></li>
+	<li><a href="#rollrec_internal_interfaces">ROLLREC INTERNAL INTERFACES</a></li>
+	<li><a href="#rollrec_debugging_interfaces">ROLLREC DEBUGGING INTERFACES</a></li>
+	<li><a href="#copyright">COPYRIGHT</a></li>
+	<li><a href="#author">AUTHOR</a></li>
+	<li><a href="#see_also">SEE ALSO</a></li>
+</ul>
+
+<hr name="index" />
+</div>
+<!-- INDEX END -->
+
+<p>
+</p>
+<hr />
+<h1><a name="name">NAME</a></h1>
+<p>Net::DNS::SEC::Tools::rollrec - Manipulate a DNSSEC-Tools rollrec file.</p>
+<p>
+</p>
+<hr />
+<h1><a name="synopsis">SYNOPSIS</a></h1>
+<pre>
+  use Net::DNS::SEC::Tools::rollrec;</pre>
+<pre>
+  rollrec_lock();
+  rollrec_read(&quot;localhost.rollrec&quot;);</pre>
+<pre>
+  @rrnames = rollrec_names();</pre>
+<pre>
+  $flag = rollrec_exists(&quot;example.com&quot;);</pre>
+<pre>
+  $rrec = rollrec_fullrec(&quot;example.com&quot;);
+  %rrhash = %$rrec;
+  $zname = $rrhash{&quot;maxttl&quot;};</pre>
+<pre>
+  $val = rollrec_recval(&quot;example.com&quot;,&quot;zonefile&quot;);</pre>
+<pre>
+  rollrec_add(&quot;roll&quot;,&quot;example.com&quot;,\%rollfields);
+  rollrec_add(&quot;skip&quot;,&quot;example.com&quot;,\%rollfields);</pre>
+<pre>
+  rollrec_del(&quot;example.com&quot;);</pre>
+<pre>
+  rollrec_rename(&quot;example.com&quot;,&quot;subdom.example.com&quot;);</pre>
+<pre>
+  rollrec_type(&quot;example.com&quot;,&quot;roll&quot;);
+  rollrec_type(&quot;example.com&quot;,&quot;skip&quot;);</pre>
+<pre>
+  rollrec_setval(&quot;example.com&quot;,&quot;zonefile&quot;,&quot;db.example.com&quot;);</pre>
+<pre>
+  rollrec_delfield(&quot;example.com&quot;,&quot;directory&quot;);</pre>
+<pre>
+  rollrec_settime(&quot;example.com&quot;);
+  rollrec_settime(&quot;example.com&quot;,0);</pre>
+<pre>
+  @rollrecfields = rollrec_fields();</pre>
+<pre>
+  $default_file = rollrec_default();</pre>
+<pre>
+  $count = rollrec_merge(&quot;primary.rrf&quot;, &quot;new0.rrf&quot;, &quot;new1.rrf&quot;);
+  @retvals = rollrec_split(&quot;new-rollrec.rrf&quot;, @rollrec_list);</pre>
+<pre>
+  %zgroups = rollrec_zonegroups();
+  @zgroup = rollrec_zonegroup($zonegroupname);
+  @zgcmds = rollrec_zonegroup_cmds();</pre>
+<pre>
+  rollrec_write();
+  rollrec_close();
+  rollrec_discard();</pre>
+<pre>
+  rollrec_unlock();</pre>
+<p>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p>The <strong>Net::DNS::SEC::Tools::rollrec</strong> module manipulates the contents of a
+DNSSEC-Tools <em>rollrec</em> file.  <em>rollrec</em> files describe the status of a
+zone rollover process, as performed by the DNSSEC-Tools programs.  Module
+interfaces exist for looking up <em>rollrec</em> records, creating new records,
+and modifying existing records.</p>
+<p>A <em>rollrec</em> file is organized in sets of <em>rollrec</em> records.  <em>rollrec</em>s
+describe the state of a rollover operation.  A <em>rollrec</em> consists of a set
+of keyword/value entries.  The following is an example of a <em>rollrec</em>:</p>
+<pre>
+    roll &quot;example&quot;
+        zonename                &quot;example.com&quot;
+        zonefile                &quot;/etc/dnssec-tools/zones/db.example.com&quot;
+        keyrec                  &quot;/etc/dnssec-tools/keyrec/example.keyrec&quot;
+        zonegroup               &quot;example zones&quot;
+        directory               &quot;/etc/dnssec-tools/dir-example.com&quot;
+        kskphase                &quot;0&quot;
+        zskphase                &quot;2&quot;
+        maxttl                  &quot;86400&quot;
+        administrator           &quot;bob@bobhost.example.com&quot;
+        phasestart              &quot;Wed Mar 09 21:49:22 2005&quot;
+        display                 &quot;0&quot;
+        loglevel                &quot;info&quot;
+        rollrec_rollsecs        &quot;1115923362&quot;
+        rollrec_rolldate        &quot;Tue Mar 09 19:12:54 2005&quot;
+        curerrors               0
+        maxerrors               5
+        # optional records:
+        istrustanchor           &quot;yes&quot;
+        holddowntime            &quot;8W&quot;</pre>
+<p>Additionally, commands to be acted upon at start-up can be defined using the
+&quot;cmd&quot; token as shown in the following example.</p>
+<pre>
+    cmd &quot;rollzsk example.com&quot;</pre>
+<p>Use this feature with caution and only if you understand the internals of
+<strong>rollerd</strong> and <em>exactly</em> what will be done by the specified command.</p>
+<p>The first step in using this module must be to read the <em>rollrec</em> file.  The
+<em>rollrec_read()</em> interface reads the file and parses it into an internal
+format.  The file's records are copied into a hash table (for easy reference
+by the <strong>rollrec.pm</strong> routines) and in an array (for
+preserving formatting and comments.)</p>
+<p>After the file has been read, the contents are referenced using
+<em>rollrec_fullrec()</em> and <em>rollrec_recval()</em>.  The <em>rollrec_add()</em>,
+<em>rollrec_setval()</em>, and <em>rollrec_settime()</em> interfaces are used
+to modify the contents of a <em>rollrec</em> record.</p>
+<p>If the <em>rollrec</em> file has been modified, it must be explicitly written or
+the changes will not saved.  <em>rollrec_write()</em> saves the new contents to disk.
+<em>rollrec_close()</em> saves the file and close the Perl file handle to the
+<em>rollrec</em> file.  If a <em>rollrec</em> file is no longer wanted to be open, yet
+the contents should not be saved, <em>rollrec_discard()</em> gets rid of the data
+closes and the file handle <strong>without</strong> saving any modified data.</p>
+<p>On reading a <em>rollrec</em> file, consecutive blank lines are collapsed into a
+single blank line.  As <em>rollrec</em> entries are added and deleted, files merged
+and files split, it is possible for blocks of consecutive blanks lines to
+grow.  This will prevent these blocks from growing excessively.</p>
+<p>
+</p>
+<hr />
+<h1><a name="rollrec_locking">ROLLREC LOCKING</a></h1>
+<p>This module includes interfaces for synchronizing access to the <em>rollrec</em>
+files.  This synchronization is very simple and relies upon locking and
+unlocking a single lock file for all <em>rollrec</em> files.</p>
+<p><em>rollrec</em> locking is not required before using this module, but it is
+recommended.  The expected use of these facilities follows:</p>
+<pre>
+    rollrec_lock() || die &quot;unable to lock rollrec file\n&quot;;
+    rollrec_read();
+    ... perform other rollrec operations ...
+    rollrec_close();
+    rollrec_unlock();</pre>
+<p>Synchronization is performed in this manner due to the way the module's
+functionality is implemented, as well as providing flexibility to users
+of the module.  It also provides a clear delineation in callers' code as
+to where and when <em>rollrec</em> locking is performed.</p>
+<p>This synchronization method has the disadvantage of having a single lockfile
+as a bottleneck to all <em>rollrec</em> file access.  However, it reduces complexity
+in the locking interfaces and cuts back on the potential number of required
+lockfiles.</p>
+<p>Using a single synchronization file may not be practical in large
+installations.  If that is found to be the case, then this will be reworked.</p>
+<p>
+</p>
+<hr />
+<h1><a name="rollrec_interfaces">ROLLREC INTERFACES</a></h1>
+<p>The interfaces to the <strong>rollrec.pm</strong> module are given below.</p>
+<dl>
+<dt><strong><a name="rollrec_add" class="item"><em>rollrec_add(rollrec_type,rollrec_name,fields)</em></a></strong></dt>
+
+<dd>
+<p>This routine adds a new <em>rollrec</em> to the <em>rollrec</em> file and the internal
+representation of the file contents.  The <em>rollrec</em> is added to both the
+<em>%rollrecs</em> hash table and the <em>@rollreclines</em> array.  Entries are only
+added if they are defined for <em>rollrec</em>s.</p>
+<p><em>rollrec_type</em> is the type of the <em>rollrec</em>.  This must be either &quot;roll&quot;
+or &quot;skip&quot;.  <em>rollrec_name</em> is the name of the <em>rollrec</em>.  <em>fields</em> is a
+reference to a hash table that contains the name/value <em>rollrec</em> fields.  The
+keys of the hash table are always converted to lowercase, but the entry values
+are left as given.</p>
+<p>Timestamp fields are added at the end of the <em>rollrec</em>.  These fields have
+the key values <em>rollrec_gensecs</em> and <em>rollrec_gendate</em>.</p>
+<p>A blank line is added after the final line of the new <em>rollrec</em>.
+The <em>rollrec</em> file is not written after <em>rollrec_add()</em>, though
+it is internally marked as having been modified.</p>
+</dd>
+<dt><strong><a name="rollrec_del" class="item"><em>rollrec_del(rollrec_name)</em></a></strong></dt>
+
+<dd>
+<p>This routine deletes a <em>rollrec</em> from the <em>rollrec</em> file and the internal
+representation of the file contents.  The <em>rollrec</em> is deleted from both
+the <em>%rollrecs</em> hash table and the <em>@rollreclines</em> array.</p>
+<p>Only the <em>rollrec</em> itself is deleted from the file.  Any associated comments
+and blank lines surrounding it are left intact.  The <em>rollrec</em> file is not
+written after <em>rollrec_del()</em>, though it is internally marked as having been
+modified.</p>
+<p>Return values are:</p>
+<pre>
+     0 successful rollrec deletion
+    -1 unknown name</pre>
+</dd>
+<dt><strong><a name="rollrec_close" class="item"><em>rollrec_close()</em></a></strong></dt>
+
+<dd>
+<p>This interface saves the internal version of the <em>rollrec</em> file (opened with
+<em>rollrec_read()</em>) and closes the file handle.</p>
+</dd>
+<dt><strong><a name="rollrec_delfield" class="item"><em>rollrec_delfield(rollrec_name,field)</em></a></strong></dt>
+
+<dd>
+<p>Deletes the given field from the specified <em>rollrec</em>.  The file is
+<strong>not</strong> written after updating the value, but the internal file-modified flag
+is set.  The value is saved in both <em>%rollrecs</em> and in <em>@rollreclines</em>.</p>
+<p>Return values:</p>
+<pre>
+    0 - failure (rollrec not found or rollrec does not
+        contain the field)
+    1 - success</pre>
+</dd>
+<dt><strong><a name="rollrec_discard" class="item"><em>rollrec_discard()</em></a></strong></dt>
+
+<dd>
+<p>This routine removes a <em>rollrec</em> file from use by a program.  The internally
+stored data are deleted and the <em>rollrec</em> file handle is closed.  However,
+modified data are not saved prior to closing the file handle.  Thus, modified
+and new data will be lost.</p>
+</dd>
+<dt><strong><a name="rollrec_exists" class="item"><em>rollrec_exists(rollrec_name)</em></a></strong></dt>
+
+<dd>
+<p>This routine returns a boolean flag indicating if the <em>rollrec</em> named in
+<em>rollrec_name</em> exists.</p>
+</dd>
+<dt><strong><a name="rollrec_fullrec" class="item"><em>rollrec_fullrec(rollrec_name)</em></a></strong></dt>
+
+<dd>
+<p><em>rollrec_fullrec()</em> returns a reference to the <em>rollrec</em> specified in
+<em>rollrec_name</em>.</p>
+</dd>
+<dt><strong><a name="rollrec_lock" class="item"><em>rollrec_lock()</em></a></strong></dt>
+
+<dd>
+<p><em>rollrec_lock()</em> locks the <em>rollrec</em> lockfile.  An exclusive lock is
+requested, so the execution will suspend until the lock is available.  If the
+<em>rollrec</em> synchronization file does not exist, it will be created.  If the
+process can't create the synchronization file, an error will be returned.
+Success or failure is returned.</p>
+</dd>
+<dt><strong><a name="rollrec_merge" class="item"><em>rollrec_merge(target_rollrec_file, rollrec_file1, ... rollrec_fileN)</em></a></strong></dt>
+
+<dd>
+<p>This interface merges the specified <em>rollrec</em> files.  It reads each file
+and parses them into a <em>rollrec</em> hash table and a file-contents array.  The
+resulting merge is written to the file named by <em>target_rollrec_file</em>.
+If another <em>rollrec</em> is already open, it is saved and closed prior to
+opening the new <em>rollrec</em>.</p>
+<p>If <em>target_rollrec_file</em> is an existing <em>rollrec</em> file, its contents will
+be merged with the other files passed to <em>rollrec_merge()</em>.  If the file
+does not exist, <em>rollrec_merge()</em> will create it and merge the remaining
+files into it.</p>
+<p>Upon success, <em>rollrec_read()</em> returns the number of <em>rollrec</em>s read from
+the file.</p>
+<p>Failure return values:</p>
+<pre>
+    -1 no rollrec files were given to rollrec_merge
+    -2 unable to create target rollrec file
+    -3 unable to read first rollrec file
+    -4 an error occurred while reading the rollrec names
+    -5 rollrec files were duplicated in the list of rollrec files</pre>
+</dd>
+<dt><strong><a name="rollrec_names" class="item"><em>rollrec_names()</em></a></strong></dt>
+
+<dd>
+<p>This routine returns a list of the <em>rollrec</em> names from the file.</p>
+</dd>
+<dt><strong><a name="rollrec_read" class="item"><em>rollrec_read(rollrec_file)</em></a></strong></dt>
+
+<dd>
+<p>This interface reads the specified <em>rollrec</em> file and parses it into a
+<em>rollrec</em> hash table and a file-contents array.  <em>rollrec_read()</em> <strong>must</strong> be
+called prior to any of the other <strong>rollrec.pm</strong> calls.  If another <em>rollrec</em>
+is already open, it is saved and closed prior to opening the new <em>rollrec</em>.</p>
+<p><em>rollrec_read()</em> attempts to open the <em>rollrec</em> file for reading and
+writing.  If this fails, then it attempts to open the file for reading only.</p>
+<p><em>rollrec_read()</em> is a front-end for <em>rollrec_readfile()</em>.  It sets up the
+module's saved data in preparation for reading a new <em>rollrec</em> file.  These
+house-keeping actions are not performed by <em>rollrec_readfile()</em>.</p>
+<p>Upon success, <em>rollrec_read()</em> returns the number of <em>rollrec</em>s read from
+the file.</p>
+<p>Failure return values:</p>
+<pre>
+    -1 specified rollrec file doesn't exit
+    -2 unable to open rollrec file
+    -3 duplicate rollrec names in file</pre>
+</dd>
+<dt><strong><a name="rollrec_readfile" class="item"><em>rollrec_readfile(rollrec_file_handle)</em></a></strong></dt>
+
+<dd>
+<p>This interface reads the specified file handle to a <em>rollrec</em> file and
+parses the file contents into a <em>rollrec</em> hash table and a file-contents
+array.  The hash table and file-contents array are <strong>not</strong> cleared prior
+to adding data to them.</p>
+<p>Upon success, <em>rollrec_read()</em> returns zero.</p>
+<p>Failure return values:</p>
+<pre>
+    -1 duplicate rollrec names in file</pre>
+</dd>
+<dt><strong><a name="rollrec_rectype" class="item"><em>rollrec_rectype(rollrec_name,rectype)</em></a></strong></dt>
+
+<dd>
+<p>Set the type of the specified <em>rollrec</em> record.  The file is
+<strong>not</strong> written after updating the value, but the internal file-modified flag
+is set.  The value is saved in both <em>%rollrecs</em> and in <em>@rollreclines</em>.</p>
+<p><em>rollrec_name</em> is the name of the <em>rollrec</em> that will be modified.
+<em>rectype</em> is the new type of the <em>rollrec</em>, which must be either &quot;roll&quot;
+or &quot;skip&quot;.</p>
+<p>Return values:</p>
+<pre>
+    0 - failure (invalid record type or rollrec not found)
+    1 - success</pre>
+</dd>
+<dt><strong><a name="rollrec_recval" class="item"><em>rollrec_recval(rollrec_name,rollrec_field)</em></a></strong></dt>
+
+<dd>
+<p>This routine returns the value of a specified field in a given <em>rollrec</em>.
+<em>rollrec_name</em> is the name of the particular <em>rollrec</em> to consult.
+<em>rollrec_field</em> is the field name within that <em>rollrec</em>.</p>
+<p>For example, the current <em>rollrec</em> file contains the following <em>rollrec</em>.</p>
+<pre>
+    roll        &quot;example.com&quot;
+                zonefile        &quot;db.example.com&quot;</pre>
+<p>The call:</p>
+<pre>
+    rollrec_recval(&quot;example.com&quot;,&quot;zonefile&quot;)</pre>
+<p>will return the value &quot;db.example.com&quot;.</p>
+</dd>
+<dt><strong><a name="rollrec_rename" class="item"><em>rollrec_rename(old_rollrec_name,new_rollrec_name)</em></a></strong></dt>
+
+<dd>
+<p>This routine renames the <em>rollrec</em> named by <em>old_rollrec_name</em> to
+<em>new_rollrec_name</em>.  The actual effect is to change the name in the <em>roll</em>
+or <em>skip</em> line to <em>new_rollrec_name</em>.  The name is changed in the internal
+version of the the <em>rollrec</em> file only.  The file itself is not changed, but
+must be saved by calling either <em>rollrec_write()</em>, <em>rollrec_save()</em>, or
+<em>rollrec_saveas()</em>.</p>
+<p><em>old_rollrec_name</em> must be the name of an existing <em>rollrec</em>.  Conversely,
+<em>new_rollrec_name</em> must not name an existing <em>rollrec</em>.</p>
+<p>Return values:</p>
+<pre>
+     0 - success
+    -1 - old_rollrec_name was null or empty
+    -2 - new_rollrec_name was null or empty
+    -3 - old_rollrec_name is not an existing rollrec
+    -4 - new_rollrec_name is already a rollrec
+    -5 - internal error that should never happen</pre>
+</dd>
+<dt><strong><a name="rollrec_settime" class="item"><em>rollrec_settime(rollrec_name,val)</em></a></strong></dt>
+
+<dd>
+<p>Set the phase-start timestamp in the <em>rollrec</em> specified by <em>rollrec_name</em>
+to the current time.  If the optional <em>val</em> parameter is given and it is
+zero, then the phase-start timestamp is set to a null value.</p>
+<p>The file is <strong>not</strong> written after updating the value.</p>
+</dd>
+<dt><strong><a name="rollrec_setval" class="item"><em>rollrec_setval(rollrec_name,field,value)</em></a></strong></dt>
+
+<dd>
+<p>Set the value of a name/field pair in a specified <em>rollrec</em>.  The file is
+<strong>not</strong> written after updating the value, but the internal file-modified flag
+is set.  The value is saved in both <em>%rollrecs</em> and in <em>@rollreclines</em>.</p>
+<p><em>rollrec_name</em> is the name of the <em>rollrec</em> that will be modified.  If the
+named <em>rollrec</em> does not exist, it will be created as a &quot;roll&quot;-type
+<em>rollrec</em>.
+<em>field</em> is the <em>rollrec</em> field which will be modified.
+<em>value</em> is the new value for the field.</p>
+</dd>
+<dt><strong><a name="rollrec_split" class="item"><em>rollrec_split(new_rollrec_file,rollrec_names)</em></a></strong></dt>
+
+<dd>
+<p>Move a set of <em>rollrec</em> entries from the current <em>rollrec</em> file to a new
+file.  The moved <em>rollrec</em> entries are removed both from the current file
+and from the internal module data representing that file.</p>
+<p>The <em>new_rollrec_file</em> parameter holds the name of the new <em>rollrec</em> file.
+If this file doesn't exist, it will be created.  If it does exist, the
+<em>rollrec</em> entries will be appended to that file.</p>
+<p><em>rollrec_names</em> is a list of <em>rollrec</em> entries that will be moved from the
+current file to the file named in <em>new_rollrec_file</em>.  If some of the given
+<em>rollrec</em> names are invalid, the valid names will be moved to the new file
+and the invalid names will be returned in a list to the caller.</p>
+<p>Only the <em>rollrec</em> entries themselves will be moved to the new <em>rollrec</em>
+file.  Any associated comments will be left in the current <em>rollrec</em> file.</p>
+<p>On success, the count of moved <em>rollrec</em> entries is returned.  Error returns
+are given below.</p>
+<p>Failure return values:
+    -1 - no target rollrec file given in new_rollrec_file
+    -2 - no rollrec names given in rollrec_names
+    -3 - none of the rollrec names given are existing rollrecs
+    -4 - unable to open new_rollrec_file
+    -5 - invalid rollrec names were specified in rollrec_names,
+         followed by the list of bad names.</p>
+</dd>
+<dt><strong><a name="rollrec_unlock" class="item"><em>rollrec_unlock()</em></a></strong></dt>
+
+<dd>
+<p><em>rollrec_unlock()</em> unlocks the <em>rollrec</em> synchronization file.</p>
+</dd>
+<dt><strong><a name="rollrec_write" class="item"><em>rollrec_write()</em></a></strong></dt>
+
+<dd>
+<p>This interface saves the internal version of the <em>rollrec</em> file (opened with
+<em>rollrec_read()</em>).  It does not close the file handle.  As an efficiency
+measure, an internal modification flag is checked prior to writing the file.
+If the program has not modified the contents of the <em>rollrec</em> file, it is not
+rewritten.</p>
+<p><em>rollrec_write()</em> gets an exclusive lock on the <em>rollrec</em> file while writing.</p>
+</dd>
+<dt><strong><a name="rollrec_zonegroup" class="item"><em>rollrec_zonegroup($zonegroupname)</em></a></strong></dt>
+
+<dd>
+<p>This interface returns a list of the zones in the zonegroup (named by
+<em>$zonegroupname</em>) defined in the current <em>rollrec</em> file.  Null is returned
+if there are no zones in the zonegroup.</p>
+<p>While this is using the term &quot;zone&quot;, it is actually referring to the name of
+the rollrec entries.  For a particular rollrec entry, the rollrec name is
+usually the same as the zone name, but this is not a requirement.</p>
+</dd>
+<dt><strong><a name="rollrec_zonegroup_cmds" class="item"><em>rollrec_zonegroup_cmds()</em></a></strong></dt>
+
+<dd>
+<p>This interface returns a list of the rollctl commands whose behavior changes
+when they are used with the <em>-group</em> option.</p>
+</dd>
+<dt><strong><a name="rollrec_zonegroups" class="item"><em>rollrec_zonegroups()</em></a></strong></dt>
+
+<dd>
+<p>This interface returns a hash table of the zonegroups defined in the current
+<em>rollrec</em> file.  The hash key is the name of the zonegroup; the hash value
+is the number of zones in the zonegroup.  Null is returned if there are no
+zonegroups in the <em>rollrec</em> file.</p>
+<p>While this is using the term &quot;zone&quot;, it is actually referring to the name of
+the rollrec entries.  For a particular rollrec entry, the rollrec name is
+usually the same as the zone name, but this is not a requirement.</p>
+</dd>
+</dl>
+<p>
+</p>
+<hr />
+<h1><a name="rollrec_internal_interfaces">ROLLREC INTERNAL INTERFACES</a></h1>
+<p>The interfaces described in this section are intended for internal use by the
+<strong>rollrec.pm</strong> module.  However, there are situations where external entities
+may have need of them.  Use with caution, as misuse may result in damaged or
+lost <em>rollrec</em> files.</p>
+<dl>
+<dt><strong><a name="rollrec_init" class="item"><em>rollrec_init()</em></a></strong></dt>
+
+<dd>
+<p>This routine initializes the internal <em>rollrec</em> data.  Pending changes will
+be lost.  An open <em>rollrec</em> file handle will remain open, though the data are
+no longer held internally.  A new <em>rollrec</em> file must be read in order to use
+the <strong>rollrec.pm</strong> interfaces again.</p>
+</dd>
+<dt><strong><a name="rollrec_default" class="item"><em>rollrec_default()</em></a></strong></dt>
+
+<dd>
+<p>This routine returns the name of the default <em>rollrec</em> file.</p>
+</dd>
+</dl>
+<p>
+</p>
+<hr />
+<h1><a name="rollrec_debugging_interfaces">ROLLREC DEBUGGING INTERFACES</a></h1>
+<p>The following interfaces display information about the currently parsed
+<em>rollrec</em> file.  They are intended to be used for debugging and testing, but
+may be useful at other times.</p>
+<dl>
+<dt><strong><a name="rollrec_dump_hash" class="item"><em>rollrec_dump_hash()</em></a></strong></dt>
+
+<dd>
+<p>This routine prints the <em>rollrec</em> file as it is stored internally in a hash
+table.  The <em>rollrec</em>s are printed in alphabetical order, with the fields
+alphabetized for each <em>rollrec</em>.  New <em>rollrec</em>s and <em>rollrec</em> fields are
+alphabetized along with current <em>rollrec</em>s and fields.  Comments from the
+<em>rollrec</em> file are not included with the hash table.</p>
+</dd>
+<dt><strong><a name="rollrec_dump_array" class="item"><em>rollrec_dump_array()</em></a></strong></dt>
+
+<dd>
+<p>This routine prints the <em>rollrec</em> file as it is stored internally in an
+array.  The <em>rollrec</em>s are printed in the order given in the file, with the
+fields ordered in the same manner.  New <em>rollrec</em>s are appended to the end
+of the array.  <em>rollrec</em> fields added to existing <em>rollrec</em>s are added at
+the beginning of the <em>rollrec</em> entry.  Comments and vertical whitespace are
+preserved as given in the <em>rollrec</em> file.</p>
+</dd>
+</dl>
+<p>
+</p>
+<hr />
+<h1><a name="copyright">COPYRIGHT</a></h1>
+<p>Copyright 2006-2012 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.</p>
+<p>
+</p>
+<hr />
+<h1><a name="author">AUTHOR</a></h1>
+<p>Wayne Morrison, <a href="mailto:tewok@users.sourceforge.net">tewok@users.sourceforge.net</a></p>
+<p>
+</p>
+<hr />
+<h1><a name="see_also">SEE ALSO</a></h1>
+<p><strong>lsroll(1)</strong>,
+<strong>rollchk(8)</strong>,
+<strong>rollinit(8)</strong></p>
+<p><strong>Net::DNS::SEC::Tools::keyrec(3)</strong>,
+<strong>Net::DNS::SEC::Tools::keyrec(5)</strong></p>
+
+</body>
+
+</html>
