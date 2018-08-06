@@ -1,0 +1,53 @@
+
+\clearpage
+\subsection{ZSK Roll-Over --- Current ZSK Compromise}
+\label{roll-emergency-curzsk}
+
+{\bf If the KSK is also compromised, perform the emergency KSK roll-over first.}
+
+As long as there is a valid KSK signature over the ZSK, the KSK can continue
+to be used to inject false zone data.  If both keys are compromised, clients
+are exposed to attacks\footnote{These attacks include signatures over false
+data, replay attacks of the old KSK, and replay attacks of the old DS.} on
+that data until the maximum of the expiration of the KSK's RRSIG (created by
+the ZSK) and the parent's signature over the DS of that KSK.  Short TTLs allow
+recursive servers to more quickly recover from key-compromise situations,
+allowing them to get new keys more quickly.  Key compromise exposes the secure
+recursive server to replays of the old key until the signature expires.
+
+The emergency procedures described for key roll-over use the rationale that
+injection of valid but false data (which can be generated using the
+compromised key) is more serious than discontinuity in the ability to validate
+true data. Thus, during emergency ZSK roll-over, there will be a period (up
+to twice the maximum zone TTL) where the cached zone data may not validate
+against the new ZSK. Also, the steps below are only useful if the Published
+and Current keys are kept separate from each other and if the Published ZSK
+has not also been compromised. If both ZSKs are compromised follow the steps
+in Section~ref{roll-emergency-zsks}.  If only the Published key is compromised
+follow the steps in Section~\ref{roll-emergency-pubzsk}.
+
+See Figure~\ref{fig:zskroll-emerg}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\input{keygen-zsk-keytag}
+\input{update-zonefile-newzsk}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Sign Zone with the Published ZSK Only}
+
+Follow steps \ref{check-zonefile-unsigned-nodeleg}~--~\ref{signzone-nodel-last}
+if the zone does no delegation.  Follow steps
+\ref{check-zonefile-unsigned-deleg}~--~\ref{signzone-deleg-last} if the
+zone does delegation.  The ZSK used in the signing process in
+Section~\ref{signzone-no-deleg} or~\ref{signzone-has-deleg} must be the key
+marked as the Published key (P) in the key-tag table. The KSK used
+as input to \cmd{dnssec-signzone} does not change, so the keyset does not
+change and does not have to be re-sent to the parent.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\input{zone-reload}
+\input{keytag-delcurzsk}
+\input{delete-old-zsk}

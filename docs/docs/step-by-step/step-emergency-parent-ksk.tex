@@ -1,0 +1,46 @@
+
+\clearpage
+\subsection{KSK Roll-Over --- Parent Action During KSK Compromise}
+\label{roll-emergency-parent-ksk}
+
+During a KSK compromise the child zone is no longer secure. This change in
+status is performed by deleting the child's DS record from the parent zone.
+
+See Figure~\ref{fig:zskroll-emerg}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Ensure that the KSK Compromise Notification Came Over a Secure
+Channel}
+
+Authentication and communication between parent and child occurs out-of-band.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Delete the Child's Keyset File at the Parent}
+
+The DS record for the child should not be created. This can be achieved by
+not having the child's keyset file available to the \cmd{dnssec-signzone}
+process.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Increase the Zone SOA Number}
+
+Although there is no change made to the unsigned zone file, the DS record for
+the child will no longer be present in the signed zone file.  This amounts to
+an implicit change.  Thus, the zone serial number must be incremented.
+\begin{tabbing}
+\hspace{0.5in} \= 12345678 \= 12345678 \= 12345678 \= 12345678 \kill \\
+\hspace{0.5in}\$ {\bf vi \underline{zonefile}} $[$ENTER$]$ \\
+\hspace{0.5in}\underline{zone.name}        IN     SOA        servername contact ( \\
+\hspace{3.5in}{\bf 2005092109} ; Increase current value by 1. \\
+\hspace{4.4in};  This value may be different \\
+\hspace{4.4in}; in your zone file. \\
+\hspace{0.5in}\>           \>         ... \\
+\hspace{0.5in}\>              ) \\
+\end{tabbing}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\input{zone-reload}

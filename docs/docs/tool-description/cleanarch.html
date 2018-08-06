@@ -1,0 +1,180 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title></title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:root@localhost" />
+</head>
+
+<body style="background-color: white">
+
+
+
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
+  <li><a href="#OPTIONS">OPTIONS</a>
+    <ul>
+      <li><a href="#Archive-Selection-Options">Archive-Selection Options</a></li>
+      <li><a href="#Key-Selection-Options">Key-Selection Options</a></li>
+      <li><a href="#Options-for-Output-Control">Options for Output Control</a></li>
+    </ul>
+  </li>
+  <li><a href="#WARNINGS">WARNINGS</a></li>
+  <li><a href="#COPYRIGHT">COPYRIGHT</a></li>
+  <li><a href="#AUTHOR">AUTHOR</a></li>
+  <li><a href="#SEE-ALSO">SEE ALSO</a></li>
+</ul>
+
+<h1 id="NAME">NAME</h1>
+
+<p>cleanarch - Clean a DNSSEC-Tools key archive of old keys</p>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<pre><code>  cleanarch [options] &lt;keyrec-file | rollrec-file&gt;</code></pre>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p><b>cleanarch</b> deletes old keys from a DNSSEC-Tools key archive. Key &quot;age&quot; and archives are determined by options and arguments.</p>
+
+<p>Command line options and arguments allow selection of archives, keys to delete, amount of output to provide. The options are divided into three groups: archive selection, key selection, and output format. Complete information on options is provided in the OPTIONS section.</p>
+
+<p><b>cleanarch</b> takes a single argument (as distinguished from an option.) This argument may be either a <i>keyrec</i> file or a <i>rollrec</i> file. If the file is a <i>keyrec</i> file, the archive directory for its zone <i>keyrec</i>s are added to the list of archives to clean. If the file is a <i>rollrec</i> file, <i>keyrec</i> files for its zones are searched for the zones&#39; archive directory, and those directories are added to the list of archives to clean. If a zone does not have an archive directory explicitly defined, then the DNSSEC-Tools default will be cleaned. The archives specified by this argument may be modified by archive-selection options.</p>
+
+<p>The archive-selection options combine with the <i>keyrec</i> or <i>rollrec</i> file to select a set of archive directories to clean. (Some options can take the place of the file argument.)</p>
+
+<p>The key-selection options allow the set of keys to be deleted to contain an entire archive, a particular zone&#39;s keys, or all the keys prior to a certain date.</p>
+
+<p>The output-format options sets how much output will be given. Without any options selected, the names of keys will be printed as they are deleted. If the <b>-verbose</b> option is given, then the directories selected for searching and the keys selected for deletion will be printed. If the <b>-dirlist</b> option is given, then the directories selected for searching will be printed and no other action will be taken. If the <b>-list</b> option is given, then the keys selected for deletion will be printed and no other action will be taken.</p>
+
+<p><b>cleanarch</b> only cleans the archive directories; the <i>keyrec</i> files are left intact. The <b>cleankrf</b> command should be used in conjunction with <b>cleanarch</b> in order to have a consistent environment.</p>
+
+<h1 id="OPTIONS">OPTIONS</h1>
+
+<h2 id="Archive-Selection-Options">Archive-Selection Options</h2>
+
+<p>The following options allow the user to select the archives to be cleaned.</p>
+
+<dl>
+
+<dt id="archive-directory"><b>-archive directory</b></dt>
+<dd>
+
+<p>This option specifies an archive directory to be cleaned.</p>
+
+</dd>
+<dt id="defarch"><b>-defarch</b></dt>
+<dd>
+
+<p>This option indicates that the default archive directory (named in the DNSSEC-Tools configuration file) should be cleaned.</p>
+
+</dd>
+<dt id="zone-zone"><b>-zone zone</b></dt>
+<dd>
+
+<p>This option indicates that <i>zone</i> is the only zone whose archive will be cleaned. If the archive directory is shared by other zones then their keys may also be deleted.</p>
+
+</dd>
+</dl>
+
+<h2 id="Key-Selection-Options">Key-Selection Options</h2>
+
+<p>The following options allow the user to select the keys to be deleted.</p>
+
+<dl>
+
+<dt id="all"><b>-all</b></dt>
+<dd>
+
+<p>Deletes all keys in the selected archives. This option may not be used with any other key-selection options.</p>
+
+</dd>
+<dt id="days-days"><b>-days days</b></dt>
+<dd>
+
+<p>Deletes all keys except those whose modification date is within the <i>days</i> full days preceding the current day.</p>
+
+</dd>
+<dt id="onezone-zone"><b>-onezone zone</b></dt>
+<dd>
+
+<p>Only keys with <i>zone</i> in the key&#39;s filename are deleted. This is intended for use in cleaning a multi-zone key archive.</p>
+
+<p>This does not validate that <i>zone</i> is an actual zone. <b>Any</b> string can be used here. For example, using &quot;private&quot; will select old private key files for deletion and using &quot;com&quot; will select any filename that contains &quot;com&quot;.</p>
+
+</dd>
+</dl>
+
+<h2 id="Options-for-Output-Control">Options for Output Control</h2>
+
+<p>The following options allow the user to control <b>cleanarch</b>&#39;s output.</p>
+
+<dl>
+
+<dt id="dirlist"><b>-dirlist</b></dt>
+<dd>
+
+<p>This option lists the selected archive directories. No other action is taken.</p>
+
+</dd>
+<dt id="list"><b>-list</b></dt>
+<dd>
+
+<p>This option lists the selected keys. No other action is taken.</p>
+
+</dd>
+<dt id="quiet"><b>-quiet</b></dt>
+<dd>
+
+<p>Display no output.</p>
+
+</dd>
+<dt id="verbose"><b>-verbose</b></dt>
+<dd>
+
+<p>Display verbose output.</p>
+
+</dd>
+<dt id="Version"><b>-Version</b></dt>
+<dd>
+
+<p>Displays the version information for <b>cleanarch</b> and the DNSSEC-Tools package.</p>
+
+</dd>
+<dt id="help"><b>-help</b></dt>
+<dd>
+
+<p>Display a usage message and exit.</p>
+
+</dd>
+</dl>
+
+<h1 id="WARNINGS">WARNINGS</h1>
+
+<p>The user is advised to invest a bit of time testing this tool <b>prior</b> to putting it into production use. Once a key is deleted, it is <b>gone</b>. Some may find this to be detrimental to the health of their DNSSEC-Tools installation.</p>
+
+<h1 id="COPYRIGHT">COPYRIGHT</h1>
+
+<p>Copyright 2007-2014 SPARTA, Inc. All rights reserved. See the COPYING file included with the DNSSEC-Tools package for details.</p>
+
+<h1 id="AUTHOR">AUTHOR</h1>
+
+<p>Wayne Morrison, tewok@tislabs.com</p>
+
+<h1 id="SEE-ALSO">SEE ALSO</h1>
+
+<p><b>cleankrf(8)</b>, <b>lskrf(8)</b>, <b>zonesigner(8)</b></p>
+
+<p><b>Net::DNS::SEC::Tools::keyrec.pm(3)</b>, <b>Net::DNS::SEC::Tools::rollrec.pm(3)</b></p>
+
+<p><b>dnssec-tools.conf(5)</b>, <b>keyrec.pm(5)</b>, <b>rollrec.pm(5)</b></p>
+
+
+</body>
+
+</html>
+
+

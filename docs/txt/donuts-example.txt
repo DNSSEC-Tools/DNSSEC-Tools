@@ -1,0 +1,29 @@
+# donuts --level 8 -v example.com.signed example.com
+
+--- loading rule file /usr/share/donuts/rules/dnssec.rules.txt
+    rules: DNSSEC_RRSIG_TTL_MATCH_ORGTTL DNSSEC_MEMORIZE_NS_RECORDS DNSSEC_MISSING_NSEC_RECORD DNSSEC_MISSING_RRSIG_RECORD DNSSEC_RRSIG_NOT_SIGNING_RRSIG DNSSEC_RRSIG_FOR_NS_GLUE_RECORD DNSSEC_NSEC_FOR_NS_GLUE_RECORD DNSSEC_RRSIG_SIGEXP DNSSEC_NSEC_TTL DNSSEC_DNSKEY_MUST_HAVE_SAME_NAME DNSSEC_DNSKEY_PROTOCOL_MUST_BE_3 DNSSEC_BOGUS_NS_MEMORIZE DNSSEC_MISSING_RRSIG_RECORD DNSSEC_RRSIG_TTL_MUST_MATCH_RECORD DNSSEC_MISSING_NSEC_RECORD DNSSEC_RRSIG_SIGNER_NAME_MATCHES DNSSEC_NSEC_RRSEC_MUST_NOT_BE_ALONE DNSSEC_RRSIGS_MUST_NOT_BE_SIGNED DNSSEC_MEMORIZE_KEYS DNSSEC_RRSIGS_VERIFY
+--- loading rule file /usr/share/donuts/rules/parent_child.rules.txt
+    rules: DNS_MULTIPLE_NS DNSSEC_SUB_NOT_SECURE DNSSEC_DNSKEY_PARENT_HAS_VALID_DS DNSSEC_DS_CHILD_HAS_MATCHING_DNSKEY
+--- loading rule file /usr/share/donuts/rules/parent_child_temp.txt
+    rules: DNSSEC_SUB_NS_MISMATCH
+--- loading rule file /usr/share/donuts/rules/recommendations.rules.txt
+    rules: DNS_REASONABLE_TTLS DNS_SOA_REQUIRED DNS_NO_DOMAIN_MX_RECORDS
+--- Analyzing individual records in example.com.signed
+--- Analyzing records for each name in example.com.signed
+example.com:
+  Rule Name:   DNS_NO_DOMAIN_MX_RECORDS
+  Level:       8
+  Warning:     At least one MX record for example.com is suggested
+
+sub2.example.com:
+  Rule Name:   DNSSEC_SUB_NOT_SECURE
+  Level:       3
+  Error:       sub-domain sub2.example.com is not securely delegated.  It
+	       is missing a DS record.
+
+results on testing example.com.signed:
+  rules considered:	28
+  rules tested:		25
+  records analyzed:	52
+  names analyzed:	8
+  errors found:		2

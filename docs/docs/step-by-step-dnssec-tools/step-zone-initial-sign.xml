@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<chapter id="step-zone-initial-sign">
+    <title>Initially Signing a Zone</title>
+
+    <para>A zone must be signed before any other DNSSEC-Tools-related actions
+    may be taken with it. This section describes how to sign a zone for the
+    first time.</para>
+
+    <para>If a zone has been signed, it must be resigned when
+    <emphasis>any</emphasis> change is made to it. Follow <xref
+    linkend="step-zone-resign" /> when resigning a zone.</para>
+
+    <section id="initial-sign-zonesigner">
+        <title>Sign the Zone with <command>zonesigner</command></title>
+
+        <para><command># zonesigner -genkeys -gends -zone zone-name zone-file
+        output-file</command> <userinput>[ENTER]</userinput></para>
+
+        <para>Key generation and signing may take a few minutes to complete
+        depending on the size of the zone file and size of the keys. This
+        operation may appear to be unresponsive for a period of time,
+        depending on the operating system's random number generator device.
+        (See <xref linkend="step-toolset-configure" /> for more information on
+        random number generators and DNSSEC-Tools.)</para>
+
+        <para>The output is a set of files outlined below.</para>
+
+        <table colsep="0" frame="none" rowsep="0">
+            <title><command>zonesigner</command> Output Files</title>
+
+            <tgroup cols="2">
+                <thead>
+                    <row>
+                        <entry>File</entry>
+
+                        <entry>Description</entry>
+                    </row>
+                </thead>
+
+                <tbody>
+                    <row>
+                        <entry><filename>output-file.signed</filename></entry>
+
+                        <entry>The signed zone file. The .signed is added by
+                        <command>zonesigner</command>.</entry>
+                    </row>
+
+                    <row>
+                        <entry><filename>keyset-zone-name</filename></entry>
+
+                        <entry>The keyset for the zone. This is stored in the
+                        directory specified by the configuration file and may
+                        have to be sent to the parent zone - see <xref
+                        linkend="step-delegation-child" />.</entry>
+                    </row>
+
+                    <row>
+                        <entry><filename>dsset-zone-name</filename></entry>
+
+                        <entry>The dsset for the zone. This is stored in the
+                        directory specified by the configuration file and may
+                        have to be sent to the parent zone - see <xref
+                        linkend="step-delegation-child" />.</entry>
+                    </row>
+
+                    <row>
+                        <entry>zone-name.krf</entry>
+
+                        <entry>The keyrec file. This is used by
+                        <command>zonesigner</command> to maintain information
+                        about the keys used for the zone.</entry>
+                    </row>
+
+                    <row>
+                        <entry><filename>Kzone-name.+algid+keytag.private</filename></entry>
+
+                        <entry>The private key file. This is stored in the
+                        directory specified by the configuration file. The
+                        <filename>keytag</filename> is a unique identifier for
+                        this key. The <emphasis>algid</emphasis> is the
+                        numeric authentication algorithm identifier.</entry>
+                    </row>
+
+                    <row>
+                        <entry><filename>Kzone-name.+algid+keytag.key</filename></entry>
+
+                        <entry>The public key file. This is stored in the
+                        directory specified by the configuration file. The
+                        <filename>keytag</filename> is a unique identifier for
+                        this key. The <emphasis>algid</emphasis> is the
+                        numeric authentication algorithm identifier.</entry>
+                    </row>
+                </tbody>
+            </tgroup>
+        </table>
+
+        <para>See the <emphasis role="bold">zonesigner</emphasis> man page for
+        more information about the <emphasis role="bold">zonesigner</emphasis>
+        command and its options.</para>
+    </section>
+</chapter>

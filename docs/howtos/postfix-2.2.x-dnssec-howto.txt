@@ -1,0 +1,86 @@
+			postfix DNSSEC HOWTO
+			=====================
+			    (Version 0.1)
+
+Introduction
+============
+
+This HOWTO describes the installation, configuration and execution
+steps for adding DNSSEC validation to outbound email for
+postfix. This patch has been tested on postfix 2.2.11.
+
+
+Installation
+============
+
+Download postfix-2.2.x.tar.gz from
+http://www.postfix.org/download.html
+
+Unzip and untar it by:
+
+   tar -xvzf postfix-2.2.x.tar.gz
+
+Go to the postfix-2.2.x directory:
+
+   cd postfix-2.2.x/
+
+Apply the postfix-2.2.x_dnssec_patch.txt patch found in this
+directory by:
+
+   patch -p 1 -b -z .orig </path/to/patch/postfix-2.2.x_dnssec_patch.txt
+
+This will apply the patch and store the original files with a .orig
+suffix.
+
+This patch requires the 'libval' library for DNSSEC validation.
+This library can be found at http://dnssec-tools.sourceforge.net/.
+You must install this library before compiling the patched postfix
+source.
+
+Remember to run 'make -f Makefile.init makefiles' in the
+postfix-2.2.x/ directory before following the rest of the postfix
+build instructions
+
+Note, if 'make -f Makefile.init makefiles' has already been run in
+the postfix source code, it will be necessary to run it again in
+order to apply the patch properly (a 'make clean' and 'make tidy'
+beforehand may also be necessary).
+
+Build and install postfix as per the instructions given in the
+INSTALL files within the postfix source code.
+
+
+Configuration
+=============
+
+All DNS queries are now checked using the dnssec-tools libval
+libraries.  Attempts to send mail to untrusted sites will fail and
+bounce with an applicable message.  Configuration of site trust is
+done by editing the dnssec-tools' dnsval.conf file.  The default
+location of this file is /usr/local/etc/dnssec-tools/dnsval.conf on
+linux distributions, but this path is dependent on how dnssec-tools
+was built.
+
+Execution
+=========
+
+Start and run postfix as normal.
+
+
+To Test
+=======
+
+(I) Basic Scenarios: DNSSEC validation of outbound email
+    ----------------------------------------------------
+
+1. Start postfix with the above patch applied.
+
+2. Send email to a user at a domain whose MX records can be DNSSEC
+   validated and where validation is required.  Verify that the mail
+   goes through properly.
+
+3. Send email to a user at a domain whose MX records cannot be
+   DNSSEC validated and where validation is required.  Verify that
+   an SMTP error message is returned back to the sender.
+
+-----------------------------------------------------------------------

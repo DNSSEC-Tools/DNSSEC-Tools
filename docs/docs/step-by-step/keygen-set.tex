@@ -1,0 +1,58 @@
+
+\subsubsection{Generate Two ZSKs and One KSK}
+
+Follow the steps in Section~\ref{genzsk} for generating the ZSKs and steps in
+Section~\ref{genksk} for generating the KSK.
+
+Designate one of the two ZSKs as the Current (C) zone signing key and use it
+to sign the zone data; designate the other as the Published (P) key, which
+is for future use following a ZSK roll-over.  Set the status of each of these
+keys in the column marked S.
+
+There is only one KSK and this is used to sign the zone apex keyset; mark its
+status as Current (C).  The Published ZSK should be kept more
+safely\footnote{It would be a good idea for an operator to apply increased
+protection mechanisms (physical, file permissions and ownership, network,
+etc.) to the Published ZSK than are used for the Current ZSK.}
+than the Current ZSK.  The idea is that the Published ZSK can be easily rolled
+in even if the Current ZSK is compromised (the Current ZSK may have to be
+kept on-line in some circumstances).
+
+If the KSK has been stored in a more secure location (off-line, more highly
+protected directory, etc.) then it might be a good idea to store the
+Published ZSK in the same secure location.
+
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|}
+\hline
+{\bf Zone} &
+\multicolumn{4}{c|}{{\bf ZSK}} &
+\multicolumn{4}{c|}{{\bf KSK}} &
+{\bf Exp} \\
+\cline{2-9}
+
+ & Tag & Size & Creat & S & Tag & Size & Creat & S & \\
+\hline
+
+\underline{zone.name}	&
+\underline{zsktag-cur}	&
+512			&
+\underline{date}	&
+C			&
+\underline{ksktag}	&
+1024			&
+\underline{date}	&
+C			& \\
+
+\cline{2-9}
+
+			&
+\underline{zsktag-pub}	&
+512			&
+\underline{date}	&
+P			&
+& & & & \\
+
+\hline
+\end{tabular}
+\end{center}

@@ -1,0 +1,193 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+    <meta content="text/html; charset=windows-1252"
+      http-equiv="Content-Type">
+    <link rel="stylesheet" type="text/css" href="../dnssec-tools.css" />
+    <title>Bloodhound - Sniffing out insecure names</title>
+  </head>
+  <body>
+    <div align="center">
+      <h1 class="normal">Bloodhound</h1>
+      <img
+src="data:image/png;base64,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"
+        alt=""><br />
+      <br />
+      <div style="border-color: #55bb55; border-style: solid; border-width: 2px; background: #bbffbb; font-size: 1.2em; width: 15em; padding: 5px; text-align: center; margin-left: auto; margin-right: auto;"><a href="http://www.dnssec-tools.org/download/#gotoBloodhound">Download Bloodhound!</a></div>
+      <div align="left">
+        <h2>About Bloodhound<br>
+        </h2>
+        <p>Bloodhound is a modified and re-branded version of the <a
+            href="http://www.mozilla.org/">Mozilla Firefox</a> browser
+          that supports local&nbsp; <a
+            href="https://www.dnssec-tools.org/wiki/index.php/The_Need_for_DNSSEC">DNSSEC</a>
+          validation and the <a
+            href="http://www.internetsociety.org/deploy360/resources/dane/">DANE</a>
+          protocol. <br>
+        </p>
+        <h2>DNSSEC Validation in Bloodhound</h2>
+        <p>For a general description of the features made available in
+          Bloodhound and for screenshots describing these features,
+          please see <a
+            href="https://www.dnssec-tools.org/wiki/index.php/Firefox">this</a>
+          wiki page.<br>
+        </p>
+        <p>Bloodhound adds local DNSSEC validation support. This means
+          that&nbsp; DNSSEC validation status information for all names
+          looked up while loading a web page is determined within the
+          browser itself (as opposed to on a validating recursive name
+          server elsewhere on the network).&nbsp; This provides more
+          assurance that the DNSSEC responses were not tampered with
+          between the points where they were validated and where they
+          were used. Enabling local validation is especially useful in
+          the context of protocols such as <a
+            href="http://tools.ietf.org/html/rfc6698">DANE</a>, where
+          information validated using DNSSEC is used as a trust anchor
+          bootstrapping mechanism within other protocols. <br>
+        </p>
+        <p>DNSSEC support is enabled using the DNSSEC-Tools <a
+            href="https://www.dnssec-tools.org/wiki/index.php/Libval_and_libsres">dnsval</a>
+          validating library, which is available from the DNSSEC-Tools <a
+            href="https://www.dnssec-tools.org/download">download page</a>
+          and also via the update channels for certain OS platforms. <br>
+        </p>
+        <p>Since DNSSEC adds some overhead in the number of additional
+          lookups that must be performed in order to validate DNS
+          responses, Bloodhound uses the asynchronous lookup capability
+          in dnsval to speed up this operation.&nbsp; With this feature
+          Bloodhound is able to perform a number of lookup operations in
+          parallel without the need to spawn additional threads. <br>
+        </p>
+        <p>By default, Bloodhound will use a pre-configured validation
+          policy, but you may override it by defining your own validator
+          configuration in /usr/local/opt/etc/dnssec-tools/dnsval.conf.
+          For instance, the in-built validator configuration file does
+          not have DLV enabled, so you could enable DLV configuration in
+          your custom validator configuration file as described <a
+href="https://www.dnssec-tools.org/wiki/index.php/Dnsval.conf#With_DLV_support">here</a>.
+          <br>
+        </p>
+        <p>By default, Bloodhound will look at the /etc/resolv.conf file
+          for recursive name server information. If name servers in
+          /etc/resolv.conf are not DNSSEC-capable, Bloodhound will try
+          to work around the problem by doing iterative queries from
+          Root to fetch the right set of data. However, depending on the
+          specific failure and how broken the environment is, this
+          fallback technique may or may not work. You can define a new
+          resolv.conf file in
+          /usr/local/opt/etc/dnssec-tools/resolv.conf to have Bloodhound
+          use a different recursive name server if necessary. If you
+          define an "empty" resolv.conf file (size = 0) in
+          /usr/local/opt/etc/dnssec-tools/resolv.conf Bloodhound will
+          use the iterative lookup process for all query resolutions,
+          caching results internally where necessary. <br>
+        </p>
+        <p>The DNSSEC enhancements that have been implemented in
+          Bloodhound have been submitted to Mozilla for further
+          consideration. See bugzilla entries <a
+            href="https://bugzilla.mozilla.org/show_bug.cgi?id=685524">685524</a>
+          <a href="https://bugzilla.mozilla.org/show_bug.cgi?id=748232">748232</a>
+          and <a
+            href="https://bugzilla.mozilla.org/show_bug.cgi?id=589538">589538</a>
+          for further details.<br>
+        </p>
+        <h2>DNSSEC-Status Extension<br>
+        </h2>
+        <p>The DNSSEC-Status extension for Bloodhound (also available
+          from the <a href="https://www.dnssec-tools.org/download">download
+
+
+          </a> page) will listen for DNSSEC-related events generated by
+          Bloodhound and will provide appropriate messages to the user
+          when it detects validation errors. For further information
+          please see <a
+            href="https://www.dnssec-tools.org/wiki/index.php/DNSSEC_Status_Plugin">this</a>
+          wiki page.<br>
+        </p>
+        <h2>DANE Support in Bloodhound<br>
+        </h2>
+        <p>The DANE implementation originally started out as an
+          extension to Matt McCutchen's <a
+            href="https://mattmccutchen.net/cryptid/nss-dane-20110413.patch">patch</a>
+          but has changed significantly since then.<br>
+          DANE support in Bloodhound is enabled through the DNSSEC-Tools
+          <a
+            href="https://www.dnssec-tools.org/wiki/index.php/Libval_and_libsres">dnsval</a>
+          package, specifically the libval and libsres libraries. DANE
+          support is still under development and should be considered
+          experimental for now. <br>
+        </p>
+        <p>For a list of DANE test sites please see <a
+href="http://www.internetsociety.org/deploy360/resources/dane-test-sites/">this</a>
+          page from the Deploy360 effort. Note that the DANE TLSA record
+          for some of these websites can only be validated using DLV, so
+          ensure that DLV is enabled in your validator configuration
+          file as described <a
+href="https://www.dnssec-tools.org/wiki/index.php/Dnsval.conf#With_DLV_support">here</a>.
+        </p>
+        <h2>Additional Links<br>
+        </h2>
+        <ul>
+          <li> For additional information on the DNSSEC-Tools project
+            please visit the <a href="http://www.dnssec-tools.org">project
+
+
+              website</a>.</li>
+          <li>For additional information on the need for validation
+            within applications please visit <a
+href="https://www.dnssec-deployment.org/index.php/2012/02/are-you-secure/">this
+
+
+              page</a>.</li>
+          <li>For additional information on DNSSEC-Deployment and for
+            information on tools and resources that will help you deploy
+            DNSSEC please visit the <a
+              href="https://www.dnssec-deployment.org">DNSSEC-Deployment
+              Initiative</a> website and the <a
+              href="http://www.internetsociety.org/deploy360/">ISOC
+              Deploy360</a> website.</li>
+        </ul>
+        <h2>Sponsors</h2>
+        <p>This work was funded in part by the <a
+            href="http://www.dhs.gov/st-directorate">U.S. Department of
+            Homeland Security/Science &amp; Technology (S&amp;T)</a>.<br>
+        </p>
+        <h2>Copyright and Disclaimers</h2>
+        <p>Please read the COPYING file distributed with the
+          dnssec-tools package for copyright and general disclaimer
+          information. <br>
+        </p>
+        <p>Bloodhound is an experimental piece of software. It is being
+          provided to the community in order to encourage further
+          discussion on the need for DNSSEC validation within
+          applications, demonstrate innovative ways to use DNSSEC (such
+          as within the DANE protocol), and ways to communicate DNSSEC
+          related errors to the user. <br>
+        </p>
+        <p>Bloodhound is a re-branded and patched version of the Mozilla
+          Firefox browser.&nbsp; That is, it contains changes to the
+          Firefox code-base that result in new code paths, and
+          consequently increases the potential for new bugs. While we
+          will try and make periodic updates to Bloodhound available, it
+          is important to note that the version of Bloodhound made
+          available on our website may not always be in sync with the
+          latest patched version of Firefox. Please visit the <a
+            href="http://www.mozilla.org">Mozilla website</a> if you are
+          looking for the latest version of Firefox.<br>
+        </p>
+        <h2>Contact Us<br>
+        </h2>
+        Please use the DNSSEC-Tools <a
+          href="https://www.dnssec-tools.org/mailman/listinfo/users">users
+
+
+          mailing list</a> to send us general comments, and please
+        submit all bugs to our <a
+          href="https://www.dnssec-tools.org/trac/">bug database</a>.<br>
+        <br>
+        You may also send feedback to: feedback AT dnssec DASH tools DOT
+        org<br>
+      </div>
+    </div>
+  </body>
+</html>

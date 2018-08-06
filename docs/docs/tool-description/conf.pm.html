@@ -1,0 +1,298 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>Net::DNS::SEC::Tools::conf - DNSSEC-Tools configuration routines.</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:tewok@leodhas.local" />
+</head>
+
+<body style="background-color: white">
+
+
+<!-- INDEX BEGIN -->
+<div name="index">
+<p><a name="__index__"></a></p>
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<li><a href="#description">DESCRIPTION</a></li>
+	<li><a href="#interfaces">INTERFACES</a></li>
+	<li><a href="#directories">DIRECTORIES</a></li>
+	<li><a href="#copyright">COPYRIGHT</a></li>
+	<li><a href="#author">AUTHOR</a></li>
+	<li><a href="#see_also">SEE ALSO</a></li>
+</ul>
+
+<hr name="index" />
+</div>
+<!-- INDEX END -->
+
+<p>
+</p>
+<hr />
+<h1><a name="name">NAME</a></h1>
+<p>Net::DNS::SEC::Tools::conf - DNSSEC-Tools configuration routines.</p>
+<p>
+</p>
+<hr />
+<h1><a name="synopsis">SYNOPSIS</a></h1>
+<pre>
+  use Net::DNS::SEC::Tools::conf;</pre>
+<pre>
+  %dtconf = parseconfig();</pre>
+<pre>
+  %dtconf = parseconfig(&quot;localzone.keyrec&quot;);</pre>
+<pre>
+  cmdcheck(\%options_hashref);</pre>
+<pre>
+  $conferrs = dt_confcheck();</pre>
+<pre>
+  $prefixdir = getprefixdir();</pre>
+<pre>
+  $confdir = getconfdir();</pre>
+<pre>
+  $conffile = getconffile();</pre>
+<pre>
+  setconffile(&quot;dt-local.conf&quot;);</pre>
+<pre>
+  $statedir = getlocalstatedir();</pre>
+<pre>
+  $statedir = makelocalstatedir();
+  $statesub = makelocalstatedir(&quot;logs/zones&quot;);</pre>
+<pre>
+  $packed = runpacked();</pre>
+<pre>
+  erraction(ERR_MSG);
+  err(&quot;unable to open keyrec file&quot;,1);</pre>
+<p>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p>The routines in this module perform configuration operations.  Some routines
+access the DNSSEC-Tools configuration file, while others validate the
+execution environment.</p>
+<p>The DNSSEC tools have a configuration file for commonly used values.  These
+values are the defaults for a variety of things, such as encryption algorithm
+and encryption key length.  The <strong>Net::DNS::SEC::Tools::conf</strong> module provides
+methods for accessing the configuration data in this file.</p>
+<p><strong>dnssec-tools.conf</strong> is the filename for the DNSSEC tools configuration file.
+The full path depends on how DNSSEC-Tools was configured; see the DIRECTORIES
+section for the complete path.  The paths required by <strong>conf.pm</strong> are set at
+DNSSEC-Tools configuration time.</p>
+<p>The DNSSEC tools configuration file consists of a set of configuration value
+entries, with only one entry per line.  Each entry has the &quot;keyword value&quot;
+format.  During parsing, the line is broken into tokens, with tokens being
+separated by spaces and tabs.  The first token in a line is taken to be the
+keyword.  All other tokens in that line are concatenated into a single string,
+with a space separating each token.  The untokenized string is added to a hash
+table, with the keyword as the value's key.</p>
+<p>Comments may be included by prefacing them with the '#' or ';' comment
+characters.  These comments can encompass an entire line or may follow a
+configuration entry.  If a comment shares a line with an entry, value
+tokenization stops just prior to the comment character.</p>
+<p>An example configuration file follows:</p>
+<pre>
+    # Sample configuration entries.</pre>
+<pre>
+    algorithm       rsasha1     # Encryption algorithm.
+    ksk_length      2048        ; KSK key length.</pre>
+<p>Another aspect of DNSSEC-Tools configuration is the error action used by the
+DNSSEC-Tools Perl modules.  The action dictates whether an error condition
+will only give an error return, print an error message to STDERR, or print an
+error message and exit.  The <em>erraction()</em> and <em>err()</em> interfaces are used
+for these operations.</p>
+<p>
+</p>
+<hr />
+<h1><a name="interfaces">INTERFACES</a></h1>
+<dl>
+<dt><strong><a name="dt_confcheck" class="item"><em>dt_confcheck(errflag)</em></a></strong></dt>
+
+<dd>
+<p>This routine performs a number of configuration checks to ensure the
+environment is sufficient to support the DNSSEC-Tools configuration.
+If <em>errflag</em> is 0, then the checks are performed quietly; otherwise,
+error messages will be printed.</p>
+<p>The checks are:</p>
+<pre>
+        * The dnssec-tools sysconf directory exists.
+        * The dnssec-tools sysconf directory is a directory.
+        * The dnssec-tools directory exists.
+        * The dnssec-tools directory is a directory.
+        * The dnssec-tools config file exists.
+        * The dnssec-tools config file is a regular file.
+        * The dnssec-tools config file isn't empty.
+        * The local state directory name isn't longer than 75
+          characters (to allow for the rollmgr command socket.)
+        * The local state directory is a directory.
+        * The local state directory can be created if necessary.
+        * The local state directory's dnssec-tools subdirectory
+          can be created if necessary, or is writable if it
+          already exists.
+        * The local state directory's run subdirectory
+          can be created if necessary, or is writable if it
+          already exists.</pre>
+<p>Return Values:</p>
+<pre>
+        0       no errors were found
+        &gt;0      some number of configuration checks failed</pre>
+</dd>
+<dt><strong><a name="parseconfig" class="item"><em>parseconfig()</em></a></strong></dt>
+
+<dd>
+<p>This routine reads and parses the system's DNSSEC tools configuration file.
+The parsed contents are put into a hash table, which is returned to the caller.</p>
+</dd>
+<dt><strong><em>parseconfig(conffile)</em></strong></dt>
+
+<dd>
+<p>This routine reads and parses a caller-specified DNSSEC tools configuration
+file.  The parsed contents are put into a hash table, which is returned to
+the caller.  The routine quietly returns if the configuration file does not
+exist.</p>
+</dd>
+<dt><strong><a name="cmdcheck" class="item"><em>cmdcheck(\%options_hashref)</em></a></strong></dt>
+
+<dd>
+<p>This routine ensures that the needed commands are available and
+executable.  If any of the commands either don't exist or aren't executable,
+then an error message will be given and the process will exit.  If all is
+well, everything will proceed quietly onwards.</p>
+<p>The commands keys currently checked are <em>zonecheck</em>, <em>keygen</em>, and
+<em>zonesign</em>.  The pathnames for these commands are found in the given options
+hash referenced by <em>%options_hashref</em>.  If the hash doesn't contain an entry
+for one of those commands, it is not checked.</p>
+<p>If this routine is called from a PAR-packed script, then it will look in the
+package directory for the commands.  It will also set their file modes to
+0755, as PAR appears to ignore file modes when packaging programs.</p>
+</dd>
+<dt><strong><a name="getconfdir" class="item"><em>getconfdir()</em></a></strong></dt>
+
+<dd>
+<p>This routine returns the name of the DNSSEC-Tools configuration directory.</p>
+</dd>
+<dt><strong><a name="getconffile" class="item"><em>getconffile()</em></a></strong></dt>
+
+<dd>
+<p>This routine returns the name of the DNSSEC-Tools configuration file.</p>
+</dd>
+<dt><strong><a name="setconffile" class="item"><em>setconffile()</em></a></strong></dt>
+
+<dd>
+<p>This routine sets the name of the DNSSEC-Tools configuration file.</p>
+<p>Return values:
+    1	returned on success
+    0	returned if the specified configuration file does not
+          exist or is not a regular file</p>
+</dd>
+<dt><strong><a name="getprefixdir" class="item"><em>getprefixdir()</em></a></strong></dt>
+
+<dd>
+<p>This routine returns the name of the DNSSEC-Tools prefix directory.</p>
+</dd>
+<dt><strong><a name="getlocalstatedir" class="item"><em>getlocalstatedir()</em></a></strong></dt>
+
+<dd>
+<p>This routine returns the name of the local state directory.</p>
+</dd>
+<dt><strong><a name="runpacked" class="item"><em>runpacked()</em></a></strong></dt>
+
+<dd>
+<p>This routine returns a boolean indicating if the executing command is running
+from a PAR-packed script.</p>
+</dd>
+<dt><strong><a name="makelocalstatedir" class="item"><em>makelocalstatedir(subdir)</em></a></strong></dt>
+
+<dd>
+<p>This routine makes the local state directory and returns its name.  The
+directory is created only if it doesn't exist already.</p>
+<p>If the optional <em>subdir</em> subdirectory is specified, then that directory is
+created within the local state directory.  In this case, the path of <em>subdir</em>
+is returned.  <em>subdir</em> may consist of several intermediate directories, as
+well as the terminal directory.  For example,
+<em>makelocalstatedir(&quot;logs/zones/errors&quot;)</em> will create the <strong>logs/zones/errors</strong>
+hierarchy within the local state directory.</p>
+<p><em>makelocalstatedir(subdir)</em> uses the <em>File::Path</em> module, which is available
+on all modern Perl versions.</p>
+<p>An empty string is returned if there are any errors.  The following errors may
+be encountered:</p>
+<pre>
+    * I&lt;File::Path&gt; could not be loaded
+    * Unable to create the local state directory
+    * Unable to create a component of I&lt;subdir&gt;
+    * Full path (local state directory and I&lt;subdir&gt;) already
+      exists and is not a directory</pre>
+</dd>
+<dt><strong><a name="boolconvert" class="item"><em>boolconvert(config-value)</em></a></strong></dt>
+
+<dd>
+<p>This routine converts configuration values into appropriate boolean values.
+The following text conversions are made:</p>
+<pre>
+    1 - 'true', 't', 'yes', 'y'
+    0 - 'false', 'f', 'no', 'n'</pre>
+<p>All other text values are converted to 0.</p>
+<p>Positive values are converted to 1.  Negative values are converted to 0.</p>
+</dd>
+<dt><strong><a name="erraction" class="item"><em>erraction(error_action)</em></a></strong></dt>
+
+<dd>
+<p>This interface sets the error action for DNSSEC-Tools Perl modules.
+The valid actions are:</p>
+<pre>
+    ERR_SILENT          Do not print an error message, do not exit.
+    ERR_MSG             Print an error message, do not exit.
+    ERR_EXIT            Print an error message, exit.</pre>
+<p>ERR_SILENT is the default action.</p>
+<p>The previously set error action is returned.</p>
+</dd>
+<dt><strong><a name="err" class="item"><em>err(&quot;error message&quot;,exit_code)</em></a></strong></dt>
+
+<dd>
+<p>The <em>err()</em> interface is used by the DNSSEC-Tools Perl modules to report
+an error and exit, depending on the error action.</p>
+<p>The first argument is an error message to print -- if the error action allows
+error messages to be printed.</p>
+<p>The second argument is an exit code -- if the error action requires that the
+process exit.</p>
+</dd>
+</dl>
+<p>
+</p>
+<hr />
+<h1><a name="directories">DIRECTORIES</a></h1>
+<p>The default directories for this installation are:</p>
+<pre>
+  prefix                         : /usr/local
+  sysconf                        : /usr/local/etc
+  localstatedir                  : /usr/local/var</pre>
+<pre>
+  DNSSEC-Tools configuration file: /usr/local/etc/dnssec-tools</pre>
+<p>These can be overridden using the following environmental variables:</p>
+<pre>
+  prefix                         : DT_PREFIX
+  sysconf                        : DT_SYSCONFDIR
+  localstatedir                  : DT_STATEDIR</pre>
+<p>
+</p>
+<hr />
+<h1><a name="copyright">COPYRIGHT</a></h1>
+<p>Copyright 2004-2012 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.</p>
+<p>
+</p>
+<hr />
+<h1><a name="author">AUTHOR</a></h1>
+<p>Wayne Morrison, <a href="mailto:tewok@users.sourceforge.net">tewok@users.sourceforge.net</a></p>
+<p>
+</p>
+<hr />
+<h1><a name="see_also">SEE ALSO</a></h1>
+<p><strong>dnssec-tools.conf(5)</strong></p>
+
+</body>
+
+</html>

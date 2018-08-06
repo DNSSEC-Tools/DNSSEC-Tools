@@ -1,0 +1,97 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title></title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:root@localhost" />
+</head>
+
+<body style="background-color: white">
+
+
+
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
+  <li><a href="#OPTIONS">OPTIONS</a></li>
+  <li><a href="#COPYRIGHT">COPYRIGHT</a></li>
+  <li><a href="#AUTHOR">AUTHOR</a></li>
+  <li><a href="#SEE-ALSO">SEE ALSO</a></li>
+</ul>
+
+<h1 id="NAME">NAME</h1>
+
+<p>dtupdkrf - Ensures that a keyrec file is in the current format</p>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<pre><code>  dtupdkrf [options] &lt;keyrec files&gt;</code></pre>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p><b>dtupdkrf</b> ensures that a <i>keyrec</i> file is in the current format. If the <i>keyrec</i> file has an old format, it is converted to the current format.</p>
+
+<p>The format of <i>keyrec</i> files does not change very often. Therefore, <b>dtupdkrf</b> should be run when installing new versions of the DNSSEC-Tools software. It does not have to be run very often otherwise.</p>
+
+<p>The number of error fixed in the given <i>keyrec</i> files will be given as <b>dtupdkrf</b>&#39;s exit code.</p>
+
+<p><b>WARNING: dtupdkrf should NOT be run on keyrec files that are in active use by other DNSSEC-Tools programs. You MUST stop rollerd, zonesigner, or any other DNSSEC-Tools programs BEFORE running dtupdkrf on active files.</b></p>
+
+<h1 id="OPTIONS">OPTIONS</h1>
+
+<p><b>dtupdkrf</b> supports several types of options. These options are detailed below.</p>
+
+<dl>
+
+<dt id="count"><b>-count</b></dt>
+<dd>
+
+<p>Display the count of <i>keyrec</i>s in each <i>keyrec</i> file.</p>
+
+</dd>
+<dt id="quiet"><b>-quiet</b></dt>
+<dd>
+
+<p>Display no information. <b>-quiet</b> and <b>-verbose</b> are mutually exclusive.</p>
+
+</dd>
+<dt id="verbose"><b>-verbose</b></dt>
+<dd>
+
+<p>Display verbose information. <b>-verbose</b> and <b>-quiet</b> are mutually exclusive.</p>
+
+</dd>
+<dt id="Version"><b>-Version</b></dt>
+<dd>
+
+<p>Display <b>dtupdkrf</b>&#39; version information and exit.</p>
+
+</dd>
+<dt id="help"><b>-help</b></dt>
+<dd>
+
+<p>Display a usage message and exit.</p>
+
+</dd>
+</dl>
+
+<h1 id="COPYRIGHT">COPYRIGHT</h1>
+
+<p>Copyright 2010-2014 SPARTA, Inc. All rights reserved. See the COPYING file included with the DNSSEC-Tools package for details.</p>
+
+<h1 id="AUTHOR">AUTHOR</h1>
+
+<p>Wayne Morrison, tewok@tislabs.com</p>
+
+<h1 id="SEE-ALSO">SEE ALSO</h1>
+
+<p><b>keyrec(5)</b></p>
+
+
+</body>
+
+</html>
+
+

@@ -1,0 +1,38 @@
+
+\subsubsection{Generate the Key}
+
+Use the \cmd{dnssec-keygen} command to generate a key 512 bits long. 
+\begin{tabbing}
+\hspace{0.5in} \= 12345678 \= 12345678 \= 12345678 \= 12345678 \kill
+\hspace{0.5in}\$ {\bf dnssec-keygen -a RSASHA1 -b 512 -n ZONE \underline{zone.name}} \\
+\hspace{0.5in} [ENTER] \\
+\hspace{0.5in} K\underline{zone.name}.+005+\underline{zsktag} \\
+\hspace{0.5in}\$ \\
+\end{tabbing}
+
+The process may take a few minutes to return its results. If the process
+appears to have stalled, run the command using a pseudo-random number
+generator as follows:
+\begin{tabbing}
+\hspace{0.5in} \= 12345678 \= 12345678 \= 12345678 \= 12345678 \kill \\
+\hspace{0.5in}\$ {\bf dnssec-keygen -r /dev/urandom -a RSASHA1 -b 512} \\
+\hspace{0.5in} {\bf -n ZONE \underline{zone.name}} [ENTER] \\
+\hspace{0.5in} K\underline{zone.name}.+005+\underline{zsktag} \\
+\hspace{0.5in}\$ \\
+\end{tabbing}
+
+Two files are output by \cmd{dnssec-keygen}: \\
+    - Private key contained in \path{K\underline{zone.name}.+005+\underline{zsktag}.private}\\
+    - Public key contained in \path{K\underline{zone.name}.+005+\underline{zsktag}.key}
+
+{\bf \underline{zone.name}} - the name of the zone (e.g., example.com)\\
+{\bf \underline{zsktag}} - the key identifier (e.g., 57011) 
+
+You must note this number in the key-tag table as you walk through this
+document.  This number is automatically generated and should not be changed.
+The key id will be the only field in the filename that changes as you rotate
+keys, so it must be tracked.
+
+This document uses RSASHA1 as the cryptographic algorithm, which is
+represented by the ``005'' in the key name's algorithm field.
+

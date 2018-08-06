@@ -1,0 +1,642 @@
+This section describes how one can use the interfaces provided by the validator 
+library, \lib{libval(3)}, to build DNSSEC-aware programs.
+
+The validator library allows applications to check the authenticity 
+of data returned by the DNS by using the security extensions 
+provided by DNSSEC.  The library exports a number of interfaces 
+that applications may use in place of legacy resolver interfaces provided by the 
+\lib{libres(3)} library. Additional interfaces that allow more visibility into the 
+validation process are also available. This allows
+for the creation of applications that are either only interested in a basic
+$"validated"$ or $"not-validated"$ result or more sophisticated applications that
+can look for specific errors as a sign of some network abnormality or attack.
+
+The process of transitioning an application from using simple DNS towards being
+DNSSEC-aware consists of three steps -- 
+\begin{enumerate}
+\item Instrumentation -- making applications capable of seeing DNSSEC results 
+\item Action -- making applications act upon DNSSEC results
+\item Policy -- allowing applications control over how DNSSEC status values are determined.
+\end{enumerate}
+
+Section ~\ref{instrumentation} describes the interfaces an application would use in order 
+access the results of DNSSEC evaluation. Section ~\ref{getstatus} describes 
+the mechanisms for obtaining the the DNSSEC status values from the above calls.
+Section ~\ref{behaviour} discusses possible ways in which applications may
+act based upon DNSSEC status values. Section ~\ref{configuration} introduces 
+validator policy and describes the sytax of the validator configuration file. 
+Section ~\ref{context} describes how applications can be made more flexible
+in their choosing of validator policy at run time. Section ~\ref{detail} 
+describes other validator interfaces that allow the application to obtain greater 
+detail about the validation process. Section ~\ref{custom} describes how one 
+could write their own custom resolver interfaces using the interfaces described in 
+Section ~\ref{detail}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Application Instrumentation for DNSSEC}
+\label{instrumentation}
+                                                                                                                             
+Applications that only use \funct{res\_query()}, \funct{gethostbyname()} and
+\funct{getaddrinfo()} from the \lib{libres(3)} for name resolution can be
+easily made DNSSEC-aware by using similarly named interfaces provided by the
+validator library -  \funct{val\_query()}, \funct{val\_gethostbyname()}
+and  \funct{val\_getaddrinfo()}\footnote{We hope to eventually have most if not
+all interfaces provided by libres mapped to an equivalent libval interface.}. 
+These interfaces perform DNSSEC validation of DNS responses in addition to name
+resolution.  It is possible to also make applications that use other interfaces 
+for querying the DNS DNSSEC-aware, but this requires a little more effort as 
+described in Section ~\ref{custom}.
+                                                                                                                             
+The prototypes of \funct{val\_query()}, \funct{val\_gethostbyname()}
+and \funct{val\_getaddrinfo()} are given below:
+
+\begin{verbatim}
+    int val_query ( const char *domain_name, int class, int type,
+        unsigned char *answer, int anslen, int flags,
+        int *dnssec_status);
+
+    struct hostent *val_gethostbyname(const char *name, int *h_errnop );
+
+    int val_getaddrinfo ( const char *nodename, const char *servname,
+        const struct addrinfo *hints, struct addrinfo **res );
+\end{verbatim}
+                                                                                                                             
+\funct{val\_query()}, \funct{val\_gethostbyname} and \funct{val\_getaddrinfo()}
+are semantically equivalent to \funct{res\_query()}, \funct{gethostbyname()} and
+\funct{getaddrinfo()} respectively, with slightly differing syntaxes.
+
+The essential difference between the interfaces provided by
+\lib{libval(3)} and \lib{libres(3)} is that the former includes additional
+parameters for controlling the behaviour and for returning the value of
+the dnssec status, which the \lib{libres} interfaces do not provide.  Setting all
+DNSSEC-relevant  value-parameters in interfaces exported by the libval library
+to  \const{0}  provides the default validator behaviour using the default validator policy.
+Configuration of the validator policy is described in section ~\ref{configuration}.
+                                                                                                                             
+Return values from each of the libval APIs are similar to their \lib{libres(3)}
+counterparts and similar tests for success and failure must be made following invocation
+of these calls. Also, the structures allocated by the \funct{val\_gethostbyname()}
+and \funct{val\_getaddrinfo()} interfaces
+must be free'd once they are no longer required using \funct{val\_freehostent()} and
+\funct{val\_freeaddrinfo()} interfaces respectively.
+                                                                                                                             
+The following code snippet gives an example of how one might change code using exising
+libres interfaces in place of the ones provided by \lib{libval(3)}.
+
+\begin{verbatim}                      
+#include <stdio.h>
+#include <strings.h>
+#include <arpa/nameser.h>
+#include <validator.h>
+
+#define BUFLEN 8096
+                                                                                                                             
+int use_val_query(int argc, char *argv[])
+{
+    int dnssec_status = ERROR;
+    int anslen = NETDB_INTERNAL;
+    int class = ns_c_in;
+    int type = ns_t_a;
+    char buf[BUFLEN];
+                                                                                                                             
+    bzero(buf, BUFLEN);
+                                                                                                                             
+    if (argc < 2) {
+        printf("Usage: %s <domain-name>\n", argv[0]);
+        exit(1);
+    }
+                                                                                                                             
+    anslen = val_query(argv[1], class, type, buf, BUFLEN,
+                                 0, &dnssec_status);
+                                                                                                                             
+    if (anslen > 0) {
+        printf("DNSSEC Status = %d [%s]\n", dnssec_status,
+                             p_val_error(dnssec_status));
+    }
+                                                                                                                             
+    return 0;
+}
+
+int use_val_gethostbyname(int argc, char *argv[])
+{
+    int dnssec_status = ERROR;
+    int val_h_errno = NETDB_INTERNAL;
+    struct hostent *h = NULL;
+                                                                                                                             
+    if (argc < 2) {
+        printf("Usage: %s <hostname>\n", argv[0]);
+        exit(1);
+    }
+                                                                                                                             
+    h = val_gethostbyname(argv[1], &val_h_errno);
+    printf("h_errno = %d [%s]\n", val_h_errno,
+    hstrerror(val_h_errno));
+    if (h) {
+        dnssec_status = val_get_hostent_dnssec_status(h);
+        printf("DNSSEC Status = %d [%s]\n", dnssec_status,
+                             p_val_error(dnssec_status));
+        val_freehostent(h);
+    }
+                                                                                                                             
+    return 0;
+}
+
+int use_val_getaddrinfo(int argc, char *argv[])
+{
+    int dnssec_status = ERROR;
+    struct addrinfo *ainfo = NULL;
+                                                                                                                             
+    if (argc < 2) {
+        printf("Usage: %s <hostname>\n", argv[0]);
+        exit(1);
+    }
+                                                                                                                             
+    ainfo = val_getaddrinfo(argv[1]);
+                                                                                                                             
+    if (ainfo) {
+        dnssec_status = val_get_addrinfo_dnssec_status(h);
+        printf("DNSSEC Status = %d [%s]\n", dnssec_status,
+                             p_val_error(dnssec_status));
+        val_freeaddrinfo(h);
+    }
+                                                                                                                             
+    return 0;
+}
+\end{verbatim}
+                                                                                                       
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Obtaining DNSSEC Status}
+\label{getstatus}
+                                                                                                                             
+The result from DNSSEC processing is available to the application
+as an integer value. There are different ways to obtain the DNSSEC status 
+for a response to a query based on the interface used. 
+                                                                                                                             
+\begin{itemize}
+                                                                                                                             
+\item The \param{dnssec\_status} result parameter in \funct{val\_query()} directly returns
+      the DNSSEC status resulting from this call.
+                                                                                                                             
+\item \funct{val\_get\_hostent\_dnssec\_status()} returns the DNSSEC status obtained
+      after a call to \funct{val\_gethostbyname()}. Its prototype is as follows:
+
+\begin{verbatim}
+    int val_get_hostent_dnssec_status(const struct hostent *hentry);
+\end{verbatim}
+
+\item \funct{val\_get\_addrinfo\_dnssec\_status()} returns the DNSSEC status obtained
+      after a call to \funct{val\_getaddrinfo()}. Its prototype is as follows:
+                                                                                                                             
+\begin{verbatim}
+    int val_get_addrinfo_dnssec_status(const struct addrinfo *ainfo);
+\end{verbatim}
+                                                                                                                             
+\end{itemize}
+                                                                                                                             
+                                                                                                                             
+The different DNSSEC status values that can be returned are listed below.
+
+\begin{description}
+\item[BARE\_RRSIG] No DNSSEC validation possible, query was for an RRSIG.
+			 There is really no reason why applications would need to 
+			 check for the validity of an RRSIG itself.
+\item[VALIDATE\_SUCCESS] Answer received and validated successfully. 
+\item[BOGUS\_UNPROVABLE] Could not build a chain of trust for a failure condition. 
+\item[BOGUS\_PROVABLE] Failure condition that was provable. 
+\item[VALIDATION\_ERROR] Did not have sufficient or relevant data to complete 
+				  validation, or encountered some DNS error. 
+\item[NONEXISTENT\_NAME] No name present, trusted, and proof present. 
+\item[NONEXISTENT\_TYPE] No type exists for name, trusted, and proof present. 
+\item[INCOMPLETE\_PROOF] Proof does not have all required components to prove 
+				  non-existence. 
+\item[BOGUS\_PROOF] Proof of non-existence cannot be validated. 
+\item[INDETERMINATE\_DS] Can't prove that the DS is trusted. 
+\item[INDETERMINATE\_PROOF]  Some intermediate Proof of non-existence obtained 
+					 dont know if answer exists and proof is bogus 
+					 or answer is bogus. 
+\item[INDETERMINATE\_ERROR] Sequence of errors.
+\item[INDETERMINATE\_TRUST] Don't know if trust is absent or answer is bogus. 
+\item[INDETERMINATE\_ZONE]  Dont know if zone is unsigned or sigs have been stripped. 
+\end{description}
+
+
+Of the above set of status values only \const{VALIDATE\_SUCCESS}, \const{NONEXISTENT\_NAME} \\
+and \const{NONEXISTENT\_TYPE} represent the successful conditions. \const{VALIDATE\_SUCCESS} \\
+indicates that the answer received was valid while \const{NONEXISTENT\_NAME} and \\
+\const{NONEXISTENT\_TYPE} represent that a particular name or type was provably absent.
+                                                                                                                             
+Other DNSSEC status values either represent validation failure,
+indeterminate states, or other error conditions. In each of these cases
+the answer returned by the DNS cannot be safely relied upon.
+                                                                                                                             
+DNSSEC status values can be displayed using the \funct{p\_val\_error()} interface,
+which has the following prototype:
+
+\begin{verbatim}
+    char *p_val_error(int valerrno);
+\end{verbatim}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                                                                                                                             
+\subsection{Application Behaviour}
+\label{behaviour}
+                                                                                                                             
+The action that an application may take based on DNSSEC status values is
+again based on policy. Two scenarios are discussed - Web Browsers and 
+Mail Transfer Agents.
+                                                                                                                             
+\subsubsection{Web Browser}
+\label{browser}
+                                                                                                                             
+TODO
+                                                                                                                             
+\subsubsection{Mail Transfer Agents (MTAs)}
+\label{mta}
+                                                                                                                             
+TODO
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                                                                                                                             
+\subsection{Validator Configuration}
+\label{configuration}
+                                                                                                                             
+The validator library reads configuration information from two separate \\
+files, \file{/etc/resolv.conf} and \file{/etc/dnsval.conf}.
+                                                                                                                             
+\begin{itemize}
+                                                                                                                             
+\item  \file{/etc/resolv.conf}
+                                                                                                                             
+Only the \filecontent{nameserver} option is supported in the \file{resolv.conf} file.
+This option is used to specify the IP address of the name server to
+which queries must be sent by default. For example,
+
+\begin{verbatim}
+    nameserver 10.0.0.1
+\end{verbatim}
+                                                                                                                             
+\item \file{/etc/dnsval.conf}
+                                                                                                                             
+This file contains a sequence of the following policy-fragments:
+                                                                                                                             
+{\it $<label> <keyword> <additional-data>;$}
+                                                                                                                             
+{\it label} is the context to which this policy applies and {\it keyword} is the
+specific policy component that is being configured. The format of
+{\it additional-data} depends on the keyword specified.
+                                                                                                                             
+Policy fragments are indexed by the {\it label} and {\it keyword}. If multiple
+policy fragments are defined for the same {\it label} and {\it keyword}
+combination then the last definition in the file is used.
+
+Currently two different values for {\it keyword} are defined:
+
+\keyword{trust-anchor}
+
+Specifies the trust anchors for a sequence of zones. The
+additional data portion for this keyword is a sequence of the
+zone name and a quoted string containing the RDATA portion for
+the trust anchor's DNSKEY. An example is:
+
+\begin{verbatim}
+mozilla trust-anchor
+        fruits.netsec.tislabs.com.
+            "257 3 5
+            AQO8XS4y9r77X9SHBmrxMoJf1Pf9AT9Mr/L5BBGtO9/e9f/zl4FFgM2l
+            B6M2XEm6mp6mit4tzpB/sAEQw1McYz6bJdKkTiqtuWTCfDmgQhI6/Ha0
+            EfGPNSqnY 99FmbSeWNIRaa4fgSCVFhvbrYq1nXkNVyQPeEVHkoDNCAlr
+            qOA3lw=="
+        netsec.tislabs.com.
+           "257 3 5
+            AQO8XS4y9r77X9SHBmrxMoJf1Pf9AT9Mr/L5BBGtO9/e9f/zl4FFgM2l
+            B6M2XEm6mp6mit4tzpB/sAEQw1McYz6bJdKkTiqtuWTCfDmgQhI6/Ha0
+            EfGPNSqnY 99FmbSeWNIRaa4fgSCVFhvbrYq1nXkNVyQPeEVHkoDNCAlr
+            qOA3lw=="
+        ;
+\end{verbatim}
+ 
+\keyword{zone-security-expectation}
+
+Specifies the local security expection for a zone. The
+additional data portion for this keyword is a sequence of the
+zone name and its trust status - trusted or untrusted. An
+example is:
+
+\begin{verbatim}
+mozilla zone-security-expectation wesh.fruits.netsec.tislabs.com
+        untrusted;
+\end{verbatim}
+
+\end{itemize}
+                                                                                                                             
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Controlling Validator Behaviour Within Applications}
+\label{context}
+                                                                                                                             
+The validator library allows multiple applications to operate
+with differing validator policies at the same instance. 
+A handle to each of the different instantiations of the validator
+under different policies are available through the validator context.
+                                                                                                                             
+Applications can create a new validator context using the \funct{get\_context()}
+method, which has the following prototype.
+
+\begin{verbatim}
+    int get_context(const char *label, val_context_t **newcontext);
+\end{verbatim}
+                                                                                                                             
+This method parses the resolver and validator configuration
+files and creates the handle \param{newcontext} to this parsed information.
+Validator policy is applied hierarchically
+based on the name used to identify a particular policy fragment.
+As an example, $"browser"$ and $"mozilla.browser"$ form a hierarchical
+ordering of policy, where the configuration under the identifier of
+$"mozilla.browser"$ may be used to override generic browser policy with
+mozilla-specific options.
+                                                                                                                             
+Applications may switch their default policy
+to a policy that lies below ($"mozilla:browser"$ lies below $"browser"$) the
+originally defined label using the \funct{switch\_effective\_policy()}
+ method, which has the following prototype.
+
+\begin{verbatim} 
+    int switch_effective_policy(val_context_t *ctx, const char *label);
+\end{verbatim}    
+                                                                                                                         
+The \param{label} parameter is a string that must match another string
+that appears as the policy definition identifier in the validator configuration file.
+It is a simple text string with the $":"$ character used as the delimiter
+between two levels in the policy hierarchy. The $":"$ label by itself refers to
+the default policy in the configuration file. \const{NULL} may also be used to
+represent the label for the default policy.
+                                                                                                                             
+Once a context is available, it is also possible to access the
+functionalities provided by \funct{val\_gethostbyname()},
+\funct{val\_query()} and \funct{val\_getaddrinfo()} within this
+context by using the \funct{val\_x\_query()}, \funct{val\_x\_gethostbyname()}
+and \funct{val\_x\_getaddrinfo()} interfaces respectively. The prototypes
+for these functions are given below.
+                                                                      
+\begin{verbatim}
+    int val_x_query(const val_context_t *ctx,
+        const char *domain_name, const u_int16_t class,
+        const u_int16_t type, const u_int8_t flags,
+        struct response_t *resp, int *resp_count);
+                                                                                                                             
+    struct hostent *val_x_gethostbyname(const val_context_t *ctx,
+        const char *name, int *h_errnop);
+                                                                                                                             
+    int val_x_getaddrinfo(const struct val_context *ctx,
+        const char *nodename, const char *servname,
+        const struct addrinfo *hints,
+        struct addrinfo **res);
+\end{verbatim}                                                                                                                             
+                                                                                                                             
+If a \const{NULL} value is passed for the \param{ctx} parameter, the default validator
+context is used in each instance.
+                                                                                                                             
+While \funct{val\_x\_gethostbyname()} and \funct{val\_x\_getaddrinfo()} are 
+functionally identical to \\
+ \funct{val\_gethostbyname()} and  \funct{val\_getaddrinfo()} respectively,
+ \funct{val\_x\_query()} and \\
+\funct{val\_query()} have some differences. 
+
+\funct{val\_query()} gives applications that already use the \lib{res\_query(3)} inter-
+face a simple way to transition towards being DNSSEC-aware; it does
+not handle cases where multiple resource record sets may be
+returned for a query, each with a potentially different DNSSEC status.
+\funct{val\_x\_query()} on the other hand provides this functionality by 
+encapsulating its results within the following structure:
+
+\begin{verbatim}
+    struct response_t {
+        u_int8_t *response;
+        int response_length;
+        int validation_result;
+    };
+\end{verbatim}
+                                                                                                                             
+\param{response}, \param{response\_length} and \param{validation\_result} are functionally similar 
+to \param{answer}, \param{anslen} and \param{dnssec\_status} respectively in \funct{val\_query()}.
+\param{resp} in \funct{val\_query()} is an array and must be allocated by the user to be of sufficient
+size to hold all the answers returned by the DNS name server.
+The \funct{val\_x\_query()} function returns \const{NO\_ERROR} on success.
+                                                                                                                             
+The number of answers actually available is returned in the \param{resp\_count}
+parameter.  In case \param{resp} is not large enough to hold all answers
+returned from \funct{val\_x\_query()}, it returns an error code of 
+\const{NO\_SPACE} and \param{resp\_count} is set to the total number of 
+answers available.  Applications may re-query after reallocating \param{resp} 
+to this size. For queries that are not of type \const{ns\_t\_any} it is generally sufficient
+to allocate an array of three elements for \param{results}.
+                                                                                                                             
+Contexts that were created using the \funct{get\_context()} interface should be
+destroyed when they are no longer needed, using the \funct{destroy\_context()}
+method.
+
+\begin{verbatim}
+    void destroy_context(val_context_t *context);
+\end{verbatim}
+                                                                                                                             
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Observing the Finer Details}
+\label{detail}
+                                                                                                                             
+The \funct{resolve\_n\_check()} interface forms the core of the 
+validator functionality and can be used to query a set of name servers 
+for the $<*domain\_name\_n*, *type*, *class*>$ tuple and to verify and
+validate the response.  Verification is the step of checking the RRSIGs
+and validation includes performing verification up the chain of trust
+all the way to a trust anchor.
+All of the interfaces described above that are used to fetch and
+validate DNS answers make use of this interface.
+
+\begin{verbatim}
+    int resolve_n_check( val_context_t *context, u_char *domain_name_n,
+        const u_int16_t type, const u_int16_t class, const u_int8_t flags,
+        struct query_chain **queries, struct assertion_chain **assertions,
+        struct val_result **results);
+\end{verbatim}
+                                                                                                                             
+The \param{domain\_name\_n} parameter is the queried name in DNS wire format.
+The conversion from host format to DNS wire format can be done using
+the \funct{ns\_name\_pton()} \lib{libres(3)} helper function that is also exported by
+\lib{libval(3)}.
+                                                                                                                             
+\funct{resolve\_n\_check()} returns \const{NO\_ERROR} on success.
+Answers returned by \funct{resolve\_n\_check()} are made available in the
+\param{*results} array. Each answer is a distinct RRset; multiple RRs within
+the RRset are treated as the same answer. Multiple answers are possible
+when \param{type} is \const{ns\_t\_any} or when a proof of non-existence is returned
+in which case RRsets of type \const{ns\_t\_nsec} and \const{ns\_t\_soa} are also
+returned.
+
+Individual elements in *\param{results} point to corresponding elements in the
+\param{**assertions} linked list. The assertions contain the actual RRsets
+returned by the name server in response to the query. The \param{**queries}
+linked-list provides a handle to the query that returned the data
+present within an assertion.
+                                                                                                                             
+\param{*queries}, \param{*assertions} and \param{*results} must be initially set to NULL.
+The libval library internally allocates memory for these parameters so
+they must be freed by the invoking application using the
+\funct{free\_query\_chain()}, \funct{free\_assertion\_chain()} and \funct{free\_result\_chain()}
+interfaces respectively.
+
+\begin{verbatim}
+        void free_query_chain(struct query_chain **queries);
+        void free_assertion_chain(struct assertion_chain **assertions);
+        void free_result_chain(struct val_result **results);
+\end{verbatim}
+
+The three dimensions of \param{results}, \param{assertions} and 
+\param{queries} allow the invoking application to select to 
+investigate the DNSSEC validation status of a particular response in much detail. Most
+applications would only require \param{results} since this provides a single
+error code for representing the authenticity of returned data. Other
+more intrusive applications such as a DNSSEC troubleshooting utility may
+look at the individual assertions to identify what particular component
+in the chain-of-trust led to validation failure if any.
+                                                                                                                             
+Upon completion of the \funct{resolve\_n\_check()} call, 
+the \param{ac\_state} element within the assertion structure contains the validation
+status of a particular assertion. This generally contains a different than the
+final DNSSEC status returned by higher level applications since it applies only to 
+the given assertion. Successful DNSSEC Status values can only be generated if every 
+component in the chain of trust was validated and culminates with a trusted record.
+The \param{ac\_state} field may contain the following values for an assertion:
+
+
+\begin{description}
+\item[DNSKEY\_NOMATCH]  RRSIG was created by a DNSKEY that does not exist in the apex keyset. 
+\item[WRONG\_LABEL\_COUNT]  The number of labels on the signature is greater than the the count given in the RRSIG RDATA. 
+\item[SECURITY\_LAME] RRSIG created by a key that does not exist in the parent DS record set.
+\item[NOT\_A\_ZONE\_KEY] The key used to verify the RRSIG is not a zone key, but some other key such as the public key used for TSIG. 
+\item[RRSIG\_NOTYETACTIVE] The RRSIG's inception time is in the future. 
+\item[RRSIG\_EXPIRED] The RRSIG has expired. 
+\item[ALGO\_NOT\_SUPPORTED] Algorithm in DNSKEY or RRSIG or DS is not supported. 
+\item[UNKNOWN\_ALGO] Unknown DNSKEY or RRSIG or DS algorithm 
+\item[RRSIG\_VERIFIED] The RRSIG verified successfully. 
+\item[RRSIG\_VERIFY\_FAILED] The RRSIG did not verify.
+\item[NOT\_VERIFIED] Different RRSIGs failed for different reasons 
+\item[KEY\_TOO\_LARGE] The zone is using a key size that is too large as per local policy. 
+\item[KEY\_TOO\_SMALL] The zone is using a key size that is too small as per local policy 
+\item[KEY\_NOT\_AUTHORIZED] The zone is using a key that is not authorized as per local policy.
+\item[ALGO\_REFUSED] Algorithm in DNSKEY or RRSIG or DS is not allowed as per local policy 
+\item[CLOCK\_SKEW] Verified but with clock skew taken into account 
+\item[DUPLICATE\_KEYTAG] Two DNSKEYs have the same keytag 
+\item[NO\_PREFERRED\_SEP] There is no DNSKEY in the parent DS set that our local policy allows us to traverse  
+\item[WRONG\_RRSIG\_OWNER] The RRSIG and the data that it purportedly covers have differing notions of owner name 
+\item[RRSIG\_ALGO\_MISMATCH] The DNSKEY and RRSIG pair have a mismatch in their algorithm.  
+\item[KEYTAG\_MISMATCH] The DNSKEY and RRSIG pair have a mismatch in the key tags. 
+\item[VERIFIED] The signature verified OK. 
+\item[LOCAL\_ANSWER] Answer was obtained locally. This is currently not implemented. 
+\item[TRUST\_KEY] The key present in this assertion is trusted. 
+\item[TRUST\_ZONE] The zone in this assertion is trusted. 
+\item[BARE\_RRSIG] Query was for an RRSIG. 
+\end{description}
+                                                                                                                             
+
+In cases where data is insufficient to generate a validation result, \param{ac\_state} may \\ 
+also contain the following status values. The final validation result in such circumstances \\
+is \const{VALIDATION\_ERROR}.
+
+                                                                                                                             
+\begin{description}
+\item[DATA\_MISSING]  No data was returned in the response. Based on what data was queried for this also covers cases where the DNSKEY or DS are missing. 
+\item[RRSIG\_MISSING] Could not find an RRSIG that matched the query type. 
+\item[NO\_TRUST\_ANCHOR] No trust anchor at current level and no possiblity for finding any up this tree.  
+\item[UNTRUSTED\_ZONE] The zone has been configured as un-trusted. 
+\item[IRRELEVANT\_PROOF] An NSEC received does not contribute towards proving non-existence.
+\item[DNSSEC\_VERSION\_ERROR] DNSSEC version error. Not implemented. 
+\item[TOO\_MANY\_LINKS] Too many links were traversed in going up the chain-of-trust.  Not implemented. 
+\item[UNKNOWN\_DNSKEY\_PROTO] The protocol field in the DNSKEY is not set to 3 (DNSSEC). 
+\item[FLOOD\_ATTACK\_DETECTED] Detected multiple (conflicting) answers for the same query.  Possible spoofing attack. Not implemented. 
+\item[CONFLICTING\_ANSWERS] Multiple answers received for a query which conflict. 
+\item[SR\_REFERRAL\_ERROR] Some error encountered while following referrals.
+\item[SR\_MISSING\_GLUE] Glue was missing 
+\item[Other DNS errors.] 
+\end{description}
+
+
+                                                                                                                             
+Assertion status values may be displayed using the \funct{p\_val\_error()} interface.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                                                                                                                             
+
+\subsection{DNSSEC Instrumentation For Unsupported Resolver Calls}
+\label{custom}
+                                                                                                                             
+                                                                                                                             
+Applications that make use of resolver calls that are not directly exported by
+the validator library would need to implement such wrapper functions themselves.
+The \funct{resolve\_n\_check()} interface is generic enough to allow almost any 
+name resolution functionality to be made DNSSEC-aware. The following code 
+snippet illustrates how \funct{val\_x\_query()} is internally implemented 
+using the \funct{resolve\_n\_check()} interface.
+
+\begin{verbatim}
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#include <arpa/nameser.h>
+                                                                                                                             
+#include <resolver.h>
+#include <validator.h>
+#include "val_cache.h"
+#include "val_support.h"
+
+int compose_answer( const char *name_n,
+            const u_int16_t type_h,
+            const u_int16_t class_h,
+            struct val_result *results,
+            struct response_t *resp,
+            int *resp_count,
+            u_int8_t flags);
+
+int val_x_query(const val_context_t *ctx,
+            const char *domain_name,
+            const u_int16_t class,
+            const u_int16_t type,
+            const u_int8_t flags,
+            struct response_t *resp,
+            int *resp_count)
+{
+    struct query_chain *queries = NULL;
+    struct assertion_chain *assertions = NULL;
+    struct val_result *results = NULL;
+    int retval;
+    val_context_t *context;
+    u_char name_n[MAXCDNAME];
+                                                                                                                             
+    if(ctx == NULL) {
+        if(NO_ERROR !=(retval = get_context(NULL, &context)))
+            return retval;
+    }
+    else
+        context = ctx;
+                                                                                                                             
+    if (ns_name_pton(domain_name, name_n, MAXCDNAME-1) == -1)
+        return (BAD_ARGUMENT);
+    if(NO_ERROR == (retval = resolve_n_check(context, name_n, 
+                               type, class, flags,
+                               &queries, &assertions, &results))) {
+
+        /* Construct the answer response in response_t */
+        retval = compose_answer(name_n, type, class, results, 
+                                    resp, resp_count, flags);
+        free_query_chain(&queries);
+        free_assertion_chain(&assertions);
+        free_result_chain(&results);
+    }
+    if((ctx == NULL)&& context)
+        destroy_context(context);
+    return retval;
+}
+\end{verbatim}

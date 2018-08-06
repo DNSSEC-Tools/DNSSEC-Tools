@@ -1,0 +1,67 @@
+
+\subsubsection{Update the Key-Tags Table}
+
+Update the key-tags table to reflect the changed key status.  Delete the old
+Current ZSK. Change the status of the Published ZSK to Current.  Change the
+status of the New ZSK to Published.
+
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|}
+\hline
+{\bf Zone} &
+\multicolumn{4}{c|}{{\bf ZSK}} &
+\multicolumn{4}{c|}{{\bf KSK}} &
+{\bf Exp} \\
+\cline{2-9}
+
+ & Tag & Size & Creat & S & Tag & Size & Creat & S & \\
+\hline
+
+					&
+{\bf \sout{\underline{zsktag-cur}}}	&
+{\bf \sout{512}}			&
+{\bf \sout{\underline{date}}}		&
+{\bf \sout{C}}				&
+\underline{ksktag}			&
+1024					&
+\underline{date}			&
+C					&
+					\\
+
+\cline{2-9}
+
+\underline{zone.name}	&
+\underline{zsktag-pub}	&
+512			&
+\underline{date}	&
+{\bf \sout{P}}		&
+& & & &
+\underline{date}			\\
+
+			&
+			&
+			&
+			&
+{\bf C}			&
+& & & & \\
+
+\cline{2-9}
+
+			&
+\underline{zsktag-new}	&
+512			&
+\underline{date}	&
+{\bf \sout{N}}		&
+& & & & \\
+
+			&
+			&
+			&
+			&
+{\bf P}			&
+& & & & \\
+
+\hline
+\end{tabular}
+\end{center}
+

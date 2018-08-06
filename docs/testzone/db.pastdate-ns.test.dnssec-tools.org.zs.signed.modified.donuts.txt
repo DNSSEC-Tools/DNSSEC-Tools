@@ -1,0 +1,101 @@
+pastdate-a.pastdate-ns.test.dnssec-tools.org:
+  Location:    db.pastdate-ns.test.dnssec-tools.org.zs.signed.modified:304
+  Error:       RRSIG record for
+	       pastdate-a.pastdate-ns.test.dnssec-tools.org has expired
+
+pastdate-aaaa.pastdate-ns.test.dnssec-tools.org:
+  Location:    db.pastdate-ns.test.dnssec-tools.org.zs.signed.modified:319
+  Error:       RRSIG record for
+	       pastdate-aaaa.pastdate-ns.test.dnssec-tools.org has expired
+
+reverseddates-a.pastdate-ns.test.dnssec-tools.org:
+  Location:    db.pastdate-ns.test.dnssec-tools.org.zs.signed.modified:326
+  Error:       RRSIG is nearing its expiration time
+
+reverseddates-aaaa.pastdate-ns.test.dnssec-tools.org:
+  Location:    db.pastdate-ns.test.dnssec-tools.org.zs.signed.modified:342
+  Error:       RRSIG is nearing its expiration time
+
+baddata-aaaa.pastdate-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name:
+	       baddata-aaaa.pastdate-ns.test.dnssec-tools.org type: AAAA
+	       failed to verify: RSA Verification failed
+
+reverseddates-a.pastdate-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name:
+	       reverseddates-a.pastdate-ns.test.dnssec-tools.org type: A
+	       failed to verify: RSA Verification failed
+
+reverseddates-aaaa.pastdate-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name:
+	       reverseddates-aaaa.pastdate-ns.test.dnssec-tools.org type:
+	       AAAA failed to verify: RSA Verification failed
+
+pastdate-aaaa.pastdate-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name:
+	       pastdate-aaaa.pastdate-ns.test.dnssec-tools.org type: AAAA
+	       failed to verify: Signature has expired since:
+	       20061204105009
+
+badsign-a.pastdate-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name: badsign-a.pastdate-ns.test.dnssec-tools.org
+	       type: A failed to verify: RSA Verification failed
+
+futuredate-a.pastdate-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name:
+	       futuredate-a.pastdate-ns.test.dnssec-tools.org type: A
+	       failed to verify: Signature may only be used in the future;
+	       after 20071204105509
+
+pastdate-a.pastdate-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name: pastdate-a.pastdate-ns.test.dnssec-tools.org
+	       type: A failed to verify: Signature has expired since:
+	       20061204105009
+
+badsign-aaaa.pastdate-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name:
+	       badsign-aaaa.pastdate-ns.test.dnssec-tools.org type: AAAA
+	       failed to verify: RSA Verification failed
+
+addedlater-nosig-A.pastdate-ns.test.dnssec-tools.org:
+  Error:       name addedlater-nosig-A.pastdate-ns.test.dnssec-tools.org
+	       does not have an NSEC record, which is required for secure
+	       domains.
+
+addedlater-nosig-A.pastdate-ns.test.dnssec-tools.org:
+  Error:       name addedlater-nosig-A.pastdate-ns.test.dnssec-tools.org
+	       does not have a RRSIG record, which is required for secure
+	       domains.
+
+futuredate-aaaa.pastdate-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name:
+	       futuredate-aaaa.pastdate-ns.test.dnssec-tools.org type: AAAA
+	       failed to verify: Signature may only be used in the future;
+	       after 20071204105509
+
+addedlater-withsig-A.pastdate-ns.test.dnssec-tools.org:
+  Error:       name addedlater-withsig-A.pastdate-ns.test.dnssec-tools.org
+	       does not have an NSEC record, which is required for secure
+	       domains.
+
+baddata-a.pastdate-ns.test.dnssec-tools.org:
+  Error:       RRSIG on name: baddata-a.pastdate-ns.test.dnssec-tools.org
+	       type: A failed to verify: RSA Verification failed
+
+addedlater-nosig-AAAA.pastdate-ns.test.dnssec-tools.org:
+  Error:       name addedlater-nosig-AAAA.pastdate-ns.test.dnssec-tools.org
+	       does not have an NSEC record, which is required for secure
+	       domains.
+
+addedlater-nosig-AAAA.pastdate-ns.test.dnssec-tools.org:
+  Error:       name addedlater-nosig-AAAA.pastdate-ns.test.dnssec-tools.org
+	       does not have a RRSIG record, which is required for secure
+	       domains.
+
+addedlater-withsig-AAAA.pastdate-ns.test.dnssec-tools.org:
+  Error:       name
+	       addedlater-withsig-AAAA.pastdate-ns.test.dnssec-tools.org
+	       does not have an NSEC record, which is required for secure
+	       domains.
+
+20 errors found in db.pastdate-ns.test.dnssec-tools.org.zs.signed.modified

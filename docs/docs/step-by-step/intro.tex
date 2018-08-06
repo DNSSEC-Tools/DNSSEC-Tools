@@ -1,0 +1,223 @@
+
+DNS Security (DNSSEC) helps protect against DNS-spoofing attacks by providing
+origin authentication and integrity protection of DNS information.  Proper
+maintenance of a DNSSEC-enhanced DNS zone is essential to protecting the
+domain's zone data.
+
+% This Step-by-Step DNS Security Operator Guidance document is intended for
+% operations using the BIND-9.3.0 (or later) distribution [4].  It will assist
+% operators in gaining operational experience with DNSSEC. Some basic
+% understanding of DNSSEC terms and concepts is required. A good introduction
+% to DNSSEC can be found in [5].  Some basic understanding of public key
+% cryptography is also required [7].
+
+This Step-by-Step DNS Security Operator Guidance document is intended for
+operations using the BIND-9.3.0 (or later) distribution.  It will assist
+operators in gaining operational experience with DNSSEC. Some basic
+understanding of DNSSEC terms and concepts is required.
+
+This document is meant to be a learning aid and is not intended
+to define policy in any form. Any implicit recommendations for key sizes,
+signature validity periods, and command line parameters are for illustration
+purposes ONLY and MUST NOT be used in production environments unless
+due-diligence has been taken to ensure that these values are acceptable within
+such environments.  See [1] for suggestions on determining appropriate
+security characteristics.
+
+This document was written as part of the DNSSEC-Tools project.  The goal of
+this project is to create a set of documentation, tools, patches,
+applications, wrappers, extensions, and plug-ins that will help ease the
+deployment of DNSSEC-related technologies.  For more information about this
+project and the tools that are being developed and provided, please see the
+DNSSEC-Tools project web page at:
+
+\url{http://www.dnssec-tools.org}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Organization of this Document}
+
+The following operations are described in this document:
+
+\begin{description}
+
+\item [Section~\ref{preliminaries}] {Essential Preliminaries}\\
+This section contains essential instructions that must be followed before
+continuing with the rest of the document.
+
+\item [Section~\ref{genzsk}] {Zone-Signing Key (ZSK) Generation}\\
+This section describes the procedure for creating new Zone Signing Keys; i.e.,
+the keys used for signing zone data.
+
+\item [Section~\ref{genksk}] {Key-Signing Key (KSK) Generation}\\
+This section describes the procedure for creating new Key Signing Keys; i.e.,
+keys that are used to sign the ZSKs in the apex keyset.
+
+\item [Section~\ref{config-n-serve}] {Configuring and Serving a Signed Zone}\\
+This section describes the procedure for serving a signed zone file.
+
+\item [Section~\ref{roll-curzsk}] {Current ZSK Roll-Over}\\
+This section describes the procedure for rolling over an old ZSK. These steps
+should be used only if the older ZSK is known to have not been compromised.
+
+\item [Section~\ref{roll-ksk}] {KSK Roll-Over}\\
+This section describes the procedure for rolling over an old KSK. These steps
+should be used only if the older KSK is known to have not been compromised.
+
+\item [Section~\ref{signzone-nodel}] {Signing a Zone with No Delegations}\\
+This section describes the procedure for signing a zone that has no
+delegations (no non-authoritative NS records) present in the zone file.
+
+\item [Section~\ref{delegation-child}] {Creating a Signed Delegation in a Child Zone}\\
+This section describes the activities that a child zone must perform
+in order to facilitate the creation of a signed delegation at the parent.
+
+\item [Section~\ref{signzone-hasdel}] {Signing a Zone that Has Delegations}\\
+This section describes the procedure for signing a zone that has delegations
+(non-authoritative NS records) present in the zone file. The difference
+between this and section 3 lies in the additional communication involved
+between the parent and the child, as well as creation of the DS record in the
+parent zone, when delegations are present.
+
+\item [Section~\ref{delegation-parent}] {Creating a Signed Delegation in a Parent Zone}\\
+This section describes the activities that a parent zone must perform
+in order to facilitate the creation of a signed delegation at the parent.
+
+\item [Section~\ref{roll-emergency-ksk}] {KSK Roll-Over -- KSK Compromise}\\
+This section describes the procedure for performing an emergency roll-over
+of the KSK when it is suspected or known to be compromised.
+
+\item [Section~\ref{roll-emergency-curzsk}] {ZSK Roll-Over -- Current ZSK Compromise}\\
+This section describes the procedure for performing an emergency roll-over
+of the Current ZSK, when it is suspected or known to be compromised.
+
+\item [Section~\ref{roll-emergency-pubzsk}] {ZSK Roll-Over -- Published ZSK Compromise}\\
+This section describes the procedure for performing an emergency roll-over
+of the Published ZSK, when it is suspected or known to be compromised.
+
+\item [Section~\ref{roll-emergency-zsks}] {ZSK Roll-Over -- Published and Current ZSK Compromise}\\
+This section describes the procedure for performing an emergency roll-over
+of the Published and Current ZSKs, when both are suspected or known to be
+compromised.
+
+\item [Section~\ref{roll-emergency-parent-ksk}] {KSK Roll-Over -- Parent Action During KSK Compromise}\\
+This section describes the actions that the parent zone must perform when it
+receives notification from the child about a KSK compromise, and before it
+publishes a DS value that points to the new KSK in the child.
+
+\end{description}
+
+These sections are followed by several appendices.  These appendices contain
+useful information, such as checklists for the operations and pictorial
+illustrations for each of the operations described in this guide.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Identifying Relevant Steps}
+
+The following table summarizes the list of steps relevant to different kinds
+of zones. The columns marked with an 'X' for any row correspond to those
+operations with which the zone operator for that type of zone must be
+familiar.
+
+\begin{center}
+\begin{tabular}{|l|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+{\bf Zone Profile} & \multicolumn{14}{c|}{{\bf Steps}} \\
+\cline{2-15}
+ & 1 & 2 & 3 & 4 & 5 & 6 & 7 & 8 & 9 & 10 & 11 & 12 & 13 & 14 \\
+\hline
+No signed delegations, & X & X & X &   & X &   &   & X & X & X & X & X & X & \\
+parent is not signed   &   &   &   &   &   &   &   &   &   &   &   &   &   & \\
+\hline
+No signed delegations, & X & X & X &   & X & X &   & X & X & X & X & X & X & \\
+parent is signed       &   &   &   &   &   &   &   &   &   &   &   &   &   & \\
+\hline
+Signed delegations,    & X & X &   & X & X &   & X & X & X & X & X & X & X & X\\
+parent is not signed   &   &   &   &   &   &   &   &   &   &   &   &   &   &  \\
+\hline
+Signed delegations,    & X & X &   & X & X & X & X & X & X & X & X & X & X & X\\
+parent is signed       &   &   &   &   &   &   &   &   &   &   &   &   &   &  \\
+\hline
+\end{tabular}
+\end{center}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Key Concepts}
+\begin{description}
+\item{ZSK} - Zone-Signing Key\\
+The key used to sign zone data.
+
+\item{KSK} - Key-Signing Key\\
+The key used to sign the ZSKs in the apex keyset.
+
+\item{Current ZSK}\\
+The Current ZSK is the key that is currently used to sign zone data.
+
+\item{Published ZSK}\\
+The Published ZSK is the key that is pre-published in the zone file as the
+future ZSK.
+
+\item{New ZSK}\\
+The New ZSK is the key that is scheduled to become the Published ZSK.
+
+\end{description}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Conventions Used in this Document}
+
+One of the goals of this document is to self-contain DNS Security
+operations within sections and prevent constant cross-referencing between
+sections.  Consequently, certain parts of the text are repeated throughout
+the document.
+
+In particular, one might notice that zone SOA serial numbers may not change
+between sections.  This should {\bf not} be taken as an indication that the
+serial numbers do not need to change when the guide states that they should.
+
+Text marked in bold represents text or commands entered by users
+within a given procedural step.
+
+Underlined text, which can also be in bold, is a place-holder for actual
+run-time values.  These values are either automatically generated or are
+values that are known to the user from some other step.
+
+Additionally, the following typographical conventions are used in this
+document.
+
+\begin{tabular}{lll}
+\cmd{command}		& & Command names\\
+\path{path}		& & File and path names\\
+\url{URL}		& & Web URLs\\
+\xqt{execution}		& & Simple command executions\\
+\end{tabular}
+
+Longer sets of command sequences are given in this format:
+\begin{tabbing}
+\hspace{0.5in}\$ {\bf cd /tmp} $[$ENTER$]$ \\
+\hspace{0.5in}\$ {\bf ls} $[$ENTER$]$ \\
+\hspace{0.5in}\$ {\bf rm -fr *} $[$ENTER$]$ \\
+\hspace{0.5in}\$ \\
+\end{tabbing}
+
+In most cases, output will not be displayed for given command sequences.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Acknowledgments}
+
+This document builds upon the procedures described in [1] for key
+roll-over techniques; the step-by-step instructions described in
+Sections~\ref{roll-curzsk} and~\ref{roll-ksk} are meant to closely follow
+the recommendations given by that document. Early versions of this guide
+were reviewed and critiqued by SAIC, Inc./Quotient, Inc., including Rip
+Loomis and Rob Payne.  Their contributions are much appreciated.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Comments}
+
+Please send any comments and corrections to developers@dnssec-tools.org.
+

@@ -1,0 +1,253 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title></title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:root@localhost" />
+</head>
+
+<body style="background-color: white">
+
+
+
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
+  <li><a href="#OPTIONS">OPTIONS</a></li>
+  <li><a href="#EXAMPLES">EXAMPLES</a>
+    <ul>
+      <li><a href="#Example-1.-One-realm-with--statedir">Example 1. One realm, with -statedir</a></li>
+      <li><a href="#Example-2.-One-realm-without--statedir">Example 2. One realm, without -statedir</a></li>
+      <li><a href="#Example-3.-Two-realms-without-metacharacters">Example 3. Two realms, without metacharacters</a></li>
+      <li><a href="#Example-4.-Two-realms-with-metacharacters">Example 4. Two realms, with metacharacters</a></li>
+    </ul>
+  </li>
+  <li><a href="#COPYRIGHT">COPYRIGHT</a></li>
+  <li><a href="#AUTHOR">AUTHOR</a></li>
+  <li><a href="#SEE-ALSO">SEE ALSO</a></li>
+</ul>
+
+<h1 id="NAME">NAME</h1>
+
+<p>realminit - Create new <i>realm</i> records for a DNSSEC-Tools <i>realms</i> file.</p>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<pre><code>  realminit [options] &lt;realm1&gt; ... &lt;realmN&gt;</code></pre>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p><b>realminit</b> creates new <i>realm</i> entries for a <b>realms</b> file. <b>dtrealms</b> manages multiple distinct DNSSEC-Tools rollover environments running simultaneously. Each rollover environment, called a realm, is defined in a <b>realms</b> file. <b>dtrealms</b> uses this file to determine how to run the rollover environment. This is useful for such things as managing very large collections of zones, segregating customer zones, and software tests.</p>
+
+<p>The newly generated <i>realm</i> entries are written to standard output, unless the <b>-out</b> option is specified.</p>
+
+<p>A <b>realms</b> file contains a number of entries, one for each managed <i>realm</i>. A <i>realm</i> entry has this format:</p>
+
+<pre><code>    realm &quot;example&quot;
+        state          &quot;active&quot;
+        configdir      &quot;/usr/realms/configs/example&quot;
+        statedir       &quot;/usr/realms/states/example&quot;
+        realmsdir      &quot;/usr/realms/realms-files/example&quot;
+        rollrec        &quot;example.rrf&quot;
+        administrator  &quot;bob@cat.example.com&quot;
+        display        &quot;1&quot;
+        manager        &quot;rollerd&quot;
+        args           &quot;-display -loglevel phase&quot;</code></pre>
+
+<p>Multiple <i>realm</i> entries may be created with a single execution of <b>realminit</b>. Except for the entry&#39;s name field, the entries will be exactly the same unless the &#39;=&#39; metacharacter is used in the command-line options. If the values of the <b>configdir</b>, <b>statedir</b>, <b>realmdir</b>, <b>rollrec</b>, <b>administrator</b>, <b>args</b>, or <b>user</b> options contain an &#39;=&#39;, then it will be replaced with the realm&#39;s name when building the entry. See the EXAMPLES section for examples of how options are used by <b>realminit</b>.</p>
+
+<h1 id="OPTIONS">OPTIONS</h1>
+
+<p><b>realminit</b> may be given the following options:</p>
+
+<dl>
+
+<dt id="active"><b>-active</b></dt>
+<dd>
+
+<p>This indicates that <b>dtrealms</b> should start the realm when <b>dtrealms</b> starts. <i>realms</i> are active by default.</p>
+
+</dd>
+<dt id="administrator"><b>-administrator</b></dt>
+<dd>
+
+<p>This is the email address for the realm&#39;s administrator.</p>
+
+</dd>
+<dt id="args"><b>-args</b></dt>
+<dd>
+
+<p>This is a set of command-line arguments passed to the realm&#39;s rollover manager when the realm is started.</p>
+
+</dd>
+<dt id="configdir"><b>-configdir</b></dt>
+<dd>
+
+<p>This is the realm&#39;s configuration directory. This will contain such files as the DNSSEC-Tools configuration file for that realm.</p>
+
+</dd>
+<dt id="display"><b>-display</b></dt>
+<dd>
+
+<p>This indicates if the realm should be included in <b>grandvizier</b> output.</p>
+
+</dd>
+<dt id="inactive"><b>-inactive</b></dt>
+<dd>
+
+<p>This indicates that <b>dtrealms</b> should not start the realm when <b>dtrealms</b> starts.</p>
+
+</dd>
+<dt id="manager"><b>-manager</b></dt>
+<dd>
+
+<p>This is the rollover manager for the realm. <b>rollerd</b> is the default rollover manager, but other managers may be used.</p>
+
+</dd>
+<dt id="out-output-file"><b>-out output-file</b></dt>
+<dd>
+
+<p>The new <i>realm</i> entries will be appended to <i>output-file</i>. The file will be created if it does not exist.</p>
+
+<p>If this option is not given, the new <i>rollrec</i> entries will be written to standard output.</p>
+
+</dd>
+<dt id="realmdir"><b>-realmdir</b></dt>
+<dd>
+
+<p>This is the realm&#39;s data directory. This directory is expected to contain the <b>rollrec</b> file, zone files, <b>keyrec</b> files, and key files for the zones in that realm.</p>
+
+</dd>
+<dt id="rollrec"><b>-rollrec</b></dt>
+<dd>
+
+<p>This is the path to the realm&#39;s <b>rollrec</b> file. This is used to control rollover actions for the realm. If it is not an absolute path, it will be assumed to be relative to the <b>realmdir</b> field.</p>
+
+</dd>
+<dt id="statedir"><b>-statedir</b></dt>
+<dd>
+
+<p>This is the realm&#39;s state directory. This will contain such files as that realm&#39;s <b>rollrec</b> lock file and the <b>rollerd</b> communications socket. If the <b>statedir</b> is not defined for a realm, then the realm&#39;s <b>configdir</b> is used for that value.</p>
+
+</dd>
+<dt id="user"><b>-user</b></dt>
+<dd>
+
+<p>This is the user that the realm is executed as. (<i>This is not yet implemented in <b>dtrealms</b>.</i>)</p>
+
+</dd>
+<dt id="help"><b>-help</b></dt>
+<dd>
+
+<p>Display a usage message.</p>
+
+</dd>
+<dt id="Version"><b>-Version</b></dt>
+<dd>
+
+<p>Display version information for <b>realminit</b> and DNSSEC-Tools.</p>
+
+</dd>
+</dl>
+
+<h1 id="EXAMPLES">EXAMPLES</h1>
+
+<p>The following options should make clear how <b>realminit</b> deals with options and the new <i>realm</i>s. Example 1 will show the complete new <i>realm</i> record. For the sake of brevity, the remaining examples will only show the fields relevant to that example. Further examples will also use short-hand forms of the option names.</p>
+
+<h2 id="Example-1.-One-realm-with--statedir">Example 1. One realm, with -statedir</h2>
+
+<p>This example shows the <i>realm</i> generated by giving <b>realminit</b> a single realm.</p>
+
+<pre><code>    $ realminit -active -configdir /realms/confs/example -statedir /realms/states/example -realmdir /realms/realms/example -rollrec example.rrf -admin bob@cat.example.com -args &quot;-loglevel phase -logfile logger&quot; example
+
+    realm       &quot;example&quot;
+        state           &quot;active&quot;
+        configdir       &quot;/realms/confs/example&quot;
+        statedir        &quot;/realms/states/example&quot;
+        realmdir        &quot;/realms/realms/example&quot;
+        rollrec         &quot;example.rrf&quot;
+        administrator   &quot;bob@cat.example.com&quot;
+        display         &quot;1&quot;
+        manager         &quot;rollerd&quot;
+        args            &quot;-loglevel phase -logfile logger&quot;</code></pre>
+
+<h2 id="Example-2.-One-realm-without--statedir">Example 2. One realm, without -statedir</h2>
+
+<p>This example shows the <i>realm</i> generated by giving <b>realminit</b> a single realm.</p>
+
+<pre><code>    $ realminit -active -configdir /realms/confs/example -realmdir /realms/realms/example -rollrec example.rrf -admin bob@cat.example.com -args &quot;-loglevel phase -logfile logger&quot; example
+
+    realm       &quot;example&quot;
+        state           &quot;active&quot;
+        configdir       &quot;/realms/confs/example&quot;
+        statedir        &quot;/realms/confs/example&quot;
+        ...</code></pre>
+
+<h2 id="Example-3.-Two-realms-without-metacharacters">Example 3. Two realms, without metacharacters</h2>
+
+<p>This example shows the <i>realms</i> generated by giving <b>realminit</b> two realms, without using the special &quot;=&quot; metacharacter.</p>
+
+<pre><code>    $ realminit -configdir /realms/confs/example -statedir /realms/states/example -realmdir /realms/realms/example -rollrec example.rrf -admin bob@cat.example.com example test
+
+    realm       &quot;example&quot;
+        configdir       &quot;/realms/confs/example&quot;
+        statedir        &quot;/realms/states/example&quot;
+        realmdir        &quot;/realms/realms/example&quot;
+        rollrec         &quot;example.rrf&quot;
+        administrator   &quot;bob@cat.example.com&quot;
+        ...
+
+    realm       &quot;test&quot;
+        configdir       &quot;/realms/confs/example&quot;
+        statedir        &quot;/realms/states/example&quot;
+        realmdir        &quot;/realms/realms/example&quot;
+        rollrec         &quot;example.rrf&quot;
+        administrator   &quot;bob@cat.example.com&quot;
+        ...</code></pre>
+
+<h2 id="Example-4.-Two-realms-with-metacharacters">Example 4. Two realms, with metacharacters</h2>
+
+<p>This example shows the <i>realms</i> generated by giving <b>realminit</b> two realms, and that uses the special &quot;=&quot; metacharacter.</p>
+
+<pre><code>    $ realminit -configdir /realms/confs/= -statedir /realms/states/= -realmdir /realms/realms/= -rollrec =.rrf -admin bob@cat.=.com example test
+
+    realm       &quot;example&quot;
+        configdir       &quot;/realms/confs/example&quot;
+        statedir        &quot;/realms/states/example&quot;
+        realmdir        &quot;/realms/realms/example&quot;
+        rollrec         &quot;example.rrf&quot;
+        administrator   &quot;bob@cat.example.com&quot;
+        ...
+
+    realm       &quot;test&quot;
+        configdir       &quot;/realms/confs/test&quot;
+        statedir        &quot;/realms/states/test&quot;
+        realmdir        &quot;/realms/realms/test&quot;
+        rollrec         &quot;test.rrf&quot;
+        administrator   &quot;bob@cat.test.com&quot;
+        ...</code></pre>
+
+<h1 id="COPYRIGHT">COPYRIGHT</h1>
+
+<p>Copyright 2012-2014 SPARTA, Inc. All rights reserved. See the COPYING file included with the DNSSEC-Tools package for details.</p>
+
+<h1 id="AUTHOR">AUTHOR</h1>
+
+<p>Wayne Morrison, tewok@tislabs.com</p>
+
+<h1 id="SEE-ALSO">SEE ALSO</h1>
+
+<p><b>lsrealm(1)</b>, <b>dtrealms(8)</b>, <b>realmchk(8)</b></p>
+
+<p><b>Net::DNS::SEC::Tools::realm.pm(3)</b>,</p>
+
+<p><b>file-realmrec.pm(5)</b></p>
+
+
+</body>
+
+</html>
+
+

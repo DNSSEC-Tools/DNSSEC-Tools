@@ -1,0 +1,551 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title></title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:root@localhost" />
+</head>
+
+<body style="background-color: white">
+
+
+
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
+  <li><a href="#OPTIONS">OPTIONS</a></li>
+  <li><a href="#SCREEN-LAYOUT">SCREEN LAYOUT</a></li>
+  <li><a href="#WINDOW-COLORS">WINDOW COLORS</a>
+    <ul>
+      <li><a href="#Color-Usage">Color Usage</a></li>
+      <li><a href="#Colors-Used">Colors Used</a></li>
+    </ul>
+  </li>
+  <li><a href="#MENU-COMMANDS">MENU COMMANDS</a>
+    <ul>
+      <li><a href="#File-Menu">File Menu</a></li>
+      <li><a href="#Options-Menu">Options Menu</a></li>
+      <li><a href="#General-Control-Menu">General Control Menu</a></li>
+      <li><a href="#ZSK-Control-Menu">ZSK Control Menu</a></li>
+      <li><a href="#KSK-Control-Menu">KSK Control Menu</a></li>
+      <li><a href="#Display-Menu">Display Menu</a></li>
+      <li><a href="#Help-Menu">Help Menu</a></li>
+    </ul>
+  </li>
+  <li><a href="#CONFIGURATION-FILE">CONFIGURATION FILE</a></li>
+  <li><a href="#REQUIREMENTS">REQUIREMENTS</a></li>
+  <li><a href="#WARNINGS">WARNINGS</a></li>
+  <li><a href="#COPYRIGHT">COPYRIGHT</a></li>
+  <li><a href="#AUTHOR">AUTHOR</a></li>
+  <li><a href="#SEE-ALSO">SEE ALSO</a></li>
+</ul>
+
+<h1 id="NAME">NAME</h1>
+
+<p>blinkenlights - DNSSEC-Tools rollerd GUI</p>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<pre><code>  blinkenlights &lt;rollrec-file&gt;</code></pre>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p><b>blinkenlights</b> is a GUI tool for use with monitoring and controlling the DNSSEC-Tools <b>rollerd</b> program. It displays information on the current state of the zones <b>rollerd</b> is managing. The user may control some aspects of <b>rollerd</b>&#39;s execution using <b>blinkenlights</b> menu commands.</p>
+
+<p><b>blinkenlights</b> creates a window in which to display information about each zone <b>rollerd</b> is managing. (These zones are those in <b>rollerd</b>&#39;s current <i>rollrec</i> file.) As a zone&#39;s rollover status changes, <b>blinkenlights</b> will update its display for that zone. Skipped zones, zones listed in the <i>rollrec</i> file but which are not in rollover or normal operation, are displayed but have very little useful information to display.</p>
+
+<p>The user may also select a set of zones to hide from the display. These zones, if in the rolling state, will continue to roll; however, their zone information will not be displayed. Display state for each zone will persist across <b>blinkenlights</b> executions.</p>
+
+<p>Menu commands are available for controlling <b>rollerd</b>. The commands which operate on a single zone may be executed by keyboard shortcuts. The zone may be selected either by clicking in its &quot;zone stripe&quot; or by choosing from a dialog box. Display and execution options for <b>blinkenlights</b> are also available through menu commands. More information about the menu commands is available in the MENU COMMANDS section.</p>
+
+<p><b>blinkenlights</b> is only intended to be started by <b>rollerd</b>, not directly by a user. There are two ways to have <b>rollerd</b> start <b>blinkenlights</b>. First, <b>rollctl</b> may be given the <b>-display</b> option. Second, the <b>-display</b> option may be given on <b>rollerd</b>&#39;s command line.</p>
+
+<h1 id="OPTIONS">OPTIONS</h1>
+
+<p><b>blinkenlights</b> takes the following options:</p>
+
+<dl>
+
+<dt id="display"><b>-display</b></dt>
+<dd>
+
+<p>Tells <b>rollerd</b> to execute <b>blinkenlights</b> as a child process.</p>
+
+</dd>
+<dt id="maxzones"><b>-maxzones</b></dt>
+<dd>
+
+<p>Tells <b>blinkenlights</b> how many zones to display.</p>
+
+</dd>
+<dt id="Version"><b>-Version</b></dt>
+<dd>
+
+<p>Displays the version information for <b>blinkenlights</b> and the DNSSEC-Tools package.</p>
+
+</dd>
+<dt id="help"><b>-help</b></dt>
+<dd>
+
+<p>Displays a usage message and exits.</p>
+
+</dd>
+</dl>
+
+<h1 id="SCREEN-LAYOUT">SCREEN LAYOUT</h1>
+
+<p>The <b>blinkenlights</b> window is laid out as a series of &quot;stripes&quot;. The top stripe contains status information about <b>rollerd</b>, the second stripe contains column headers, and the bulk of the window consists of zone stripes. The list below provides more detail on the contents of each stripe.</p>
+
+<p>See the WINDOW COLORS section for a discussion of the colors used for the zone stripes.</p>
+
+<ul>
+
+<li><p><b>rollerd</b> information stripe</p>
+
+<p>The information stripe contains five pieces of information: <b>rollerd</b>&#39;s current <i>rollrec</i> file, the count of rolling zones, the count of skipped zones, the count of zones to be displayed, and the amount of time <b>rollerd</b> waits between processing its queue. Coincidentally, that last datum is also the amount of time between <b>blinkenlights</b> screen updates.</p>
+
+</li>
+<li><p>column headers stripe</p>
+
+<p>This stripe contains the column headers for the columns of each zone stripe.</p>
+
+</li>
+<li><p>zone stripes</p>
+
+<p>Each zone managed by <b>rollerd</b> (i.e., every zone in the current <i>rollrec</i> file) will have a zone stripe which describes that zone&#39;s current state. The stripe is divided into three sections: zone identification, the current rollover state, and the zone&#39;s DNSSEC keys.</p>
+
+<p>The zone identification section contains the name of the zone, the name of the zone&#39;s <i>rollrec</i> entry, and the zone&#39;s zonegroup.</p>
+
+<p>The rollover state section contains the rollover phase number, a text explanation of the phase, and the amount of time remaining in that rollover phase. The phase explanation is &quot;normal operation&quot; when the zone isn&#39;t currently in rollover.</p>
+
+<p>The DNSSEC key section contains two subsections, one for the zone&#39;s ZSK keys and another for the zone&#39;s KSK keys. Each subsection contains the names of the signing sets active for the zone. The ZSK subsection lists the Current, Published, and New ZSK keys; the KSK subsection lists the Current and Published.</p>
+
+<p>See the WINDOW COLORS section for a discussion of the colors used for the zone stripes.</p>
+
+</li>
+</ul>
+
+<h1 id="WINDOW-COLORS">WINDOW COLORS</h1>
+
+<p>The default <b>blinkenlights</b> configuration uses window coloring to provide visual cues and to aid in easily distinguishing zone information. The default window coloring behavior gives each zone stripe has its own color and the rollover state section of each zone stripe is shaded to show the zone&#39;s phase. Window coloring can be turned off (and on) with configuration options and menu commands.</p>
+
+<h2 id="Color-Usage">Color Usage</h2>
+
+<p>The two window coloring behaviors are discussed more fully below:</p>
+
+<ul>
+
+<li><p>zone stripe colors</p>
+
+<p>Each rolling zone&#39;s stripe is given one of three colors: blue, red, or green. The color is assigned on a top-down basis and the colors wrap if there are more than three zones. So, the first zone is always blue, the second zone red, the third zone green, the fourth zone blue, etc.</p>
+
+<p>The colors do not stay with a particular zone. If a rolling zone becomes a skipped zone, the zone stripes will be reassigned new colors to account for that skipped zone.</p>
+
+<p>Skipped zones are not colored with these three colors. Stripes for skipped zones are colored either grey or a color set in the configuration file. If you choose to use a non-standard color for skipped zones your should ensure that it is <b>not</b> one of the colors used for rolling zones&#39; stripes. Modifying the <b>skipcolor</b> configuration field allows the skipped-zone color to be changing.</p>
+
+<p>The <b>colors</b> configuration field can be used to turn on or off the use of colors for zone stripes. If stripe coloring is turned off, then every stripe will be displayed using the <b>skipcolor</b> color.</p>
+
+</li>
+<li><p>rollover-state shading</p>
+
+<p>The only portion of a zone stripe that changes color is the status column; the color of the rest of the zone stripe stays constant. Before a zone enters rollover, the status column is the same color as the rest of the stripe. When the zone enters rollover, the status column&#39;s color is changed to a very light shade of the stripe&#39;s normal color. As the rollover phases progress towards rollover completion, the status column&#39;s shade darkens. Once rollover completes, the status column returns again to the same shade as the rest of that stripe.</p>
+
+<p>The <b>shading</b> configuration field can be used to turn on or off the use of shading in the rollover-state column. If shading is turned off, then the zone stripe will be a solid color.</p>
+
+<p>See the CONFIGURATION FILE section for information on setting the configuration fields.</p>
+
+</li>
+</ul>
+
+<h2 id="Colors-Used">Colors Used</h2>
+
+<p>The color names are taken from the X11 <b>rgb.txt</b> file (X11 1.1.3 - XFree86 4.4.0 for MacOS X.) If these aren&#39;t available in your <b>rgb.txt</b> file, similar names should be selected. The actual red/green/blue values used are given below to assist in finding suitable replacements. These values were taken from the <b>rgb.txt</b> file.</p>
+
+<p>Blue Shades:</p>
+
+<pre><code>    blue                0   0 255
+    lightblue2        178 223 238
+    darkslategray1    151 255 255
+    skyblue1          135 206 255
+    steelblue1         99 184 255
+    turquoise1          0 245 255
+    cornflower blue   100 149 237
+    dodger blue        30 144 255</code></pre>
+
+<p>Red Shades:</p>
+
+<pre><code>    red               255   0   0
+    pink              255 192 203
+    lightsalmon1      255 160 122
+    tomato            255  99  71
+    indianred         205  92  92
+    violetred1        255  62 150
+    orangered1        255  69   0
+    firebrick1        255  48  48</code></pre>
+
+<p>Green Shades:</p>
+
+<pre><code>    green               0 255   0
+    darkseagreen1     193 255 193
+    darkolivegreen1   202 255 112
+    lightgreen        144 238 144
+    seagreen1          84 255 159
+    spring green        0 255 127
+    greenyellow       173 255  47
+    lawngreen         124 252   0</code></pre>
+
+<h1 id="MENU-COMMANDS">MENU COMMANDS</h1>
+
+<p>A number of menu commands are available to control the behavior of <b>blinkenlights</b> and to send commands to <b>rollerd</b>. These commands are discusses in this section.</p>
+
+<h2 id="File-Menu">File Menu</h2>
+
+<p>The commands in this menu are basic GUI commands.</p>
+
+<ul>
+
+<li><p>Halt Rollerd After Current Operations</p>
+
+<p><b>rollerd</b>&#39;s execution is halted after completing its current set of zone operations. As a result, <b>blinkenlights</b>&#39; execution will also be halted.</p>
+
+</li>
+<li><p>Halt Rollerd Now</p>
+
+<p><b>rollerd</b>&#39;s execution is halted immediately. As a result, <b>blinkenlights</b>&#39; execution will also be halted. If <b>rollerd</b>&#39;s command queue already contains a set of commands, they may be processed prior to this command.</p>
+
+</li>
+<li><p>Quit</p>
+
+<p><b>blinkenlights</b> will stop execution.</p>
+
+</li>
+</ul>
+
+<h2 id="Options-Menu">Options Menu</h2>
+
+<p>The commands in this menu control the appearance and behavior of <b>blinkenlights</b>.</p>
+
+<ul>
+
+<li><p>Row Colors (toggle)</p>
+
+<p>This menu item is a toggle to turn on or off the coloring of zone stripes. If row coloring is turned off, zone stripes will all be the same color. If row coloring is turned on, zone stripes will be displayed in varying colors. See the WINDOW COLORS section for a discussion of row coloring.</p>
+
+</li>
+<li><p>Status Column Shading (toggle)</p>
+
+<p>This menu item is a toggle to turn on or off the shading of the zone status column. If shading is turned off, the zone stripes will present a solid, unchanging band of color for each zone. If shading is turned on, the color of the zone status column will change according to the zone&#39;s rollover state.</p>
+
+</li>
+<li><p>Skipped Zones Display (toggle)</p>
+
+<p>This menu item is a toggle to turn on or off the display of skipped zones. If display is turned off, zone stripes for skipped zones will not be displayed. If display is turned on, zone stripes for all zones will be displayed.</p>
+
+</li>
+<li><p>Status Times Display (toggle)</p>
+
+<p>This menu item is a toggle to turn on or off the display of status times. If display is turned off, the remaining time for a rollover phase will not be displayed in the &quot;Status&quot; column. If display is turned on, the remaining times will be displayed.</p>
+
+</li>
+<li><p>Modification Commands (toggle)</p>
+
+<p>In some situations, it may be desirable to turn off <b>blinkenlights</b>&#39; ability to send commands to <b>rollerd</b>. This menu item is a toggle to turn on or off this ability. If the commands are turned off, then the &quot;ZSK Control&quot; and &quot;KSK Control&quot; menus and their keyboard shortcuts are disabled. If the commands are turned on, then the &quot;ZSK Control&quot; and &quot;KSK Control&quot; menus and their keyboard shortcuts are enabled.</p>
+
+</li>
+<li><p>Font Size</p>
+
+<p>This menu item allows selection of font size of text displayed in the main window.</p>
+
+<p>Normally, changing the font size causes the window to grow and shrink as required. However, on Mac OS X there seems to be a problem when the size selected increases the window size to be greater than will fit on the screen. If the font size is subsequently reduced, the window size does not shrink in response.</p>
+
+</li>
+<li><p>Zones to Display</p>
+
+<p>This menu item allows selection of the number of zones to be displayed in the main window.</p>
+
+</li>
+</ul>
+
+<h2 id="General-Control-Menu">General Control Menu</h2>
+
+<p>The commands in this menu are GUI interfaces for the <b>rollctl</b> commands related to <i>general</i> zone management.</p>
+
+<ul>
+
+<li><p>Sign Selected Zone</p>
+
+<p><b>rollerd</b> is instructed to sign the selected zone. The zone will only be signed; no key rollover will occur.</p>
+
+</li>
+<li><p>Sign All Zones</p>
+
+<p><b>rollerd</b> is instructed to sign all the zones it manages. The zone will only be signed; no key rollover will occur.</p>
+
+</li>
+<li><p>Sign Active Zones</p>
+
+<p><b>rollerd</b> is instructed to sign all the zones it manages. Skipped zones will not be signed. The zone will only be signed; no key rollover will occur.</p>
+
+</li>
+<li><p>Run the Queue</p>
+
+<p><b>rollerd</b> is awoken and runs through its queue of zones. The operation required for each zone is then performed.</p>
+
+</li>
+<li><p>Skip Selected Zone</p>
+
+<p>The selected zone will be moved to the skipped state. This only has an effect on rolling zones. A zone may be selected by clicking on its zone stripe. If this command is selected without a zone having been selected, a dialog box is displayed from which a currently rolling zone may be chosen.</p>
+
+</li>
+<li><p>Skip All Zones</p>
+
+<p>All zones will be moved to the skipped state. This has no effect on currently skipped zones.</p>
+
+</li>
+<li><p>Restart Selected Skipped Zone</p>
+
+<p>The selected zone will be moved from the skipped state to the roll state. The zone will re-enter the roll state at the same point from which it entered the skip state; it will not be moved to the beginning of either KSK or ZSK rollover. This only has an effect on skipped zones. A zone may be selected by clicking on its zone stripe. If this command is selected without a zone having been selected, a dialog box is displayed from which a currently skipped zone may be chosen.</p>
+
+</li>
+<li><p>Restart All Skipped Zones</p>
+
+<p>All zones will be moved from the skipped state to the roll state. The zones will re-enter the roll state at the same point from which they entered the skip state; they will not be moved to the beginning of either KSK or ZSK rollover. This has no effect on currently rolling zones.</p>
+
+</li>
+</ul>
+
+<h2 id="ZSK-Control-Menu">ZSK Control Menu</h2>
+
+<p>The commands in this menu are GUI interfaces for the <b>rollctl</b> commands related to ZSK-specific zone management.</p>
+
+<ul>
+
+<li><p>Roll Selected Zone&#39;s ZSK</p>
+
+<p>The selected zone&#39;s ZSK will be moved to the rollover state. This has no effect on zones that are already in rollover. A zone may be selected by clicking on its zone stripe. If this command is selected without a zone having been selected, a dialog box is displayed from which a currently skipped zone may be chosen.</p>
+
+</li>
+<li><p>Roll All Zones&#39; ZSKs</p>
+
+<p>All zones&#39; ZSKs will be moved to the rollover state. This has no effect on currently rolling zones.</p>
+
+</li>
+</ul>
+
+<h2 id="KSK-Control-Menu">KSK Control Menu</h2>
+
+<p>The commands in this menu are GUI interfaces for the <b>rollctl</b> commands related to KSK-specific zone management.</p>
+
+<ul>
+
+<li><p>DS Published for Selected Zone</p>
+
+<p>This command is used to indicate that the selected zone&#39;s parent has published a new DS record for the zone. It moves the zone from phase 5 to phase 6 of KSK rollover.</p>
+
+</li>
+<li><p>DS Published for All Zones</p>
+
+<p>This command is used to indicate that all the zones in KSK rollover phase 5 have new DS records published by their parents. It moves all these zones from phase 5 to phase 6 of KSK rollover. There is no effect on zones not in KSK rollover phase 5.</p>
+
+</li>
+<li><p>Roll Selected Zone&#39;s KSK</p>
+
+<p>The selected zone&#39;s KSK will be moved to the rollover state. This has no effect on zones that are already in rollover. A zone may be selected by clicking on its zone stripe. If this command is selected without a zone having been selected, a dialog box is displayed from which a currently skipped zone may be chosen.</p>
+
+</li>
+<li><p>Roll All Zones&#39; KSKs</p>
+
+<p>All zones&#39; KSKs will be moved to the rollover state. This has no effect on currently rolling zones.</p>
+
+</li>
+</ul>
+
+<h2 id="Display-Menu">Display Menu</h2>
+
+<p>The commands in this menu provide control over what is being displayed. There are commands for displaying and hiding both zone stripes, columns of key sets, columns of rollrec names, and columns of zonenames.</p>
+
+<p>The zonestripe commands allow all, some, or none of the zone stripes to be displayed. Undisplayed rolling zones will continue to roll, but they will do so without the <b>blinkenlights</b> window indicating this.</p>
+
+<p>The data column commands allow individual columns of data to be hidden or displayed. The zone status column may not be hidden. Only one of the <i>rollrec</i> name and <i>zonename</i> columns may be hidden at a time.</p>
+
+<ul>
+
+<li><p>Zone Selection</p>
+
+<p>A dialog box is displayed that holds a list of the zones currently managed by <b>rollerd</b>. The user may select which zones should be displayed by clicking on the zone&#39;s checkbox. Zones with a selected checkbox will be displayed; zones without a selected checkbox will not be displayed.</p>
+
+</li>
+<li><p>Display All Zones</p>
+
+<p>All zones will be displayed in the <b>blinkenlights</b> window.</p>
+
+</li>
+<li><p>Hide All Zones</p>
+
+<p>No zones will be displayed in the <b>blinkenlights</b> window.</p>
+
+</li>
+<li><p>Rollrec Name (toggle)</p>
+
+<p>This menu item is a toggle to turn on or off the display of <i>rollrec</i> names. If display is turned off, the column holding the <i>rollrec</i> names will be removed from the display and the display window will shrink. If display is turned on, the column holding the <i>rollrec</i> names will be restored to the display and the display window will be expanded.</p>
+
+<p>When displayed, the <i>rollrec</i> names will always be the leftmost columns.</p>
+
+</li>
+<li><p>Zone Name (toggle)</p>
+
+<p>This menu item is a toggle to turn on or off the display of the zone names in a <i>rollrec</i> entry. If display is turned off, the column holding the zone names will be removed from the display and the display window will shrink. If display is turned on, the column holding the zone names will be restored to the display and the display window will be expanded.</p>
+
+<p>When displayed, the zone name will always be the second-from left or leftmost column, depending on if the <i>rollrec</i> name is also being displayed.</p>
+
+</li>
+<li><p>Zonegroup Name (toggle)</p>
+
+<p>This menu item is a toggle to turn on or off the display of the zoneground in <i>rollrec</i> entries. If display is turned off, the column holding the rollrec names will be removed from the display and the display window will shrink. If display is turned on, the column holding the rollrec names will be restored to the display and the display window will be expanded.</p>
+
+<p>When displayed, the rollrec names will always be the in one of the first through third columns, depending on if the <i>rollrec</i> name and zone name are also being displayed.</p>
+
+</li>
+<li><p>KSK Sets (toggle)</p>
+
+<p>This menu item is a toggle to turn on or off the display of KSK signing set names. If display is turned off, the columns holding the KSK signing set names and labels will be removed from the display and the display window will shrink. If display is turned on, the columns holding the KSK signing set names and labels will be restored to the display and the display window will be expanded.</p>
+
+<p>When displayed, KSK signing sets will always be the rightmost columns.</p>
+
+</li>
+<li><p>ZSK Sets (toggle)</p>
+
+<p>This menu item is a toggle to turn on or off the display of ZSK signing set names. If display is turned off, the columns holding the ZSK signing set names and labels will be removed from the display and the display window will shrink. If display is turned on, the columns holding the ZSK signing set names and labels will be restored to the display and the display window will be expanded.</p>
+
+<p>When displayed, ZSK signing sets will always be immediately to the right of the zone status column.</p>
+
+</li>
+<li><p>Hide All Keysets</p>
+
+<p>Turns off display of the KSK and ZSK signing set names.</p>
+
+</li>
+<li><p>Show All Keysets</p>
+
+<p>Turns on display of the KSK and ZSK signing set names.</p>
+
+</li>
+<li><p>Refresh Display</p>
+
+<p>Refresh the <b>blinkenlights</b> display. The display will automatically refresh after a certain number of updates; this command forces it to happen immediately upon invocation.</p>
+
+</li>
+</ul>
+
+<h2 id="Help-Menu">Help Menu</h2>
+
+<p>The commands in this menu provide assistance to the user.</p>
+
+<ul>
+
+<li><p>Help</p>
+
+<p>Display a window containing help information.</p>
+
+</li>
+<li><p>About Blinkenlights</p>
+
+<p>Display a window containing version information on <b>blinkenlights</b> and DNSSEC-Tools.</p>
+
+</li>
+</ul>
+
+<h1 id="CONFIGURATION-FILE">CONFIGURATION FILE</h1>
+
+<p>Several aspects of <b>blinkenlights</b>&#39; behavior may be controlled from configuration files. Configuration value may be specified in the DNSSEC Tools configuration file or in a more specific <b>rc.blinkenlights</b>. The system-wide <b>blinkenlights</b> configuration file is in the DNSSEC-Tools configuration directory and is named <b>blinkenlights.conf</b>. Multiple <b>rc.blinkenlights</b> files may exist on a system, but only the one in the directory in which <b>blinkenlights</b> is executed is used.</p>
+
+<p>The following are the available configuration values:</p>
+
+<pre><code>    colors      Turn on/off use of colors on zone stripes.
+    fontsize    The size of the font in the output window.
+    maxzones    The number of zones to display.
+    modify      Turn on/off execution of rollerd modification commands.
+    noshow      Turn off display of particular columns.
+    shading     Turn on/off shading of the status columns.
+    showskip    Turn on/off display of skipped zones.
+    skipcolor   The background color used for skipped zones.</code></pre>
+
+<p>The <b>rc.blinkenlights</b> file is <b>only</b> searched for in the directory in which <b>blinkenlights</b> is executed. The potential problems inherent in this may cause these <b>blinkenlights</b>-specific configuration files to be removed in the future.</p>
+
+<p>This file is in the &quot;field value&quot; format, where <i>field</i> specifies the output aspect and <i>value</i> defines the value for that field. The following are the recognized fields:</p>
+
+<p>Empty lines and comments are ignored. Comment lines are lines that start with an octothorpe (&#39;#&#39;).</p>
+
+<p>Spaces are not allowed in the configuration values.</p>
+
+<p>Choose your skipcolors carefully. The only foreground color used is black, so your background colors must work well with black.</p>
+
+<p>The <i>noshow</i> command controls display of the various data columns. The command valid values are:</p>
+
+<pre><code>    rollrecs    Turn off display of the rollrec names column.
+                This value may not be used with &quot;noshow zonenames&quot;.
+    zonenames   Turn off display of the zonenames column.
+                This value may not be used with &quot;noshow rollrecs&quot;.
+    zonegroups  Turn off display of the zonegroups column.
+    kskset      Turn off display of the KSK signing set columns.
+    zskset      Turn off display of the ZSK signing set columns.
+    keysets     Turn off display of the KSK and ZSK signing set columns.</code></pre>
+
+<h1 id="REQUIREMENTS">REQUIREMENTS</h1>
+
+<p><b>blinkenlights</b> is implemented in Perl/Tk, so both Perl and Perl/Tk must be installed on your system.</p>
+
+<h1 id="WARNINGS">WARNINGS</h1>
+
+<p><b>blinkenlights</b> has several potential problems that must be taken into account.</p>
+
+<dl>
+
+<dt id="development-environment">development environment</dt>
+<dd>
+
+<p><b>blinkenlights</b> was developed and tested on a single-user system running X11 using a relatively small number of zones. While it works fine in this environment, it has not been run on a system with many users or in a situation where the system console hasn&#39;t been in use by the <b>blinkenlights</b> user.</p>
+
+</dd>
+<dt id="long-term-performance-issues">long-term performance issues</dt>
+<dd>
+
+<p>In early tests, the longer <b>blinkenlights</b> runs, the slower the updates become. This is <i>probably</i> a result of the Tk implementation or the way Tk interfaces with X11. This is pure supposition, though.</p>
+
+<p>This performance impact is affected by a number of things, such as the number of zones managed by <b>rollerd</b> and the length of <b>rollerd</b>&#39;s sleep interval. Large numbers of zones or very short sleep intervals will increase the possibility of <b>blinkenlights</b>&#39; performance degrading.</p>
+
+<p>This appears to have been resolved by periodically performing a complete rebuild of the screen. <b>blinkenlights</b> keeps track of the number of screen updates it makes and rebuilds the screen when this count exceeds a threshold. The threshold is built into <b>blinkenlights</b> and stored in the <b>$paintmax</b> variable. This threshold may be adjusted if there are too many screen rebuilds or if <b>blinkenlights</b>&#39; performance slows too much. Raising the number will reduce the screen rebuilds; lowering the number will (may) increase performance.</p>
+
+</dd>
+<dt id="display-irregularities">display irregularities</dt>
+<dd>
+
+<p>If the user modifies the number of zones to be displayed, then sometimes the <b>blinkenlights</b> window is left in an irregular state. The requested number of zones are displayed, but there is a large grey void above and below the zone display. This is an occasional problem and will be fixed as time allows.</p>
+
+</dd>
+</dl>
+
+<h1 id="COPYRIGHT">COPYRIGHT</h1>
+
+<p>Copyright 2006-2014 SPARTA, Inc. All rights reserved. See the COPYING file included with the DNSSEC-Tools package for details.</p>
+
+<h1 id="AUTHOR">AUTHOR</h1>
+
+<p>Wayne Morrison, tewok@tislabs.com</p>
+
+<h1 id="SEE-ALSO">SEE ALSO</h1>
+
+<p><b>bubbles(8)</b>, <b>rollctl(8)</b>, <b>rollerd(8)</b>, <b>zonesigner(8)</b></p>
+
+<p><b>Net::DNS::SEC::Tools::timetrans(3)</b></p>
+
+<p><b>Net::DNS::SEC::Tools::keyrec(5)</b>, <b>Net::DNS::SEC::Tools::rollrec(5)</b>,</p>
+
+
+</body>
+
+</html>
+
+

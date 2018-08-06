@@ -1,0 +1,57 @@
+# Copyright 2004-2007 SPARTA, Inc.  All rights reserved.
+# See the COPYING file included with the dnssec-tools package for details.
+
+			     DNSSEC-Tools
+			Is your domain secure?
+
+This directory contains a patch that enables DNSSEC validation in
+the Thunderbird Mail applicaiton. It is in beta form with a
+lot of debugging but should be usable in testing environments.
+
+Needed Files depending on what is being built:
+    dnssec-both.patch
+    dnssec-thunderbird.patch
+    dnssec-mozconfig.patch
+
+######################################################################
+# PREREQUISITES
+
+  All of the following instructions assume you have the dnssec-tools
+  package already install (specifically, libval and libsres).
+
+######################################################################
+# THUNDERBIRD FROM SOURCE
+#
+
+  The following summarizes what you need to do in order to build
+  thunderbird from a source tree including the DNSSEC support.  It is
+  probably best to follow an example from your distribution when
+  creating a .mozconfig file.  The DNSSEC support should be
+  automatically detected by configure and turned on if you have
+  dnssec-tools installed.
+
+
+  tar xjf thunderbird-1.5.0.10-source.tar.bz2
+  cd mozilla
+  patch -p1 < ../dnssec-thunderbird.patch
+  patch -p1 < ../dnssec-both.patch
+
+  # create a .mozconfig file; this is a stripped down version of what
+  # gets put into the fedora RPMs but should work everywhere???:
+  cat >> .mozconfig << EOF
+. $topsrcdir/browser/config/mozconfig
+
+ac_add_options --disable-tests
+ac_add_options --disable-debug
+ac_add_options --with-pthreads
+ac_add_options --enable-default-toolkit=gtk2
+ac_add_options --enable-pango
+ac_add_options --enable-svg
+ac_add_options --enable-canvas
+
+EOF
+
+  # finally build it all:
+  make -f client.mk build
+
+######################################################################

@@ -1,0 +1,73 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title></title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:root@localhost" />
+</head>
+
+<body style="background-color: white">
+
+
+
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#DESCRIPTION">DESCRIPTION</a></li>
+  <li><a href="#OPTIONS">OPTIONS</a></li>
+  <li><a href="#COPYRIGHT">COPYRIGHT</a></li>
+  <li><a href="#AUTHOR">AUTHOR</a></li>
+  <li><a href="#SEE-ALSO">SEE ALSO</a></li>
+</ul>
+
+<h1 id="NAME">NAME</h1>
+
+<p>check-zone-expiration - displays how long until a zone&#39;s records expire</p>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<p># check-zone-expiration dnssec-tools.org paypal.com dnssec-tools.org will expire in 26 days, 2 hours, 16 minutes, 36 seconds paypal.com will expire in 12 days, 17 hours, 7 minutes, 1 second</p>
+
+<p># check-zone-expiration -m 1123200 dnssec-tools.org paypal.com paypal.com will expire in 12 days, 17 hours, 6 minutes, 22 seconds</p>
+
+<h1 id="DESCRIPTION">DESCRIPTION</h1>
+
+<p>The check-zone-exiration script reports how long until a zone will expire by querying for the zone&#39;s (top level) RRSIG and calculating how much time is left before the signatures will no longer be valid. It will then report how much time is left in human readable form.</p>
+
+<p>If the -m switch is provided with a time argument (in seconds), it will only print output for zones that have less than that time left.</p>
+
+<h1 id="OPTIONS">OPTIONS</h1>
+
+<dl>
+
+<dt id="m-STRING">-m STRING</dt>
+<dd>
+
+</dd>
+<dt id="minimum-reporting-STRING">--minimum-reporting=STRING</dt>
+<dd>
+
+<p>Minimum reporting time, or else be silent for the zone</p>
+
+</dd>
+</dl>
+
+<h1 id="COPYRIGHT">COPYRIGHT</h1>
+
+<p>Copyright 2012-2014 SPARTA, Inc. All rights reserved. See the COPYING file included with the DNSSEC-Tools package for details.</p>
+
+<h1 id="AUTHOR">AUTHOR</h1>
+
+<p>Wes Hardaker, hardaker@tislabs.com</p>
+
+<h1 id="SEE-ALSO">SEE ALSO</h1>
+
+<p><b>donuts(1)</b></p>
+
+
+</body>
+
+</html>
+
+
