@@ -414,7 +414,7 @@ void Window::about()
     msgBox.setWindowTitle("About DNSSEC-System-Tray");
     msgBox.setText("<img src=\":/icons/justlock.png\" style=\"float: right\"/>"
                    "<h1>DNSSEC-System-Tray</h1><p><i>A component of the DNSSEC-Tools Project</i></p><p>For more information, please visit http://www.dnssec-tools.org/.</i></p>"
-                   "<p>DNSSEC-Tools Version: 2.2</p>");
+                   "<p>DNSSEC-Tools Version: 2.2.2</p>");
     msgBox.setStandardButtons(QMessageBox::Close);
     msgBox.exec();
 }

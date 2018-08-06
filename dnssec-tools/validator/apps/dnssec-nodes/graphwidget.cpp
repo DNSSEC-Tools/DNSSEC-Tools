@@ -759,7 +759,7 @@ void GraphWidget::about()
     msgBox.setWindowTitle("About DNSSEC-Nodes");
     msgBox.setText("<img src=\":/icons/dnssec-nodes-64x64.png\" style=\"float: right\"/>"
                    "<h1>DNSSEC-Nodes</h1><p><i>A component of the DNSSEC-Tools Project</i></p><p>For more information, please visit http://www.dnssec-tools.org/.</i></p>"
-                   "<p>DNSSEC-Tools Version: 2.2</p>");
+                   "<p>DNSSEC-Tools Version: 2.2.2</p>");
     msgBox.setStandardButtons(QMessageBox::Close);
     msgBox.exec();
 }
