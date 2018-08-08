@@ -22,6 +22,7 @@
 #include <crypto/sha2.h>
 #endif
 #include <openssl/dsa.h>
+#include <openssl/engine.h>
 #include <openssl/md5.h>
 #include <openssl/rsa.h>
 #include <openssl/err.h>
@@ -74,12 +75,12 @@ gen_evp_hash(const int hashtype, const u_char *data, size_t data_len,
     }
 
     if (md != NULL) {
-        EVP_MD_CTX md_ctx;
-        EVP_MD_CTX_init(&md_ctx);
-        EVP_DigestInit_ex(&md_ctx, md, NULL);
-        EVP_DigestUpdate(&md_ctx, data, data_len);
-        EVP_DigestFinal_ex(&md_ctx, outbuf, &calcsize);
-        EVP_MD_CTX_cleanup(&md_ctx);
+        EVP_MD_CTX *md_ctx;
+        md_ctx = EVP_MD_CTX_new();
+        EVP_DigestInit_ex(md_ctx, md, NULL);
+        EVP_DigestUpdate(md_ctx, data, data_len);
+        EVP_DigestFinal_ex(md_ctx, outbuf, &calcsize);
+        EVP_MD_CTX_free(md_ctx);
     }
     return calcsize;
 }
@@ -122,10 +123,8 @@ dsasha1_parse_public_key(const u_char *buf, size_t buflen, DSA * dsa)
     bn_y = BN_bin2bn(buf + index, 64 + (T * 8), NULL);
     index += (64 + (T * 8));
 
-    dsa->p = bn_p;
-    dsa->q = bn_q;
-    dsa->g = bn_g;
-    dsa->pub_key = bn_y;
+    DSA_set0_pqg(dsa, bn_p, bn_q, bn_g);
+    DSA_set0_key(dsa, bn_y, NULL);
 
     return VAL_NO_ERROR;        /* success */
 }
@@ -258,8 +257,7 @@ rsamd5_parse_public_key(const u_char *buf, size_t buflen, RSA * rsa)
      */
     bn_mod = BN_bin2bn(buf + index, buflen - index, NULL);
 
-    rsa->e = bn_exp;
-    rsa->n = bn_mod;
+    RSA_set0_key(rsa, bn_mod, bn_exp, NULL);
 
     return VAL_NO_ERROR;        /* success */
 }
@@ -290,7 +288,7 @@ rsamd5_keytag(const u_char *pubkey, size_t pubkey_len)
         return VAL_BAD_ARGUMENT;
     }
 
-    modulus = rsa->n;
+    RSA_get0_key(rsa, (const BIGNUM **) &modulus, NULL, NULL);
     modulus_len = BN_num_bytes(modulus);
     modulus_bin =
         (u_char *) MALLOC(modulus_len * sizeof(u_char));
@@ -405,8 +403,7 @@ rsa_parse_public_key(const u_char *buf, size_t buflen, RSA * rsa)
      */
     bn_mod = BN_bin2bn(buf + index, buflen - index, NULL);
 
-    rsa->e = bn_exp;
-    rsa->n = bn_mod;
+    RSA_set0_key(rsa, bn_mod, bn_exp, NULL);
 
     return VAL_NO_ERROR;        /* success */
 }
@@ -504,11 +501,10 @@ ecdsa_sigverify(val_context_t * ctx,
     EC_KEY   *eckey = NULL;
     BIGNUM *bn_x = NULL;
     BIGNUM *bn_y = NULL;
-    ECDSA_SIG ecdsa_sig;
+    ECDSA_SIG *ecdsa_sig;
     size_t   hashlen = 0;
 
-    ecdsa_sig.r = NULL;
-    ecdsa_sig.s = NULL;
+    ecdsa_sig = ECDSA_SIG_new();
     memset(sha_hash, 0, sizeof(sha_hash));
 
     val_log(ctx, LOG_DEBUG,
@@ -567,10 +563,10 @@ ecdsa_sigverify(val_context_t * ctx,
         goto err;
     }
 
-    ecdsa_sig.r = BN_bin2bn(rrsig->signature, hashlen, NULL); 
-    ecdsa_sig.s = BN_bin2bn(&rrsig->signature[hashlen], hashlen, NULL); 
+    ECDSA_SIG_set0(ecdsa_sig, BN_bin2bn(rrsig->signature, hashlen, NULL),
+                   BN_bin2bn(&rrsig->signature[hashlen], hashlen, NULL));
 
-    if (ECDSA_do_verify(sha_hash, hashlen, &ecdsa_sig, eckey) == 1) {
+    if (ECDSA_do_verify(sha_hash, hashlen, ecdsa_sig, eckey) == 1) {
         val_log(ctx, LOG_INFO, "ecdsa_sigverify(): returned SUCCESS");
         *sig_status = VAL_AC_RRSIG_VERIFIED;
     } else {
@@ -580,10 +576,8 @@ ecdsa_sigverify(val_context_t * ctx,
 
     /* Free all structures allocated */
 err:
-    if (ecdsa_sig.r)
-        BN_free(ecdsa_sig.r);
-    if (ecdsa_sig.s)
-        BN_free(ecdsa_sig.s);
+    if (ecdsa_sig)
+        ECDSA_SIG_free(ecdsa_sig);
     if (bn_x)
         BN_free(bn_x);
     if (bn_y)
