@@ -67,7 +67,7 @@
 package Net::DNS::ZoneFile::Fast;
 # documentation at the __END__ of the file
 
-$VERSION = '1.26';
+$VERSION = '1.27';
 use deprecate;
 
 __END__
