@@ -273,7 +273,6 @@ rm -rf %{buildroot}
 %{_mandir}/man3/Net::DNS::SEC::Validator.3pm.gz
 %{_mandir}/man3/Net::addrinfo.3pm.gz
 %{_mandir}/man3/Net::DNS::SEC::Tools::Donuts::Rule.3pm.gz
-%{_mandir}/man3/Net::DNS::ZoneFile::Fast.3pm.gz
 %{_mandir}/man3/Net::DNS::SEC::Tools::rolllog.3pm.gz
 
 %{_mandir}/man3/Net::DNS::SEC::Tools::TrustAnchor.3pm.gz

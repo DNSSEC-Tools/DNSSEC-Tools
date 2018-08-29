@@ -53,8 +53,7 @@ MOD_STD = -M Date::Parse -M QWizard -M Data::Dumper -M Getopt::Long
 
 MOD_DNS = -M Net::DNS::SEC::Tools::conf		\\
 	  -M Net::DNS::SEC::Tools::QWPrimitives	\\
-	  -M Net::DNS::SEC::Tools::BootStrap	\\
-	  -M Net::DNS::ZoneFile::Fast
+	  -M Net::DNS::SEC::Tools::BootStrap
 
 MODULES = \$(MOD_DNS) \$(MOD_STD)
 

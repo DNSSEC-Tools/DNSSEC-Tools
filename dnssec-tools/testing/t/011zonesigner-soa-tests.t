@@ -7,7 +7,7 @@ use File::Copy;
 use File::Path;
 use Cwd;
 use IO::Dir;
-use Net::DNS::ZoneFile::Fast;
+use Net::DNS::ZoneFile;
 
 my $testZonesDirectory = "zonesigner-soas";
 
@@ -53,7 +53,7 @@ foreach my $testfile (@testfiles) {
     $test->ok(-f "$inputfile", "$testfile was copied into place properly");
 
     #
-    # parse the file using Net::DNS::ZoneFile::Fast to get the serial number
+    # parse the file using Net::DNS::ZoneFile to get the serial number
     #
     my $serial = get_serial_number($inputfile);
     $test->ok($serial > 0, "The serial number ($serial) was pulled out ok");
@@ -89,8 +89,8 @@ foreach my $testfile (@testfiles) {
 
 sub get_serial_number {
     my ($file) = @_;
-    my $rrs = Net::DNS::ZoneFile::Fast::parse(file => "$inputfile",
-					      soft_errors => 1);
+    my $rrs = Net::DNS::ZoneFile::parse(file => "$inputfile",
+                                        soft_errors => 1);
     $test->ok(defined($rrs), "the zone file parsed ok");
     my $serial = -1;
     foreach my $rr (@$rrs) {

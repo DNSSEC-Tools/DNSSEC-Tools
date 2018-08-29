@@ -632,7 +632,7 @@ zonesign	$zonesign
 
 #
 # The name of the Perl module that will be used to parse zone files.
-# Net::DNS::ZoneFile::Fast is the default and isn't required to be set.
+# Net::DNS::ZoneFile is the default and isn't required to be set.
 #
 ";
 	if($zoneparser ne $DEFZFPARSER)
@@ -789,9 +789,9 @@ sub writetemplate()
 
 #
 # The name of the Perl module that will be used to parse zone files.
-# Net::DNS::ZoneFile::Fast is the default and isn't required to be set.
+# Net::DNS::ZoneFile is the default and isn't required to be set.
 #
-# zonefile-parser       Net::DNS::ZoneFile::Fast
+# zonefile-parser       Net::DNS::ZoneFile
 
 #
 # Key-related values.

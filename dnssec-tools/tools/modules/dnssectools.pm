@@ -360,7 +360,6 @@ sub _normalize_rrtype
 # 		the RRs.
 #		Currently supported parsers:
 #			Net::DNS::ZoneFile		    (default)
-#			Net::DNS::ZoneFile::Fast	("old" versions only)
 #
 sub dt_parse_zonefile
 {
@@ -407,11 +406,7 @@ sub dt_parse_zonefile
 	#
 	# Parse the zonefile as required by the various parsers.
 	#
-	if($ZONEFILE_PARSER->isa("Net::DNS::ZoneFile::Fast"))
-	{
-		$ret = Net::DNS::ZoneFile::Fast::parse(%options);
-	}
-	elsif($ZONEFILE_PARSER->isa("Net::DNS::ZoneFile"))
+	if($ZONEFILE_PARSER->isa("Net::DNS::ZoneFile"))
 	{
 		#
 		# Assume Net::DNS::ZoneFile calling convention.
@@ -612,12 +607,12 @@ format.
 =item I<dt_parse_zonefile(options)>
 
 This routine parses a given zone file using the configured zone file parser
-and returns an array reference containing the RRs. The options hash is the
-same as for B<Net::DNS::ZoneFile::Fast>.
+and returns an array reference containing the RRs.
 
-The zone parser to be used depends on the setting of the I<zonefile-parser>
-configuration value.  If this is not set, then the B<Net::DNS::ZoneFile::Fast>
-zone parser will be used.
+The zone parser to be used depends on the setting of the
+I<zonefile-parser> configuration value.  If this is not set, then the
+B<Net::DNS::ZoneFile> zone parser will be used (obsolete option: this
+is the only currently supported parser).
 
 =back
 

@@ -139,7 +139,7 @@ MOD_STD = -M lib -M Text::Wrap -M Date::Parse -M Date::Format -M Mail::Mailer::s
 
 MOD_NET	= -M Net::addrinfo -M Net::hostent -M Carp
 
-MOD_DNS = -M Net::DNS -M Net::DNS::ZoneFile::Fast -M Net::DNS::Keyset -M Net::DNS::SEC -M Net::DNS::SEC::Private
+MOD_DNS = -M Net::DNS -M Net::DNS::Keyset -M Net::DNS::SEC -M Net::DNS::SEC::Private
 
 MODULES = \$(MOD_NET) \$(MOD_DNS) \$(MOD_DT) \$(MOD_DNSRR) \$(MOD_STD) \$(PACKLIBS)
 
