@@ -45,7 +45,7 @@ nextstepinstructions: subdirinstall
 	$(QUIET)echo "**********************************************************************"
 	$(QUIET)echo ""
 
-maninstall:
+maninstall: makedirectories
 	$(MKPATH) $(mandir)/$(man1dir)
 	for i in $(MAN1PAGES) ; do		\
 	  $(DOCINSTALL) docs/$$i $(DESTDIR)/$(mandir)/$(man1dir) ;	\
