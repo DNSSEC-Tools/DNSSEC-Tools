@@ -63,7 +63,7 @@ clean:
 	$(RM) -rf $(LT_DIR)
 
 $(LIBRES): $(LOBJ)
-	$(LIBTOOLLD) -o $@ $(LOBJ) 
+	$(LIBTOOLLD) -o $@ $(LOBJ) $(LDFLAGS)
 
 install:
 	$(MKPATH) $(DESTDIR)$(libdir)

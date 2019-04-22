@@ -21,7 +21,7 @@ clean:
 	$(RM) -rf $(LT_DIR)
 
 $(LIBVAL_SHIM): $(LOBJ)
-	$(LIBTOOLLD) -o $@ $(LOBJ) $(EXTRA_LIBS)
+	$(LIBTOOLLD) -o $@ $(LOBJ) $(EXTRA_LIBS) $(LDFLAGS)
 
 install:
 	$(MKPATH) $(DESTDIR)$(libdir)
