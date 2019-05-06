@@ -1,5 +1,8 @@
 /* include/validator/validator-config.h.in.  Generated from configure.in by autoheader.  */
 
+/* validator hosts file */
+#undef ETC_HOSTS
+
 /* Define if gethostbyaddr expects a char, int, int */
 #undef GETHOSTBYADDR_USES_CHAR_INT
 
@@ -129,6 +132,12 @@
 /* Define to 1 if you have the <errno.h> header file. */
 #undef HAVE_ERRNO_H
 
+/* Define to 1 if you have the `ERR_remove_state' function. */
+#undef HAVE_ERR_REMOVE_STATE
+
+/* Define to 1 if you have the `ERR_remove_thread_state' function. */
+#undef HAVE_ERR_REMOVE_THREAD_STATE
+
 /* Define to 1 if you have the `flock' function. */
 #undef HAVE_FLOCK
 
@@ -143,6 +152,9 @@
 
 /* Define to 1 if you have the <getopt.h> header file. */
 #undef HAVE_GETOPT_H
+
+/* Define to 1 if you have the `getrlimit' function. */
+#undef HAVE_GETRLIMIT
 
 /* Define to 1 if you have the `gettimeofday' function. */
 #undef HAVE_GETTIMEOFDAY
@@ -213,8 +225,14 @@
 /* Define to 1 if you have the <pthread.h> header file. */
 #undef HAVE_PTHREAD_H
 
+/* Define to 1 if you have the `RAND_pseudo_bytes' function. */
+#undef HAVE_RAND_PSEUDO_BYTES
+
 /* Define to 1 if you have the <resolv.h> header file. */
 #undef HAVE_RESOLV_H
+
+/* Define to 1 if you have the `setrlimit' function. */
+#undef HAVE_SETRLIMIT
 
 /* Define if libcrypto implements the SHA-2 suite of algorithms. */
 #undef HAVE_SHA_2
@@ -249,12 +267,6 @@
 /* Define to 1 if you have the `strtok_r' function. */
 #undef HAVE_STRTOK_R
 
-/* Define to 1 if you have the `getrlimit' function. */
-#undef HAVE_GETRLIMIT
-
-/* Define to 1 if you have the `setrlimit' function. */
-#undef HAVE_SETRLIMIT
-
 /* Define to 1 if you have the <syslog.h> header file. */
 #undef HAVE_SYSLOG_H
 
@@ -273,6 +285,9 @@
 /* Define to 1 if you have the <sys/param.h> header file. */
 #undef HAVE_SYS_PARAM_H
 
+/* Define to 1 if you have the <sys/resource.h> header file. */
+#undef HAVE_SYS_RESOURCE_H
+
 /* Define to 1 if you have the <sys/select.h> header file. */
 #undef HAVE_SYS_SELECT_H
 
@@ -287,9 +302,6 @@
 
 /* Define to 1 if you have the <sys/types.h> header file. */
 #undef HAVE_SYS_TYPES_H
-
-/* Define to 1 if you have the <sys/resource.h> header file. */
-#undef HAVE_SYS_RESOURCE_H
 
 /* Define to 1 if the system has the type `uint16_t'. */
 #undef HAVE_UINT16_T
@@ -345,9 +357,6 @@
 
 /* Define if <arpa/nameser.h> has HEADER. */
 #undef NAMESER_HAS_HEADER
-
-/* Define validator hosts file */
-#undef ETC_HOSTS
 
 /* Define to the address where bug reports for this package should be sent. */
 #undef PACKAGE_BUGREPORT

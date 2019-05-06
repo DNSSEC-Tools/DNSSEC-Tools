@@ -13168,6 +13168,39 @@ _ACEOF
 fi
 done
 
+for ac_func in RAND_pseudo_bytes
+do :
+  ac_fn_c_check_func "$LINENO" "RAND_pseudo_bytes" "ac_cv_func_RAND_pseudo_bytes"
+if test "x$ac_cv_func_RAND_pseudo_bytes" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_RAND_PSEUDO_BYTES 1
+_ACEOF
+
+fi
+done
+
+for ac_func in ERR_remove_thread_state
+do :
+  ac_fn_c_check_func "$LINENO" "ERR_remove_thread_state" "ac_cv_func_ERR_remove_thread_state"
+if test "x$ac_cv_func_ERR_remove_thread_state" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_ERR_REMOVE_THREAD_STATE 1
+_ACEOF
+
+fi
+done
+
+for ac_func in ERR_remove_state
+do :
+  ac_fn_c_check_func "$LINENO" "ERR_remove_state" "ac_cv_func_ERR_remove_state"
+if test "x$ac_cv_func_ERR_remove_state" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_ERR_REMOVE_STATE 1
+_ACEOF
+
+fi
+done
+
 
 
 case "$host" in

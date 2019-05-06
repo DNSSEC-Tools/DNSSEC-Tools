@@ -418,19 +418,13 @@ u_int16_t libsres_random(void)
 {
     u_int16_t rnd = 0;
     if (!RAND_bytes((unsigned char *)&rnd, sizeof(rnd))) {
+#ifdef HAVE_RAND_PSEUDO_BYTES
         RAND_pseudo_bytes((unsigned char *)&rnd, sizeof(rnd));
+#else
+        return 0;
+#endif
     }
     
-#if 0
-    if (!RAND_pseudo_bytes((unsigned char *)&rnd, sizeof(rnd))) {
-        /* bytes generated are not cryptographically strong */
-        u_int16_t seed;
-        seed = random() & 0xffff;
-        RAND_seed(&seed, sizeof(seed));
-        RAND_pseudo_bytes((unsigned char *)&rnd, sizeof(rnd));
-    }
-#endif
-
     return rnd;
 }
 
