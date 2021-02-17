@@ -34,7 +34,7 @@ my %defaults =
 (
 	'admin-email'	   => "root",		# Admin's email address.
 	'archivedir'	   => getprefixdir() . "/var/key-archive",
-	'algorithm'	   => "rsasha1",	# Encryption algorithm.
+	'algorithm'	   => "ECDSAP256SHA256",	# Encryption algorithm.
 	'autosign'	   => 1,		# Auto-sign zone files flag.
 	'enddate'	   => "+2764800",	# Zone life, in seconds.
 	'entropy_msg'	   => 1,		# Display entropy message flag.
@@ -85,7 +85,7 @@ my %defaults =
 	'zonesign'	   => getprefixdir() . "/sbin/dnssec-signzone",
 	'zonesign-opts'	   => "",		# Options for zone signer.
 	'zskcount'	   => 1,		# Number of Current ZSK keys.
-	'zsklength'	   => 1024,		# Length of ZSK key.
+	'zsklength'	   => 2048,		# Length of ZSK key.
 	'zsklife'	   => 7884000,		# Lifespan of ZSK key.
 	'usensec3'         => "no",             # Use NSEC3 by default
 	'nsec3iter'	   => 100,              # default NSEC3 iterations
