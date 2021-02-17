@@ -389,8 +389,12 @@ sub get_edge_properties {
     $lab .= "\n$pkt->{'err'}" if ($pkt->{'err'} && $pkt->{'err'} !~ /No err/);
 #    $lab .= "\n$pkt->{'type'}";
 
+    $lab = "";
+
     if ($opts{'q'} && $pkt->{'type'} eq 'query') {
 	$lab .= add_breakdown($pkt, 'Queries', '?');
+	$lab =~ s/.*\///;
+	$lab =~ s/\(.*//;
     }
 
     if ($opts{'a'} && $pkt->{'type'} eq 'response') {
@@ -405,8 +409,10 @@ sub get_edge_properties {
 	$lab .= add_breakdown($pkt, 'Additional', '+');
     }
 
-    $lab = "";
-    
+    if ($lab eq "" or $lab eq ".") {
+	    $lab = "<root>"
+    }
+
     # figure out the color code for the line
     my $edgecolor;
     if ((exists($pkt->{'dns'}{'Authoritative'}) &&
