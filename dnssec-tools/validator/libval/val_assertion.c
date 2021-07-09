@@ -3482,10 +3482,12 @@ prove_nonexistence(val_context_t * ctx,
     /*
      * free actual results 
      */
-    val_free_result_chain(*results);
-    *results = NULL;
-    val_free_result_chain(*proof_res);
-    *proof_res = NULL;
+    if (retval != VAL_NO_ERROR) {
+        val_free_result_chain(*results);
+        *results = NULL;
+        val_free_result_chain(*proof_res);
+        *proof_res = NULL;
+    }
     return retval;
 }
 
