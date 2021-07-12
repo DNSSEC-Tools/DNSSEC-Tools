@@ -58,7 +58,8 @@ my %defaults =
 	'prog-zsk2'	   => 'default',	# Program for ZSK phase 2.
 	'prog-zsk3'	   => 'default',	# Program for ZSK phase 3.
 	'prog-zsk4'	   => 'default',	# Program for ZSK phase 4.
-	'random'	   => "/dev/urandom",	# Random no. generator device.
+# obsolete with more modern architectures
+#	'random'	   => "/dev/urandom",	# Random no. generator device.
 	'rndc'		   => getprefixdir() . "/sbin/rndc",
 	'rndc-opts'	   => '',		# Options for rndc.
 	'roll_loadzone'	   => 1,		# Zone-reloading flag.
