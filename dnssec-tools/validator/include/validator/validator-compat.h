@@ -896,6 +896,11 @@ typedef enum __ns_flag {
         (cp) += NS_INT32SZ; \
 } while (0)
 
+#endif /* HAVE_ARPA_NAMESER_H */
+
+/* eabi = android */
+/* OpenBSD has arpa/nameser.h, but it doesn't define ns_msg */
+#if !defined(HAVE_ARPA_NAMESER_H) || defined(eabi) || defined(ANDROID) ||defined(__OpenBSD__) || !defined(__GLIBC__)
 int	ns_name_uncompress(const u_char *, const u_char *,
 		const u_char *, char *, size_t);
 int	ns_name_compress(const char *, u_char *, size_t,
