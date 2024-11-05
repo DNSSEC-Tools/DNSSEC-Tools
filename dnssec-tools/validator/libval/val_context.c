@@ -17,9 +17,10 @@
 
 #include <openssl/conf.h>
 #include <openssl/evp.h>
+#ifndef OPENSSL_NO_ENGINE
 #include <openssl/engine.h>
+#endif /* !defined(OPENSSL_NO_ENGINE) */
 #include <openssl/err.h>
-
 #include "val_support.h"
 #include "val_policy.h"
 #include "val_cache.h"
@@ -853,7 +854,9 @@ val_free_validator_state()
     /* Whole bunch of openssl cleanup routines */
     CONF_modules_unload(1); 
     EVP_cleanup(); 
+#ifndef OPENSSL_NO_ENGINE
     ENGINE_cleanup(); 
+#endif
     CRYPTO_cleanup_all_ex_data(); 
 #if HAVE_ERR_REMOVE_THREAD_STATE
     ERR_remove_thread_state(NULL);

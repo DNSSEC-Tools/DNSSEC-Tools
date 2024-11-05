@@ -22,7 +22,9 @@
 #include <crypto/sha2.h>
 #endif
 #include <openssl/dsa.h>
+#ifndef OPENSSL_NO_ENGINE
 #include <openssl/engine.h>
+#endif /* !defined(OPENSSL_NO_ENGINE) */
 #include <openssl/md5.h>
 #include <openssl/rsa.h>
 #include <openssl/err.h>
