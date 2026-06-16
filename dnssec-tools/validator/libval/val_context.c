@@ -855,10 +855,12 @@ val_free_validator_state()
     EVP_cleanup(); 
     ENGINE_cleanup(); 
     CRYPTO_cleanup_all_ex_data(); 
+#if OPENSSL_VERSION_NUMBER < 0x40000000L
 #if HAVE_ERR_REMOVE_THREAD_STATE
     ERR_remove_thread_state(NULL);
 #elif HAVE_ERR_REMOVE_STATE
     ERR_remove_state(0);
+#endif
 #endif /* else we do nothing, because it's no longer needed?? */
     ERR_free_strings(); 
 
