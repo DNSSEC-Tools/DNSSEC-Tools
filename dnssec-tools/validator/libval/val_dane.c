@@ -543,10 +543,10 @@ do_cert_namechk(val_context_t *context,
 
     GENERAL_NAMES *saNames = NULL;
     GENERAL_NAME *cur = NULL;
-    X509_NAME *subj = NULL;
+    const X509_NAME *subj = NULL;
     int retval = 1;
-    ASN1_STRING *astr;
-    char *cp;
+    const ASN1_STRING *astr;
+    const char *cp;
 
     if (qname == NULL || cert == NULL)
         return 0;
@@ -563,7 +563,7 @@ do_cert_namechk(val_context_t *context,
             cur = sk_GENERAL_NAME_value(saNames, i);
             if (cur->type == GEN_DNS) {
                 astr = cur->d.dNSName;
-                cp = (char *)astr->data;
+                cp = (const char *)ASN1_STRING_get0_data(astr);
 
                 /* check for exact match or wildcard match */
                 if (cp &&
@@ -585,9 +585,9 @@ do_cert_namechk(val_context_t *context,
     subj = X509_get_subject_name(cert);
     i = -1;
     while ((i = X509_NAME_get_index_by_NID(subj, NID_commonName, i)) >=0) {
-        X509_NAME_ENTRY *entry = X509_NAME_get_entry(subj, i);
+        const X509_NAME_ENTRY *entry = X509_NAME_get_entry(subj, i);
         astr = X509_NAME_ENTRY_get_data(entry);
-        cp = (char *)astr->data;
+        cp = (const char *)ASN1_STRING_get0_data(astr);
 
         /* check for exact match or wildcard match */
         if (cp &&
